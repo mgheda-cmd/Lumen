@@ -129,6 +129,31 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 }
 .chip button:hover{color:var(--down)}
 
+#paper-bar{border-top:1px solid var(--line);background:var(--panel);font-size:12px}
+#paper-summary{
+  display:flex;gap:14px;align-items:center;padding:8px 16px;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;
+}
+#paper-panel{display:none;padding:0 16px 10px;max-height:42vh;overflow:auto}
+#paper-panel.open{display:block}
+.paper-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.paper-row input{
+  width:110px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+  color:var(--text);padding:7px 9px;font-family:'IBM Plex Mono',monospace;font-size:13px;
+}
+.btn-buy{background:rgba(37,208,164,.15);border:1px solid var(--up);color:var(--up);
+  border-radius:8px;padding:7px 14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-sell{background:rgba(244,91,125,.15);border:1px solid var(--down);color:var(--down);
+  border-radius:8px;padding:7px 14px;font-weight:600;cursor:pointer;font-family:inherit}
+.pos-item,.hist-item{
+  display:flex;justify-content:space-between;gap:8px;padding:6px 9px;
+  border:1px solid var(--line);border-radius:8px;margin-bottom:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;align-items:center;
+}
+.hist-item{border-style:dashed;color:var(--muted)}
+.pos-item button{background:none;border:1px solid var(--line);color:var(--muted);
+  border-radius:6px;padding:3px 9px;cursor:pointer;font-family:inherit}
+.pos-item button:hover{border-color:var(--down);color:var(--down)}
 footer{
   padding:6px 16px; border-top:1px solid var(--line); background:var(--panel);
   font-size:11px; color:var(--faint); display:flex; gap:16px; flex-wrap:wrap;
@@ -309,6 +334,29 @@ footer{
 <div id="chart-area">
   <div id="chips"></div>
   <canvas id="chart"></canvas>
+</div>
+
+<div id="paper-bar">
+  <div id="paper-summary">
+    <span style="color:var(--sma);font-weight:600">💼 DÉMO</span>
+    <span id="paper-equity">—</span>
+    <span id="paper-pnl">—</span>
+    <span id="paper-caret" style="margin-left:auto;color:var(--faint)">▴</span>
+  </div>
+  <div id="paper-panel">
+    <div class="paper-row">
+      <input id="paper-amt" type="number" value="1000" min="1" aria-label="Montant en USDT">
+      <button class="btn-buy" id="paper-buy">ACHAT</button>
+      <button class="btn-sell" id="paper-sell">VENTE</button>
+      <button class="btn" id="paper-reset" style="margin-left:auto;font-size:12px">Réinitialiser</button>
+    </div>
+    <div style="color:var(--faint);font-size:10px;margin-bottom:10px">
+      Montant en USDT · exécution au prix du marché de la paire affichée ·
+      ACHAT = long, VENTE = short · frais simulés 0,1 % par ordre
+    </div>
+    <div id="paper-pos"></div>
+    <div id="paper-hist"></div>
+  </div>
 </div>
 
 <footer>
@@ -567,16 +615,27 @@ const state = {
   yScale:{auto:true,lo:0,hi:0}, pricePaneH:0,
 };
 
+/* ---------- Portefeuille de trading démo ---------- */
+const paper={cash:100000,positions:[],history:[]};
+
 /* ---------- Mémorisation de la configuration ---------- */
 const CFG_KEY='lumen-config-v1';
 function currentConfig(){
-  return {symbol:state.symbol, tf:state.tf, type:state.type, indicators:state.indicators};
+  return {symbol:state.symbol, tf:state.tf, type:state.type, indicators:state.indicators,
+    paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
   if(!c)return;
   if(typeof c.symbol==='string'&&/^[A-Z0-9]{5,20}$/.test(c.symbol))state.symbol=c.symbol;
   if(TF_MAP[c.tf])state.tf=+c.tf;
   if(['candles','line','area'].includes(c.type))state.type=c.type;
+  if(c.paper&&typeof c.paper.cash==='number'&&isFinite(c.paper.cash)){
+    paper.cash=c.paper.cash;
+    paper.positions=Array.isArray(c.paper.positions)?c.paper.positions.filter(x=>
+      x&&typeof x.entry==='number'&&typeof x.qty==='number'&&typeof x.margin==='number'
+      &&(x.side==='long'||x.side==='short')&&/^[A-Z0-9]{5,20}$/.test(x.sym||'')):[];
+    paper.history=Array.isArray(c.paper.history)?c.paper.history.slice(0,50):[];
+  }
   if(c.indicators)for(const k of Object.keys(state.indicators)){
     const s=c.indicators[k]; if(!s)continue;
     if(typeof s.on==='boolean')state.indicators[k].on=s.on;
@@ -883,6 +942,7 @@ function render(){
   drawTimeAxis(s,e);
   if(state.mouse) drawCrosshair(panes,s,e);
   updateChips();
+  updatePaper();
 }
 
 /* ----- panneau prix ----- */
@@ -1616,6 +1676,114 @@ document.getElementById('sync-off').addEventListener('click',()=>{
   try{localStorage.removeItem('lumen-sync-token');}catch(e){}
   setSyncStatus('Synchro désactivée');
 });
+
+/* ---------- Trading démo : ordres, PnL, historique ---------- */
+const lastPrices={};
+function livePrice(sym){
+  if(sym===state.symbol&&state.data.length)return state.data[state.data.length-1].c;
+  return lastPrices[sym]||null;
+}
+function posPnl(p){
+  const px=livePrice(p.sym);
+  if(px==null)return null;
+  return (p.side==='long'?(px-p.entry):(p.entry-px))*p.qty;
+}
+function fmtUsd(v){return v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' $';}
+function updatePaper(){
+  const eqEl=document.getElementById('paper-equity');
+  if(!eqEl)return;
+  let open=0, unreal=0, unknown=false;
+  for(const p of paper.positions){
+    open+=p.margin;
+    const g=posPnl(p);
+    if(g==null)unknown=true; else unreal+=g;
+  }
+  const equity=paper.cash+open+unreal;
+  eqEl.textContent='Équité '+fmtUsd(equity);
+  const pnlEl=document.getElementById('paper-pnl');
+  pnlEl.textContent='PnL '+(unreal>=0?'+':'')+fmtUsd(unreal)+(unknown?' (~)':'');
+  pnlEl.style.color=unreal>=0?'#25D0A4':'#F45B7D';
+  eqEl.style.color=equity>=100000?'#25D0A4':'#F45B7D';
+  // positions ouvertes
+  const posEl=document.getElementById('paper-pos');
+  posEl.innerHTML=paper.positions.map((p,i)=>{
+    const g=posPnl(p);
+    const col=g==null?'var(--muted)':g>=0?'#25D0A4':'#F45B7D';
+    return `<div class="pos-item">
+      <span>${p.side==='long'?'▲':'▼'} ${p.sym.replace(/USDT$/,'')}</span>
+      <span style="color:var(--muted)">entrée ${fmt(p.entry,p.entry>=100?2:4)}</span>
+      <span style="color:${col}">${g==null?'—':(g>=0?'+':'')+fmtUsd(g)}</span>
+      <button data-close="${i}">Fermer</button>
+    </div>`;
+  }).join('')||'<div style="color:var(--faint);font-size:11px;margin-bottom:8px">Aucune position ouverte</div>';
+  // historique (5 derniers)
+  const hEl=document.getElementById('paper-hist');
+  hEl.innerHTML=paper.history.slice(0,5).map(h=>{
+    const col=h.pnl>=0?'#25D0A4':'#F45B7D';
+    return `<div class="hist-item">
+      <span>${h.side==='long'?'▲':'▼'} ${h.sym.replace(/USDT$/,'')}</span>
+      <span>${fmt(h.entry,2)} → ${fmt(h.exit,2)}</span>
+      <span style="color:${col}">${(h.pnl>=0?'+':'')+fmtUsd(h.pnl)}</span>
+    </div>`;
+  }).join('');
+}
+function paperFlash(msg){
+  const el=document.getElementById('paper-pnl');
+  const old=el.textContent, oldCol=el.style.color;
+  el.textContent=msg; el.style.color='#F2C14E';
+  setTimeout(()=>{el.textContent=old;el.style.color=oldCol;updatePaper();},1600);
+}
+function openTrade(side){
+  const amt=parseFloat(document.getElementById('paper-amt').value);
+  if(!(amt>0))return paperFlash('Montant invalide');
+  const fee=amt*0.001;
+  if(amt+fee>paper.cash)return paperFlash('Solde insuffisant');
+  const px=livePrice(state.symbol);
+  if(!px)return paperFlash('Prix indisponible');
+  paper.cash-=amt+fee;
+  paper.positions.push({sym:state.symbol,side,qty:amt/px,entry:px,margin:amt,t:Date.now()});
+  saveConfig(); updatePaper();
+}
+function closePos(i){
+  const p=paper.positions[i];
+  if(!p)return;
+  const px=livePrice(p.sym);
+  if(px==null)return paperFlash('Prix indisponible');
+  const pnl=(p.side==='long'?(px-p.entry):(p.entry-px))*p.qty;
+  const fee=p.qty*px*0.001;
+  paper.cash+=p.margin+pnl-fee;
+  paper.history.unshift({sym:p.sym,side:p.side,entry:p.entry,exit:px,pnl:pnl-fee,t:Date.now()});
+  paper.history=paper.history.slice(0,50);
+  paper.positions.splice(i,1);
+  saveConfig(); updatePaper();
+}
+document.getElementById('paper-summary').addEventListener('click',()=>{
+  const pn=document.getElementById('paper-panel');
+  const open=pn.classList.toggle('open');
+  document.getElementById('paper-caret').textContent=open?'▾':'▴';
+  resize();
+});
+document.getElementById('paper-buy').addEventListener('click',()=>openTrade('long'));
+document.getElementById('paper-sell').addEventListener('click',()=>openTrade('short'));
+document.getElementById('paper-pos').addEventListener('click',e=>{
+  const b=e.target.closest('[data-close]');
+  if(b)closePos(+b.dataset.close);
+});
+document.getElementById('paper-reset').addEventListener('click',()=>{
+  if(!confirm('Remettre le compte démo à 100 000 $ ? Positions et historique seront effacés.'))return;
+  paper.cash=100000; paper.positions=[]; paper.history=[];
+  saveConfig(); updatePaper();
+});
+// prix des positions sur d'autres paires que celle affichée
+setInterval(async()=>{
+  const syms=[...new Set(paper.positions.map(p=>p.sym))].filter(s=>s!==state.symbol);
+  if(!syms.length)return;
+  try{
+    const rows=await fetchJSON('/api/v3/ticker/price?symbols='+encodeURIComponent(JSON.stringify(syms)));
+    for(const r of rows)lastPrices[r.symbol]=+r.price;
+    updatePaper();
+  }catch(e){}
+},10000);
 
 /* ---------- Démarrage ---------- */
 loadConfig();
