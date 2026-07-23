@@ -17,7 +17,14 @@
   --text:#E7EDF8; --muted:#7E8CA8; --faint:#4A5878;
   --up:#25D0A4; --down:#F45B7D; --accent:#7AA2FF;
   --sma:#F2C14E; --ema:#B48BFF; --bb:#6AA9FF; --vwap:#FF9D66;
+  --grid:rgba(41,54,74,.55); --chip-bg:rgba(10,17,31,.7);
   --radius:10px;
+}
+:root[data-theme="light"]{
+  --bg:#FFFFFF; --panel:#F1F5FB; --panel-2:#FFFFFF; --line:#D6DEEC;
+  --text:#0E1626; --muted:#5A6B88; --faint:#9AA8C0;
+  --accent:#2F6BFF;
+  --grid:rgba(150,165,190,.45); --chip-bg:rgba(255,255,255,.82);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
@@ -156,13 +163,13 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 }
 .legend-ohlc{
   font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted);
-  background:rgba(10,17,31,.7); backdrop-filter:blur(4px);
+  background:var(--chip-bg); backdrop-filter:blur(4px);
   padding:4px 8px; border-radius:6px; width:max-content;
 }
 .legend-ohlc b{color:var(--text);font-weight:600}
 .chip{
   display:flex; align-items:center; gap:7px; width:max-content;
-  background:rgba(10,17,31,.7); backdrop-filter:blur(4px);
+  background:var(--chip-bg); backdrop-filter:blur(4px);
   border:1px solid var(--line); border-radius:6px; padding:3px 8px;
   font-size:12px; font-family:'IBM Plex Mono',monospace; pointer-events:auto;
 }
@@ -251,6 +258,7 @@ footer{
     <button class="btn btn-ind" id="btn-ind" aria-haspopup="true" aria-expanded="false">
       <span class="fx">ƒx</span> Indicateurs
     </button>
+    <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
     <div class="ind-menu" id="ind-menu" role="menu">
       <h4>Superposés au prix</h4>
       <div class="ind-item" data-ind="sma">
@@ -1407,7 +1415,7 @@ function drawPrice(p,s,e,cw){
   const step=niceStep(hi-lo, p.h/55);
   for(let v=Math.ceil(lo/step)*step; v<hi; v+=step){
     const y=yOf(v);
-    ctx.strokeStyle='rgba(29,42,66,.55)';ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();
+    ctx.strokeStyle=css('--grid');ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();
     ctx.fillStyle=css('--muted');ctx.fillText(fmt(v), W-AXIS_W+8, y+4);
   }
 
@@ -1883,7 +1891,7 @@ function drawTimeAxis(s,e){
     if(i%every!==0)continue;
     const x=xOf(i);
     ctx.fillText(fmtTime(state.data[i].t), x-24, H-9);
-    ctx.strokeStyle='rgba(29,42,66,.45)';
+    ctx.strokeStyle=css('--grid');
     ctx.beginPath();ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,H-AXIS_H);ctx.stroke();
   }
 }
@@ -2163,6 +2171,17 @@ canvas.addEventListener('touchend',()=>{
 
 /* ---------- Menu indicateurs ---------- */
 const btnInd=document.getElementById('btn-ind'), menu=document.getElementById('ind-menu');
+const btnTheme=document.getElementById('btn-theme');
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  btnTheme.textContent = t==='light' ? '☀️' : '🌙';
+  btnTheme.title = t==='light' ? 'Passer en mode nuit' : 'Passer en mode jour';
+  try{localStorage.setItem('lumen-theme',t);}catch(e){}
+  if(typeof render==='function')render();
+}
+btnTheme.addEventListener('click',()=>
+  applyTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));
+applyTheme(localStorage.getItem('lumen-theme')||'dark');
 btnInd.addEventListener('click',()=>{
   const open=menu.classList.toggle('open');
   btnInd.setAttribute('aria-expanded',open);
