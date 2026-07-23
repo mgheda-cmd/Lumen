@@ -332,6 +332,7 @@ footer{
   <div class="price-block">
     <div class="last mono" id="last-price">—</div>
     <div class="chg mono" id="last-chg">—</div>
+    <div class="mono" id="countdown" style="font-size:11px;color:var(--muted)">—</div>
   </div>
 </header>
 
@@ -752,6 +753,8 @@ function stopFeeds(){
   if(ws){try{ws.close()}catch(e){} ws=null;}
   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
   if(demoTimer){clearInterval(demoTimer);demoTimer=null;}
+  if(typeof stopWatchdog==='function')stopWatchdog();
+  wsRetry=0; lastTick=0;
 }
 function applyKline(k){
   const d=state.data; if(!d.length)return;
@@ -761,34 +764,81 @@ function applyKline(k){
   else if(bar.t>last.t){d.push(bar);d.shift();}
   state.cache={}; updateHeader(); render();
 }
+let lastTick=0, wsRetry=0, watchdog=null;
 function startPolling(g){
+  if(pollTimer)clearInterval(pollTimer);
   pollTimer=setInterval(async()=>{
+    if(g!==gen)return;
     try{
       const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1`);
       if(g!==gen||!Array.isArray(rows)||!rows.length)return;
       const k=rows[0];
       applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]});
+      lastTick=Date.now();
     }catch(e){/* nouvelle tentative au tick suivant */}
-  },3000);
+  },1500);
+}
+function stopWatchdog(){if(watchdog){clearInterval(watchdog);watchdog=null;}}
+function startWatchdog(g){
+  stopWatchdog();
+  watchdog=setInterval(()=>{
+    if(g!==gen)return;
+    if(lastTick&&Date.now()-lastTick>20000){   // flux figé : on relance
+      lastTick=Date.now();
+      try{if(ws)ws.close();}catch(e){}
+      ws=null; startStream(g);
+    }
+  },5000);
+}
+async function resync(g){
+  try{
+    const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=3`);
+    if(g!==gen||!Array.isArray(rows))return;
+    for(const k of rows)applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]});
+    lastTick=Date.now();
+  }catch(e){}
 }
 function startStream(g){
+  if(g!==gen)return;
   try{
     ws=new WebSocket(`${wsHost}/ws/${state.symbol.toLowerCase()}@kline_${TF_MAP[state.tf]}`);
     let opened=false;
     const guard=setTimeout(()=>{
       if(!opened&&g===gen){try{ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}
     },4000);
-    ws.onopen=()=>{opened=true;clearTimeout(guard);if(g===gen)setStatus('live');};
+    ws.onopen=()=>{
+      opened=true;wsRetry=0;clearTimeout(guard);
+      if(g!==gen)return;
+      setStatus('live'); lastTick=Date.now();
+      if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+      startWatchdog(g); resync(g);
+    };
     ws.onmessage=ev=>{
       if(g!==gen)return;
       try{const m=JSON.parse(ev.data);
-        if(m.k)applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v});
+        if(m.k){applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v});lastTick=Date.now();}
       }catch(e){}
     };
+    ws.onclose=()=>{
+      if(g!==gen)return;
+      ws=null; wsRetry++;
+      setStatus('poll');
+      if(!pollTimer)startPolling(g);
+      if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
+    };
     ws.onerror=()=>{clearTimeout(guard);
-      if(g===gen){try{ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}};
+      if(g===gen&&!pollTimer){setStatus('poll');startPolling(g);}};
   }catch(e){setStatus('poll');startPolling(g);}
 }
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  const g=gen; resync(g);
+  if(!ws){wsRetry=0;startStream(g);}
+});
+window.addEventListener('online',()=>{
+  const g=gen; resync(g);
+  if(!ws){wsRetry=0;startStream(g);}
+});
 /* ---------- S/R multi-timeframe : données par unité de temps ---------- */
 const srStore={sym:null,data:{}};
 async function ensureSR(){
@@ -1190,6 +1240,14 @@ function drawPrice(p,s,e,cw){
     ctx.fillStyle=c;ctx.fillRect(W-AXIS_W,y-9,AXIS_W,18);
     ctx.fillStyle='#0A111F';ctx.font='600 11px "IBM Plex Mono",monospace';
     ctx.fillText(fmt(last.c),W-AXIS_W+8,y+4);
+    if(cdText&&cdText!=='—'){
+      ctx.fillStyle='rgba(19,31,53,.95)';
+      ctx.fillRect(W-AXIS_W,y+10,AXIS_W,15);
+      ctx.strokeStyle=c;ctx.lineWidth=1;
+      ctx.strokeRect(W-AXIS_W+.5,y+10.5,AXIS_W-1,14);
+      ctx.fillStyle=c;ctx.font='10px "IBM Plex Mono",monospace';
+      ctx.fillText(cdText,W-AXIS_W+8,y+21);
+    }
   }
 }
 
@@ -1907,6 +1965,38 @@ setInterval(async()=>{
     updatePaper();
   }catch(e){}
 },10000);
+
+/* ---------- Compte à rebours de clôture de bougie ---------- */
+let cdText='—';
+function candleCloseMs(){
+  const d=state.data;
+  if(!d.length)return null;
+  const span=state.tf*60000;
+  const open=d[d.length-1].t;
+  let left=open+span-Date.now();
+  // si l'horloge locale décale, on se recale sur la grille de temps
+  if(left<0||left>span)left=span-((Date.now()-open)%span);
+  return left;
+}
+function fmtCountdown(ms){
+  if(ms==null)return '—';
+  const s=Math.max(0,Math.floor(ms/1000));
+  const h=Math.floor(s/3600), m=Math.floor(s%3600/60), sec=s%60;
+  const p=n=>String(n).padStart(2,'0');
+  return h>0?`${h}:${p(m)}:${p(sec)}`:`${p(m)}:${p(sec)}`;
+}
+function tickCountdown(){
+  const left=candleCloseMs();
+  cdText=fmtCountdown(left);
+  const el=document.getElementById('countdown');
+  if(el){
+    el.textContent=cdText;
+    // rouge dans les 10 dernières secondes
+    el.style.color=(left!=null&&left<10000)?'#F45B7D':'var(--muted)';
+  }
+  if(state.data.length)render();
+}
+setInterval(tickCountdown,1000);
 
 /* ---------- Démarrage ---------- */
 loadConfig();
