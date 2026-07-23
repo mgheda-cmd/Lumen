@@ -234,6 +234,11 @@ footer{
         <span class="name">OB MTF <span class="desc">UT supérieure</span></span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="sr">
+        <span class="dot" style="background:#A8B8D8"></span>
+        <span class="name">Supports / Résist. <span class="desc">Niveaux pivots auto</span></span>
+        <span class="state">off</span>
+      </div>
       <h4>Panneaux séparés</h4>
       <div class="ind-item" data-ind="volume">
         <span class="dot" style="background:var(--faint)"></span>
@@ -471,7 +476,35 @@ const calc = {
   fvg(d){return this.finalize(this.fvgZones(d),d,'fvg');},
   fvgm(d,f){return this.finalize(this.fvgZones(this.aggregate(d,f)),d,'fvg');},
   ob(d){return this.finalize(this.obZones(d),d,'ob');},
-  obm(d,f){return this.finalize(this.obZones(this.aggregate(d,f)),d,'ob');}
+  obm(d,f){return this.finalize(this.obZones(this.aggregate(d,f)),d,'ob');},
+  sr(d){
+    const L=5, piv=[];
+    for(let i=L;i<d.length-L;i++){
+      let ph=true,pl=true;
+      for(let k=1;k<=L;k++){
+        if(d[i].h<d[i-k].h||d[i].h<d[i+k].h)ph=false;
+        if(d[i].l>d[i-k].l||d[i].l>d[i+k].l)pl=false;
+      }
+      if(ph)piv.push({p:d[i].h,i});
+      if(pl)piv.push({p:d[i].l,i});
+    }
+    if(!piv.length)return [];
+    const atr=this.atr(d,14);
+    const ref=atr[d.length-1]||(d[d.length-1].c*0.005);
+    const tol=ref*0.6;
+    piv.sort((a,b)=>a.p-b.p);
+    const clusters=[];
+    for(const v of piv){
+      const c=clusters[clusters.length-1];
+      if(c&&Math.abs(v.p-c.sum/c.n)<=tol){c.sum+=v.p;c.n++;c.i=Math.min(c.i,v.i);}
+      else clusters.push({sum:v.p,n:1,i:v.i});
+    }
+    const lastC=d[d.length-1].c;
+    return clusters
+      .map(c=>({p:c.sum/c.n,touches:c.n,i:c.i,res:c.sum/c.n>=lastC}))
+      .sort((a,b)=>b.touches-a.touches||b.i-a.i)
+      .slice(0,10);
+  }
 };
 /* Unité de temps supérieure pour le MTF : 1m→15m, 15m→1H, 1H→4H, 4H→1J, 1J→1S */
 const HTF_FACTOR={1:15,15:4,60:4,240:6,1440:7};
@@ -493,6 +526,7 @@ const state = {
     fvgm:{on:false},
     ob:{on:false},
     obm:{on:false},
+    sr:{on:false},
     volume:{on:true},
     rsi:{on:false,period:14},
     macd:{on:false},
@@ -652,6 +686,7 @@ function getInd(key){
     if(key==='fvgm')state.cache[ck]=calc.fvgm(d,f);
     if(key==='ob')state.cache[ck]=calc.ob(d);
     if(key==='obm')state.cache[ck]=calc.obm(d,f);
+    if(key==='sr')state.cache[ck]=calc.sr(d);
   }
   return state.cache[ck];
 }
@@ -873,6 +908,26 @@ function drawPrice(p,s,e,cw){
     }
   }
 
+  // supports / résistances
+  if(state.indicators.sr.on){
+    const lv=getInd('sr');
+    ctx.font='10px "IBM Plex Mono",monospace';
+    for(const l of lv){
+      const y=yOf(l.p);
+      if(y<p.y+4||y>p.y+p.h-4)continue;
+      const base=l.res?'rgba(244,91,125,':'rgba(37,208,164,';
+      ctx.strokeStyle=base+(l.touches>=3?'.75)':'.45)');
+      ctx.lineWidth=l.touches>=3?1.6:1;
+      ctx.beginPath();
+      ctx.moveTo(Math.max(xOf(l.i)-cw/2,0),y+.5);
+      ctx.lineTo(W-AXIS_W,y+.5);
+      ctx.stroke();
+      ctx.fillStyle=base+'.9)';
+      ctx.fillText(fmt(l.p), W-AXIS_W-78, y-3);
+    }
+    ctx.lineWidth=1;
+  }
+
   // ligne du dernier prix
   const last=d[d.length-1];
   const y=yOf(last.c);
@@ -1059,6 +1114,7 @@ const IND_META={
   fvgm:{label:()=>'FVG MTF '+(HTF_NAME[state.tf]||''),color:'#1B8F72'},
   ob:{label:()=>'Order Blocks',color:'var(--accent)'},
   obm:{label:()=>'OB MTF '+(HTF_NAME[state.tf]||''),color:'#FF9D66'},
+  sr:{label:()=>'S/R auto',color:'#A8B8D8'},
 };
 function updateChips(){
   const i=hoverIndex()??state.data.length-1;
