@@ -1097,6 +1097,70 @@ function drawPrice(p,s,e,cw){
     ctx.lineWidth=1;
   }
 
+  // ---- trades démo : entrées, sorties et PnL en direct ----
+  {
+    const px=d[d.length-1].c;
+    const tSpan=state.tf*60000;
+    const xForTime=ts=>{
+      const i=(ts-d[0].t)/tSpan;
+      return xOf(Math.max(-2,Math.min(d.length+2,i)));
+    };
+    ctx.font='10px "IBM Plex Mono",monospace';
+    // trades clôturés : entrée → sortie
+    for(const h of paper.history){
+      if(h.sym!==state.symbol)continue;
+      const y0=yOf(h.entry), y1=yOf(h.exit);
+      if(!isFinite(y0)||!isFinite(y1))continue;
+      const x0=xForTime(h.t0||h.t), x1=xForTime(h.t);
+      if(x1<-40||x0>W-AXIS_W)continue;
+      const col=h.pnl>=0?'rgba(37,208,164,':'rgba(244,91,125,';
+      ctx.strokeStyle=col+'.55)';ctx.lineWidth=1.2;
+      ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();
+      ctx.setLineDash([]);
+      // marqueurs
+      ctx.fillStyle=col+'.9)';
+      const tri=(x,y,up)=>{ctx.beginPath();
+        ctx.moveTo(x,y+(up?-6:6));ctx.lineTo(x-5,y+(up?4:-4));ctx.lineTo(x+5,y+(up?4:-4));
+        ctx.closePath();ctx.fill();};
+      tri(x0,y0,h.side==='long');
+      ctx.beginPath();ctx.arc(x1,y1,3.5,0,Math.PI*2);ctx.fill();
+      ctx.fillText((h.pnl>=0?'+':'')+h.pnl.toFixed(0)+'$', x1+7, y1+3);
+    }
+    // positions ouvertes : ligne d'entrée + PnL live
+    for(const pos of paper.positions){
+      if(pos.sym!==state.symbol)continue;
+      const y=yOf(pos.entry);
+      if(y<p.y-20||y>p.y+p.h+20)continue;
+      const gain=(pos.side==='long'?(px-pos.entry):(pos.entry-px))*pos.qty;
+      const col=gain>=0?'#25D0A4':'#F45B7D';
+      const x0=xForTime(pos.t);
+      // zone entre l'entrée et le prix actuel
+      const yNow=yOf(px);
+      ctx.fillStyle=(gain>=0?'rgba(37,208,164,':'rgba(244,91,125,')+'.10)';
+      ctx.fillRect(Math.max(x0,0),Math.min(y,yNow),
+        (W-AXIS_W)-Math.max(x0,0),Math.abs(yNow-y)||1);
+      // ligne d'entrée
+      ctx.strokeStyle=col;ctx.lineWidth=1.4;
+      ctx.setLineDash([6,3]);
+      ctx.beginPath();ctx.moveTo(Math.max(x0,0),y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();
+      ctx.setLineDash([]);
+      // marqueur d'entrée
+      ctx.fillStyle=col;
+      ctx.beginPath();
+      if(pos.side==='long'){ctx.moveTo(x0,y-7);ctx.lineTo(x0-5,y+3);ctx.lineTo(x0+5,y+3);}
+      else{ctx.moveTo(x0,y+7);ctx.lineTo(x0-5,y-3);ctx.lineTo(x0+5,y-3);}
+      ctx.closePath();ctx.fill();
+      // étiquette PnL live à droite
+      const lbl=(pos.side==='long'?'▲ ':'▼ ')+(gain>=0?'+':'')+gain.toFixed(2)+' $';
+      const w=ctx.measureText(lbl).width+12;
+      ctx.fillStyle=col;
+      ctx.fillRect(W-AXIS_W-w-4,y-8,w,16);
+      ctx.fillStyle='#0A111F';
+      ctx.fillText(lbl,W-AXIS_W-w+2,y+3);
+    }
+  }
+
   // ligne du dernier prix
   const last=d[d.length-1];
   const y=yOf(last.c);
@@ -1752,7 +1816,8 @@ function closePos(i){
   const pnl=(p.side==='long'?(px-p.entry):(p.entry-px))*p.qty;
   const fee=p.qty*px*0.001;
   paper.cash+=p.margin+pnl-fee;
-  paper.history.unshift({sym:p.sym,side:p.side,entry:p.entry,exit:px,pnl:pnl-fee,t:Date.now()});
+  paper.history.unshift({sym:p.sym,side:p.side,entry:p.entry,exit:px,pnl:pnl-fee,
+    t:Date.now(),t0:p.t});
   paper.history=paper.history.slice(0,50);
   paper.positions.splice(i,1);
   saveConfig(); updatePaper();
