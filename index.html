@@ -143,14 +143,16 @@ footer{
   <span id="status" class="mono" style="font-size:10px;letter-spacing:.06em;color:#7E8CA8">CHARGEMENT…</span>
   <div class="sep"></div>
 
-  <select id="symbol" aria-label="Instrument">
-    <option value="BTCUSDT">BTC / USDT</option>
-    <option value="ETHUSDT">ETH / USDT</option>
-    <option value="SOLUSDT">SOL / USDT</option>
-    <option value="BNBUSDT">BNB / USDT</option>
-    <option value="XRPUSDT">XRP / USDT</option>
-    <option value="DOGEUSDT">DOGE / USDT</option>
-  </select>
+  <div class="ind-wrap">
+    <button class="btn" id="symbol-btn" aria-haspopup="true">BTC / USDT ▾</button>
+    <div class="ind-menu" id="sym-menu">
+      <input id="sym-search" type="text" placeholder="Rechercher une paire USDT…" autocomplete="off"
+        style="width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);
+        border-radius:8px;color:var(--text);padding:8px 10px;font-family:'IBM Plex Mono',monospace;
+        font-size:13px;margin-bottom:6px">
+      <div id="sym-list"></div>
+    </div>
+  </div>
 
   <div class="tf-group" role="group" aria-label="Unité de temps">
     <button data-tf="1">1m</button>
@@ -209,6 +211,27 @@ footer{
       <div class="ind-item" data-ind="st">
         <span class="dot" style="background:var(--up)"></span>
         <span class="name">SuperTrend <span class="desc">10 × 3</span></span>
+        <span class="state">off</span>
+      </div>
+      <h4>Smart Money Concepts</h4>
+      <div class="ind-item" data-ind="fvg">
+        <span class="dot" style="background:#25D0A4"></span>
+        <span class="name">FVG <span class="desc">Fair Value Gaps</span></span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="fvgm">
+        <span class="dot" style="background:#1B8F72"></span>
+        <span class="name">FVG MTF <span class="desc">UT supérieure</span></span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="ob">
+        <span class="dot" style="background:var(--accent)"></span>
+        <span class="name">Order Blocks <span class="desc">Blocs d'ordres</span></span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="obm">
+        <span class="dot" style="background:#FF9D66"></span>
+        <span class="name">OB MTF <span class="desc">UT supérieure</span></span>
         <span class="state">off</span>
       </div>
       <h4>Panneaux séparés</h4>
@@ -281,7 +304,7 @@ const TF_MAP = {1:'1m',15:'15m',60:'1h',240:'4h',1440:'1d'};
 const N_BARS = 500;
 
 function genData(symbol, tfMin){
-  const cfg = SYMBOLS[symbol];
+  const cfg = SYMBOLS[symbol] || {seed:(symbol.length*97)%1000, base:100, vol:0.02};
   const rnd = mulberry32(cfg.seed * 1000 + tfMin);
   const volScale = Math.sqrt(tfMin/60);
   const bars = [];
@@ -369,8 +392,90 @@ const calc = {
     for(let i=0;i<d.length;i++){
       if(i>=26&&T[i-26]!=null&&K[i-26]!=null)A[i]=(T[i-26]+K[i-26])/2;
       if(i>=26+51)B[i]=(hh(i-26,52)+ll(i-26,52))/2;}
-    return {T,K,A,B};}
+    return {T,K,A,B};},
+  /* --- Smart Money Concepts : FVG & Order Blocks --- */
+  aggregate(d,f){
+    const out=[];
+    for(let i=0;i<d.length;i+=f){
+      const c=d.slice(i,i+f);
+      out.push({t:c[0].t,o:c[0].o,c:c[c.length-1].c,
+        h:Math.max(...c.map(b=>b.h)),l:Math.min(...c.map(b=>b.l)),
+        i0:i,i1:Math.min(i+c.length-1,d.length-1)});
+    }
+    return out;
+  },
+  fvgZones(bars){
+    const z=[];
+    for(let i=2;i<bars.length;i++){
+      const a=bars[i-2],c=bars[i];
+      const iDraw='i0'in bars[i-1]?bars[i-1].i0:i-1;
+      const iCheck='i1'in bars[i]?bars[i].i1:i;
+      if(c.l>a.h)z.push({type:'bull',top:c.l,bot:a.h,iDraw,iCheck});
+      if(c.h<a.l)z.push({type:'bear',top:a.l,bot:c.h,iDraw,iCheck});
+    }
+    return z;
+  },
+  obZones(bars){
+    const z=[],N=bars.length,L=3;
+    const pivH=[],pivL=[];
+    for(let i=L;i<N-L;i++){
+      let ph=true,pl=true;
+      for(let k=1;k<=L;k++){
+        if(bars[i].h<bars[i-k].h||bars[i].h<bars[i+k].h)ph=false;
+        if(bars[i].l>bars[i-k].l||bars[i].l>bars[i+k].l)pl=false;
+      }
+      if(ph)pivH.push(i); if(pl)pivL.push(i);
+    }
+    let lastH=null,lastL=null,hp=0,lp=0;
+    for(let i=0;i<N;i++){
+      while(hp<pivH.length&&pivH[hp]+L<=i){lastH=pivH[hp];hp++;}
+      while(lp<pivL.length&&pivL[lp]+L<=i){lastL=pivL[lp];lp++;}
+      if(lastH!=null&&bars[i].c>bars[lastH].h){
+        for(let j=i-1;j>Math.max(i-11,lastH-1);j--){
+          if(bars[j].c<bars[j].o){
+            z.push({type:'bull',top:bars[j].h,bot:bars[j].l,
+              iDraw:'i0'in bars[j]?bars[j].i0:j,
+              iCheck:'i1'in bars[i]?bars[i].i1:i});
+            break;}
+        }
+        lastH=null;
+      }
+      if(lastL!=null&&bars[i].c<bars[lastL].l){
+        for(let j=i-1;j>Math.max(i-11,lastL-1);j--){
+          if(bars[j].c>bars[j].o){
+            z.push({type:'bear',top:bars[j].h,bot:bars[j].l,
+              iDraw:'i0'in bars[j]?bars[j].i0:j,
+              iCheck:'i1'in bars[i]?bars[i].i1:i});
+            break;}
+        }
+        lastL=null;
+      }
+    }
+    return z;
+  },
+  finalize(zones,d,kind){
+    for(const z of zones){
+      z.end=null;
+      for(let j=z.iCheck+1;j<d.length;j++){
+        if(kind==='fvg'){
+          if(z.type==='bull'&&d[j].l<=z.bot){z.end=j;break;}
+          if(z.type==='bear'&&d[j].h>=z.top){z.end=j;break;}
+        }else{
+          if(z.type==='bull'&&d[j].c<z.bot){z.end=j;break;}
+          if(z.type==='bear'&&d[j].c>z.top){z.end=j;break;}
+        }
+      }
+    }
+    return zones.slice(-60);
+  },
+  fvg(d){return this.finalize(this.fvgZones(d),d,'fvg');},
+  fvgm(d,f){return this.finalize(this.fvgZones(this.aggregate(d,f)),d,'fvg');},
+  ob(d){return this.finalize(this.obZones(d),d,'ob');},
+  obm(d,f){return this.finalize(this.obZones(this.aggregate(d,f)),d,'ob');}
 };
+/* Unité de temps supérieure pour le MTF : 1m→15m, 15m→1H, 1H→4H, 4H→1J, 1J→1S */
+const HTF_FACTOR={1:15,15:4,60:4,240:6,1440:7};
+const HTF_NAME={1:'15m',15:'1H',60:'4H',240:'1J',1440:'1S'};
 
 /* ---------- État global ---------- */
 const state = {
@@ -384,6 +489,10 @@ const state = {
     vwap:{on:false},
     ichi:{on:false},
     st:{on:false},
+    fvg:{on:false},
+    fvgm:{on:false},
+    ob:{on:false},
+    obm:{on:false},
     volume:{on:true},
     rsi:{on:false,period:14},
     macd:{on:false},
@@ -538,6 +647,11 @@ function getInd(key){
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
+    const f=HTF_FACTOR[state.tf]||4;
+    if(key==='fvg')state.cache[ck]=calc.fvg(d);
+    if(key==='fvgm')state.cache[ck]=calc.fvgm(d,f);
+    if(key==='ob')state.cache[ck]=calc.ob(d);
+    if(key==='obm')state.cache[ck]=calc.obm(d,f);
   }
   return state.cache[ck];
 }
@@ -690,6 +804,16 @@ function drawPrice(p,s,e,cw){
     plotLine(b.mid,s,e,yOf,'rgba(106,169,255,.9)',1);
   }
 
+  // zones SMC (FVG / Order Blocks) — dessinées derrière tout le reste
+  if(state.indicators.fvg.on)
+    drawZoneSet(getInd('fvg'),s,e,yOf,cw,'rgba(37,208,164,.13)','rgba(244,91,125,.13)',false);
+  if(state.indicators.fvgm.on)
+    drawZoneSet(getInd('fvgm'),s,e,yOf,cw,'rgba(37,208,164,.09)','rgba(244,91,125,.09)',true);
+  if(state.indicators.ob.on)
+    drawZoneSet(getInd('ob'),s,e,yOf,cw,'rgba(122,162,255,.16)','rgba(255,157,102,.16)',false);
+  if(state.indicators.obm.on)
+    drawZoneSet(getInd('obm'),s,e,yOf,cw,'rgba(122,162,255,.10)','rgba(255,157,102,.10)',true);
+
   // nuage Ichimoku (sous le prix)
   if(state.indicators.ichi.on){
     const ic=getInd('ichi');
@@ -762,6 +886,25 @@ function drawPrice(p,s,e,cw){
   }
 }
 
+function drawZoneSet(zones,s,e,yOf,cw,colBull,colBear,withBorder){
+  for(const z of zones){
+    if(z.iDraw>e-1)continue;
+    if(z.end!=null&&z.end<s)continue;
+    const x0=Math.max(xOf(z.iDraw)-cw/2, 0);
+    const x1=z.end==null ? (W-AXIS_W)
+      : Math.min(xOf(Math.min(z.end,e-1))+cw/2, W-AXIS_W);
+    if(x1<=x0)continue;
+    const y0=yOf(z.top), y1=yOf(z.bot);
+    ctx.fillStyle=z.type==='bull'?colBull:colBear;
+    ctx.fillRect(x0,y0,x1-x0,Math.max(1,y1-y0));
+    if(withBorder){
+      ctx.strokeStyle=z.type==='bull'?'rgba(37,208,164,.45)':'rgba(244,91,125,.45)';
+      ctx.setLineDash([3,3]);
+      ctx.strokeRect(x0+.5,y0+.5,Math.max(1,x1-x0-1),Math.max(1,y1-y0-1));
+      ctx.setLineDash([]);
+    }
+  }
+}
 function plotLine(arr,s,e,yOf,color,w){
   ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();let st=false;
   for(let i=s;i<e;i++){
@@ -912,6 +1055,10 @@ const IND_META={
   st:{label:()=>'SuperTrend 10×3',color:'#25D0A4'},
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
+  fvg:{label:()=>'FVG',color:'#25D0A4'},
+  fvgm:{label:()=>'FVG MTF '+(HTF_NAME[state.tf]||''),color:'#1B8F72'},
+  ob:{label:()=>'Order Blocks',color:'var(--accent)'},
+  obm:{label:()=>'OB MTF '+(HTF_NAME[state.tf]||''),color:'#FF9D66'},
 };
 function updateChips(){
   const i=hoverIndex()??state.data.length-1;
@@ -982,7 +1129,13 @@ btnInd.addEventListener('click',()=>{
   btnInd.setAttribute('aria-expanded',open);
 });
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.ind-wrap')){menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');}
+  if(!e.target.closest('.ind-wrap')){
+    menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');
+    if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
+  }
+});
+btnInd.addEventListener('click',()=>{
+  if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
 });
 menu.querySelectorAll('.ind-item').forEach(item=>{
   const key=item.dataset.ind;
@@ -1009,8 +1162,48 @@ function syncMenu(){
 }
 
 /* ---------- Sélecteurs d'en-tête ---------- */
-document.getElementById('symbol').addEventListener('change',e=>{
-  state.symbol=e.target.value;loadData();
+/* ---------- Sélecteur de paires USDT (toutes les paires Binance) ---------- */
+const symBtn=document.getElementById('symbol-btn');
+const symMenu=document.getElementById('sym-menu');
+const symSearch=document.getElementById('sym-search');
+const symList=document.getElementById('sym-list');
+let allPairs=null;
+function labelOf(sym){return sym.replace(/USDT$/,'')+' / USDT';}
+function renderSymList(filter){
+  const f=(filter||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const src=allPairs||Object.keys(SYMBOLS);
+  const pairs=src.filter(p=>p.includes(f)).slice(0,200);
+  symList.innerHTML=pairs.map(p=>
+    `<div class="ind-item" data-sym="${p}"><span class="name">${labelOf(p)}</span>`+
+    (p===state.symbol?'<span class="state" style="color:var(--up);border-color:var(--up)">actif</span>':'')+
+    `</div>`).join('')||'<div class="ind-item"><span class="name" style="color:var(--muted)">Aucune paire trouvée</span></div>';
+}
+async function loadPairs(){
+  if(allPairs)return;
+  try{
+    const info=await fetchJSON('/api/v3/exchangeInfo');
+    const list=(info.symbols||[])
+      .filter(s=>s.quoteAsset==='USDT'&&s.status==='TRADING'&&s.isSpotTradingAllowed)
+      .map(s=>s.symbol).sort();
+    if(list.length)allPairs=list;
+  }catch(e){/* on garde la liste de base */}
+  renderSymList(symSearch.value);
+}
+symBtn.addEventListener('click',()=>{
+  const open=symMenu.classList.toggle('open');
+  if(open){
+    menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');
+    symSearch.value='';renderSymList('');loadPairs();
+  }
+});
+symSearch.addEventListener('input',()=>renderSymList(symSearch.value));
+symList.addEventListener('click',e=>{
+  const it=e.target.closest('[data-sym]');
+  if(!it)return;
+  state.symbol=it.dataset.sym;
+  symBtn.textContent=labelOf(state.symbol)+' ▾';
+  symMenu.classList.remove('open');
+  loadData();
 });
 document.querySelectorAll('.tf-group button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tf-group button').forEach(x=>x.classList.remove('active'));
