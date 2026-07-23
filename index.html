@@ -79,7 +79,7 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 }
 .ind-item{
   display:flex; align-items:center; gap:10px; padding:8px 10px;
-  border-radius:8px; cursor:pointer; transition:background .12s;
+  border-radius:8px; cursor:pointer; transition:background .12s; flex-wrap:wrap;
 }
 .ind-item:hover{background:rgba(122,162,255,.08)}
 .ind-item .dot{width:9px;height:9px;border-radius:50%;flex:none}
@@ -296,6 +296,16 @@ footer{
         <span class="srtf mtf" data-ind2="macd" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="macd" data-tf="60">1H</span>
         <span class="srtf mtf" data-ind2="macd" data-tf="240">4H</span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="imp">
+        <span class="dot" style="background:#7CE38B"></span>
+        <span class="name">Impulse MACD <span class="desc">LazyBear</span></span>
+        <input type="number" min="5" max="200" value="34" aria-label="Période Impulse MACD">
+        <span class="srtf mtf on" data-ind2="imp" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="15">15m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="60">1H</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="stoch">
@@ -565,6 +575,36 @@ const calc = {
   fvgm(d,f){return this.finalize(this.fvgZones(this.aggregate(d,f)),d,'fvg');},
   ob(d){return this.finalize(this.obZones(d),d,'ob');},
   obm(d,f){return this.finalize(this.obZones(this.aggregate(d,f)),d,'ob');},
+  /* --- Impulse MACD (LazyBear) : canal SMMA + ZLEMA --- */
+  impmacd(d,len,sig){
+    len=len||34; sig=sig||9;
+    const smma=(v,l)=>{const o=new Array(v.length).fill(null);let p=null;
+      for(let i=0;i<v.length;i++){
+        if(i===l-1){let s=0;for(let j=0;j<l;j++)s+=v[j];p=s/l;o[i]=p;}
+        else if(i>=l){p=(p*(l-1)+v[i])/l;o[i]=p;}
+      }return o;};
+    const em=(v,l)=>{const o=new Array(v.length).fill(null);const k=2/(l+1);let e=null,c=0;
+      for(let i=0;i<v.length;i++){const x=v[i];if(x==null)continue;
+        e=e==null?x:x*k+e*(1-k);c++;if(c>=l)o[i]=e;}return o;};
+    const hi=smma(d.map(b=>b.h),len), lo=smma(d.map(b=>b.l),len);
+    const src=d.map(b=>(b.h+b.l+b.c)/3);
+    const e1=em(src,len), e2=em(e1,len);
+    const mi=e1.map((v,i)=>(v!=null&&e2[i]!=null)?v+(v-e2[i]):null); // ZLEMA
+    const md=[],col=[];
+    for(let i=0;i<d.length;i++){
+      if(mi[i]==null||hi[i]==null||lo[i]==null){md.push(null);col.push(null);continue;}
+      md.push(mi[i]>hi[i]?mi[i]-hi[i]:mi[i]<lo[i]?mi[i]-lo[i]:0);
+      col.push(src[i]>mi[i]?(src[i]>hi[i]?0:1):(src[i]<lo[i]?3:2));
+    }
+    const sb=new Array(d.length).fill(null);
+    for(let i=sig-1;i<d.length;i++){
+      let s=0,ok=true;
+      for(let j=i-sig+1;j<=i;j++){if(md[j]==null){ok=false;break;}s+=md[j];}
+      if(ok)sb[i]=s/sig;
+    }
+    const sh=md.map((v,i)=>(v!=null&&sb[i]!=null)?v-sb[i]:null);
+    return {md,sb,sh,col};
+  },
   sr(d){
     const L=5, piv=[];
     for(let i=L;i<d.length-L;i++){
@@ -618,6 +658,7 @@ const state = {
     volume:{on:true},
     rsi:{on:false,period:14},
     macd:{on:false,tf:'chart'},
+    imp:{on:false,period:34,tf:'chart'},
     stoch:{on:false,period:14},
     atr:{on:false,period:14},
   },
@@ -653,7 +694,7 @@ function mergeConfig(c){
   }
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
-    for(const k of ['rsi','macd','stoch','atr'])
+    for(const k of ['rsi','macd','imp','stoch','atr'])
       if(typeof c.paneH[k]==='number'&&c.paneH[k]>=40&&c.paneH[k]<=800)
         state.paneH[k]=c.paneH[k];
   }
@@ -945,6 +986,20 @@ function getInd(key){
     if(key==='bb')  state.cache[ck]=calc.bb(d,ind.period);
     if(key==='vwap')state.cache[ck]=calc.vwap(d);
     if(key==='rsi') state.cache[ck]=calc.rsi(d,ind.period);
+    if(key==='imp'){
+      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
+      if(!mtf)state.cache[ck]=calc.impmacd(d,ind.period,9);
+      else{
+        ensureMTF(mtf);
+        const bars=mtfStore.data[mtf];
+        if(!bars)state.cache[ck]={md:[],sb:[],sh:[],col:[]};
+        else{
+          const m=calc.impmacd(bars,ind.period,9);
+          state.cache[ck]={md:mapHTF(bars,m.md),sb:mapHTF(bars,m.sb),
+            sh:mapHTF(bars,m.sh),col:mapHTF(bars,m.col)};
+        }
+      }
+    }
     if(key==='macd'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       if(!mtf)state.cache[ck]=calc.macd(d);
@@ -1022,6 +1077,7 @@ function computePanes(){
   const subs=[];
   if(state.indicators.rsi.on) subs.push('rsi');
   if(state.indicators.macd.on) subs.push('macd');
+  if(state.indicators.imp.on) subs.push('imp');
   if(state.indicators.stoch.on) subs.push('stoch');
   if(state.indicators.atr.on) subs.push('atr');
   const avail=H-AXIS_H;
@@ -1063,6 +1119,7 @@ function render(){
     if(p.key==='price') drawPrice(p,s,e,cw);
     else if(p.key==='rsi') drawRSI(p,s,e,cw);
     else if(p.key==='macd') drawMACD(p,s,e,cw);
+    else if(p.key==='imp') drawImp(p,s,e,cw);
     else if(p.key==='stoch') drawStoch(p,s,e,cw);
     else if(p.key==='atr') drawATR(p,s,e,cw);
     // séparation
@@ -1392,6 +1449,44 @@ function drawMACD(p,s,e,cw){
   subLabel(p,'MACD 12/26/9'+(tfName?' · '+tfName:''),
     m.line[i]!=null?m.line[i].toFixed(2):'—', css('--accent'));
 }
+const IMP_COLORS=['#7CE38B','#1B8F72','#F2C14E','#F45B7D']; // lime, vert, orange, rouge
+function drawImp(p,s,e,cw){
+  const m=getInd('imp');
+  let mx=0;
+  for(let i=s;i<e;i++)for(const v of [m.md[i],m.sb[i],m.sh[i]])
+    if(v!=null)mx=Math.max(mx,Math.abs(v));
+  mx=mx||1;
+  const yOf=v=>p.y+p.h/2-(v/mx)*(p.h/2-10);
+  p.yOf=yOf;p.lo=-mx;p.hi=mx;
+  // ligne zéro
+  ctx.strokeStyle='rgba(74,88,120,.6)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,p.y+p.h/2+.5);ctx.lineTo(W-AXIS_W,p.y+p.h/2+.5);ctx.stroke();
+  const y0=p.y+p.h/2;
+  // histogramme principal, coloré selon la position du prix dans le canal
+  const bw=Math.max(1,cw*0.7);
+  for(let i=s;i<e;i++){
+    if(m.md[i]==null)continue;
+    const x=xOf(i), y=yOf(m.md[i]);
+    ctx.fillStyle=IMP_COLORS[m.col[i]!=null?m.col[i]:2];
+    ctx.fillRect(x-bw/2,Math.min(y,y0),bw,Math.abs(y-y0)||1);
+  }
+  // histogramme de différence (md - signal)
+  const bw2=Math.max(1,cw*0.28);
+  for(let i=s;i<e;i++){
+    if(m.sh[i]==null)continue;
+    const x=xOf(i), y=yOf(m.sh[i]);
+    ctx.fillStyle='rgba(122,162,255,.75)';
+    ctx.fillRect(x-bw2/2,Math.min(y,y0),bw2,Math.abs(y-y0)||1);
+  }
+  // ligne de signal
+  plotLine(m.sb,s,e,yOf,'rgba(231,237,248,.7)',1.3);
+  const i=hoverIndex()??state.data.length-1;
+  const tfl=state.indicators.imp.tf;
+  const tfName=(tfl&&tfl!=='chart')?({'15':'15m','60':'1H','240':'4H'}[tfl]||''):'';
+  const val=m.md[i]!=null?m.md[i].toFixed(2):'—';
+  subLabel(p,'Impulse MACD '+state.indicators.imp.period+(tfName?' · '+tfName:''),
+    val, m.col[i]!=null?IMP_COLORS[m.col[i]]:css('--muted'));
+}
 function drawStoch(p,s,e,cw){
   const st=getInd('stoch');
   const yOf=v=>p.y+8+(1-v/100)*(p.h-16);
@@ -1493,6 +1588,7 @@ const IND_META={
   ob:{label:()=>'Order Blocks',color:'var(--accent)'},
   obm:{label:()=>'OB MTF '+(HTF_NAME[state.tf]||''),color:'#FF9D66'},
   sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
+  imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
 };
 function updateChips(){
   const i=hoverIndex()??state.data.length-1;
@@ -1501,7 +1597,7 @@ function updateChips(){
   let html=`<div class="legend-ohlc">${state.symbol} · O <b>${fmt(b.o)}</b> H <b>${fmt(b.h)}</b> L <b>${fmt(b.l)}</b> C <b class="chg ${cls}">${fmt(b.c)}</b>`
     + (state.indicators.volume.on?` · Vol <b>${fmtCompact(b.v)}</b>`:'') + `</div>`;
   for(const [k,ind] of Object.entries(state.indicators)){
-    if(!ind.on||['volume','rsi','macd','stoch','atr'].includes(k))continue;
+    if(!ind.on||['volume','rsi','macd','imp','stoch','atr'].includes(k))continue;
     const m=IND_META[k];
     let val='';
     if(k==='sma'||k==='ema'||k==='ema2'||k==='vwap'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'—';}
