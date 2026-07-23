@@ -247,6 +247,15 @@ footer{
         <span class="name">SuperTrend <span class="desc">10 × 3</span></span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="lrc">
+        <span class="dot" style="background:#2196F3"></span>
+        <span class="name">Régression linéaire <span class="desc">Canal ± 2 σ</span></span>
+        <input type="number" min="10" max="200" value="100" aria-label="Longueur régression">
+        <span class="srtf on" data-tf="extend">Étendre</span>
+        <span class="srtf" data-tf="fib">Fib</span>
+        <span class="srtf on" data-tf="broken">Cassé</span>
+        <span class="state">off</span>
+      </div>
       <h4>Smart Money Concepts</h4>
       <div class="ind-item" data-ind="ob">
         <span class="dot" style="background:var(--accent)"></span>
@@ -620,6 +629,59 @@ const calc = {
     return out.slice(-8);
   },
 
+  /* --- Canal de régression linéaire (Linear Regression Channel) ---
+     Moindres carrés sur les `len` dernières bougies, methode TradingView :
+     x = nombre de bougies en arriere, donc une pente POSITIVE = tendance
+     BAISSIERE. Les bandes sont a +/- mult x l'ecart-type des residus. */
+  linregAt(d,end,len,mult){
+    if(end<len-1)return null;
+    let sumX=0,sumY=0,sumXY=0,sumXX=0;
+    for(let i=0;i<len;i++){
+      const val=d[end-i].c, per=i+1;
+      sumX+=per; sumY+=val; sumXX+=per*per; sumXY+=val*per;
+    }
+    const den=len*sumXX-sumX*sumX;
+    if(den===0)return null;
+    const slope=(len*sumXY-sumX*sumY)/den;
+    const average=sumY/len;
+    const intercept=average-slope*sumX/len+slope;
+    // ecart-type des residus + coefficient de Pearson, comme le script d'origine
+    let acc=0,dsxx=0,dsyy=0,dsxy=0;
+    const per=len-1, daY=intercept+slope*per/2;
+    let val=intercept;
+    for(let j=0;j<len;j++){
+      const price=d[end-j].c;
+      const dxt=price-average, dyt=val-daY, res=price-val;
+      acc+=res*res; dsxx+=dxt*dxt; dsyy+=dyt*dyt; dsxy+=dxt*dyt;
+      val+=slope;
+    }
+    const dev=Math.sqrt(acc/(per===0?1:per));
+    const r=(dsxx===0||dsyy===0)?0:dsxy/Math.sqrt(dsxx*dsyy);
+    const y1=intercept, y0=intercept+slope*per;   // y0 = plus ancienne, y1 = derniere
+    return {i0:end-len+1,i1:end,y0,y1,dev,r,slope,
+            up:y1>y0,                              // tendance haussiere
+            upper1:y1+mult*dev, lower1:y1-mult*dev};
+  },
+  linreg(d,len,mult,showBroken){
+    const n=d.length;
+    if(n<len+1)return {main:null,broken:[]};
+    const main=this.linregAt(d,n-1,len,mult);
+    const broken=[];
+    if(showBroken){
+      // canal « casse » : cloture hors des bandes -> on fige le canal d'alors.
+      // Delai de garde pour ne pas en empiler un par bougie.
+      let cool=0;
+      for(let i=len-1;i<n-1;i++){
+        if(cool>0){cool--;continue;}
+        const ch=this.linregAt(d,i,len,mult);
+        if(!ch)continue;
+        const c=d[i].c;
+        if(c>ch.upper1||c<ch.lower1){ broken.push(ch); cool=Math.round(len/3); }
+      }
+    }
+    return {main,broken:broken.slice(-4)};
+  },
+
   /* --- Impulse MACD (LazyBear) : ZLEMA face au canal RMA(haut)/RMA(bas) --- */
   rma(arr,p){const o=new Array(arr.length).fill(null);let a=null;
     for(let i=0;i<arr.length;i++){
@@ -659,6 +721,7 @@ const state = {
     vwap:{on:false},
     ichi:{on:false},
     st:{on:false},
+    lrc:{on:false,period:100,tfs:{'extend':true,'fib':false,'broken':true}},
     ob:{on:false,tfs:{'1':true,'5':true,'15':true,'60':true,'240':true}},
     fvg:{on:false,tfs:{'1':true,'5':true,'15':true}},
     swp:{on:false,tfs:{'1':true,'5':true,'15':true,'60':true,'240':true}},
@@ -1012,6 +1075,7 @@ function getInd(key){
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
+    if(key==='lrc')state.cache[ck]=calc.linreg(d,ind.period,2,ind.tfs.broken);
     if(key==='ob')state.cache[ck]=mtfCollect(ind.tfs,(b,n,t)=>calc.obOne(b,n,t));
     if(key==='fvg')state.cache[ck]=mtfCollect(ind.tfs,(b,n,t)=>calc.fvgOne(b,n,t));
     if(key==='swp')state.cache[ck]=mtfCollect(ind.tfs,(b,n,t)=>calc.sweepOne(b,n,t));
@@ -1238,6 +1302,10 @@ function drawPrice(p,s,e,cw){
     }
   }
 
+  // canal de régression linéaire
+  if(state.indicators.lrc.on)
+    drawLinReg(getInd('lrc'),s,e,yOf,cw,p,state.indicators.lrc);
+
   // prises de liquidité (au-dessus du prix, comme les étiquettes TradingView)
   if(state.indicators.swp.on) drawSweepsMTF(getInd('swp'),s,e,yOf,cw,p);
 
@@ -1462,6 +1530,53 @@ function drawSweepsMTF(marks,s,e,yOf,cw,p){
   }
   ctx.restore();
 }
+
+/* ---- Canal de régression linéaire — mêmes couleurs que sur TradingView :
+   canal actif colore par la tendance (vert #00E676 / rouge #FF5252), ligne
+   mediane pleine et bandes tiretees ; canaux casses conserves en bleu
+   #2196F3 pointille. Largeur de trait 2. ---- */
+const LRC_BLUE='#2196F3', LRC_UP='#00E676', LRC_DOWN='#FF5252';
+const LRC_FIB=[0.236,0.382,0.5,0.618,0.786];
+function drawLinReg(res,s,e,yOf,cw,p,ind){
+  if(!res||!res.main)return;
+  const mult=2, W2=W-AXIS_W;
+  const iRight=state.view.start+(W2-cw/2)/cw;   // index virtuel du bord droit
+  ctx.save();
+  ctx.beginPath();ctx.rect(0,p.y,W2,p.h);ctx.clip();
+  ctx.lineWidth=2;
+
+  const seg=(ch,off,color,dash)=>{
+    const iA=ch.i0, iB=ind.tfs.extend?Math.max(ch.i1,iRight):ch.i1;
+    const yAt=i=>ch.y1+(ch.i1-i)*ch.slope+off;
+    ctx.strokeStyle=color;ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(xOf(iA),yOf(yAt(iA)));
+    ctx.lineTo(xOf(iB),yOf(yAt(iB)));
+    ctx.stroke();ctx.setLineDash([]);
+  };
+
+  // canaux casses : trait fin et attenue, le canal actif doit rester dominant
+  ctx.lineWidth=1;ctx.globalAlpha=.5;
+  for(const ch of res.broken){
+    const d0=ch.dev*mult;
+    seg(ch,0,LRC_BLUE,[1,3]);
+    seg(ch,d0,LRC_BLUE,[1,3]);
+    seg(ch,-d0,LRC_BLUE,[1,3]);
+  }
+  ctx.globalAlpha=1;ctx.lineWidth=2;
+
+  // canal actif
+  const m=res.main, col=m.up?LRC_UP:LRC_DOWN, dv=m.dev*mult;
+  if(ind.tfs.fib){
+    ctx.globalAlpha=.55;
+    for(const f of LRC_FIB) seg(m,(2*f-1)*dv,col,[1,4]);
+    ctx.globalAlpha=1;
+  }
+  seg(m,dv,col,[8,5]);
+  seg(m,-dv,col,[8,5]);
+  seg(m,0,col,[]);
+  ctx.restore();
+}
 function plotLine(arr,s,e,yOf,color,w){
   ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();let st=false;
   for(let i=s;i<e;i++){
@@ -1640,6 +1755,7 @@ const IND_META={
   st:{label:()=>'SuperTrend 10×3',color:'#25D0A4'},
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
+  lrc:{label:p=>'LinReg '+p+' ± 2σ',color:'#2196F3'},
   ob:{label:()=>'OB MTF',color:'var(--accent)'},
   fvg:{label:()=>'FVG MTF',color:'#1E6EFF'},
   swp:{label:()=>'Prises de liquidité',color:'#E1424B'},
