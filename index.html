@@ -282,6 +282,12 @@ footer{
         <input type="number" min="2" max="400" value="200" aria-label="Période EMA 2">
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="lrc">
+        <span class="dot" style="background:#9BE6FF"></span>
+        <span class="name">Régression linéaire <span class="desc">Canal</span></span>
+        <input type="number" min="5" max="500" value="100" aria-label="Longueur du canal">
+        <span class="state">off</span>
+      </div>
       <div class="ind-item" data-ind="ichi">
         <span class="dot" style="background:#5AB0FF"></span>
         <span class="name">Ichimoku <span class="desc">9 / 26 / 52 + nuage</span></span>
@@ -300,7 +306,11 @@ footer{
       </div>
       <div class="ind-item" data-ind="fvgm">
         <span class="dot" style="background:#1B8F72"></span>
-        <span class="name">FVG MTF <span class="desc">UT supérieure</span></span>
+        <span class="name">FVG MTF</span>
+        <span class="srtf mtf on" data-ind2="fvgm" data-tf="auto">AUTO</span>
+        <span class="srtf mtf" data-ind2="fvgm" data-tf="15">15m</span>
+        <span class="srtf mtf" data-ind2="fvgm" data-tf="60">1H</span>
+        <span class="srtf mtf" data-ind2="fvgm" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="ob">
@@ -310,7 +320,11 @@ footer{
       </div>
       <div class="ind-item" data-ind="obm">
         <span class="dot" style="background:#FF9D66"></span>
-        <span class="name">OB MTF <span class="desc">UT supérieure</span></span>
+        <span class="name">OB MTF</span>
+        <span class="srtf mtf on" data-ind2="obm" data-tf="auto">AUTO</span>
+        <span class="srtf mtf" data-ind2="obm" data-tf="15">15m</span>
+        <span class="srtf mtf" data-ind2="obm" data-tf="60">1H</span>
+        <span class="srtf mtf" data-ind2="obm" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="sr">
@@ -668,6 +682,18 @@ const calc = {
     const sh=md.map((v,i)=>(v!=null&&sb[i]!=null)?v-sb[i]:null);
     return {md,sb,sh,col};
   },
+  lrc(d,len,mult){
+    const n=d.length; if(!n)return null;
+    len=Math.max(5,Math.min(len||100,n));
+    const s0=n-len;
+    let sx=0,sy=0,sxy=0,sxx=0;
+    for(let k=0;k<len;k++){const x=k,y=d[s0+k].c;sx+=x;sy+=y;sxy+=x*y;sxx+=x*x;}
+    const den=(len*sxx-sx*sx)||1;
+    const b=(len*sxy-sx*sy)/den, a=(sy-b*sx)/len;
+    let se=0;
+    for(let k=0;k<len;k++){const e=d[s0+k].c-(a+b*k);se+=e*e;}
+    return {s0,len,a,b,dev:Math.sqrt(se/len)*(mult||2)};
+  },
   sr(d){
     const L=5, piv=[];
     for(let i=L;i<d.length-L;i++){
@@ -714,9 +740,10 @@ const state = {
     ichi:{on:false},
     st:{on:false},
     fvg:{on:false},
-    fvgm:{on:false},
+    fvgm:{on:false,tf:'auto'},
     ob:{on:false},
-    obm:{on:false},
+    obm:{on:false,tf:'auto'},
+    lrc:{on:false,period:100},
     sr:{on:false,tfs:{'5':false,'15':false,'60':true,'240':true}},
     volume:{on:true},
     rsi:{on:false,period:14},
@@ -770,7 +797,7 @@ function mergeConfig(c){
   if(c.indicators)for(const k of Object.keys(state.indicators)){
     const s=c.indicators[k]; if(!s)continue;
     if(typeof s.on==='boolean')state.indicators[k].on=s.on;
-    if(typeof s.tf==='string'&&['chart','15','60','240'].includes(s.tf)&&'tf'in state.indicators[k])
+    if(typeof s.tf==='string'&&['chart','auto','15','60','240'].includes(s.tf)&&'tf'in state.indicators[k])
       state.indicators[k].tf=s.tf;
     if(typeof s.period==='number'&&s.period>=2&&s.period<=400)
       state.indicators[k].period=s.period;
@@ -1036,6 +1063,27 @@ function ensureMTF(tf){
     })
     .catch(()=>{delete mtfStore.data[tf];});
 }
+function htfIndexMap(bars){
+  const d=state.data,map=new Array(bars.length).fill(0);
+  let j=0;
+  for(let k=0;k<bars.length;k++){
+    while(j<d.length-1&&d[j].t<bars[k].t)j++;
+    map[k]=j;
+  }
+  return map;
+}
+function mtfZones(kind,tf){
+  ensureMTF(tf);
+  const bars=mtfStore.data[tf];
+  if(!bars||!state.data.length)return [];
+  const z=kind==='fvg'?calc.fvgZones(bars):calc.obZones(bars);
+  const map=htfIndexMap(bars);
+  for(const q of z){
+    q.iDraw=map[q.iDraw]!==undefined?map[q.iDraw]:0;
+    q.iCheck=map[q.iCheck]!==undefined?map[q.iCheck]:0;
+  }
+  return calc.finalize(z,state.data,kind);
+}
 function mapHTF(bars,arr){
   const d=state.data,out=new Array(d.length).fill(null);
   if(!bars||!bars.length)return out;
@@ -1091,10 +1139,11 @@ function getInd(key){
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
     if(key==='fvg')state.cache[ck]=calc.fvg(d);
-    if(key==='fvgm')state.cache[ck]=calc.fvgm(d,f);
+    if(key==='fvgm')state.cache[ck]=(ind.tf&&ind.tf!=='auto')?mtfZones('fvg',+ind.tf):calc.fvgm(d,f);
     if(key==='ob')state.cache[ck]=calc.ob(d);
-    if(key==='obm')state.cache[ck]=calc.obm(d,f);
+    if(key==='obm')state.cache[ck]=(ind.tf&&ind.tf!=='auto')?mtfZones('ob',+ind.tf):calc.obm(d,f);
     if(key==='sr')state.cache[ck]=calc.sr(d);
+    if(key==='lrc')state.cache[ck]=calc.lrc(d,ind.period,S('lrc','mult'));
   }
   return state.cache[ck];
 }
@@ -1219,6 +1268,10 @@ function drawPrice(p,s,e,cw){
   }
   if(state.indicators.bb.on){const b=getInd('bb');
     for(let i=s;i<e;i++){if(b.up[i]!=null)hi=Math.max(hi,b.up[i]);if(b.lo[i]!=null)lo=Math.min(lo,b.lo[i]);}}
+  if(state.indicators.lrc.on){const L=getInd('lrc');
+    if(L){for(const i of [L.s0,d.length-1]){
+      const v=L.a+L.b*(i-L.s0);
+      lo=Math.min(lo,v-L.dev);hi=Math.max(hi,v+L.dev);}}}
   if(state.indicators.ema2.on){const a=getInd('ema2');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
   if(state.indicators.st.on){const a=getInd('st').line;
@@ -1320,6 +1373,32 @@ function drawPrice(p,s,e,cw){
   if(state.indicators.sma.on) plotLine(getInd('sma'),s,e,yOf,S('sma','cLine'),1.4);
   if(state.indicators.ema.on) plotLine(getInd('ema'),s,e,yOf,S('ema','cLine'),1.4);
   if(state.indicators.vwap.on)plotLine(getInd('vwap'),s,e,yOf,S('vwap','cLine'),1.4);
+  if(state.indicators.lrc.on){
+    const L=getInd('lrc');
+    if(L){
+      const iEnd=S('lrc','extend')?Math.max(d.length-1,Math.ceil(state.view.start+state.view.count)):d.length-1;
+      const yAt=i=>yOf(L.a+L.b*(i-L.s0));
+      const x0=xOf(L.s0), x1=xOf(iEnd);
+      const CL=S('lrc','cLine'), CBd=S('lrc','cBand');
+      if(S('lrc','showBands')){
+        if(S('lrc','showFill')){
+          ctx.beginPath();
+          ctx.moveTo(x0,yAt(L.s0)-(yOf(0)-yOf(L.dev)));
+          ctx.lineTo(x1,yAt(iEnd)-(yOf(0)-yOf(L.dev)));
+          ctx.lineTo(x1,yAt(iEnd)+(yOf(0)-yOf(L.dev)));
+          ctx.lineTo(x0,yAt(L.s0)+(yOf(0)-yOf(L.dev)));
+          ctx.closePath();
+          ctx.fillStyle=hexA(CBd,.07);ctx.fill();
+        }
+        const dy=yOf(0)-yOf(L.dev);
+        ctx.strokeStyle=hexA(CBd,.55);ctx.lineWidth=1.2;
+        ctx.beginPath();ctx.moveTo(x0,yAt(L.s0)-dy);ctx.lineTo(x1,yAt(iEnd)-dy);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x0,yAt(L.s0)+dy);ctx.lineTo(x1,yAt(iEnd)+dy);ctx.stroke();
+      }
+      ctx.strokeStyle=CL;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(x0,yAt(L.s0));ctx.lineTo(x1,yAt(iEnd));ctx.stroke();
+    }
+  }
   if(state.indicators.ema2.on)plotLine(getInd('ema2'),s,e,yOf,S('ema2','cLine'),1.4);
   if(state.indicators.st.on){
     const sup=getInd('st');
@@ -1663,11 +1742,16 @@ const IND_META={
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
-  fvgm:{label:()=>'FVG MTF '+(HTF_NAME[state.tf]||''),color:'#1B8F72'},
+  fvgm:{label:()=>'FVG MTF '+(state.indicators.fvgm.tf!=='auto'
+    ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.fvgm.tf]||'')
+    :(HTF_NAME[state.tf]||'')),color:'#1B8F72'},
   ob:{label:()=>'Order Blocks',color:'var(--accent)'},
-  obm:{label:()=>'OB MTF '+(HTF_NAME[state.tf]||''),color:'#FF9D66'},
+  obm:{label:()=>'OB MTF '+(state.indicators.obm.tf!=='auto'
+    ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.obm.tf]||'')
+    :(HTF_NAME[state.tf]||'')),color:'#FF9D66'},
   sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
+  lrc:{label:p=>'Régression '+p,color:'#9BE6FF'},
 };
 function updateChips(){
   const i=hoverIndex()??state.data.length-1;
@@ -1681,6 +1765,7 @@ function updateChips(){
     let val='';
     if(k==='sma'||k==='ema'||k==='ema2'||k==='vwap'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'—';}
     if(k==='st'){const a=getInd(k);val=a.line[i]!=null?fmt(a.line[i]):'—';}
+    if(k==='lrc'){const L=getInd(k);val=L?fmt(L.a+L.b*(i-L.s0)):'—';}
     if(k==='bb'){const a=getInd(k);val=a.mid[i]!=null?fmt(a.mid[i]):'—';}
     html+=`<div class="chip"><span class="dot" style="background:${m.color}"></span>${m.label(ind.period)} <span class="val">${val}</span><button data-off="${k}" aria-label="Retirer ${k}">×</button></div>`;
   }
@@ -1932,7 +2017,7 @@ document.querySelectorAll('.srtf.mtf').forEach(el=>{
     document.querySelectorAll('.srtf.mtf[data-ind2="'+k+'"]').forEach(x=>
       x.classList.toggle('on',x.dataset.tf===tf));
     state.cache={};
-    if(tf!=='chart'&&+tf!==state.tf)ensureMTF(+tf);
+    if(tf!=='chart'&&tf!=='auto'&&+tf!==state.tf)ensureMTF(+tf);
     saveConfig(); render();
   });
 });
@@ -2367,6 +2452,15 @@ const SCHEMA={
     {k:'period',t:'num',lab:'Période',min:5,max:200,ind:1},
     {k:'cLine',t:'col',lab:'Couleur',def:'#6AA9FF'},
     {k:'showFill',t:'bool',lab:'Remplissage',def:true},
+  ]},
+  lrc:{title:'Canal de régression linéaire',fields:[
+    {k:'period',t:'num',lab:'Longueur',min:5,max:500,ind:1},
+    {k:'mult',t:'num',lab:'Écart-type ×',min:1,max:5,def:2},
+    {k:'cLine',t:'col',lab:'Ligne médiane',def:'#9BE6FF'},
+    {k:'showBands',t:'bool',lab:'Bandes',def:true},
+    {k:'cBand',t:'col',lab:'Couleur bandes',def:'#9BE6FF'},
+    {k:'showFill',t:'bool',lab:'Remplissage',def:true},
+    {k:'extend',t:'bool',lab:'Prolonger à droite',def:true},
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
   st:{title:'SuperTrend',fields:[
