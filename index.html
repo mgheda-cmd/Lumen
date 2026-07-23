@@ -68,7 +68,7 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 .btn-ind .fx{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-style:italic}
 .ind-menu{
   position:absolute; top:calc(100% + 8px); left:0; z-index:50;
-  width:300px; background:var(--panel-2); border:1px solid var(--line);
+  width:380px; background:var(--panel-2); border:1px solid var(--line);
   border-radius:var(--radius); box-shadow:0 16px 40px rgba(0,0,0,.5);
   padding:8px; display:none; max-height:70vh; overflow:auto;
 }
@@ -80,11 +80,13 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 .ind-item{
   display:flex; align-items:center; gap:10px; padding:8px 10px;
   border-radius:8px; cursor:pointer; transition:background .12s;
+  flex-wrap:wrap; row-gap:6px;   /* les cases d'UT passent à la ligne au lieu de déborder */
 }
 .ind-item:hover{background:rgba(122,162,255,.08)}
 .ind-item .dot{width:9px;height:9px;border-radius:50%;flex:none}
-.ind-item .name{flex:1}
+.ind-item .name{flex:1 1 150px; min-width:0}
 .ind-item .desc{font-size:11px;color:var(--muted)}
+.ind-item .state{margin-left:auto}   /* l'etat reste cale a droite */
 .ind-item input[type=number]{
   width:52px;background:var(--panel);border:1px solid var(--line);border-radius:6px;
   color:var(--text);padding:4px 6px;font-family:'IBM Plex Mono',monospace;font-size:12px;
