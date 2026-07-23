@@ -99,6 +99,51 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   border:1px solid var(--line);color:var(--muted);cursor:pointer;flex:none;
 }
 .srtf.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
+.gear{
+  font-size:13px;color:var(--faint);cursor:pointer;padding:0 2px;flex:none;
+}
+.gear:hover{color:var(--accent)}
+#cfg-back{
+  position:fixed;inset:0;background:rgba(6,10,20,.72);z-index:200;
+  display:none;align-items:center;justify-content:center;padding:16px;
+}
+#cfg-back.open{display:flex}
+#cfg-box{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+  width:min(420px,100%);max-height:82vh;overflow:auto;
+  box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+#cfg-head{
+  display:flex;align-items:center;gap:10px;padding:14px 16px;
+  border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel-2);
+}
+#cfg-head h3{font-size:15px;font-weight:600;flex:1}
+#cfg-body{padding:8px 16px 4px}
+.cfg-row{
+  display:flex;align-items:center;gap:12px;padding:9px 0;
+  border-bottom:1px solid rgba(29,42,66,.6);font-size:13px;
+}
+.cfg-row:last-child{border-bottom:none}
+.cfg-row label{flex:1;color:var(--text)}
+.cfg-row input[type=number]{
+  width:66px;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  color:var(--text);padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+}
+.cfg-row input[type=color]{
+  width:38px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;
+  background:var(--panel);cursor:pointer;
+}
+.cfg-sw{
+  width:40px;height:22px;border-radius:11px;background:var(--line);position:relative;
+  cursor:pointer;flex:none;transition:background .15s;
+}
+.cfg-sw::after{
+  content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+  background:var(--faint);transition:.15s;
+}
+.cfg-sw.on{background:rgba(37,208,164,.3)}
+.cfg-sw.on::after{left:20px;background:var(--up)}
+#cfg-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
 
 /* ---------- Zone graphique ---------- */
 #chart-area{flex:1; position:relative; min-height:0}
@@ -353,6 +398,20 @@ footer{
 <div id="chart-area">
   <div id="chips"></div>
   <canvas id="chart"></canvas>
+</div>
+
+<div id="cfg-back">
+  <div id="cfg-box">
+    <div id="cfg-head">
+      <h3 id="cfg-title">Paramètres</h3>
+      <button class="btn" id="cfg-close" style="padding:4px 10px">✕</button>
+    </div>
+    <div id="cfg-body"></div>
+    <div id="cfg-foot">
+      <button class="btn" id="cfg-reset">Réinitialiser</button>
+      <button class="btn" id="cfg-ok" style="margin-left:auto;border-color:var(--accent);color:var(--accent)">Terminé</button>
+    </div>
+  </div>
 </div>
 
 <div id="paper-bar">
@@ -664,7 +723,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
-  yScale:{auto:true,lo:0,hi:0}, pricePaneH:0, paneH:{}, lastPanes:[],
+  yScale:{auto:true,lo:0,hi:0}, pricePaneH:0, paneH:{}, lastPanes:[], style:{},
 };
 
 /* ---------- Portefeuille de trading démo ---------- */
@@ -675,7 +734,7 @@ let paperUnit='usdt';
 const CFG_KEY='lumen-config-v1';
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    paperUnit, paneH:state.paneH, indicators:state.indicators,
+    paperUnit, paneH:state.paneH, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -691,6 +750,11 @@ function mergeConfig(c){
       x&&typeof x.entry==='number'&&typeof x.qty==='number'&&typeof x.margin==='number'
       &&(x.side==='long'||x.side==='short')&&/^[A-Z0-9]{5,20}$/.test(x.sym||'')):[];
     paper.history=Array.isArray(c.paper.history)?c.paper.history.slice(0,50):[];
+  }
+  if(c.style&&typeof c.style==='object'){
+    state.style={};
+    for(const k of Object.keys(SCHEMA))if(c.style[k]&&typeof c.style[k]==='object')
+      state.style[k]=c.style[k];
   }
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
@@ -988,13 +1052,13 @@ function getInd(key){
     if(key==='rsi') state.cache[ck]=calc.rsi(d,ind.period);
     if(key==='imp'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
-      if(!mtf)state.cache[ck]=calc.impmacd(d,ind.period,9);
+      if(!mtf)state.cache[ck]=calc.impmacd(d,ind.period,S('imp','sig'));
       else{
         ensureMTF(mtf);
         const bars=mtfStore.data[mtf];
         if(!bars)state.cache[ck]={md:[],sb:[],sh:[],col:[]};
         else{
-          const m=calc.impmacd(bars,ind.period,9);
+          const m=calc.impmacd(bars,ind.period,S('imp','sig'));
           state.cache[ck]={md:mapHTF(bars,m.md),sb:mapHTF(bars,m.sb),
             sh:mapHTF(bars,m.sh),col:mapHTF(bars,m.col)};
         }
@@ -1177,7 +1241,7 @@ function drawPrice(p,s,e,cw){
     const vh=p.h*0.18;
     for(let i=s;i<e;i++){
       const x=xOf(i), h=(d[i].v/vmax)*vh;
-      ctx.fillStyle = d[i].c>=d[i].o ? 'rgba(37,208,164,.28)' : 'rgba(244,91,125,.28)';
+      ctx.fillStyle = hexA(d[i].c>=d[i].o?S('volume','cUp'):S('volume','cDown'),.3);
       ctx.fillRect(x-cw*0.35, p.y+p.h-h, cw*0.7, h);
     }
   }
@@ -1189,21 +1253,18 @@ function drawPrice(p,s,e,cw){
     for(let i=s;i<e;i++){if(b.up[i]==null)continue;const x=xOf(i),y=yOf(b.up[i]);
       started?ctx.lineTo(x,y):(ctx.moveTo(x,y),started=true);}
     for(let i=e-1;i>=s;i--){if(b.lo[i]==null)continue;ctx.lineTo(xOf(i),yOf(b.lo[i]));}
-    ctx.closePath();ctx.fillStyle='rgba(106,169,255,.07)';ctx.fill();
-    plotLine(b.up,s,e,yOf,'rgba(106,169,255,.5)',1);
-    plotLine(b.lo,s,e,yOf,'rgba(106,169,255,.5)',1);
-    plotLine(b.mid,s,e,yOf,'rgba(106,169,255,.9)',1);
+    const CB=S('bb','cLine');
+    ctx.closePath();ctx.fillStyle=S('bb','showFill')?hexA(CB,.08):'rgba(0,0,0,0)';ctx.fill();
+    plotLine(b.up,s,e,yOf,hexA(CB,.55),1);
+    plotLine(b.lo,s,e,yOf,hexA(CB,.55),1);
+    plotLine(b.mid,s,e,yOf,hexA(CB,.95),1);
   }
 
   // zones SMC (FVG / Order Blocks) — dessinées derrière tout le reste
-  if(state.indicators.fvg.on)
-    drawZoneSet(getInd('fvg'),s,e,yOf,cw,'rgba(37,208,164,.13)','rgba(244,91,125,.13)',false);
-  if(state.indicators.fvgm.on)
-    drawZoneSet(getInd('fvgm'),s,e,yOf,cw,'rgba(37,208,164,.09)','rgba(244,91,125,.09)',true);
-  if(state.indicators.ob.on)
-    drawZoneSet(getInd('ob'),s,e,yOf,cw,'rgba(122,162,255,.16)','rgba(255,157,102,.16)',false);
-  if(state.indicators.obm.on)
-    drawZoneSet(getInd('obm'),s,e,yOf,cw,'rgba(122,162,255,.10)','rgba(255,157,102,.10)',true);
+  for(const zc of [['fvg',.14,false],['fvgm',.10,true],['ob',.17,false],['obm',.11,true]])
+    if(state.indicators[zc[0]].on)
+      drawZoneSet(getInd(zc[0]),s,e,yOf,cw,hexA(S(zc[0],'cBull'),zc[1]),
+        hexA(S(zc[0],'cBear'),zc[1]),zc[2],S(zc[0],'cBull'),S(zc[0],'cBear'));
 
   // nuage Ichimoku (sous le prix)
   if(state.indicators.ichi.on){
@@ -1249,17 +1310,17 @@ function drawPrice(p,s,e,cw){
   }
 
   // superpositions
-  if(state.indicators.sma.on) plotLine(getInd('sma'),s,e,yOf,css('--sma'),1.4);
-  if(state.indicators.ema.on) plotLine(getInd('ema'),s,e,yOf,css('--ema'),1.4);
-  if(state.indicators.vwap.on)plotLine(getInd('vwap'),s,e,yOf,css('--vwap'),1.4);
-  if(state.indicators.ema2.on)plotLine(getInd('ema2'),s,e,yOf,'#4FD1C5',1.4);
+  if(state.indicators.sma.on) plotLine(getInd('sma'),s,e,yOf,S('sma','cLine'),1.4);
+  if(state.indicators.ema.on) plotLine(getInd('ema'),s,e,yOf,S('ema','cLine'),1.4);
+  if(state.indicators.vwap.on)plotLine(getInd('vwap'),s,e,yOf,S('vwap','cLine'),1.4);
+  if(state.indicators.ema2.on)plotLine(getInd('ema2'),s,e,yOf,S('ema2','cLine'),1.4);
   if(state.indicators.st.on){
     const sup=getInd('st');
     ctx.lineWidth=1.6;
     for(let i=Math.max(s,1);i<e;i++){
       if(sup.line[i]==null||sup.line[i-1]==null)continue;
       if(sup.dir[i]!==sup.dir[i-1])continue; // saut de bande au changement de tendance
-      ctx.strokeStyle=sup.dir[i]===1?css('--up'):css('--down');
+      ctx.strokeStyle=sup.dir[i]===1?S('st','cUp'):S('st','cDown');
       ctx.beginPath();ctx.moveTo(xOf(i-1),yOf(sup.line[i-1]));ctx.lineTo(xOf(i),yOf(sup.line[i]));ctx.stroke();
     }
   }
@@ -1277,12 +1338,14 @@ function drawPrice(p,s,e,cw){
         const y=yOf(l.p);
         if(y<p.y+4||y>p.y+p.h-4)continue;
         const res=l.p>=lastC;
-        const base=res?'rgba(244,91,125,':'rgba(37,208,164,';
-        ctx.strokeStyle=base+(l.touches>=3?'.75)':'.4)');
+        const cc=res?S('sr','cRes'):S('sr','cSup');
+        ctx.strokeStyle=hexA(cc,l.touches>=3?.8:.42);
         ctx.lineWidth=tf==='240'?1.8:tf==='60'?1.4:1;
         ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();
-        ctx.fillStyle=base+'.95)';
-        ctx.fillText(TFL[tf]+' · '+fmt(l.p), W-AXIS_W-118, y-3);
+        if(S('sr','showLbl')){
+          ctx.fillStyle=hexA(cc,.95);
+          ctx.fillText(TFL[tf]+' · '+fmt(l.p), W-AXIS_W-118, y-3);
+        }
       }
     }
     ctx.lineWidth=1;
@@ -1373,7 +1436,7 @@ function drawPrice(p,s,e,cw){
   }
 }
 
-function drawZoneSet(zones,s,e,yOf,cw,colBull,colBear,withBorder){
+function drawZoneSet(zones,s,e,yOf,cw,colBull,colBear,withBorder,bBull,bBear){
   for(const z of zones){
     if(z.iDraw>e-1)continue;
     if(z.end!=null&&z.end<s)continue;
@@ -1385,7 +1448,7 @@ function drawZoneSet(zones,s,e,yOf,cw,colBull,colBear,withBorder){
     ctx.fillStyle=z.type==='bull'?colBull:colBear;
     ctx.fillRect(x0,y0,x1-x0,Math.max(1,y1-y0));
     if(withBorder){
-      ctx.strokeStyle=z.type==='bull'?'rgba(37,208,164,.45)':'rgba(244,91,125,.45)';
+      ctx.strokeStyle=hexA(z.type==='bull'?(bBull||'#25D0A4'):(bBear||'#F45B7D'),.5);
       ctx.setLineDash([3,3]);
       ctx.strokeRect(x0+.5,y0+.5,Math.max(1,x1-x0-1),Math.max(1,y1-y0-1));
       ctx.setLineDash([]);
@@ -1414,18 +1477,21 @@ function drawRSI(p,s,e,cw){
   const yOf=v=>p.y+8+(1-v/100)*(p.h-16);
   p.yOf=yOf;p.lo=0;p.hi=100;p.isRsi=true;
   // zones 30/70
-  ctx.fillStyle='rgba(180,139,255,.06)';
-  ctx.fillRect(0,yOf(70),W-AXIS_W,yOf(30)-yOf(70));
-  for(const lvl of [30,50,70]){
+  const OB=S('rsi','ob'),OS=S('rsi','os'),CR=S('rsi','cLine');
+  if(S('rsi','showZone')){
+    ctx.fillStyle=hexA(CR,.07);
+    ctx.fillRect(0,yOf(OB),W-AXIS_W,yOf(OS)-yOf(OB));
+  }
+  for(const lvl of [OS,50,OB]){
     const y=yOf(lvl);
-    ctx.strokeStyle=lvl===50?'rgba(74,88,120,.5)':'rgba(180,139,255,.3)';
+    ctx.strokeStyle=lvl===50?'rgba(74,88,120,.5)':hexA(CR,.35);
     ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();ctx.setLineDash([]);
     ctx.fillStyle=css('--faint');ctx.font='10px "IBM Plex Mono",monospace';
     ctx.fillText(lvl,W-AXIS_W+8,y+3);
   }
-  plotLine(arr,s,e,yOf,css('--ema'),1.4);
+  plotLine(arr,s,e,yOf,CR,1.4);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'RSI '+state.indicators.rsi.period, arr[i]!=null?arr[i].toFixed(1):'—', css('--ema'));
+  subLabel(p,'RSI '+state.indicators.rsi.period, arr[i]!=null?arr[i].toFixed(1):'—', CR);
 }
 function drawMACD(p,s,e,cw){
   const m=getInd('macd');
@@ -1435,76 +1501,81 @@ function drawMACD(p,s,e,cw){
   p.yOf=yOf;p.lo=-mx;p.hi=mx;
   ctx.strokeStyle='rgba(74,88,120,.5)';ctx.beginPath();ctx.moveTo(0,p.y+p.h/2+.5);ctx.lineTo(W-AXIS_W,p.y+p.h/2+.5);ctx.stroke();
   const bw=Math.max(1,cw*0.5);
-  for(let i=s;i<e;i++){
+  if(S('macd','showHist'))for(let i=s;i<e;i++){
     if(m.hist[i]==null)continue;
     const x=xOf(i),y=yOf(m.hist[i]),y0=p.y+p.h/2;
-    ctx.fillStyle=m.hist[i]>=0?'rgba(37,208,164,.5)':'rgba(244,91,125,.5)';
+    ctx.fillStyle=hexA(m.hist[i]>=0?S('macd','cUp'):S('macd','cDown'),.55);
     ctx.fillRect(x-bw/2,Math.min(y,y0),bw,Math.abs(y-y0)||1);
   }
-  plotLine(m.line,s,e,yOf,css('--accent'),1.3);
-  plotLine(m.sig,s,e,yOf,css('--sma'),1.3);
+  if(S('macd','showLine'))plotLine(m.line,s,e,yOf,S('macd','cLine'),1.3);
+  if(S('macd','showSig'))plotLine(m.sig,s,e,yOf,S('macd','cSig'),1.3);
   const i=hoverIndex()??state.data.length-1;
   const tfl=state.indicators.macd.tf;
   const tfName=(tfl&&tfl!=='chart')?({'15':'15m','60':'1H','240':'4H'}[tfl]||''):'';
   subLabel(p,'MACD 12/26/9'+(tfName?' · '+tfName:''),
-    m.line[i]!=null?m.line[i].toFixed(2):'—', css('--accent'));
+    m.line[i]!=null?m.line[i].toFixed(2):'—', S('macd','cLine'));
 }
 const IMP_COLORS=['#7CE38B','#1B8F72','#F2C14E','#F45B7D']; // lime, vert, orange, rouge
 function drawImp(p,s,e,cw){
   const m=getInd('imp');
+  const C0=[S('imp','c0'),S('imp','c1'),S('imp','c2'),S('imp','c3')];
   let mx=0;
   for(let i=s;i<e;i++)for(const v of [m.md[i],m.sb[i],m.sh[i]])
     if(v!=null)mx=Math.max(mx,Math.abs(v));
   mx=mx||1;
   const yOf=v=>p.y+p.h/2-(v/mx)*(p.h/2-10);
   p.yOf=yOf;p.lo=-mx;p.hi=mx;
-  // ligne zéro
-  ctx.strokeStyle='rgba(74,88,120,.6)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(0,p.y+p.h/2+.5);ctx.lineTo(W-AXIS_W,p.y+p.h/2+.5);ctx.stroke();
   const y0=p.y+p.h/2;
+  if(S('imp','showZero')){
+    ctx.strokeStyle='rgba(74,88,120,.6)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,y0+.5);ctx.lineTo(W-AXIS_W,y0+.5);ctx.stroke();
+  }
   // histogramme principal, coloré selon la position du prix dans le canal
   const bw=Math.max(1,cw*0.7);
-  for(let i=s;i<e;i++){
+  if(S('imp','showHist'))for(let i=s;i<e;i++){
     if(m.md[i]==null)continue;
     const x=xOf(i), y=yOf(m.md[i]);
-    ctx.fillStyle=IMP_COLORS[m.col[i]!=null?m.col[i]:2];
+    ctx.fillStyle=C0[m.col[i]!=null?m.col[i]:2];
     ctx.fillRect(x-bw/2,Math.min(y,y0),bw,Math.abs(y-y0)||1);
   }
   // histogramme de différence (md - signal)
   const bw2=Math.max(1,cw*0.28);
-  for(let i=s;i<e;i++){
+  if(S('imp','showDiff'))for(let i=s;i<e;i++){
     if(m.sh[i]==null)continue;
     const x=xOf(i), y=yOf(m.sh[i]);
-    ctx.fillStyle='rgba(122,162,255,.75)';
+    ctx.fillStyle=hexA(S('imp','cDiff'),.8);
     ctx.fillRect(x-bw2/2,Math.min(y,y0),bw2,Math.abs(y-y0)||1);
   }
   // ligne de signal
-  plotLine(m.sb,s,e,yOf,'rgba(231,237,248,.7)',1.3);
+  if(S('imp','showSig'))plotLine(m.sb,s,e,yOf,hexA(S('imp','cSig'),.85),1.3);
   const i=hoverIndex()??state.data.length-1;
   const tfl=state.indicators.imp.tf;
   const tfName=(tfl&&tfl!=='chart')?({'15':'15m','60':'1H','240':'4H'}[tfl]||''):'';
   const val=m.md[i]!=null?m.md[i].toFixed(2):'—';
   subLabel(p,'Impulse MACD '+state.indicators.imp.period+(tfName?' · '+tfName:''),
-    val, m.col[i]!=null?IMP_COLORS[m.col[i]]:css('--muted'));
+    val, m.col[i]!=null?C0[m.col[i]]:css('--muted'));
 }
 function drawStoch(p,s,e,cw){
   const st=getInd('stoch');
   const yOf=v=>p.y+8+(1-v/100)*(p.h-16);
   p.yOf=yOf;p.lo=0;p.hi=100;p.isRsi=true;
-  ctx.fillStyle='rgba(255,143,216,.06)';
-  ctx.fillRect(0,yOf(80),W-AXIS_W,yOf(20)-yOf(80));
+  const CK=S('stoch','cK'),CD=S('stoch','cD');
+  if(S('stoch','showZone')){
+    ctx.fillStyle=hexA(CK,.07);
+    ctx.fillRect(0,yOf(80),W-AXIS_W,yOf(20)-yOf(80));
+  }
   for(const lvl of [20,50,80]){
     const y=yOf(lvl);
-    ctx.strokeStyle=lvl===50?'rgba(74,88,120,.5)':'rgba(255,143,216,.3)';
+    ctx.strokeStyle=lvl===50?'rgba(74,88,120,.5)':hexA(CK,.35);
     ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();ctx.setLineDash([]);
     ctx.fillStyle=css('--faint');ctx.font='10px "IBM Plex Mono",monospace';
     ctx.fillText(lvl,W-AXIS_W+8,y+3);
   }
-  plotLine(st.k,s,e,yOf,'#FF8FD8',1.4);
-  plotLine(st.d,s,e,yOf,'rgba(255,255,255,.55)',1.1);
+  plotLine(st.k,s,e,yOf,CK,1.4);
+  plotLine(st.d,s,e,yOf,hexA(CD,.6),1.1);
   const i=hoverIndex()??state.data.length-1;
   subLabel(p,'Stoch '+state.indicators.stoch.period,
-    st.k[i]!=null?st.k[i].toFixed(1):'—', '#FF8FD8');
+    st.k[i]!=null?st.k[i].toFixed(1):'—', CK);
 }
 function drawATR(p,s,e,cw){
   const a=getInd('atr');
@@ -1514,9 +1585,10 @@ function drawATR(p,s,e,cw){
   const pad=(hi-lo)*0.15||1;lo-=pad;hi+=pad;
   const yOf=v=>p.y+(1-(v-lo)/(hi-lo))*p.h;
   p.yOf=yOf;p.lo=lo;p.hi=hi;
-  plotLine(a,s,e,yOf,'#C9D46B',1.4);
+  const CA=S('atr','cLine');
+  plotLine(a,s,e,yOf,CA,1.4);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'ATR '+state.indicators.atr.period, a[i]!=null?fmt(a[i]):'—', '#C9D46B');
+  subLabel(p,'ATR '+state.indicators.atr.period, a[i]!=null?fmt(a[i]):'—', CA);
 }
 
 /* ----- axe temps ----- */
@@ -2203,6 +2275,175 @@ function tickCountdown(){
   if(state.data.length)render();
 }
 setInterval(tickCountdown,1000);
+
+/* ---------- Paramètres par indicateur (couleurs, affichage) ---------- */
+const SCHEMA={
+  imp:{title:'Impulse MACD',fields:[
+    {k:'period',t:'num',lab:'Longueur',min:5,max:200,ind:1},
+    {k:'sig',t:'num',lab:'Signal',min:2,max:50,def:9},
+    {k:'showHist',t:'bool',lab:'Histogramme principal',def:true},
+    {k:'c0',t:'col',lab:'Haussier fort',def:'#7CE38B'},
+    {k:'c1',t:'col',lab:'Haussier',def:'#1B8F72'},
+    {k:'c2',t:'col',lab:'Neutre',def:'#F2C14E'},
+    {k:'c3',t:'col',lab:'Baissier',def:'#F45B7D'},
+    {k:'showDiff',t:'bool',lab:'Histogramme écart',def:true},
+    {k:'cDiff',t:'col',lab:'Couleur écart',def:'#7AA2FF'},
+    {k:'showSig',t:'bool',lab:'Ligne de signal',def:true},
+    {k:'cSig',t:'col',lab:'Couleur signal',def:'#E7EDF8'},
+    {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
+  ]},
+  macd:{title:'MACD',fields:[
+    {k:'showHist',t:'bool',lab:'Histogramme',def:true},
+    {k:'cUp',t:'col',lab:'Histogramme haussier',def:'#25D0A4'},
+    {k:'cDown',t:'col',lab:'Histogramme baissier',def:'#F45B7D'},
+    {k:'showLine',t:'bool',lab:'Ligne MACD',def:true},
+    {k:'cLine',t:'col',lab:'Couleur MACD',def:'#7AA2FF'},
+    {k:'showSig',t:'bool',lab:'Ligne de signal',def:true},
+    {k:'cSig',t:'col',lab:'Couleur signal',def:'#F2C14E'},
+  ]},
+  rsi:{title:'RSI',fields:[
+    {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
+    {k:'cLine',t:'col',lab:'Couleur',def:'#B48BFF'},
+    {k:'showZone',t:'bool',lab:'Zone 30–70',def:true},
+    {k:'ob',t:'num',lab:'Surachat',min:50,max:99,def:70},
+    {k:'os',t:'num',lab:'Survente',min:1,max:50,def:30},
+  ]},
+  stoch:{title:'Stochastique',fields:[
+    {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
+    {k:'cK',t:'col',lab:'%K',def:'#FF8FD8'},
+    {k:'cD',t:'col',lab:'%D',def:'#FFFFFF'},
+    {k:'showZone',t:'bool',lab:'Zone 20–80',def:true},
+  ]},
+  atr:{title:'ATR',fields:[
+    {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
+    {k:'cLine',t:'col',lab:'Couleur',def:'#C9D46B'},
+  ]},
+  sma:{title:'SMA',fields:[
+    {k:'period',t:'num',lab:'Période',min:2,max:400,ind:1},
+    {k:'cLine',t:'col',lab:'Couleur',def:'#F2C14E'},
+  ]},
+  ema:{title:'EMA',fields:[
+    {k:'period',t:'num',lab:'Période',min:2,max:400,ind:1},
+    {k:'cLine',t:'col',lab:'Couleur',def:'#B48BFF'},
+  ]},
+  ema2:{title:'EMA ②',fields:[
+    {k:'period',t:'num',lab:'Période',min:2,max:400,ind:1},
+    {k:'cLine',t:'col',lab:'Couleur',def:'#4FD1C5'},
+  ]},
+  bb:{title:'Bandes de Bollinger',fields:[
+    {k:'period',t:'num',lab:'Période',min:5,max:200,ind:1},
+    {k:'cLine',t:'col',lab:'Couleur',def:'#6AA9FF'},
+    {k:'showFill',t:'bool',lab:'Remplissage',def:true},
+  ]},
+  vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
+  st:{title:'SuperTrend',fields:[
+    {k:'cUp',t:'col',lab:'Haussier',def:'#25D0A4'},
+    {k:'cDown',t:'col',lab:'Baissier',def:'#F45B7D'},
+  ]},
+  sr:{title:'Supports / Résistances',fields:[
+    {k:'cRes',t:'col',lab:'Résistance',def:'#F45B7D'},
+    {k:'cSup',t:'col',lab:'Support',def:'#25D0A4'},
+    {k:'showLbl',t:'bool',lab:'Étiquettes de prix',def:true},
+  ]},
+  volume:{title:'Volume',fields:[
+    {k:'cUp',t:'col',lab:'Haussier',def:'#25D0A4'},
+    {k:'cDown',t:'col',lab:'Baissier',def:'#F45B7D'},
+  ]},
+  fvg:{title:'FVG',fields:[
+    {k:'cBull',t:'col',lab:'Haussier',def:'#25D0A4'},
+    {k:'cBear',t:'col',lab:'Baissier',def:'#F45B7D'},
+  ]},
+  fvgm:{title:'FVG MTF',fields:[
+    {k:'cBull',t:'col',lab:'Haussier',def:'#25D0A4'},
+    {k:'cBear',t:'col',lab:'Baissier',def:'#F45B7D'},
+  ]},
+  ob:{title:'Order Blocks',fields:[
+    {k:'cBull',t:'col',lab:'Haussier',def:'#7AA2FF'},
+    {k:'cBear',t:'col',lab:'Baissier',def:'#FF9D66'},
+  ]},
+  obm:{title:'OB MTF',fields:[
+    {k:'cBull',t:'col',lab:'Haussier',def:'#7AA2FF'},
+    {k:'cBear',t:'col',lab:'Baissier',def:'#FF9D66'},
+  ]},
+};
+function S(ind,key){
+  const st=state.style[ind];
+  if(st&&st[key]!==undefined)return st[key];
+  const f=(SCHEMA[ind]||{fields:[]}).fields.find(x=>x.k===key);
+  if(f&&f.ind)return state.indicators[ind][f.k];
+  return f?f.def:undefined;
+}
+function hexA(hex,a){
+  const h=(hex||'#888888').replace('#','');
+  const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+let cfgInd=null;
+function openCfg(ind){
+  const sc=SCHEMA[ind]; if(!sc)return;
+  cfgInd=ind;
+  document.getElementById('cfg-title').textContent=sc.title;
+  const body=document.getElementById('cfg-body');
+  body.innerHTML=sc.fields.map(f=>{
+    const v=S(ind,f.k);
+    if(f.t==='bool')
+      return `<div class="cfg-row"><label>${f.lab}</label>
+        <div class="cfg-sw ${v?'on':''}" data-f="${f.k}"></div></div>`;
+    if(f.t==='col')
+      return `<div class="cfg-row"><label>${f.lab}</label>
+        <input type="color" value="${v}" data-f="${f.k}"></div>`;
+    return `<div class="cfg-row"><label>${f.lab}</label>
+      <input type="number" value="${v}" min="${f.min}" max="${f.max}" data-f="${f.k}"></div>`;
+  }).join('');
+  body.querySelectorAll('.cfg-sw').forEach(el=>el.addEventListener('click',()=>{
+    const on=!el.classList.contains('on');
+    el.classList.toggle('on',on);
+    setStyle(ind,el.dataset.f,on);
+  }));
+  body.querySelectorAll('input[type=color]').forEach(el=>
+    el.addEventListener('input',()=>setStyle(ind,el.dataset.f,el.value)));
+  body.querySelectorAll('input[type=number]').forEach(el=>
+    el.addEventListener('change',()=>{
+      const f=sc.fields.find(x=>x.k===el.dataset.f);
+      let v=Math.max(f.min,Math.min(f.max,parseFloat(el.value)||f.def||f.min));
+      el.value=v;
+      if(f.ind){
+        state.indicators[ind][f.k]=v;
+        const inp=menu.querySelector(`.ind-item[data-ind="${ind}"] input[type=number]`);
+        if(inp)inp.value=v;
+        state.cache={};
+      }else setStyle(ind,f.k,v,true);
+      saveConfig(); render();
+    }));
+  document.getElementById('cfg-back').classList.add('open');
+}
+function setStyle(ind,key,val,recalc){
+  if(!state.style[ind])state.style[ind]={};
+  state.style[ind][key]=val;
+  if(recalc)state.cache={};
+  saveConfig(); render();
+}
+document.getElementById('cfg-close').addEventListener('click',()=>
+  document.getElementById('cfg-back').classList.remove('open'));
+document.getElementById('cfg-ok').addEventListener('click',()=>
+  document.getElementById('cfg-back').classList.remove('open'));
+document.getElementById('cfg-back').addEventListener('click',e=>{
+  if(e.target.id==='cfg-back')document.getElementById('cfg-back').classList.remove('open');
+});
+document.getElementById('cfg-reset').addEventListener('click',()=>{
+  if(!cfgInd)return;
+  delete state.style[cfgInd];
+  state.cache={}; saveConfig(); openCfg(cfgInd); render();
+});
+/* icône ⚙ sur les indicateurs paramétrables */
+menu.querySelectorAll('.ind-item').forEach(item=>{
+  const k=item.dataset.ind;
+  if(!SCHEMA[k])return;
+  const g=document.createElement('span');
+  g.className='gear'; g.textContent='⚙'; g.title='Paramètres';
+  g.addEventListener('click',e=>{e.stopPropagation();openCfg(k);});
+  item.insertBefore(g,item.querySelector('.state'));
+});
 
 /* ---------- Démarrage ---------- */
 loadConfig();
