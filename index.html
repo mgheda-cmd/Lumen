@@ -280,6 +280,26 @@ footer{
     </div>
   </div>
 
+  <div class="ind-wrap">
+    <button class="btn" id="sync-btn" title="Synchroniser entre appareils">⇅</button>
+    <div class="ind-menu" id="sync-menu" style="width:320px;right:0;left:auto">
+      <h4>Synchronisation iPhone ↔ iPad</h4>
+      <div style="padding:2px 10px 8px;font-size:12px;color:var(--muted);line-height:1.5">
+        Colle un jeton GitHub (accès « Contents » en écriture au dépôt Lumen).
+        Tes réglages seront enregistrés dans le dépôt et partagés entre tous tes appareils.
+      </div>
+      <input id="sync-token" type="password" placeholder="github_pat_…" autocomplete="off"
+        style="width:calc(100% - 20px);margin:0 10px;box-sizing:border-box;background:var(--panel);
+        border:1px solid var(--line);border-radius:8px;color:var(--text);padding:8px 10px;
+        font-family:'IBM Plex Mono',monospace;font-size:12px">
+      <div style="display:flex;gap:8px;padding:10px">
+        <button class="btn" id="sync-on">Activer</button>
+        <button class="btn" id="sync-off">Désactiver</button>
+      </div>
+      <div id="sync-status" class="mono" style="padding:0 10px 10px;font-size:11px;color:var(--muted)"></div>
+    </div>
+  </div>
+
   <div class="price-block">
     <div class="last mono" id="last-price">—</div>
     <div class="chg mono" id="last-chg">—</div>
@@ -549,30 +569,33 @@ const state = {
 
 /* ---------- Mémorisation de la configuration ---------- */
 const CFG_KEY='lumen-config-v1';
+function currentConfig(){
+  return {symbol:state.symbol, tf:state.tf, type:state.type, indicators:state.indicators};
+}
+function mergeConfig(c){
+  if(!c)return;
+  if(typeof c.symbol==='string'&&/^[A-Z0-9]{5,20}$/.test(c.symbol))state.symbol=c.symbol;
+  if(TF_MAP[c.tf])state.tf=+c.tf;
+  if(['candles','line','area'].includes(c.type))state.type=c.type;
+  if(c.indicators)for(const k of Object.keys(state.indicators)){
+    const s=c.indicators[k]; if(!s)continue;
+    if(typeof s.on==='boolean')state.indicators[k].on=s.on;
+    if(typeof s.period==='number'&&s.period>=2&&s.period<=400)
+      state.indicators[k].period=s.period;
+    if(s.tfs&&state.indicators[k].tfs)
+      for(const t of Object.keys(state.indicators[k].tfs))
+        if(typeof s.tfs[t]==='boolean')state.indicators[k].tfs[t]=s.tfs[t];
+  }
+}
+function saveConfigLocal(){
+  try{localStorage.setItem(CFG_KEY,JSON.stringify(currentConfig()));}catch(e){}
+}
 function saveConfig(){
-  try{
-    localStorage.setItem(CFG_KEY,JSON.stringify({
-      symbol:state.symbol, tf:state.tf, type:state.type, indicators:state.indicators
-    }));
-  }catch(e){/* stockage indisponible : on continue sans mémoire */}
+  saveConfigLocal();
+  syncPush();
 }
 function loadConfig(){
-  try{
-    const c=JSON.parse(localStorage.getItem(CFG_KEY)||'null');
-    if(!c)return;
-    if(typeof c.symbol==='string'&&/^[A-Z0-9]{5,20}$/.test(c.symbol))state.symbol=c.symbol;
-    if(TF_MAP[c.tf])state.tf=+c.tf;
-    if(['candles','line','area'].includes(c.type))state.type=c.type;
-    if(c.indicators)for(const k of Object.keys(state.indicators)){
-      const s=c.indicators[k]; if(!s)continue;
-      if(typeof s.on==='boolean')state.indicators[k].on=s.on;
-      if(typeof s.period==='number'&&s.period>=2&&s.period<=400)
-        state.indicators[k].period=s.period;
-      if(s.tfs&&state.indicators[k].tfs)
-        for(const t of Object.keys(state.indicators[k].tfs))
-          if(typeof s.tfs[t]==='boolean')state.indicators[k].tfs[t]=s.tfs[t];
-    }
-  }catch(e){}
+  try{mergeConfig(JSON.parse(localStorage.getItem(CFG_KEY)||'null'));}catch(e){}
 }
 function applyConfigToUI(){
   symBtn.textContent=labelOf(state.symbol)+' ▾';
@@ -1394,10 +1417,14 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.ind-wrap')){
     menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');
     if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
+    const sm=document.getElementById('sync-menu');
+    if(sm)sm.classList.remove('open');
   }
 });
 btnInd.addEventListener('click',()=>{
   if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
+  const sm=document.getElementById('sync-menu');
+  if(sm)sm.classList.remove('open');
 });
 menu.querySelectorAll('.ind-item').forEach(item=>{
   const key=item.dataset.ind;
@@ -1502,11 +1529,109 @@ function updateHeader(){
   ec.className='chg mono '+(chg>=0?'up':'down');
 }
 
+/* ---------- Synchronisation entre appareils via le dépôt GitHub ---------- */
+const SYNC_REPO='mgheda-cmd/Lumen', SYNC_FILE='config.json';
+let syncToken=localStorage.getItem('lumen-sync-token')||'';
+let syncSha=null, syncTimer=null, syncBusy=false;
+const syncBtn=document.getElementById('sync-btn');
+const syncMenuEl=document.getElementById('sync-menu');
+const syncStatus=document.getElementById('sync-status');
+function setSyncStatus(txt,ok){
+  syncStatus.textContent=txt;
+  syncStatus.style.color=ok===false?'#F45B7D':ok?'#25D0A4':'#7E8CA8';
+  syncBtn.style.color=syncToken?'#25D0A4':'';
+  syncBtn.style.borderColor=syncToken?'#25D0A4':'';
+}
+async function syncPull(){
+  if(!syncToken)return false;
+  try{
+    const r=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}?ref=main&_=${Date.now()}`,
+      {headers:{Authorization:'Bearer '+syncToken,Accept:'application/vnd.github+json'}});
+    if(r.status===404){syncSha=null;return false;}
+    if(!r.ok)throw new Error(r.status);
+    const j=await r.json();
+    syncSha=j.sha;
+    mergeConfig(JSON.parse(atob((j.content||'').replace(/\n/g,''))));
+    setSyncStatus('Synchro active — réglages récupérés',true);
+    return true;
+  }catch(e){setSyncStatus('Synchro : lecture impossible ('+e.message+')',false);return false;}
+}
+async function syncPushNow(retry){
+  if(!syncToken||syncBusy)return;
+  syncBusy=true;
+  try{
+    const body={message:'Réglages Lumen',branch:'main',
+      content:btoa(JSON.stringify(currentConfig()))};
+    if(syncSha)body.sha=syncSha;
+    const r=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}`,
+      {method:'PUT',
+       headers:{Authorization:'Bearer '+syncToken,Accept:'application/vnd.github+json',
+         'Content-Type':'application/json'},
+       body:JSON.stringify(body)});
+    if(r.ok){
+      const j=await r.json();
+      syncSha=j.content.sha;
+      setSyncStatus('Synchro active — réglages enregistrés',true);
+    }else if((r.status===409||r.status===422)&&!retry){
+      // sha périmé (modifié depuis un autre appareil) : on récupère et on réessaie
+      syncBusy=false;
+      const g=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}?ref=main&_=${Date.now()}`,
+        {headers:{Authorization:'Bearer '+syncToken,Accept:'application/vnd.github+json'}});
+      if(g.ok)syncSha=(await g.json()).sha;
+      return syncPushNow(true);
+    }else setSyncStatus('Synchro : écriture refusée ('+r.status+')',false);
+  }catch(e){setSyncStatus('Synchro : hors ligne',false);}
+  syncBusy=false;
+}
+function syncPush(){
+  if(!syncToken)return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>syncPushNow(false),1500);
+}
+syncBtn.addEventListener('click',()=>{
+  const open=syncMenuEl.classList.toggle('open');
+  if(open){
+    menu.classList.remove('open');symMenu.classList.remove('open');
+    document.getElementById('sync-token').value=syncToken;
+    setSyncStatus(syncToken?'Synchro active':'Synchro désactivée');
+  }
+});
+document.getElementById('sync-on').addEventListener('click',async()=>{
+  const t=document.getElementById('sync-token').value.trim();
+  if(!t){setSyncStatus('Colle d\'abord un jeton',false);return;}
+  syncToken=t;
+  try{localStorage.setItem('lumen-sync-token',t);}catch(e){}
+  setSyncStatus('Vérification…');
+  const before=state.symbol+'|'+state.tf;
+  const found=await syncPull();
+  if(found){
+    applyConfigToUI(); saveConfigLocal();
+    if(state.symbol+'|'+state.tf!==before)loadData(); else render();
+  }else{
+    await syncPushNow(false); // premier appareil : on publie la config actuelle
+  }
+});
+document.getElementById('sync-off').addEventListener('click',()=>{
+  syncToken='';
+  try{localStorage.removeItem('lumen-sync-token');}catch(e){}
+  setSyncStatus('Synchro désactivée');
+});
+
 /* ---------- Démarrage ---------- */
 loadConfig();
 applyConfigToUI();
 loadData();
 resize();
+(async()=>{
+  if(!syncToken)return;
+  setSyncStatus('Synchro active');
+  const before=state.symbol+'|'+state.tf;
+  const ok=await syncPull();
+  if(ok){
+    applyConfigToUI(); saveConfigLocal();
+    if(state.symbol+'|'+state.tf!==before)loadData(); else render();
+  }
+})();
 </script>
 </body>
 </html>
