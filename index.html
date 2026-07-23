@@ -176,6 +176,10 @@ footer{
   <div class="ind-wrap">
     <button class="btn" id="symbol-btn" aria-haspopup="true">BTC / USDT ▾</button>
     <div class="ind-menu" id="sym-menu">
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button class="srtf on" id="mk-perp" data-mk="perp" style="flex:1;padding:6px">USDT.P — Perpétuels</button>
+        <button class="srtf" id="mk-spot" data-mk="spot" style="flex:1;padding:6px">Spot</button>
+      </div>
       <input id="sym-search" type="text" placeholder="Rechercher une paire USDT…" autocomplete="off"
         style="width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);
         border-radius:8px;color:var(--text);padding:8px 10px;font-family:'IBM Plex Mono',monospace;
@@ -345,13 +349,15 @@ footer{
   </div>
   <div id="paper-panel">
     <div class="paper-row">
-      <input id="paper-amt" type="number" value="1000" min="1" aria-label="Montant en USDT">
+      <input id="paper-amt" type="number" value="1000" min="0" step="any" aria-label="Montant">
+      <button class="btn" id="paper-unit" style="font-size:12px;min-width:66px">USDT</button>
       <button class="btn-buy" id="paper-buy">ACHAT</button>
       <button class="btn-sell" id="paper-sell">VENTE</button>
       <button class="btn" id="paper-reset" style="margin-left:auto;font-size:12px">Réinitialiser</button>
     </div>
     <div style="color:var(--faint);font-size:10px;margin-bottom:10px">
-      Montant en USDT · exécution au prix du marché de la paire affichée ·
+      Saisis un montant en USDT ou une quantité de crypto (bouton d'unité) ·
+      exécution au prix du marché de la paire affichée ·
       ACHAT = long, VENTE = short · frais simulés 0,1 % par ordre
     </div>
     <div id="paper-pos"></div>
@@ -589,7 +595,7 @@ const HTF_NAME={1:'15m',15:'1H',60:'4H',240:'1J',1440:'1S'};
 
 /* ---------- État global ---------- */
 const state = {
-  symbol:'BTCUSDT', tf:60, type:'candles',
+  symbol:'BTCUSDT', tf:60, type:'candles', market:'perp',
   data:[], view:{start:0,count:150},
   indicators:{
     sma:{on:false,period:20},
@@ -617,11 +623,13 @@ const state = {
 
 /* ---------- Portefeuille de trading démo ---------- */
 const paper={cash:100000,positions:[],history:[]};
+let paperUnit='usdt';
 
 /* ---------- Mémorisation de la configuration ---------- */
 const CFG_KEY='lumen-config-v1';
 function currentConfig(){
-  return {symbol:state.symbol, tf:state.tf, type:state.type, indicators:state.indicators,
+  return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
+    paperUnit, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -629,6 +637,8 @@ function mergeConfig(c){
   if(typeof c.symbol==='string'&&/^[A-Z0-9]{5,20}$/.test(c.symbol))state.symbol=c.symbol;
   if(TF_MAP[c.tf])state.tf=+c.tf;
   if(['candles','line','area'].includes(c.type))state.type=c.type;
+  if(c.market==='spot'||c.market==='perp')state.market=c.market;
+  if(c.paperUnit==='usdt'||c.paperUnit==='coin')paperUnit=c.paperUnit;
   if(c.paper&&typeof c.paper.cash==='number'&&isFinite(c.paper.cash)){
     paper.cash=c.paper.cash;
     paper.positions=Array.isArray(c.paper.positions)?c.paper.positions.filter(x=>
@@ -658,6 +668,8 @@ function loadConfig(){
 }
 function applyConfigToUI(){
   symBtn.textContent=labelOf(state.symbol)+' ▾';
+  document.querySelectorAll('[data-mk]').forEach(x=>
+    x.classList.toggle('on',x.dataset.mk===state.market));
   document.querySelectorAll('.tf-group button').forEach(b=>
     b.classList.toggle('active',+b.dataset.tf===state.tf));
   document.querySelectorAll('.type-group button').forEach(b=>
@@ -673,19 +685,26 @@ function applyConfigToUI(){
 }
 
 /* ---------- Flux Binance (temps réel) ---------- */
-const REST_HOSTS=['https://api.binance.com','https://data-api.binance.vision'];
-const WS_HOSTS=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'];
-let wsHost=WS_HOSTS[0];
+const SPOT_REST=['https://api.binance.com','https://data-api.binance.vision'];
+const SPOT_WS=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'];
+const PERP_REST=['https://fapi.binance.com'];
+const PERP_WS=['wss://fstream.binance.com'];
+let wsHost=SPOT_WS[0];
+function isPerp(){return state.market==='perp';}
+function apiPath(p){return isPerp()?p.replace('/api/v3','/fapi/v1'):p;}
 async function fetchJSON(path){
+  const HOSTS=isPerp()?PERP_REST:SPOT_REST;
+  const WSH=isPerp()?PERP_WS:SPOT_WS;
+  const p=apiPath(path);
   let lastErr;
-  for(let i=0;i<REST_HOSTS.length;i++){
+  for(let i=0;i<HOSTS.length;i++){
     try{
       const ctl=new AbortController();
       const to=setTimeout(()=>ctl.abort(),6000);
-      const r=await fetch(REST_HOSTS[i]+path,{signal:ctl.signal});
+      const r=await fetch(HOSTS[i]+p,{signal:ctl.signal});
       clearTimeout(to);
       if(!r.ok)throw new Error(r.status);
-      wsHost=WS_HOSTS[i];
+      wsHost=WSH[Math.min(i,WSH.length-1)];
       return await r.json();
     }catch(e){lastErr=e;}
   }
@@ -1594,7 +1613,7 @@ const symMenu=document.getElementById('sym-menu');
 const symSearch=document.getElementById('sym-search');
 const symList=document.getElementById('sym-list');
 let allPairs=null;
-function labelOf(sym){return sym.replace(/USDT$/,'')+' / USDT';}
+function labelOf(sym){return sym.replace(/USDT$/,'')+(state.market==='perp'?' / USDT.P':' / USDT');}
 function renderSymList(filter){
   const f=(filter||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   const src=allPairs||Object.keys(SYMBOLS);
@@ -1604,12 +1623,13 @@ function renderSymList(filter){
     (p===state.symbol?'<span class="state" style="color:var(--up);border-color:var(--up)">actif</span>':'')+
     `</div>`).join('')||'<div class="ind-item"><span class="name" style="color:var(--muted)">Aucune paire trouvée</span></div>';
 }
-async function loadPairs(){
-  if(allPairs)return;
+async function loadPairs(force){
+  if(allPairs&&!force)return;
   try{
     const info=await fetchJSON('/api/v3/exchangeInfo');
     const list=(info.symbols||[])
-      .filter(s=>s.quoteAsset==='USDT'&&s.status==='TRADING'&&s.isSpotTradingAllowed)
+      .filter(s=>s.quoteAsset==='USDT'&&s.status==='TRADING'&&
+        (isPerp()?s.contractType==='PERPETUAL':s.isSpotTradingAllowed))
       .map(s=>s.symbol).sort();
     if(list.length)allPairs=list;
   }catch(e){/* on garde la liste de base */}
@@ -1623,6 +1643,16 @@ symBtn.addEventListener('click',()=>{
   }
 });
 symSearch.addEventListener('input',()=>renderSymList(symSearch.value));
+document.querySelectorAll('[data-mk]').forEach(b=>b.addEventListener('click',e=>{
+  e.stopPropagation();
+  if(state.market===b.dataset.mk)return;
+  state.market=b.dataset.mk;
+  document.querySelectorAll('[data-mk]').forEach(x=>
+    x.classList.toggle('on',x.dataset.mk===state.market));
+  allPairs=null; srStore.data={};
+  symBtn.textContent=labelOf(state.symbol)+' ▾';
+  loadPairs(true); saveConfig(); loadData();
+}));
 symList.addEventListener('click',e=>{
   const it=e.target.closest('[data-sym]');
   if(!it)return;
@@ -1773,13 +1803,15 @@ function updatePaper(){
   posEl.innerHTML=paper.positions.map((p,i)=>{
     const g=posPnl(p);
     const col=g==null?'var(--muted)':g>=0?'#25D0A4':'#F45B7D';
+    const q=p.qty>=1?p.qty.toFixed(3):p.qty.toPrecision(3);
     return `<div class="pos-item">
-      <span>${p.side==='long'?'▲':'▼'} ${p.sym.replace(/USDT$/,'')}</span>
+      <span>${p.side==='long'?'▲':'▼'} ${q} ${baseAsset(p.sym)}</span>
       <span style="color:var(--muted)">entrée ${fmt(p.entry,p.entry>=100?2:4)}</span>
       <span style="color:${col}">${g==null?'—':(g>=0?'+':'')+fmtUsd(g)}</span>
       <button data-close="${i}">Fermer</button>
     </div>`;
   }).join('')||'<div style="color:var(--faint);font-size:11px;margin-bottom:8px">Aucune position ouverte</div>';
+  refreshUnitBtn();
   // historique (5 derniers)
   const hEl=document.getElementById('paper-hist');
   hEl.innerHTML=paper.history.slice(0,5).map(h=>{
@@ -1797,15 +1829,25 @@ function paperFlash(msg){
   el.textContent=msg; el.style.color='#F2C14E';
   setTimeout(()=>{el.textContent=old;el.style.color=oldCol;updatePaper();},1600);
 }
+function baseAsset(sym){return sym.replace(/USDT$/,'');}
+function refreshUnitBtn(){
+  const b=document.getElementById('paper-unit');
+  if(!b)return;
+  b.textContent=paperUnit==='usdt'?'USDT':baseAsset(state.symbol);
+  b.title=paperUnit==='usdt'?'Montant en USDT — appuyer pour saisir une quantité'
+    :'Quantité en '+baseAsset(state.symbol)+' — appuyer pour saisir un montant';
+}
 function openTrade(side){
-  const amt=parseFloat(document.getElementById('paper-amt').value);
-  if(!(amt>0))return paperFlash('Montant invalide');
-  const fee=amt*0.001;
-  if(amt+fee>paper.cash)return paperFlash('Solde insuffisant');
+  const val=parseFloat(document.getElementById('paper-amt').value);
+  if(!(val>0))return paperFlash('Montant invalide');
   const px=livePrice(state.symbol);
   if(!px)return paperFlash('Prix indisponible');
-  paper.cash-=amt+fee;
-  paper.positions.push({sym:state.symbol,side,qty:amt/px,entry:px,margin:amt,t:Date.now()});
+  const qty=paperUnit==='coin'?val:val/px;
+  const margin=qty*px;
+  const fee=margin*0.001;
+  if(margin+fee>paper.cash)return paperFlash('Solde insuffisant');
+  paper.cash-=margin+fee;
+  paper.positions.push({sym:state.symbol,side,qty,entry:px,margin,t:Date.now()});
   saveConfig(); updatePaper();
 }
 function closePos(i){
@@ -1828,6 +1870,17 @@ document.getElementById('paper-summary').addEventListener('click',()=>{
   document.getElementById('paper-caret').textContent=open?'▾':'▴';
   resize();
 });
+document.getElementById('paper-unit').addEventListener('click',()=>{
+  const px=livePrice(state.symbol);
+  const inp=document.getElementById('paper-amt');
+  const v=parseFloat(inp.value);
+  paperUnit=paperUnit==='usdt'?'coin':'usdt';
+  if(px&&v>0){ // convertir la valeur saisie pour rester cohérent
+    const nv=paperUnit==='coin'?v/px:v*px;
+    inp.value=paperUnit==='coin'?nv.toPrecision(4):nv.toFixed(2);
+  }
+  refreshUnitBtn(); saveConfig();
+});
 document.getElementById('paper-buy').addEventListener('click',()=>openTrade('long'));
 document.getElementById('paper-sell').addEventListener('click',()=>openTrade('short'));
 document.getElementById('paper-pos').addEventListener('click',e=>{
@@ -1844,8 +1897,13 @@ setInterval(async()=>{
   const syms=[...new Set(paper.positions.map(p=>p.sym))].filter(s=>s!==state.symbol);
   if(!syms.length)return;
   try{
-    const rows=await fetchJSON('/api/v3/ticker/price?symbols='+encodeURIComponent(JSON.stringify(syms)));
-    for(const r of rows)lastPrices[r.symbol]=+r.price;
+    if(isPerp()){
+      const all=await fetchJSON('/api/v3/ticker/price');
+      for(const r of all)if(syms.includes(r.symbol))lastPrices[r.symbol]=+r.price;
+    }else{
+      const rows=await fetchJSON('/api/v3/ticker/price?symbols='+encodeURIComponent(JSON.stringify(syms)));
+      for(const r of rows)lastPrices[r.symbol]=+r.price;
+    }
     updatePaper();
   }catch(e){}
 },10000);
