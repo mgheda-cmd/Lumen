@@ -380,9 +380,13 @@ footer{
         style="width:calc(100% - 20px);margin:0 10px;box-sizing:border-box;background:var(--panel);
         border:1px solid var(--line);border-radius:8px;color:var(--text);padding:8px 10px;
         font-family:'IBM Plex Mono',monospace;font-size:12px">
-      <div style="display:flex;gap:8px;padding:10px">
+      <div style="display:flex;gap:8px;padding:10px;flex-wrap:wrap">
         <button class="btn" id="sync-on">Activer</button>
         <button class="btn" id="sync-off">Désactiver</button>
+      </div>
+      <div style="display:flex;gap:8px;padding:0 10px 10px;flex-wrap:wrap">
+        <button class="btn" id="sync-get" style="border-color:var(--accent);color:var(--accent)">⬇ Récupérer</button>
+        <button class="btn" id="sync-put">⬆ Envoyer</button>
       </div>
       <div id="sync-status" class="mono" style="padding:0 10px 10px;font-size:11px;color:var(--muted)"></div>
     </div>
@@ -732,9 +736,10 @@ let paperUnit='usdt';
 
 /* ---------- Mémorisation de la configuration ---------- */
 const CFG_KEY='lumen-config-v1';
+let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    paperUnit, paneH:state.paneH, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, paneH:state.paneH, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -774,7 +779,9 @@ function mergeConfig(c){
         if(typeof s.tfs[t]==='boolean')state.indicators[k].tfs[t]=s.tfs[t];
   }
 }
-function saveConfigLocal(){
+function saveConfigLocal(stamp){
+  if(stamp!==false){cfgTs=Date.now();
+    try{localStorage.setItem('lumen-cfg-ts',cfgTs);}catch(e){}}
   try{localStorage.setItem(CFG_KEY,JSON.stringify(currentConfig()));}catch(e){}
 }
 function saveConfig(){
@@ -2032,7 +2039,7 @@ function setSyncStatus(txt,ok){
   syncBtn.style.color=syncToken?'#25D0A4':'';
   syncBtn.style.borderColor=syncToken?'#25D0A4':'';
 }
-async function syncPull(){
+async function syncPull(force){
   if(!syncToken)return false;
   try{
     const r=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}?ref=main&_=${Date.now()}`,
@@ -2041,7 +2048,15 @@ async function syncPull(){
     if(!r.ok)throw new Error(r.status);
     const j=await r.json();
     syncSha=j.sha;
-    mergeConfig(JSON.parse(atob((j.content||'').replace(/\n/g,''))));
+    const remote=JSON.parse(atob((j.content||'').replace(/\n/g,'')));
+    if(!force&&remote.ts&&cfgTs&&remote.ts<cfgTs){
+      setSyncStatus('Réglages locaux plus récents — conservés',true);
+      syncPushNow(false);
+      return false;
+    }
+    mergeConfig(remote);
+    cfgTs=remote.ts||Date.now();
+    try{localStorage.setItem('lumen-cfg-ts',cfgTs);}catch(e){}
     setSyncStatus('Synchro active — réglages récupérés',true);
     return true;
   }catch(e){setSyncStatus('Synchro : lecture impossible ('+e.message+')',false);return false;}
@@ -2100,6 +2115,24 @@ document.getElementById('sync-on').addEventListener('click',async()=>{
   }else{
     await syncPushNow(false); // premier appareil : on publie la config actuelle
   }
+});
+document.getElementById('sync-get').addEventListener('click',async()=>{
+  if(!syncToken){setSyncStatus('Active d\'abord la synchro',false);return;}
+  setSyncStatus('Récupération…');
+  const before=state.symbol+'|'+state.tf+'|'+state.market;
+  const ok=await syncPull(true);   // force : la version du dépôt gagne
+  if(ok){
+    applyConfigToUI(); saveConfigLocal(false); state.cache={};
+    if(state.symbol+'|'+state.tf+'|'+state.market!==before)loadData(); else render();
+    setSyncStatus('Réglages récupérés depuis le dépôt',true);
+  }else setSyncStatus('Aucun réglage trouvé dans le dépôt',false);
+});
+document.getElementById('sync-put').addEventListener('click',async()=>{
+  if(!syncToken){setSyncStatus('Active d\'abord la synchro',false);return;}
+  cfgTs=Date.now();
+  try{localStorage.setItem('lumen-cfg-ts',cfgTs);}catch(e){}
+  setSyncStatus('Envoi…');
+  await syncPushNow(false);
 });
 document.getElementById('sync-off').addEventListener('click',()=>{
   syncToken='';
