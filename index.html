@@ -529,6 +529,27 @@ const calc = {
       if(ph)H.push(i); if(pl)Lo.push(i);}
     return {H,Lo};
   },
+  /* FVG enrichie : écart de 3 bougies, % acheteur (split volume), mitigation. */
+  fvgOne(bars,name){
+    const N=bars.length,z=[];
+    const pctAt=i=>{let bv=0,sv=0;
+      for(let k=i-2;k<=i;k++){const b=bars[k],rng=b.h-b.l;
+        if(rng>0){bv+=b.v*(b.c-b.l)/rng;sv+=b.v*(b.h-b.c)/rng;}
+        else{bv+=b.v/2;sv+=b.v/2;}}
+      return bv+sv>0?bv/(bv+sv)*100:50;};
+    for(let i=2;i<N;i++){
+      if(bars[i].l>bars[i-2].h)
+        z.push({type:'bull',top:bars[i].l,bot:bars[i-2].h,pct:pctAt(i),t:bars[i-1].t,si:i,tf:name});
+      if(bars[i].h<bars[i-2].l)
+        z.push({type:'bear',top:bars[i-2].l,bot:bars[i].h,pct:pctAt(i),t:bars[i-1].t,si:i,tf:name});
+    }
+    for(const q of z){
+      q.endT=null;
+      for(let j=q.si+1;j<N;j++)
+        if(q.type==='bull'?bars[j].c<q.bot:bars[j].c>q.top){q.endT=bars[j].t;break;}
+    }
+    return [...z.filter(q=>q.type==='bull').slice(-4),...z.filter(q=>q.type==='bear').slice(-4)];
+  },
   /* Prise de liquidité : mèche au-delà d'un pivot puis clôture de retour. */
   sweepOne(bars,name){
     const L=5,N=bars.length,out=[];
@@ -1098,6 +1119,8 @@ function idxOfTime(t){
   while(lo<hi){const m=(lo+hi+1)>>1;if(d[m].t<=t)lo=m;else hi=m-1;}
   return lo;
 }
+function tfLabel(tf){return ({1:'1m',5:'5m',15:'15m',60:'1H',240:'4H',1440:'1D'})[tf]||(tf+'m');}
+function autoHTF(tf){return ({1:15,5:15,15:60,60:240,240:1440,1440:1440})[tf]||60;}
 /* S'assure que les données par UT des prises de liquidité sont chargées. */
 function ensureSwp(){
   const t=state.indicators.swp.tfs;
@@ -1203,8 +1226,13 @@ function getInd(key){
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
-    if(key==='fvg')state.cache[ck]=calc.fvg(d);
-    if(key==='fvgm')state.cache[ck]=(ind.tf&&ind.tf!=='auto')?mtfZones('fvg',+ind.tf):calc.fvgm(d,f);
+    if(key==='fvg')state.cache[ck]=calc.fvgOne(d,tfLabel(state.tf));
+    if(key==='fvgm'){
+      const mtf=(ind.tf&&ind.tf!=='auto')?+ind.tf:autoHTF(state.tf);
+      ensureMTF(mtf);
+      const bars=mtfStore.data[mtf];
+      state.cache[ck]=bars?calc.fvgOne(bars,tfLabel(mtf)):[];
+    }
     if(key==='ob')state.cache[ck]=calc.ob(d);
     if(key==='obm')state.cache[ck]=(ind.tf&&ind.tf!=='auto')?mtfZones('ob',+ind.tf):calc.obm(d,f);
     if(key==='sr')state.cache[ck]=calc.sr(d);
@@ -1385,11 +1413,14 @@ function drawPrice(p,s,e,cw){
     plotLine(b.mid,s,e,yOf,hexA(CB,.95),1);
   }
 
-  // zones SMC (FVG / Order Blocks) — dessinées derrière tout le reste
-  for(const zc of [['fvg',.14,false],['fvgm',.10,true],['ob',.17,false],['obm',.11,true]])
+  // Order Blocks : zones génériques colorées
+  for(const zc of [['ob',.17,false],['obm',.11,true]])
     if(state.indicators[zc[0]].on)
       drawZoneSet(getInd(zc[0]),s,e,yOf,cw,hexA(S(zc[0],'cBull'),zc[1]),
         hexA(S(zc[0],'cBear'),zc[1]),zc[2],S(zc[0],'cBull'),S(zc[0],'cBear'));
+  // FVG enrichie : moitiés % acheteur/vendeur, bleu positif / violet négatif, MITIGATED
+  if(state.indicators.fvg.on) drawFVGMTF(getInd('fvg'),s,e,yOf,cw,p,'fvg');
+  if(state.indicators.fvgm.on) drawFVGMTF(getInd('fvgm'),s,e,yOf,cw,p,'fvgm');
 
   // prises de liquidité MTF : niveau balayé (pointillé) + marqueur + UT
   if(state.indicators.swp.on){
@@ -1607,6 +1638,45 @@ function drawPrice(p,s,e,cw){
   }
 }
 
+function drawFVGMTF(zones,s,e,yOf,cw,p,key){
+  const cPos=S(key,'cPos'), cNeg=S(key,'cNeg');
+  const TXT_G='#2ED47A', TXT_R='#FF5C5C', YEL='#EBBE00';
+  ctx.save();ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
+  for(const z of zones){
+    const zi=idxOfTime(z.t); if(zi==null||zi>e-1)continue;
+    const ze=z.endT==null?null:idxOfTime(z.endT);
+    const x0=Math.max(xOf(zi)-cw/2,0);
+    const x1=ze==null?(W-AXIS_W):Math.min(Math.max(xOf(ze)+cw/2,x0+2),W-AXIS_W);
+    if(x1<=x0)continue;
+    const w=x1-x0, pos=z.pct>=50;
+    const br=hexA(pos?cPos:cNeg,.65), bg=hexA(pos?cPos:cNeg,.12);
+    const mid=(z.top+z.bot)/2;
+    const buyT=pos?mid:z.top, buyB=pos?z.bot:mid;
+    const selT=pos?z.top:mid, selB=pos?mid:z.bot;
+    const rect=(t,b)=>{const ya=yOf(t),yb=yOf(b);return [ya,Math.max(1,yb-ya)];};
+    const [byA,byH]=rect(buyT,buyB), [syA,syH]=rect(selT,selB);
+    ctx.fillStyle=bg; ctx.fillRect(x0,byA,w,byH); ctx.fillRect(x0,syA,w,syH);
+    ctx.fillStyle='rgba(0,170,70,.45)'; ctx.fillRect(x0,byA,w*z.pct/100,byH);
+    ctx.fillStyle='rgba(220,40,40,.45)'; ctx.fillRect(x0,syA,w*(100-z.pct)/100,syH);
+    ctx.strokeStyle=br;ctx.lineWidth=1;
+    ctx.strokeRect(x0+.5,byA+.5,Math.max(1,w-1),Math.max(1,byH-1));
+    ctx.strokeRect(x0+.5,syA+.5,Math.max(1,w-1),Math.max(1,syH-1));
+    if(w>120&&byH>=12&&syH>=12){
+      ctx.textAlign='right';ctx.font='11px "IBM Plex Mono",monospace';
+      ctx.fillStyle=TXT_G;
+      ctx.fillText(`FVG ${z.type==='bull'?'achat':'vente'} ${z.tf} · ${Math.round(z.pct)}% ach`,x1-6,byA+byH/2+4);
+      ctx.fillStyle=TXT_R;
+      ctx.fillText(`${Math.round(100-z.pct)}% vend`,x1-6,syA+syH/2+4);
+      ctx.textAlign='left';
+    }
+    if(z.endT!=null&&byH+syH>=16&&w>=40){
+      ctx.textAlign='center';ctx.font='bold 11px "IBM Plex Mono",monospace';
+      ctx.fillStyle=YEL; ctx.fillText('MITIGATED',(x0+x1)/2,yOf(mid)+4);
+      ctx.textAlign='left';
+    }
+  }
+  ctx.restore();
+}
 function drawZoneSet(zones,s,e,yOf,cw,colBull,colBear,withBorder,bBull,bBear){
   for(const z of zones){
     if(z.iDraw>e-1)continue;
@@ -2575,12 +2645,12 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier',def:'#F45B7D'},
   ]},
   fvg:{title:'FVG',fields:[
-    {k:'cBull',t:'col',lab:'Haussier',def:'#25D0A4'},
-    {k:'cBear',t:'col',lab:'Baissier',def:'#F45B7D'},
+    {k:'cPos',t:'col',lab:'Positif (cadre bleu)',def:'#1E6EFF'},
+    {k:'cNeg',t:'col',lab:'Négatif (cadre violet)',def:'#9B37D7'},
   ]},
   fvgm:{title:'FVG MTF',fields:[
-    {k:'cBull',t:'col',lab:'Haussier',def:'#25D0A4'},
-    {k:'cBear',t:'col',lab:'Baissier',def:'#F45B7D'},
+    {k:'cPos',t:'col',lab:'Positif (cadre bleu)',def:'#1E6EFF'},
+    {k:'cNeg',t:'col',lab:'Négatif (cadre violet)',def:'#9B37D7'},
   ]},
   ob:{title:'Order Blocks',fields:[
     {k:'cBull',t:'col',lab:'Haussier',def:'#7AA2FF'},
