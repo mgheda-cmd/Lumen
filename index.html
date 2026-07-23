@@ -336,6 +336,16 @@ footer{
         <span class="srtf on" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="swp">
+        <span class="dot" style="background:#E1424B"></span>
+        <span class="name">Prises de liquidité <span class="desc">Sweep MTF</span></span>
+        <span class="srtf swptf" data-tf="1">1m</span>
+        <span class="srtf swptf" data-tf="5">5m</span>
+        <span class="srtf swptf on" data-tf="15">15m</span>
+        <span class="srtf swptf on" data-tf="60">1H</span>
+        <span class="srtf swptf on" data-tf="240">4H</span>
+        <span class="state">off</span>
+      </div>
       <h4>Panneaux séparés</h4>
       <div class="ind-item" data-ind="volume">
         <span class="dot" style="background:var(--faint)"></span>
@@ -509,6 +519,32 @@ function genData(symbol, tfMin){
 
 /* ---------- Calcul des indicateurs ---------- */
 const calc = {
+  pivots(bars,L){
+    const H=[],Lo=[],N=bars.length;
+    for(let i=L;i<N-L;i++){
+      let ph=true,pl=true;
+      for(let k=1;k<=L;k++){
+        if(bars[i].h<bars[i-k].h||bars[i].h<bars[i+k].h)ph=false;
+        if(bars[i].l>bars[i-k].l||bars[i].l>bars[i+k].l)pl=false;}
+      if(ph)H.push(i); if(pl)Lo.push(i);}
+    return {H,Lo};
+  },
+  /* Prise de liquidité : mèche au-delà d'un pivot puis clôture de retour. */
+  sweepOne(bars,name){
+    const L=5,N=bars.length,out=[];
+    const {H:pivH,Lo:pivL}=this.pivots(bars,L);
+    let lastH=null,lastL=null,hp=0,lp=0;
+    for(let i=0;i<N;i++){
+      while(hp<pivH.length&&pivH[hp]+L<=i){lastH=pivH[hp];hp++;}
+      while(lp<pivL.length&&pivL[lp]+L<=i){lastL=pivL[lp];lp++;}
+      const b=bars[i];
+      if(lastH!=null&&b.h>bars[lastH].h&&b.c<bars[lastH].h){
+        out.push({up:true,lvl:bars[lastH].h,t:b.t,fromT:bars[lastH].t,tf:name});lastH=null;}
+      if(lastL!=null&&b.l<bars[lastL].l&&b.c>bars[lastL].l){
+        out.push({up:false,lvl:bars[lastL].l,t:b.t,fromT:bars[lastL].t,tf:name});lastL=null;}
+    }
+    return out.slice(-8);
+  },
   sma(d,p){const out=new Array(d.length).fill(null);let s=0;
     for(let i=0;i<d.length;i++){s+=d[i].c; if(i>=p)s-=d[i-p].c; if(i>=p-1)out[i]=s/p;}return out;},
   ema(d,p,src){const out=new Array(d.length).fill(null);const k=2/(p+1);let e=null;
@@ -745,6 +781,7 @@ const state = {
     obm:{on:false,tf:'auto'},
     lrc:{on:false,period:100},
     sr:{on:false,tfs:{'5':false,'15':false,'60':true,'240':true}},
+    swp:{on:false,tfs:{'1':false,'5':false,'15':true,'60':true,'240':true}},
     volume:{on:true},
     rsi:{on:false,period:14},
     macd:{on:false,tf:'chart'},
@@ -831,8 +868,10 @@ function applyConfigToUI(){
     const ind=state.indicators[item.dataset.ind];
     if(inp&&ind&&ind.period)inp.value=ind.period;
   });
-  document.querySelectorAll('.srtf').forEach(el=>
+  document.querySelectorAll('.srtf:not(.mtf):not(.swptf)').forEach(el=>
     el.classList.toggle('on',!!state.indicators.sr.tfs[el.dataset.tf]));
+  document.querySelectorAll('.srtf.swptf').forEach(el=>
+    el.classList.toggle('on',!!state.indicators.swp.tfs[el.dataset.tf]));
   document.querySelectorAll('.srtf.mtf').forEach(el=>
     el.classList.toggle('on',state.indicators[el.dataset.ind2].tf===el.dataset.tf));
   syncMenu();
@@ -1050,6 +1089,20 @@ async function loadData(){
 }
 /* ---------- Données multi-timeframe (MACD MTF) ---------- */
 const mtfStore={key:'',data:{}};
+/* Index de la bougie du graphe contenant cet instant (recherche binaire). */
+function idxOfTime(t){
+  const d=state.data;
+  if(!d.length||t>d[d.length-1].t)return null;
+  if(t<=d[0].t)return 0;
+  let lo=0,hi=d.length-1;
+  while(lo<hi){const m=(lo+hi+1)>>1;if(d[m].t<=t)lo=m;else hi=m-1;}
+  return lo;
+}
+/* S'assure que les données par UT des prises de liquidité sont chargées. */
+function ensureSwp(){
+  const t=state.indicators.swp.tfs;
+  for(const tf of ['5','15','60','240'])if(t[tf]&&+tf!==state.tf)ensureMTF(+tf);
+}
 function ensureMTF(tf){
   const k=state.symbol+'|'+state.market;
   if(mtfStore.key!==k){mtfStore.key=k;mtfStore.data={};}
@@ -1133,6 +1186,18 @@ function getInd(key){
       }
     }
     if(key==='ema2')state.cache[ck]=calc.ema(d,ind.period);
+    if(key==='swp'){
+      const list=[['1','1m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
+      const out=[];
+      for(const [tf,name] of list){
+        if(!ind.tfs[tf]||+tf<state.tf)continue;   // on ignore les UT sous le graphe
+        if(+tf===state.tf){out.push(...calc.sweepOne(d,name));continue;}
+        ensureMTF(+tf);
+        const bars=mtfStore.data[+tf];
+        if(bars)out.push(...calc.sweepOne(bars,name));
+      }
+      state.cache[ck]=out;
+    }
     if(key==='stoch')state.cache[ck]=calc.stoch(d,ind.period);
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
@@ -1325,6 +1390,26 @@ function drawPrice(p,s,e,cw){
     if(state.indicators[zc[0]].on)
       drawZoneSet(getInd(zc[0]),s,e,yOf,cw,hexA(S(zc[0],'cBull'),zc[1]),
         hexA(S(zc[0],'cBear'),zc[1]),zc[2],S(zc[0],'cBull'),S(zc[0],'cBear'));
+
+  // prises de liquidité MTF : niveau balayé (pointillé) + marqueur + UT
+  if(state.indicators.swp.on){
+    const cU=S('swp','cUp'), cD=S('swp','cDown');
+    ctx.save();ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
+    ctx.font='10px "IBM Plex Mono",monospace';
+    for(const m of getInd('swp')){
+      const i=idxOfTime(m.t);if(i==null)continue;
+      const x=xOf(i),y=yOf(m.lvl),col=m.up?cU:cD;
+      const jf=idxOfTime(m.fromT),xf=jf!=null?xOf(jf):0;
+      ctx.strokeStyle=hexA(col,.6);ctx.setLineDash([3,3]);ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(Math.max(xf,0),y+.5);ctx.lineTo(x,y+.5);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=col;ctx.beginPath();
+      if(m.up){ctx.moveTo(x,y-9);ctx.lineTo(x-5,y-1);ctx.lineTo(x+5,y-1);}
+      else{ctx.moveTo(x,y+9);ctx.lineTo(x-5,y+1);ctx.lineTo(x+5,y+1);}
+      ctx.closePath();ctx.fill();
+      ctx.fillText((m.up?'▲ ':'▼ ')+m.tf,x+7,m.up?y-4:y+12);
+    }
+    ctx.restore();
+  }
 
   // nuage Ichimoku (sous le prix)
   if(state.indicators.ichi.on){
@@ -1752,6 +1837,7 @@ const IND_META={
   sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   lrc:{label:p=>'Régression '+p,color:'#9BE6FF'},
+  swp:{label:()=>'Prises de liquidité',color:'#E1424B'},
 };
 function updateChips(){
   const i=hoverIndex()??state.data.length-1;
@@ -1992,6 +2078,7 @@ menu.querySelectorAll('.ind-item').forEach(item=>{
     if(e.target.classList&&e.target.classList.contains('srtf'))return;
     state.indicators[key].on=!state.indicators[key].on;
     if(key==='sr'&&state.indicators.sr.on)ensureSR();
+    if(key==='swp'&&state.indicators.swp.on)ensureSwp();
     syncMenu();saveConfig();render();
   });
   if(input)input.addEventListener('change',()=>{
@@ -2022,7 +2109,7 @@ document.querySelectorAll('.srtf.mtf').forEach(el=>{
   });
 });
 document.querySelectorAll('.srtf').forEach(el=>{
-  if(el.classList.contains('mtf'))return;
+  if(el.classList.contains('mtf')||el.classList.contains('swptf'))return;
   el.addEventListener('click',e=>{
     e.stopPropagation();
     const tf=el.dataset.tf, t=state.indicators.sr.tfs;
@@ -2030,6 +2117,17 @@ document.querySelectorAll('.srtf').forEach(el=>{
     el.classList.toggle('on',t[tf]);
     if(!t[tf])delete srStore.data[tf];
     if(state.indicators.sr.on&&t[tf])ensureSR();
+    saveConfig();render();
+  });
+});
+document.querySelectorAll('.srtf.swptf').forEach(el=>{
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    const tf=el.dataset.tf, t=state.indicators.swp.tfs;
+    t[tf]=!t[tf];
+    el.classList.toggle('on',t[tf]);
+    state.cache={};
+    if(state.indicators.swp.on&&t[tf]&&+tf!==state.tf)ensureMTF(+tf);
     saveConfig();render();
   });
 });
@@ -2491,6 +2589,10 @@ const SCHEMA={
   obm:{title:'OB MTF',fields:[
     {k:'cBull',t:'col',lab:'Haussier',def:'#7AA2FF'},
     {k:'cBear',t:'col',lab:'Baissier',def:'#FF9D66'},
+  ]},
+  swp:{title:'Prises de liquidité',fields:[
+    {k:'cUp',t:'col',lab:'Liquidité haute prise',def:'#E1424B'},
+    {k:'cDown',t:'col',lab:'Liquidité basse prise',def:'#00A55A'},
   ]},
 };
 function S(ind,key){
