@@ -547,6 +547,49 @@ const state = {
   yScale:{auto:true,lo:0,hi:0}, pricePaneH:0,
 };
 
+/* ---------- Mémorisation de la configuration ---------- */
+const CFG_KEY='lumen-config-v1';
+function saveConfig(){
+  try{
+    localStorage.setItem(CFG_KEY,JSON.stringify({
+      symbol:state.symbol, tf:state.tf, type:state.type, indicators:state.indicators
+    }));
+  }catch(e){/* stockage indisponible : on continue sans mémoire */}
+}
+function loadConfig(){
+  try{
+    const c=JSON.parse(localStorage.getItem(CFG_KEY)||'null');
+    if(!c)return;
+    if(typeof c.symbol==='string'&&/^[A-Z0-9]{5,20}$/.test(c.symbol))state.symbol=c.symbol;
+    if(TF_MAP[c.tf])state.tf=+c.tf;
+    if(['candles','line','area'].includes(c.type))state.type=c.type;
+    if(c.indicators)for(const k of Object.keys(state.indicators)){
+      const s=c.indicators[k]; if(!s)continue;
+      if(typeof s.on==='boolean')state.indicators[k].on=s.on;
+      if(typeof s.period==='number'&&s.period>=2&&s.period<=400)
+        state.indicators[k].period=s.period;
+      if(s.tfs&&state.indicators[k].tfs)
+        for(const t of Object.keys(state.indicators[k].tfs))
+          if(typeof s.tfs[t]==='boolean')state.indicators[k].tfs[t]=s.tfs[t];
+    }
+  }catch(e){}
+}
+function applyConfigToUI(){
+  symBtn.textContent=labelOf(state.symbol)+' ▾';
+  document.querySelectorAll('.tf-group button').forEach(b=>
+    b.classList.toggle('active',+b.dataset.tf===state.tf));
+  document.querySelectorAll('.type-group button').forEach(b=>
+    b.classList.toggle('active',b.dataset.type===state.type));
+  menu.querySelectorAll('.ind-item').forEach(item=>{
+    const inp=item.querySelector('input');
+    const ind=state.indicators[item.dataset.ind];
+    if(inp&&ind&&ind.period)inp.value=ind.period;
+  });
+  document.querySelectorAll('.srtf').forEach(el=>
+    el.classList.toggle('on',!!state.indicators.sr.tfs[el.dataset.tf]));
+  syncMenu();
+}
+
 /* ---------- Flux Binance (temps réel) ---------- */
 const REST_HOSTS=['https://api.binance.com','https://data-api.binance.vision'];
 const WS_HOSTS=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'];
@@ -1364,14 +1407,14 @@ menu.querySelectorAll('.ind-item').forEach(item=>{
     if(e.target.classList&&e.target.classList.contains('srtf'))return;
     state.indicators[key].on=!state.indicators[key].on;
     if(key==='sr'&&state.indicators.sr.on)ensureSR();
-    syncMenu();render();
+    syncMenu();saveConfig();render();
   });
   if(input)input.addEventListener('change',()=>{
     const v=Math.max(2,Math.min(200,parseInt(input.value)||14));
     input.value=v;
     state.indicators[key].period=v;
     delete state.cache[key+''];state.cache={};
-    render();
+    saveConfig();render();
   });
 });
 function syncMenu(){
@@ -1389,7 +1432,7 @@ document.querySelectorAll('.srtf').forEach(el=>{
     el.classList.toggle('on',t[tf]);
     if(!t[tf])delete srStore.data[tf];
     if(state.indicators.sr.on&&t[tf])ensureSR();
-    render();
+    saveConfig();render();
   });
 });
 
@@ -1435,15 +1478,16 @@ symList.addEventListener('click',e=>{
   state.symbol=it.dataset.sym;
   symBtn.textContent=labelOf(state.symbol)+' ▾';
   symMenu.classList.remove('open');
+  saveConfig();
   loadData();
 });
 document.querySelectorAll('.tf-group button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tf-group button').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');state.tf=+b.dataset.tf;loadData();
+  b.classList.add('active');state.tf=+b.dataset.tf;saveConfig();loadData();
 }));
 document.querySelectorAll('.type-group button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.type-group button').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');state.type=b.dataset.type;render();
+  b.classList.add('active');state.type=b.dataset.type;saveConfig();render();
 }));
 
 function updateHeader(){
@@ -1459,7 +1503,8 @@ function updateHeader(){
 }
 
 /* ---------- Démarrage ---------- */
-syncMenu();
+loadConfig();
+applyConfigToUI();
 loadData();
 resize();
 </script>
