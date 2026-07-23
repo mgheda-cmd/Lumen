@@ -94,6 +94,11 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted);
 }
 .ind-item.on .state{background:rgba(37,208,164,.12);border-color:var(--up);color:var(--up)}
+.srtf{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:5px;
+  border:1px solid var(--line);color:var(--muted);cursor:pointer;flex:none;
+}
+.srtf.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
 
 /* ---------- Zone graphique ---------- */
 #chart-area{flex:1; position:relative; min-height:0}
@@ -236,7 +241,11 @@ footer{
       </div>
       <div class="ind-item" data-ind="sr">
         <span class="dot" style="background:#A8B8D8"></span>
-        <span class="name">Supports / Résist. <span class="desc">Niveaux pivots auto</span></span>
+        <span class="name">S/R MTF <span class="desc">Multi unités de temps</span></span>
+        <span class="srtf" data-tf="5">5m</span>
+        <span class="srtf" data-tf="15">15m</span>
+        <span class="srtf on" data-tf="60">1H</span>
+        <span class="srtf on" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
       <h4>Panneaux séparés</h4>
@@ -305,7 +314,7 @@ const SYMBOLS = {
   XRPUSDT:{seed:55, base:0.55,  vol:0.020},
   DOGEUSDT:{seed:9, base:0.12,  vol:0.025},
 };
-const TF_MAP = {1:'1m',15:'15m',60:'1h',240:'4h',1440:'1d'};
+const TF_MAP = {1:'1m',5:'5m',15:'15m',60:'1h',240:'4h',1440:'1d'};
 const N_BARS = 500;
 
 function genData(symbol, tfMin){
@@ -526,7 +535,7 @@ const state = {
     fvgm:{on:false},
     ob:{on:false},
     obm:{on:false},
-    sr:{on:false},
+    sr:{on:false,tfs:{'5':false,'15':false,'60':true,'240':true}},
     volume:{on:true},
     rsi:{on:false,period:14},
     macd:{on:false},
@@ -635,6 +644,30 @@ function startStream(g){
       if(g===gen){try{ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}};
   }catch(e){setStatus('poll');startPolling(g);}
 }
+/* ---------- S/R multi-timeframe : données par unité de temps ---------- */
+const srStore={sym:null,data:{}};
+async function ensureSR(){
+  const ind=state.indicators.sr;
+  if(!ind.on)return;
+  if(srStore.sym!==state.symbol){srStore.sym=state.symbol;srStore.data={};}
+  for(const tf of Object.keys(ind.tfs)){
+    if(!ind.tfs[tf]||srStore.data[tf])continue;
+    srStore.data[tf]={levels:[],loading:true};
+    try{
+      const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[tf]}&limit=500`);
+      if(srStore.sym!==state.symbol)return;
+      const dd=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+      srStore.data[tf]={levels:calc.sr(dd),loading:false};
+      render();
+    }catch(e){
+      // repli hors-ligne : si l'UT demandée est celle du graphique, calcul local
+      if(+tf===state.tf&&state.data.length)
+        srStore.data[tf]={levels:calc.sr(state.data),loading:false};
+      else delete srStore.data[tf];
+    }
+  }
+}
+
 async function loadData(){
   const g=++gen; stopFeeds(); setStatus('loading');
   state.data=[]; state.cache={};
@@ -651,6 +684,7 @@ async function loadData(){
     state.view={start:state.data.length-150,count:150};
     updateHeader(); render();
     startStream(g);
+    ensureSR();
   }catch(e){
     if(g!==gen)return;
     state.data=genData(state.symbol,state.tf);
@@ -908,22 +942,26 @@ function drawPrice(p,s,e,cw){
     }
   }
 
-  // supports / résistances
+  // supports / résistances multi-timeframe
   if(state.indicators.sr.on){
-    const lv=getInd('sr');
+    const lastC=d[d.length-1].c;
+    const TFL={'5':'5m','15':'15m','60':'1H','240':'4H'};
     ctx.font='10px "IBM Plex Mono",monospace';
-    for(const l of lv){
-      const y=yOf(l.p);
-      if(y<p.y+4||y>p.y+p.h-4)continue;
-      const base=l.res?'rgba(244,91,125,':'rgba(37,208,164,';
-      ctx.strokeStyle=base+(l.touches>=3?'.75)':'.45)');
-      ctx.lineWidth=l.touches>=3?1.6:1;
-      ctx.beginPath();
-      ctx.moveTo(Math.max(xOf(l.i)-cw/2,0),y+.5);
-      ctx.lineTo(W-AXIS_W,y+.5);
-      ctx.stroke();
-      ctx.fillStyle=base+'.9)';
-      ctx.fillText(fmt(l.p), W-AXIS_W-78, y-3);
+    for(const tf of ['5','15','60','240']){
+      if(!state.indicators.sr.tfs[tf])continue;
+      const sd=srStore.data[tf];
+      if(!sd||sd.loading)continue;
+      for(const l of sd.levels){
+        const y=yOf(l.p);
+        if(y<p.y+4||y>p.y+p.h-4)continue;
+        const res=l.p>=lastC;
+        const base=res?'rgba(244,91,125,':'rgba(37,208,164,';
+        ctx.strokeStyle=base+(l.touches>=3?'.75)':'.4)');
+        ctx.lineWidth=tf==='240'?1.8:tf==='60'?1.4:1;
+        ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();
+        ctx.fillStyle=base+'.95)';
+        ctx.fillText(TFL[tf]+' · '+fmt(l.p), W-AXIS_W-118, y-3);
+      }
     }
     ctx.lineWidth=1;
   }
@@ -1114,7 +1152,7 @@ const IND_META={
   fvgm:{label:()=>'FVG MTF '+(HTF_NAME[state.tf]||''),color:'#1B8F72'},
   ob:{label:()=>'Order Blocks',color:'var(--accent)'},
   obm:{label:()=>'OB MTF '+(HTF_NAME[state.tf]||''),color:'#FF9D66'},
-  sr:{label:()=>'S/R auto',color:'#A8B8D8'},
+  sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
 };
 function updateChips(){
   const i=hoverIndex()??state.data.length-1;
@@ -1198,7 +1236,9 @@ menu.querySelectorAll('.ind-item').forEach(item=>{
   const input=item.querySelector('input');
   item.addEventListener('click',e=>{
     if(e.target.tagName==='INPUT')return;
+    if(e.target.classList&&e.target.classList.contains('srtf'))return;
     state.indicators[key].on=!state.indicators[key].on;
+    if(key==='sr'&&state.indicators.sr.on)ensureSR();
     syncMenu();render();
   });
   if(input)input.addEventListener('change',()=>{
@@ -1216,6 +1256,17 @@ function syncMenu(){
     item.querySelector('.state').textContent=on?'on':'off';
   });
 }
+document.querySelectorAll('.srtf').forEach(el=>{
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    const tf=el.dataset.tf, t=state.indicators.sr.tfs;
+    t[tf]=!t[tf];
+    el.classList.toggle('on',t[tf]);
+    if(!t[tf])delete srStore.data[tf];
+    if(state.indicators.sr.on&&t[tf])ensureSR();
+    render();
+  });
+});
 
 /* ---------- Sélecteurs d'en-tête ---------- */
 /* ---------- Sélecteur de paires USDT (toutes les paires Binance) ---------- */
