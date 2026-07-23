@@ -248,24 +248,32 @@ footer{
         <span class="state">off</span>
       </div>
       <h4>Smart Money Concepts</h4>
-      <div class="ind-item" data-ind="fvg">
-        <span class="dot" style="background:#25D0A4"></span>
-        <span class="name">FVG <span class="desc">Fair Value Gaps</span></span>
-        <span class="state">off</span>
-      </div>
-      <div class="ind-item" data-ind="fvgm">
-        <span class="dot" style="background:#1B8F72"></span>
-        <span class="name">FVG MTF <span class="desc">UT supérieure</span></span>
-        <span class="state">off</span>
-      </div>
       <div class="ind-item" data-ind="ob">
         <span class="dot" style="background:var(--accent)"></span>
-        <span class="name">Order Blocks <span class="desc">Blocs d'ordres</span></span>
+        <span class="name">Order Blocks MTF <span class="desc">Dernière bougie avant BOS</span></span>
+        <span class="srtf on" data-tf="1">1m</span>
+        <span class="srtf on" data-tf="5">5m</span>
+        <span class="srtf on" data-tf="15">15m</span>
+        <span class="srtf on" data-tf="60">1H</span>
+        <span class="srtf on" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
-      <div class="ind-item" data-ind="obm">
-        <span class="dot" style="background:#FF9D66"></span>
-        <span class="name">OB MTF <span class="desc">UT supérieure</span></span>
+      <div class="ind-item" data-ind="fvg">
+        <span class="dot" style="background:#1E6EFF"></span>
+        <span class="name">FVG MTF <span class="desc">% acheteur / vendeur</span></span>
+        <span class="srtf on" data-tf="1">1m</span>
+        <span class="srtf on" data-tf="5">5m</span>
+        <span class="srtf on" data-tf="15">15m</span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="swp">
+        <span class="dot" style="background:#E1424B"></span>
+        <span class="name">Prises de liquidité <span class="desc">Sweep de pivot + retour</span></span>
+        <span class="srtf on" data-tf="1">1m</span>
+        <span class="srtf on" data-tf="5">5m</span>
+        <span class="srtf on" data-tf="15">15m</span>
+        <span class="srtf on" data-tf="60">1H</span>
+        <span class="srtf on" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="sr">
@@ -304,6 +312,11 @@ footer{
         <span class="dot" style="background:#C9D46B"></span>
         <span class="name">ATR <span class="desc">Volatilité moyenne</span></span>
         <input type="number" min="2" max="50" value="14" aria-label="Période ATR">
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="impm">
+        <span class="dot" style="background:#25D0A4"></span>
+        <span class="name">Impulse MACD <span class="desc">LazyBear 34 / 9</span></span>
         <span class="state">off</span>
       </div>
     </div>
@@ -482,85 +495,6 @@ const calc = {
       if(i>=26&&T[i-26]!=null&&K[i-26]!=null)A[i]=(T[i-26]+K[i-26])/2;
       if(i>=26+51)B[i]=(hh(i-26,52)+ll(i-26,52))/2;}
     return {T,K,A,B};},
-  /* --- Smart Money Concepts : FVG & Order Blocks --- */
-  aggregate(d,f){
-    const out=[];
-    for(let i=0;i<d.length;i+=f){
-      const c=d.slice(i,i+f);
-      out.push({t:c[0].t,o:c[0].o,c:c[c.length-1].c,
-        h:Math.max(...c.map(b=>b.h)),l:Math.min(...c.map(b=>b.l)),
-        i0:i,i1:Math.min(i+c.length-1,d.length-1)});
-    }
-    return out;
-  },
-  fvgZones(bars){
-    const z=[];
-    for(let i=2;i<bars.length;i++){
-      const a=bars[i-2],c=bars[i];
-      const iDraw='i0'in bars[i-1]?bars[i-1].i0:i-1;
-      const iCheck='i1'in bars[i]?bars[i].i1:i;
-      if(c.l>a.h)z.push({type:'bull',top:c.l,bot:a.h,iDraw,iCheck});
-      if(c.h<a.l)z.push({type:'bear',top:a.l,bot:c.h,iDraw,iCheck});
-    }
-    return z;
-  },
-  obZones(bars){
-    const z=[],N=bars.length,L=3;
-    const pivH=[],pivL=[];
-    for(let i=L;i<N-L;i++){
-      let ph=true,pl=true;
-      for(let k=1;k<=L;k++){
-        if(bars[i].h<bars[i-k].h||bars[i].h<bars[i+k].h)ph=false;
-        if(bars[i].l>bars[i-k].l||bars[i].l>bars[i+k].l)pl=false;
-      }
-      if(ph)pivH.push(i); if(pl)pivL.push(i);
-    }
-    let lastH=null,lastL=null,hp=0,lp=0;
-    for(let i=0;i<N;i++){
-      while(hp<pivH.length&&pivH[hp]+L<=i){lastH=pivH[hp];hp++;}
-      while(lp<pivL.length&&pivL[lp]+L<=i){lastL=pivL[lp];lp++;}
-      if(lastH!=null&&bars[i].c>bars[lastH].h){
-        for(let j=i-1;j>Math.max(i-11,lastH-1);j--){
-          if(bars[j].c<bars[j].o){
-            z.push({type:'bull',top:bars[j].h,bot:bars[j].l,
-              iDraw:'i0'in bars[j]?bars[j].i0:j,
-              iCheck:'i1'in bars[i]?bars[i].i1:i});
-            break;}
-        }
-        lastH=null;
-      }
-      if(lastL!=null&&bars[i].c<bars[lastL].l){
-        for(let j=i-1;j>Math.max(i-11,lastL-1);j--){
-          if(bars[j].c>bars[j].o){
-            z.push({type:'bear',top:bars[j].h,bot:bars[j].l,
-              iDraw:'i0'in bars[j]?bars[j].i0:j,
-              iCheck:'i1'in bars[i]?bars[i].i1:i});
-            break;}
-        }
-        lastL=null;
-      }
-    }
-    return z;
-  },
-  finalize(zones,d,kind){
-    for(const z of zones){
-      z.end=null;
-      for(let j=z.iCheck+1;j<d.length;j++){
-        if(kind==='fvg'){
-          if(z.type==='bull'&&d[j].l<=z.bot){z.end=j;break;}
-          if(z.type==='bear'&&d[j].h>=z.top){z.end=j;break;}
-        }else{
-          if(z.type==='bull'&&d[j].c<z.bot){z.end=j;break;}
-          if(z.type==='bear'&&d[j].c>z.top){z.end=j;break;}
-        }
-      }
-    }
-    return zones.slice(-60);
-  },
-  fvg(d){return this.finalize(this.fvgZones(d),d,'fvg');},
-  fvgm(d,f){return this.finalize(this.fvgZones(this.aggregate(d,f)),d,'fvg');},
-  ob(d){return this.finalize(this.obZones(d),d,'ob');},
-  obm(d,f){return this.finalize(this.obZones(this.aggregate(d,f)),d,'ob');},
   sr(d){
     const L=5, piv=[];
     for(let i=L;i<d.length-L;i++){
@@ -588,12 +522,131 @@ const calc = {
       .map(c=>({p:c.sum/c.n,touches:c.n,i:c.i,res:c.sum/c.n>=lastC}))
       .sort((a,b)=>b.touches-a.touches||b.i-a.i)
       .slice(0,10);
+  },
+
+  /* ==========================================================================
+     Indicateurs repris à l'identique de nos scripts Pine (TradingView).
+     Les UT visées sont reconstruites par agrégation depuis les bougies du
+     graphe. Descendre SOUS l'UT du graphe est impossible (ce serait de
+     l'échantillonnage, pas de la donnée) : ces UT-là sont donc ignorées.
+     ========================================================================== */
+  MTF:[[1,'1m'],[5,'5m'],[15,'15m'],[60,'1h'],[240,'4h']],
+  pivots(bars,L){
+    const H=[],Lo=[],N=bars.length;
+    for(let i=L;i<N-L;i++){
+      let ph=true,pl=true;
+      for(let k=1;k<=L;k++){
+        if(bars[i].h<bars[i-k].h||bars[i].h<bars[i+k].h)ph=false;
+        if(bars[i].l>bars[i-k].l||bars[i].l>bars[i+k].l)pl=false;}
+      if(ph)H.push(i); if(pl)Lo.push(i);}
+    return {H,Lo};
+  },
+
+  /* --- Order Blocks MTF : dernière bougie opposée avant l'impulsion qui casse
+         la structure (BOS). Mitigée = clôture au travers -> la zone disparaît. --- */
+  obOne(bars,name,tf){
+    const L=5,N=bars.length,atr=this.atr(bars,14);
+    const {H:pivH,Lo:pivL}=this.pivots(bars,L);
+    let lastH=null,lastL=null,hp=0,lp=0;
+    const z=[];
+    for(let i=1;i<N;i++){
+      while(hp<pivH.length&&pivH[hp]+L<=i){lastH=bars[pivH[hp]].h;hp++;}
+      while(lp<pivL.length&&pivL[lp]+L<=i){lastL=bars[pivL[lp]].l;lp++;}
+      const b=bars[i];
+      if(atr[i]==null||Math.abs(b.c-b.o)<=1.2*atr[i])continue;
+      if(lastH!=null&&b.c>lastH&&bars[i-1].c<=lastH){
+        for(let j=i-1;j>=Math.max(0,i-20);j--)
+          if(bars[j].c<bars[j].o){
+            z.push({type:'bull',top:bars[j].h,bot:bars[j].l,t:bars[j].t,si:i,tf:name,k:tf});break;}
+        lastH=null;}
+      if(lastL!=null&&b.c<lastL&&bars[i-1].c>=lastL){
+        for(let j=i-1;j>=Math.max(0,i-20);j--)
+          if(bars[j].c>bars[j].o){
+            z.push({type:'bear',top:bars[j].h,bot:bars[j].l,t:bars[j].t,si:i,tf:name,k:tf});break;}
+        lastL=null;}
+    }
+    const alive=z.filter(q=>{
+      for(let j=q.si+1;j<N;j++)
+        if(q.type==='bull'?bars[j].c<q.bot:bars[j].c>q.top)return false;
+      return true;});
+    // 3 max par sens et par UT, comme le réglage TradingView
+    return [...alive.filter(q=>q.type==='bull').slice(-3),
+            ...alive.filter(q=>q.type==='bear').slice(-3)];
+  },
+
+  /* --- FVG MTF : gap de 3 bougies, coupé en deux moitiés égales.
+         % acheteur = volume réparti selon la position de la clôture.
+         Mitigée -> la zone RESTE, figée, marquée MITIGATED. --- */
+  fvgOne(bars,name,tf){
+    const N=bars.length,z=[];
+    const pctAt=i=>{let bv=0,sv=0;
+      for(let k=i-2;k<=i;k++){const b=bars[k],rng=b.h-b.l;
+        if(rng>0){bv+=b.v*(b.c-b.l)/rng;sv+=b.v*(b.h-b.c)/rng;}
+        else{bv+=b.v/2;sv+=b.v/2;}}
+      return bv+sv>0?bv/(bv+sv)*100:50;};
+    for(let i=2;i<N;i++){
+      if(bars[i].l>bars[i-2].h)
+        z.push({type:'bull',top:bars[i].l,bot:bars[i-2].h,pct:pctAt(i),
+                t:bars[i-1].t,si:i,tf:name,k:tf});
+      if(bars[i].h<bars[i-2].l)
+        z.push({type:'bear',top:bars[i-2].l,bot:bars[i].h,pct:pctAt(i),
+                t:bars[i-1].t,si:i,tf:name,k:tf});
+    }
+    for(const q of z){
+      q.endT=null;
+      for(let j=q.si+1;j<N;j++)
+        if(q.type==='bull'?bars[j].c<q.bot:bars[j].c>q.top){q.endT=bars[j].t;break;}
+    }
+    return [...z.filter(q=>q.type==='bull').slice(-4),
+            ...z.filter(q=>q.type==='bear').slice(-4)];
+  },
+
+  /* --- Prises de liquidité MTF : mèche au-delà d'un pivot puis clôture de retour --- */
+  sweepOne(bars,name,tf){
+    const L=5,N=bars.length,out=[];
+    const {H:pivH,Lo:pivL}=this.pivots(bars,L);
+    let lastH=null,lastL=null,hp=0,lp=0;
+    for(let i=0;i<N;i++){
+      while(hp<pivH.length&&pivH[hp]+L<=i){lastH=pivH[hp];hp++;}
+      while(lp<pivL.length&&pivL[lp]+L<=i){lastL=pivL[lp];lp++;}
+      const b=bars[i];
+      if(lastH!=null&&b.h>bars[lastH].h&&b.c<bars[lastH].h){
+        out.push({up:true,lvl:bars[lastH].h,t:b.t,fromT:bars[lastH].t,tf:name,k:tf});
+        lastH=null;}
+      if(lastL!=null&&b.l<bars[lastL].l&&b.c>bars[lastL].l){
+        out.push({up:false,lvl:bars[lastL].l,t:b.t,fromT:bars[lastL].t,tf:name,k:tf});
+        lastL=null;}
+    }
+    return out.slice(-8);
+  },
+
+  /* --- Impulse MACD (LazyBear) : ZLEMA face au canal RMA(haut)/RMA(bas) --- */
+  rma(arr,p){const o=new Array(arr.length).fill(null);let a=null;
+    for(let i=0;i<arr.length;i++){
+      if(i<p-1)continue;
+      if(i===p-1){let s=0;for(let j=0;j<p;j++)s+=arr[j];a=s/p;}
+      else a=(a*(p-1)+arr[i])/p;
+      o[i]=a;}return o;},
+  impmacd(d){
+    const L=34,S=9;
+    const src=d.map(b=>(b.h+b.l+b.c)/3);
+    const e1=this.ema(d,L,src), e2=this.ema(d,L,e1);
+    const mi=e1.map((v,i)=>(v!=null&&e2[i]!=null)?v+(v-e2[i]):null);
+    const hi=this.rma(d.map(b=>b.h),L), lo=this.rma(d.map(b=>b.l),L);
+    const md=d.map((_,i)=>(mi[i]==null||hi[i]==null||lo[i]==null)?null
+      :(mi[i]>hi[i]?mi[i]-hi[i]:mi[i]<lo[i]?mi[i]-lo[i]:0));
+    const sb=new Array(d.length).fill(null);
+    for(let i=S-1;i<d.length;i++){let s=0,ok=true;
+      for(let j=i-S+1;j<=i;j++){if(md[j]==null){ok=false;break;}s+=md[j];}
+      if(ok)sb[i]=s/S;}
+    const sh=md.map((v,i)=>(v!=null&&sb[i]!=null)?v-sb[i]:null);
+    // code couleur d'origine LazyBear : hlc3 face à la ZLEMA puis au canal
+    const col=d.map((_,i)=>(mi[i]==null||hi[i]==null||lo[i]==null)?null
+      :(src[i]>mi[i] ? (src[i]>hi[i]?'#25D0A4':'#1B8F72')
+                     : (src[i]<lo[i]?'#F45B7D':'#E8A33D')));
+    return {md,sb,sh,col};
   }
 };
-/* Unité de temps supérieure pour le MTF : 1m→15m, 15m→1H, 1H→4H, 4H→1J, 1J→1S */
-const HTF_FACTOR={1:15,15:4,60:4,240:6,1440:7};
-const HTF_NAME={1:'15m',15:'1H',60:'4H',240:'1J',1440:'1S'};
-
 /* ---------- État global ---------- */
 const state = {
   symbol:'BTCUSDT', tf:60, type:'candles', market:'perp',
@@ -606,16 +659,16 @@ const state = {
     vwap:{on:false},
     ichi:{on:false},
     st:{on:false},
-    fvg:{on:false},
-    fvgm:{on:false},
-    ob:{on:false},
-    obm:{on:false},
+    ob:{on:false,tfs:{'1':true,'5':true,'15':true,'60':true,'240':true}},
+    fvg:{on:false,tfs:{'1':true,'5':true,'15':true}},
+    swp:{on:false,tfs:{'1':true,'5':true,'15':true,'60':true,'240':true}},
     sr:{on:false,tfs:{'5':false,'15':false,'60':true,'240':true}},
     volume:{on:true},
     rsi:{on:false,period:14},
     macd:{on:false},
     stoch:{on:false,period:14},
     atr:{on:false,period:14},
+    impm:{on:false},
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
@@ -680,8 +733,8 @@ function applyConfigToUI(){
     const ind=state.indicators[item.dataset.ind];
     if(inp&&ind&&ind.period)inp.value=ind.period;
   });
-  document.querySelectorAll('.srtf').forEach(el=>
-    el.classList.toggle('on',!!state.indicators.sr.tfs[el.dataset.tf]));
+  document.querySelectorAll('.ind-item .srtf[data-tf]').forEach(el=>
+    el.classList.toggle('on',!!state.indicators[el.closest('.ind-item').dataset.ind].tfs[el.dataset.tf]));
   syncMenu();
 }
 
@@ -839,6 +892,53 @@ window.addEventListener('online',()=>{
   const g=gen; resync(g);
   if(!ws){wsRetry=0;startStream(g);}
 });
+/* ---------- Données MTF des indicateurs SMC (Order Blocks, FVG, prises de
+   liquidité). Comme request.security sur TradingView : chaque UT a ses PROPRES
+   bougies, rien n'est déduit par agrégation du graphe. ---------- */
+const mtfStore={sym:null,data:{}};
+function mtfNeeded(){
+  const need={};
+  for(const k of ['ob','fvg','swp']){
+    const ind=state.indicators[k];
+    if(!ind.on)continue;
+    for(const tf of Object.keys(ind.tfs)) if(ind.tfs[tf]) need[tf]=1;
+  }
+  return Object.keys(need);
+}
+async function ensureMTF(){
+  if(mtfStore.sym!==state.symbol){mtfStore.sym=state.symbol;mtfStore.data={};}
+  for(const tf of mtfNeeded()){
+    if(mtfStore.data[tf])continue;
+    mtfStore.data[tf]={bars:[],loading:true};
+    try{
+      const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[tf]}&limit=500`);
+      if(mtfStore.sym!==state.symbol)return;
+      mtfStore.data[tf]={bars:rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]})),loading:false};
+      state.cache={};render();
+    }catch(e){delete mtfStore.data[tf];}
+  }
+}
+/* Rassemble les zones de chaque UT cochée à partir de ses propres bougies */
+function mtfCollect(tfs,fn){
+  const out=[];
+  for(const [tf,name] of calc.MTF){
+    if(!tfs[tf])continue;
+    const s=mtfStore.data[tf];
+    if(!s||s.loading||s.bars.length<30)continue;
+    out.push(...fn(s.bars,name,tf));
+  }
+  return out;
+}
+/* Index de la bougie du graphe contenant cet instant (bornes incluses) */
+function idxOfTime(t){
+  const d=state.data;
+  if(!d.length||t>d[d.length-1].t)return null;
+  if(t<=d[0].t)return 0;
+  let lo=0,hi=d.length-1;
+  while(lo<hi){const m=(lo+hi+1)>>1; if(d[m].t<=t)lo=m; else hi=m-1;}
+  return lo;
+}
+
 /* ---------- S/R multi-timeframe : données par unité de temps ---------- */
 const srStore={sym:null,data:{}};
 async function ensureSR(){
@@ -881,6 +981,7 @@ async function loadData(){
     updateHeader(); render();
     startStream(g);
     ensureSR();
+    ensureMTF();
   }catch(e){
     if(g!==gen)return;
     state.data=genData(state.symbol,state.tf);
@@ -911,11 +1012,10 @@ function getInd(key){
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
-    const f=HTF_FACTOR[state.tf]||4;
-    if(key==='fvg')state.cache[ck]=calc.fvg(d);
-    if(key==='fvgm')state.cache[ck]=calc.fvgm(d,f);
-    if(key==='ob')state.cache[ck]=calc.ob(d);
-    if(key==='obm')state.cache[ck]=calc.obm(d,f);
+    if(key==='ob')state.cache[ck]=mtfCollect(ind.tfs,(b,n,t)=>calc.obOne(b,n,t));
+    if(key==='fvg')state.cache[ck]=mtfCollect(ind.tfs,(b,n,t)=>calc.fvgOne(b,n,t));
+    if(key==='swp')state.cache[ck]=mtfCollect(ind.tfs,(b,n,t)=>calc.sweepOne(b,n,t));
+    if(key==='impm')state.cache[ck]=calc.impmacd(d);
     if(key==='sr')state.cache[ck]=calc.sr(d);
   }
   return state.cache[ck];
@@ -972,6 +1072,7 @@ function computePanes(){
   if(state.indicators.macd.on) subs.push('macd');
   if(state.indicators.stoch.on) subs.push('stoch');
   if(state.indicators.atr.on) subs.push('atr');
+  if(state.indicators.impm.on) subs.push('impm');
   const subH = subs.length ? Math.min(110, (H-AXIS_H)*0.5/subs.length) : 0;
   const priceH = H - AXIS_H - subs.length*subH;
   const panes=[{key:'price', y:0, h:priceH}];
@@ -1004,6 +1105,7 @@ function render(){
     else if(p.key==='macd') drawMACD(p,s,e,cw);
     else if(p.key==='stoch') drawStoch(p,s,e,cw);
     else if(p.key==='atr') drawATR(p,s,e,cw);
+    else if(p.key==='impm') drawImpMACD(p,s,e,cw);
     // séparation
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
@@ -1073,15 +1175,9 @@ function drawPrice(p,s,e,cw){
     plotLine(b.mid,s,e,yOf,'rgba(106,169,255,.9)',1);
   }
 
-  // zones SMC (FVG / Order Blocks) — dessinées derrière tout le reste
-  if(state.indicators.fvg.on)
-    drawZoneSet(getInd('fvg'),s,e,yOf,cw,'rgba(37,208,164,.13)','rgba(244,91,125,.13)',false);
-  if(state.indicators.fvgm.on)
-    drawZoneSet(getInd('fvgm'),s,e,yOf,cw,'rgba(37,208,164,.09)','rgba(244,91,125,.09)',true);
-  if(state.indicators.ob.on)
-    drawZoneSet(getInd('ob'),s,e,yOf,cw,'rgba(122,162,255,.16)','rgba(255,157,102,.16)',false);
-  if(state.indicators.obm.on)
-    drawZoneSet(getInd('obm'),s,e,yOf,cw,'rgba(122,162,255,.10)','rgba(255,157,102,.10)',true);
+  // zones SMC (Order Blocks / FVG) — dessinées derrière tout le reste
+  if(state.indicators.ob.on) drawOBMTF(getInd('ob'),s,e,yOf,cw,p);
+  if(state.indicators.fvg.on) drawFVGMTF(getInd('fvg'),s,e,yOf,cw,p);
 
   // nuage Ichimoku (sous le prix)
   if(state.indicators.ichi.on){
@@ -1141,6 +1237,9 @@ function drawPrice(p,s,e,cw){
       ctx.beginPath();ctx.moveTo(xOf(i-1),yOf(sup.line[i-1]));ctx.lineTo(xOf(i),yOf(sup.line[i]));ctx.stroke();
     }
   }
+
+  // prises de liquidité (au-dessus du prix, comme les étiquettes TradingView)
+  if(state.indicators.swp.on) drawSweepsMTF(getInd('swp'),s,e,yOf,cw,p);
 
   // supports / résistances multi-timeframe
   if(state.indicators.sr.on){
@@ -1251,24 +1350,117 @@ function drawPrice(p,s,e,cw){
   }
 }
 
-function drawZoneSet(zones,s,e,yOf,cw,colBull,colBear,withBorder){
+/* ---- Order Blocks MTF : teintes du clair (1m) au foncé (4h), étiquette à droite.
+   Les fonds reprennent les valeurs du script Pine ; seules les couleurs de TEXTE
+   ont été éclaircies, le thème sombre de Lumen rendant illisibles celles d'origine. */
+const OB_STYLE={
+  1:  {bull:['rgba(130,220,160,.13)','#8FE3B0'], bear:['rgba(255,150,150,.13)','#FFA8A8']},
+  5:  {bull:['rgba(0,170,70,.20)','#5FD694'],    bear:['rgba(230,60,60,.20)','#FF7B7B']},
+  15: {bull:['rgba(0,120,45,.28)','#3ECB80'],    bear:['rgba(180,30,30,.28)','#F55A5A']},
+  60: {bull:['rgba(0,90,35,.35)','#22BE6C'],     bear:['rgba(140,10,10,.35)','#E04141']},
+  240:{bull:['rgba(0,70,25,.42)','#12B25E'],     bear:['rgba(110,0,0,.42)','#CC2E2E']},
+};
+function drawOBMTF(zones,s,e,yOf,cw,p){
+  ctx.save();
+  ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
+  ctx.textAlign='right';
   for(const z of zones){
-    if(z.iDraw>e-1)continue;
-    if(z.end!=null&&z.end<s)continue;
-    const x0=Math.max(xOf(z.iDraw)-cw/2, 0);
-    const x1=z.end==null ? (W-AXIS_W)
-      : Math.min(xOf(Math.min(z.end,e-1))+cw/2, W-AXIS_W);
+    const zi=idxOfTime(z.t);
+    if(zi==null||zi>e-1)continue;
+    const st=(OB_STYLE[z.k]||OB_STYLE[15])[z.type];
+    const x0=Math.max(xOf(zi)-cw/2,0), x1=W-AXIS_W;
     if(x1<=x0)continue;
     const y0=yOf(z.top), y1=yOf(z.bot);
-    ctx.fillStyle=z.type==='bull'?colBull:colBear;
+    ctx.fillStyle=st[0];
     ctx.fillRect(x0,y0,x1-x0,Math.max(1,y1-y0));
-    if(withBorder){
-      ctx.strokeStyle=z.type==='bull'?'rgba(37,208,164,.45)':'rgba(244,91,125,.45)';
-      ctx.setLineDash([3,3]);
-      ctx.strokeRect(x0+.5,y0+.5,Math.max(1,x1-x0-1),Math.max(1,y1-y0-1));
-      ctx.setLineDash([]);
+    ctx.strokeStyle=st[1];ctx.globalAlpha=.7;ctx.lineWidth=1;
+    ctx.strokeRect(x0+.5,y0+.5,Math.max(1,x1-x0-1),Math.max(1,y1-y0-1));
+    ctx.globalAlpha=1;
+    // étiquette seulement si la zone est assez haute, sinon elles se superposent
+    if(Math.abs(y1-y0)>=14){
+      ctx.font='bold 12px "IBM Plex Mono",monospace';ctx.fillStyle=st[1];
+      ctx.fillText((z.type==='bull'?'OB achat ':'OB vente ')+z.tf, x1-8, (y0+y1)/2+4);
     }
   }
+  ctx.textAlign='left';
+  ctx.restore();
+}
+
+/* ---- FVG MTF : chaque zone coupée en deux moitiés ÉGALES.
+   Cadre BLEU si acheteurs >= 50 % (moitié acheteuse en bas), VIOLET sinon.
+   Les remplissages vert/rouge se propagent de GAUCHE à DROITE au prorata du %. */
+function drawFVGMTF(zones,s,e,yOf,cw,p){
+  const TXT_G='#2ED47A', TXT_R='#FF5C5C', YEL='#EBBE00';
+  ctx.save();
+  ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
+  for(const z of zones){
+    const zi=idxOfTime(z.t);
+    if(zi==null||zi>e-1)continue;
+    const ze=z.endT==null?null:idxOfTime(z.endT);
+    const x0=Math.max(xOf(zi)-cw/2,0);
+    const x1=ze==null ? (W-AXIS_W)
+      : Math.min(Math.max(xOf(ze)+cw/2,x0+2), W-AXIS_W);
+    if(x1<=x0)continue;
+    const w=x1-x0, pos=z.pct>=50;
+    const br=pos?'rgba(10,80,220,.65)':'rgba(120,30,180,.65)';
+    const bg=pos?'rgba(30,110,255,.12)':'rgba(155,55,215,.12)';
+    const mid=(z.top+z.bot)/2;
+    // moitié acheteuse en bas quand la zone est positive, en haut sinon
+    const buyT=pos?mid:z.top, buyB=pos?z.bot:mid;
+    const selT=pos?z.top:mid, selB=pos?mid:z.bot;
+    const rect=(t,b)=>{const ya=yOf(t),yb=yOf(b);return [ya,Math.max(1,yb-ya)];};
+    const [byA,byH]=rect(buyT,buyB), [syA,syH]=rect(selT,selB);
+    ctx.fillStyle=bg;
+    ctx.fillRect(x0,byA,w,byH); ctx.fillRect(x0,syA,w,syH);
+    // barres de progression proportionnelles au pourcentage
+    ctx.fillStyle='rgba(0,170,70,.45)';
+    ctx.fillRect(x0,byA,w*z.pct/100,byH);
+    ctx.fillStyle='rgba(220,40,40,.45)';
+    ctx.fillRect(x0,syA,w*(100-z.pct)/100,syH);
+    ctx.strokeStyle=br;ctx.lineWidth=1;
+    ctx.strokeRect(x0+.5,byA+.5,Math.max(1,w-1),Math.max(1,byH-1));
+    ctx.strokeRect(x0+.5,syA+.5,Math.max(1,w-1),Math.max(1,syH-1));
+    if(w>120&&byH>=12&&syH>=12){
+      ctx.textAlign='right';ctx.font='11px "IBM Plex Mono",monospace';
+      ctx.fillStyle=TXT_G;
+      ctx.fillText(`FVG ${z.type==='bull'?'achat':'vente'} ${z.tf} · ${Math.round(z.pct)}% ach`,
+        x1-6, byA+byH/2+4);
+      ctx.fillStyle=TXT_R;
+      ctx.fillText(`${Math.round(100-z.pct)}% vend`, x1-6, syA+syH/2+4);
+      ctx.textAlign='left';
+    }
+    if(z.endT!=null&&byH+syH>=16&&w>=40){
+      ctx.textAlign='center';ctx.font='bold 11px "IBM Plex Mono",monospace';
+      ctx.fillStyle=YEL;
+      ctx.fillText('MITIGATED',(x0+x1)/2, yOf(mid)+4);
+      ctx.textAlign='left';
+    }
+  }
+  ctx.restore();
+}
+
+/* ---- Prises de liquidité : niveau balayé en pointillés + marqueur portant son UT.
+   ROUGE ▲ = liquidité HAUTE prise · VERT ▼ = liquidité BASSE prise. */
+function drawSweepsMTF(marks,s,e,yOf,cw,p){
+  ctx.save();
+  ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
+  for(const m of marks){
+    const mi=idxOfTime(m.t), mf=idxOfTime(m.fromT);
+    if(mi==null||mi<s||mi>=e)continue;
+    const y=yOf(m.lvl), rgb=m.up?'225,50,50':'0,165,90';
+    const x=xOf(mi), xa=xOf(Math.max(mf==null?s:mf,s));
+    ctx.strokeStyle=`rgba(${rgb},.75)`;ctx.lineWidth=1;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(xa,y+.5);ctx.lineTo(x,y+.5);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=`rgba(${rgb},1)`;
+    ctx.beginPath();
+    if(m.up){ctx.moveTo(x,y-10);ctx.lineTo(x-5,y-2);ctx.lineTo(x+5,y-2);}
+    else{ctx.moveTo(x,y+10);ctx.lineTo(x-5,y+2);ctx.lineTo(x+5,y+2);}
+    ctx.closePath();ctx.fill();
+    const fs=m.k>=60?11:m.k>=5?10:9;
+    ctx.font=fs+'px "IBM Plex Mono",monospace';
+    ctx.fillText(`Liquidité prise ${m.up?'▲':'▼'} ${m.tf}`, x+8, m.up?y-6:y+14);
+  }
+  ctx.restore();
 }
 function plotLine(arr,s,e,yOf,color,w){
   ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();let st=false;
@@ -1355,6 +1547,34 @@ function drawATR(p,s,e,cw){
   const i=hoverIndex()??state.data.length-1;
   subLabel(p,'ATR '+state.indicators.atr.period, a[i]!=null?fmt(a[i]):'—', '#C9D46B');
 }
+/* Impulse MACD : barre colorée LazyBear + histogramme md-signal + ligne de signal */
+function drawImpMACD(p,s,e,cw){
+  const m=getInd('impm');
+  let mx=0;
+  for(let i=s;i<e;i++)for(const v of [m.md[i],m.sb[i],m.sh[i]])if(v!=null)mx=Math.max(mx,Math.abs(v));
+  mx=mx||1;
+  const yOf=v=>p.y+p.h/2-(v/mx)*(p.h/2-10);
+  p.yOf=yOf;p.lo=-mx;p.hi=mx;
+  const y0=p.y+p.h/2;
+  ctx.strokeStyle='rgba(74,88,120,.5)';ctx.beginPath();
+  ctx.moveTo(0,y0+.5);ctx.lineTo(W-AXIS_W,y0+.5);ctx.stroke();
+  const bw=Math.max(1,cw*0.55);
+  for(let i=s;i<e;i++){
+    if(m.sh[i]!=null){
+      const x=xOf(i),y=yOf(m.sh[i]);
+      ctx.fillStyle='rgba(106,169,255,.35)';
+      ctx.fillRect(x-bw/2,Math.min(y,y0),bw,Math.abs(y-y0)||1);
+    }
+    if(m.md[i]!=null){
+      const x=xOf(i),y=yOf(m.md[i]);
+      ctx.fillStyle=m.col[i]||'#7AA2FF';
+      ctx.fillRect(x-bw/4,Math.min(y,y0),Math.max(1,bw/2),Math.abs(y-y0)||1);
+    }
+  }
+  plotLine(m.sb,s,e,yOf,'#6AA9FF',1.4);
+  const i=hoverIndex()??state.data.length-1;
+  subLabel(p,'ImpMACD 34/9', m.md[i]!=null?m.md[i].toFixed(2):'—', m.col[i]||'#6AA9FF');
+}
 
 /* ----- axe temps ----- */
 function drawTimeAxis(s,e){
@@ -1420,10 +1640,9 @@ const IND_META={
   st:{label:()=>'SuperTrend 10×3',color:'#25D0A4'},
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
-  fvg:{label:()=>'FVG',color:'#25D0A4'},
-  fvgm:{label:()=>'FVG MTF '+(HTF_NAME[state.tf]||''),color:'#1B8F72'},
-  ob:{label:()=>'Order Blocks',color:'var(--accent)'},
-  obm:{label:()=>'OB MTF '+(HTF_NAME[state.tf]||''),color:'#FF9D66'},
+  ob:{label:()=>'OB MTF',color:'var(--accent)'},
+  fvg:{label:()=>'FVG MTF',color:'#1E6EFF'},
+  swp:{label:()=>'Prises de liquidité',color:'#E1424B'},
   sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
 };
 function updateChips(){
@@ -1433,7 +1652,7 @@ function updateChips(){
   let html=`<div class="legend-ohlc">${state.symbol} · O <b>${fmt(b.o)}</b> H <b>${fmt(b.h)}</b> L <b>${fmt(b.l)}</b> C <b class="chg ${cls}">${fmt(b.c)}</b>`
     + (state.indicators.volume.on?` · Vol <b>${fmtCompact(b.v)}</b>`:'') + `</div>`;
   for(const [k,ind] of Object.entries(state.indicators)){
-    if(!ind.on||['volume','rsi','macd','stoch','atr'].includes(k))continue;
+    if(!ind.on||['volume','rsi','macd','stoch','atr','impm'].includes(k))continue;
     const m=IND_META[k];
     let val='';
     if(k==='sma'||k==='ema'||k==='ema2'||k==='vwap'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'—';}
@@ -1635,6 +1854,7 @@ menu.querySelectorAll('.ind-item').forEach(item=>{
     if(e.target.classList&&e.target.classList.contains('srtf'))return;
     state.indicators[key].on=!state.indicators[key].on;
     if(key==='sr'&&state.indicators.sr.on)ensureSR();
+    if(['ob','fvg','swp'].includes(key)&&state.indicators[key].on)ensureMTF();
     syncMenu();saveConfig();render();
   });
   if(input)input.addEventListener('change',()=>{
@@ -1652,14 +1872,20 @@ function syncMenu(){
     item.querySelector('.state').textContent=on?'on':'off';
   });
 }
-document.querySelectorAll('.srtf').forEach(el=>{
+/* Cases d'UT : partagées par S/R, Order Blocks, FVG et Prises de liquidité.
+   Le sélecteur exclut les boutons Spot/Perpétuels, qui empruntent la même
+   classe pour leur style mais portent data-mk au lieu de data-tf. */
+document.querySelectorAll('.ind-item .srtf[data-tf]').forEach(el=>{
   el.addEventListener('click',e=>{
     e.stopPropagation();
-    const tf=el.dataset.tf, t=state.indicators.sr.tfs;
+    const key=el.closest('.ind-item').dataset.ind, tf=el.dataset.tf;
+    const t=state.indicators[key].tfs;
     t[tf]=!t[tf];
     el.classList.toggle('on',t[tf]);
-    if(!t[tf])delete srStore.data[tf];
-    if(state.indicators.sr.on&&t[tf])ensureSR();
+    if(key==='sr'){
+      if(!t[tf])delete srStore.data[tf];
+      if(state.indicators.sr.on&&t[tf])ensureSR();
+    } else {state.cache={};ensureMTF();}
     saveConfig();render();
   });
 });
