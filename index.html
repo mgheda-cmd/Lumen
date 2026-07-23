@@ -102,7 +102,7 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 
 /* ---------- Zone graphique ---------- */
 #chart-area{flex:1; position:relative; min-height:0}
-canvas{display:block; width:100%; height:100%; cursor:crosshair}
+canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:none}
 
 /* Chips indicateurs actifs */
 #chips{
@@ -544,6 +544,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
+  yScale:{auto:true,lo:0,hi:0}, pricePaneH:0,
 };
 
 /* ---------- Flux Binance (temps réel) ---------- */
@@ -671,6 +672,7 @@ async function ensureSR(){
 async function loadData(){
   const g=++gen; stopFeeds(); setStatus('loading');
   state.data=[]; state.cache={};
+  state.yScale={auto:true,lo:0,hi:0};
   try{
     let rows;
     try{
@@ -837,6 +839,9 @@ function drawPrice(p,s,e,cw){
     for(const arr of [ic.T,ic.K,ic.A,ic.B])
       for(let i=s;i<e;i++)if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}}
   const pad=(hi-lo)*0.08||1; lo-=pad; hi+=pad;
+  if(!state.yScale.auto){ lo=state.yScale.lo; hi=state.yScale.hi; }
+  else { state.yScale.lo=lo; state.yScale.hi=hi; }
+  state.pricePaneH=p.h;
   const yOf=v=>p.y + (1-(v-lo)/(hi-lo))*p.h;
   p.lo=lo;p.hi=hi;p.yOf=yOf;
 
@@ -1176,45 +1181,165 @@ chips.addEventListener('click',e=>{
   if(k){state.indicators[k].on=false;syncMenu();render();}
 });
 
-/* ---------- Interactions souris / tactile ---------- */
+/* ---------- Interactions façon TradingView ---------- */
+function hitZone(x,y){
+  if(y>H-AXIS_H) return 'time';
+  if(x>W-AXIS_W && y<(state.pricePaneH||H-AXIS_H)) return 'price';
+  return 'pan';
+}
 canvas.addEventListener('mousedown',e=>{
-  state.dragging=true;state.dragX=e.offsetX;state.dragStart=state.view.start;
+  const x=e.offsetX,y=e.offsetY;
+  state.dragMode=hitZone(x,y);
+  state.dragging=true;
+  state.dragX=x; state.dragY=y;
+  state.dragStart=state.view.start;
+  state.dragCount=state.view.count;
+  state.dragRight=state.view.start+state.view.count;
+  if(state.dragMode==='price'&&state.yScale.auto)state.yScale.auto=false;
+  state.dragLo=state.yScale.lo; state.dragHi=state.yScale.hi;
   canvas.style.cursor='grabbing';
 });
-window.addEventListener('mouseup',()=>{state.dragging=false;canvas.style.cursor='crosshair';});
+window.addEventListener('mouseup',()=>{state.dragging=false;});
 canvas.addEventListener('mousemove',e=>{
-  state.mouse={x:e.offsetX,y:e.offsetY};
+  const x=e.offsetX,y=e.offsetY;
+  state.mouse={x,y};
   if(state.dragging){
-    const cw=(W-AXIS_W)/state.view.count;
-    let ns=state.dragStart-(e.offsetX-state.dragX)/cw;
-    ns=Math.max(-state.view.count*0.5, Math.min(state.data.length-state.view.count*0.5, ns));
-    state.view.start=ns;
+    if(state.dragMode==='time'){
+      // étirer l'axe du temps, bord droit fixe (comme TV)
+      const f=Math.exp(-(x-state.dragX)*0.005);
+      const nc=Math.max(20,Math.min(N_BARS,state.dragCount*f));
+      state.view.count=nc;
+      state.view.start=Math.max(-nc*0.5,state.dragRight-nc);
+    }else if(state.dragMode==='price'){
+      // étirer l'échelle des prix autour du centre
+      const f=Math.exp((y-state.dragY)*0.006);
+      const c=(state.dragLo+state.dragHi)/2;
+      const r=Math.max((state.dragHi-state.dragLo)/2*f,1e-9);
+      state.yScale.lo=c-r; state.yScale.hi=c+r;
+    }else{
+      // déplacement du graphique : temps + prix
+      const cw=(W-AXIS_W)/state.view.count;
+      let ns=state.dragStart-(x-state.dragX)/cw;
+      state.view.start=Math.max(-state.view.count*0.5,
+        Math.min(state.data.length-state.view.count*0.5,ns));
+      const dy=y-state.dragY;
+      if(Math.abs(dy)>2){
+        if(state.yScale.auto)state.yScale.auto=false;
+        const h=state.pricePaneH||H-AXIS_H;
+        const dP=dy*(state.dragHi-state.dragLo)/h;
+        state.yScale.lo=state.dragLo+dP; state.yScale.hi=state.dragHi+dP;
+      }
+    }
+  }else{
+    const z=hitZone(x,y);
+    canvas.style.cursor=z==='time'?'ew-resize':z==='price'?'ns-resize':'crosshair';
   }
   render();
 });
-canvas.addEventListener('mouseleave',()=>{state.mouse=null;render();});
+canvas.addEventListener('mouseleave',()=>{state.mouse=null;state.dragging=false;render();});
+canvas.addEventListener('dblclick',e=>{
+  const z=hitZone(e.offsetX,e.offsetY);
+  if(z==='price'){state.yScale.auto=true;render();}
+  else if(z==='time'){
+    state.view={start:Math.max(0,state.data.length-150),count:150};
+    render();
+  }
+});
 canvas.addEventListener('wheel',e=>{
   e.preventDefault();
-  const factor=e.deltaY>0?1.12:1/1.12;
-  const cw=(W-AXIS_W)/state.view.count;
-  const anchor=state.view.start+e.offsetX/cw;
-  let nc=Math.max(20,Math.min(N_BARS,state.view.count*factor));
-  state.view.start=anchor-(anchor-state.view.start)*(nc/state.view.count);
-  state.view.count=nc;
+  const z=hitZone(e.offsetX,e.offsetY);
+  if(z==='price'){
+    if(state.yScale.auto)state.yScale.auto=false;
+    const f=e.deltaY>0?1.1:1/1.1;
+    const c=(state.yScale.lo+state.yScale.hi)/2;
+    const r=Math.max((state.yScale.hi-state.yScale.lo)/2*f,1e-9);
+    state.yScale.lo=c-r; state.yScale.hi=c+r;
+  }else{
+    const factor=e.deltaY>0?1.12:1/1.12;
+    const cw=(W-AXIS_W)/state.view.count;
+    const anchor=state.view.start+e.offsetX/cw;
+    let nc=Math.max(20,Math.min(N_BARS,state.view.count*factor));
+    state.view.start=anchor-(anchor-state.view.start)*(nc/state.view.count);
+    state.view.count=nc;
+  }
   render();
 },{passive:false});
-// tactile basique
-let touch=null;
+/* --- tactile : glisser par zone, double-tap sur les axes, pincement 2 axes --- */
+let touch=null, pinch=null, lastTap={t:0,z:''};
+function tpos(t){const r=canvas.getBoundingClientRect();
+  return {x:t.clientX-r.left,y:t.clientY-r.top};}
 canvas.addEventListener('touchstart',e=>{
-  if(e.touches.length===1)touch={x:e.touches[0].clientX,start:state.view.start};
+  if(e.touches.length===1){
+    const {x,y}=tpos(e.touches[0]);
+    const z=hitZone(x,y), now=Date.now();
+    if((z==='price'||z==='time')&&lastTap.z===z&&now-lastTap.t<320){
+      if(z==='price')state.yScale.auto=true;
+      else state.view={start:Math.max(0,state.data.length-150),count:150};
+      lastTap={t:0,z:''}; touch=null; render(); return;
+    }
+    lastTap={t:now,z};
+    if(z==='price'&&state.yScale.auto)state.yScale.auto=false;
+    touch={mode:z,x,y,start:state.view.start,count:state.view.count,
+      right:state.view.start+state.view.count,
+      lo:state.yScale.lo,hi:state.yScale.hi};
+    pinch=null;
+  }else if(e.touches.length===2){
+    touch=null;
+    const a=tpos(e.touches[0]), b=tpos(e.touches[1]);
+    pinch={dx:Math.abs(a.x-b.x)||1, dy:Math.abs(a.y-b.y)||1,
+      mid:(a.x+b.x)/2, count:state.view.count, start:state.view.start,
+      lo:state.yScale.lo, hi:state.yScale.hi};
+  }
 },{passive:true});
 canvas.addEventListener('touchmove',e=>{
   if(touch&&e.touches.length===1){
-    const cw=(W-AXIS_W)/state.view.count;
-    state.view.start=touch.start-(e.touches[0].clientX-touch.x)/cw;
+    const {x,y}=tpos(e.touches[0]);
+    if(touch.mode==='time'){
+      const f=Math.exp(-(x-touch.x)*0.006);
+      const nc=Math.max(20,Math.min(N_BARS,touch.count*f));
+      state.view.count=nc;
+      state.view.start=Math.max(-nc*0.5,touch.right-nc);
+    }else if(touch.mode==='price'){
+      const f=Math.exp((y-touch.y)*0.007);
+      const c=(touch.lo+touch.hi)/2;
+      const r=Math.max((touch.hi-touch.lo)/2*f,1e-9);
+      state.yScale.lo=c-r; state.yScale.hi=c+r;
+    }else{
+      const cw=(W-AXIS_W)/state.view.count;
+      state.view.start=Math.max(-state.view.count*0.5,
+        Math.min(state.data.length-state.view.count*0.5,
+          touch.start-(x-touch.x)/cw));
+      const dy=y-touch.y;
+      if(Math.abs(dy)>4){
+        if(state.yScale.auto)state.yScale.auto=false;
+        const h=state.pricePaneH||H-AXIS_H;
+        const dP=dy*(touch.hi-touch.lo)/h;
+        state.yScale.lo=touch.lo+dP; state.yScale.hi=touch.hi+dP;
+      }
+    }
+    render();
+  }else if(pinch&&e.touches.length===2){
+    const a=tpos(e.touches[0]), b=tpos(e.touches[1]);
+    const ndx=Math.abs(a.x-b.x)||1, ndy=Math.abs(a.y-b.y)||1;
+    if(Math.max(ndx,pinch.dx)>=Math.max(ndy,pinch.dy)){
+      // pincement horizontal → zoom temps ancré au centre des doigts
+      const nc=Math.max(20,Math.min(N_BARS,pinch.count*(pinch.dx/ndx)));
+      const cw0=(W-AXIS_W)/pinch.count;
+      const anchor=pinch.start+pinch.mid/cw0;
+      state.view.count=nc;
+      state.view.start=anchor-pinch.mid/((W-AXIS_W)/nc);
+    }else{
+      // pincement vertical → zoom prix
+      if(state.yScale.auto)state.yScale.auto=false;
+      const f=pinch.dy/ndy;
+      const c=(pinch.lo+pinch.hi)/2;
+      const r=Math.max((pinch.hi-pinch.lo)/2*f,1e-9);
+      state.yScale.lo=c-r; state.yScale.hi=c+r;
+    }
     render();
   }
 },{passive:true});
+canvas.addEventListener('touchend',()=>{touch=null;pinch=null;},{passive:true});
 
 /* ---------- Menu indicateurs ---------- */
 const btnInd=document.getElementById('btn-ind'), menu=document.getElementById('ind-menu');
