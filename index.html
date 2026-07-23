@@ -101,6 +101,48 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   border:1px solid var(--line);color:var(--muted);cursor:pointer;flex:none;
 }
 .srtf.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
+.ind-item .gear{
+  font-size:13px;color:var(--faint);padding:2px 5px;border-radius:6px;flex:none;
+  opacity:0;transition:opacity .12s,background .12s;
+}
+.ind-item:hover .gear{opacity:1}
+.ind-item .gear:hover{background:rgba(122,162,255,.16);color:var(--accent)}
+
+/* ---------- Fenêtre de réglages d'un indicateur ---------- */
+#cfg-back{
+  position:fixed; inset:0; z-index:200; background:rgba(4,8,18,.6);
+  display:none; align-items:center; justify-content:center; padding:16px;
+}
+#cfg-back.open{display:flex}
+#cfg{
+  width:min(420px,100%); max-height:85vh; overflow:auto;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+#cfg header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+#cfg header .t{font-size:15px;font-weight:600;flex:1}
+#cfg header .x{cursor:pointer;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px;border-radius:6px}
+#cfg header .x:hover{background:rgba(255,255,255,.07);color:var(--text)}
+#cfg .body{padding:6px 16px 14px}
+#cfg .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(29,42,66,.5)}
+#cfg .row:last-child{border-bottom:none}
+#cfg .row .lab{flex:1;font-size:13px;color:var(--text)}
+#cfg .row .opts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+#cfg input[type=number]{
+  width:74px;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  color:var(--text);padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:13px;
+}
+#cfg .hint{font-size:11px;color:var(--muted);padding:10px 0 2px;line-height:1.5}
+#cfg footer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+#cfg footer button{
+  flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--text);cursor:pointer;font-size:13px;
+}
+#cfg footer button:hover{background:rgba(122,162,255,.1)}
+#cfg footer button.rm{border-color:rgba(244,91,125,.5);color:var(--down)}
+#cfg footer button.rm:hover{background:rgba(244,91,125,.12)}
+#cfg footer button.add{border-color:var(--up);color:var(--up)}
+#cfg footer button.add:hover{background:rgba(37,208,164,.12)}
 
 /* ---------- Zone graphique ---------- */
 #chart-area{flex:1; position:relative; min-height:0}
@@ -213,122 +255,94 @@ footer{
       <div class="ind-item" data-ind="sma">
         <span class="dot" style="background:var(--sma)"></span>
         <span class="name">SMA <span class="desc">Moyenne mobile simple</span></span>
-        <input type="number" min="2" max="200" value="20" aria-label="Période SMA">
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="ema">
         <span class="dot" style="background:var(--ema)"></span>
         <span class="name">EMA <span class="desc">Moyenne mobile exponentielle</span></span>
-        <input type="number" min="2" max="200" value="50" aria-label="Période EMA">
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="bb">
         <span class="dot" style="background:var(--bb)"></span>
         <span class="name">Bollinger <span class="desc">Bandes ±2σ</span></span>
-        <input type="number" min="5" max="100" value="20" aria-label="Période Bollinger">
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="vwap">
         <span class="dot" style="background:var(--vwap)"></span>
         <span class="name">VWAP <span class="desc">Prix moyen pondéré volume</span></span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="ema2">
         <span class="dot" style="background:#4FD1C5"></span>
         <span class="name">EMA ② <span class="desc">Seconde moyenne exp.</span></span>
-        <input type="number" min="2" max="400" value="200" aria-label="Période EMA 2">
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="ichi">
         <span class="dot" style="background:#5AB0FF"></span>
         <span class="name">Ichimoku <span class="desc">9 / 26 / 52 + nuage</span></span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="st">
         <span class="dot" style="background:var(--up)"></span>
         <span class="name">SuperTrend <span class="desc">10 × 3</span></span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="lrc">
         <span class="dot" style="background:#2196F3"></span>
         <span class="name">Régression linéaire <span class="desc">Canal ± 2 σ</span></span>
-        <input type="number" min="10" max="200" value="100" aria-label="Longueur régression">
-        <span class="srtf on" data-tf="extend">Étendre</span>
-        <span class="srtf" data-tf="fib">Fib</span>
-        <span class="srtf on" data-tf="broken">Cassé</span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <h4>Smart Money Concepts</h4>
       <div class="ind-item" data-ind="ob">
         <span class="dot" style="background:var(--accent)"></span>
         <span class="name">Order Blocks MTF <span class="desc">Dernière bougie avant BOS</span></span>
-        <span class="srtf on" data-tf="1">1m</span>
-        <span class="srtf on" data-tf="5">5m</span>
-        <span class="srtf on" data-tf="15">15m</span>
-        <span class="srtf on" data-tf="60">1H</span>
-        <span class="srtf on" data-tf="240">4H</span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="fvg">
         <span class="dot" style="background:#1E6EFF"></span>
         <span class="name">FVG MTF <span class="desc">% acheteur / vendeur</span></span>
-        <span class="srtf on" data-tf="1">1m</span>
-        <span class="srtf on" data-tf="5">5m</span>
-        <span class="srtf on" data-tf="15">15m</span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="swp">
         <span class="dot" style="background:#E1424B"></span>
         <span class="name">Prises de liquidité <span class="desc">Sweep de pivot + retour</span></span>
-        <span class="srtf on" data-tf="1">1m</span>
-        <span class="srtf on" data-tf="5">5m</span>
-        <span class="srtf on" data-tf="15">15m</span>
-        <span class="srtf on" data-tf="60">1H</span>
-        <span class="srtf on" data-tf="240">4H</span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="sr">
         <span class="dot" style="background:#A8B8D8"></span>
         <span class="name">S/R MTF <span class="desc">Multi unités de temps</span></span>
-        <span class="srtf" data-tf="5">5m</span>
-        <span class="srtf" data-tf="15">15m</span>
-        <span class="srtf on" data-tf="60">1H</span>
-        <span class="srtf on" data-tf="240">4H</span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <h4>Panneaux séparés</h4>
       <div class="ind-item" data-ind="volume">
         <span class="dot" style="background:var(--faint)"></span>
         <span class="name">Volume <span class="desc">Histogramme</span></span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="rsi">
         <span class="dot" style="background:var(--ema)"></span>
         <span class="name">RSI <span class="desc">Force relative</span></span>
-        <input type="number" min="2" max="50" value="14" aria-label="Période RSI">
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="macd">
         <span class="dot" style="background:var(--accent)"></span>
         <span class="name">MACD <span class="desc">12 / 26 / 9</span></span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="stoch">
         <span class="dot" style="background:#FF8FD8"></span>
         <span class="name">Stochastique <span class="desc">%K / %D lissés</span></span>
-        <input type="number" min="2" max="50" value="14" aria-label="Période Stochastique">
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="atr">
         <span class="dot" style="background:#C9D46B"></span>
         <span class="name">ATR <span class="desc">Volatilité moyenne</span></span>
-        <input type="number" min="2" max="50" value="14" aria-label="Période ATR">
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="impm">
         <span class="dot" style="background:#25D0A4"></span>
         <span class="name">Impulse MACD <span class="desc">LazyBear 34 / 9</span></span>
-        <span class="state">off</span>
+        <span class="gear" title="Réglages">⚙</span><span class="state">off</span>
       </div>
     </div>
   </div>
@@ -387,6 +401,18 @@ footer{
     </div>
     <div id="paper-pos"></div>
     <div id="paper-hist"></div>
+  </div>
+</div>
+
+<div id="cfg-back" role="dialog" aria-modal="true" aria-labelledby="cfg-title">
+  <div id="cfg">
+    <header>
+      <span id="cfg-dot" style="width:9px;height:9px;border-radius:50%;flex:none"></span>
+      <span class="t" id="cfg-title">Réglages</span>
+      <span class="x" id="cfg-close" role="button" aria-label="Fermer">&times;</span>
+    </header>
+    <div class="body" id="cfg-body"></div>
+    <footer id="cfg-foot"></footer>
   </div>
 </div>
 
@@ -793,14 +819,7 @@ function applyConfigToUI(){
     b.classList.toggle('active',+b.dataset.tf===state.tf));
   document.querySelectorAll('.type-group button').forEach(b=>
     b.classList.toggle('active',b.dataset.type===state.type));
-  menu.querySelectorAll('.ind-item').forEach(item=>{
-    const inp=item.querySelector('input');
-    const ind=state.indicators[item.dataset.ind];
-    if(inp&&ind&&ind.period)inp.value=ind.period;
-  });
-  document.querySelectorAll('.ind-item .srtf[data-tf]').forEach(el=>
-    el.classList.toggle('on',!!state.indicators[el.closest('.ind-item').dataset.ind].tfs[el.dataset.tf]));
-  syncMenu();
+  syncMenu();   /* options et UT vivent desormais dans la fenetre de reglages */
 }
 
 /* ---------- Flux Binance (temps réel) ---------- */
@@ -1964,24 +1983,135 @@ btnInd.addEventListener('click',()=>{
   const sm=document.getElementById('sync-menu');
   if(sm)sm.classList.remove('open');
 });
+/* ==========================================================================
+   Menu des indicateurs + fenêtre de réglages, une par indicateur (façon
+   TradingView). Un clic sur la ligne ouvre les réglages ; la pastille on/off
+   bascule directement l'affichage sans passer par la fenêtre.
+   ========================================================================== */
+
+/* Schéma des options : 'num' = champ numérique sur .period,
+   'flags' = bascules stockées dans .tfs (unités de temps ou options). */
+const IND_SETTINGS={
+  sma:  {fields:[{t:'num',k:'period',lab:'Longueur',min:2,max:400}]},
+  ema:  {fields:[{t:'num',k:'period',lab:'Longueur',min:2,max:400}]},
+  ema2: {fields:[{t:'num',k:'period',lab:'Longueur',min:2,max:400}]},
+  bb:   {fields:[{t:'num',k:'period',lab:'Longueur',min:5,max:100}],
+         hint:'Bandes tracées à ± 2 écarts-types de la moyenne mobile.'},
+  vwap: {fields:[],hint:'Prix moyen pondéré par le volume, cumulé depuis le début des données.'},
+  ichi: {fields:[],hint:'Tenkan 9, Kijun 26, Senkou B 52, avec le nuage.'},
+  st:   {fields:[],hint:'SuperTrend ATR 10, multiplicateur 3.'},
+  lrc:  {fields:[
+           {t:'num',k:'period',lab:'Longueur',min:10,max:200},
+           {t:'flags',k:'tfs',lab:'Affichage',opts:[['extend','Étendre'],['fib','Fibonacci'],['broken','Canaux cassés']]}],
+         hint:'Régression par moindres carrés, bandes à ± 2 σ des résidus. Canal vert en '+
+              'tendance haussière, rouge en baissière ; les canaux cassés restent en bleu.'},
+  ob:   {fields:[{t:'flags',k:'tfs',lab:'Unités de temps',opts:[['1','1m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']]}],
+         hint:'Dernière bougie opposée avant la cassure de structure. La zone disparaît dès qu une clôture la traverse.'},
+  fvg:  {fields:[{t:'flags',k:'tfs',lab:'Unités de temps',opts:[['1','1m'],['5','5m'],['15','15m']]}],
+         hint:'Chaque écart est coupé en deux moitiés égales : pourcentage acheteur en vert, vendeur en rouge. '+
+              'Cadre bleu si les acheteurs dominent, violet sinon. Une zone remplie est marquée MITIGATED.'},
+  swp:  {fields:[{t:'flags',k:'tfs',lab:'Unités de temps',opts:[['1','1m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']]}],
+         hint:'Mèche au-delà d un pivot puis clôture de retour. Triangle rouge = liquidité haute prise, vert = liquidité basse.'},
+  sr:   {fields:[{t:'flags',k:'tfs',lab:'Unités de temps',opts:[['5','5m'],['15','15m'],['60','1H'],['240','4H']]}],
+         hint:'Niveaux issus des pivots regroupés par proximité, sur chaque unité de temps cochée.'},
+  volume:{fields:[]},
+  rsi:  {fields:[{t:'num',k:'period',lab:'Longueur',min:2,max:50}]},
+  macd: {fields:[],hint:'MACD 12 / 26 / 9.'},
+  stoch:{fields:[{t:'num',k:'period',lab:'Longueur',min:2,max:50}],hint:'%K et %D lissés sur 3 périodes.'},
+  atr:  {fields:[{t:'num',k:'period',lab:'Longueur',min:2,max:50}]},
+  impm: {fields:[],hint:'Impulse MACD de LazyBear : ZLEMA 34 comparée au canal RMA(haut)/RMA(bas), signal SMA 9.'},
+};
+
+const cfgBack=document.getElementById('cfg-back');
+const cfgBody=document.getElementById('cfg-body');
+const cfgFoot=document.getElementById('cfg-foot');
+const cfgTitle=document.getElementById('cfg-title');
+const cfgDot=document.getElementById('cfg-dot');
+
+/* Recalcul + persistance après un changement d'option */
+function cfgApply(key){
+  state.cache={};
+  if(key==='sr'&&state.indicators.sr.on)ensureSR();
+  if(['ob','fvg','swp'].includes(key)&&state.indicators[key].on)ensureMTF();
+  syncMenu();saveConfig();render();
+}
+
+function openSettings(key){
+  const ind=state.indicators[key];
+  const item=menu.querySelector('.ind-item[data-ind="'+key+'"]');
+  const schema=IND_SETTINGS[key]||{fields:[]};
+  cfgTitle.textContent=item.querySelector('.name').childNodes[0].textContent.trim();
+  cfgDot.style.background=item.querySelector('.dot').style.background;
+
+  cfgBody.innerHTML='';
+  for(const f of schema.fields){
+    const row=document.createElement('div');row.className='row';
+    const lab=document.createElement('span');lab.className='lab';lab.textContent=f.lab;
+    row.appendChild(lab);
+    if(f.t==='num'){
+      const inp=document.createElement('input');
+      inp.type='number';inp.min=f.min;inp.max=f.max;inp.value=ind[f.k];
+      inp.addEventListener('change',()=>{
+        const v=Math.max(f.min,Math.min(f.max,parseInt(inp.value)||f.min));
+        inp.value=v;ind[f.k]=v;cfgApply(key);
+      });
+      row.appendChild(inp);
+    } else if(f.t==='flags'){
+      const box=document.createElement('span');box.className='opts';
+      for(const [k,txt] of f.opts){
+        const el=document.createElement('span');
+        el.className='srtf'+(ind[f.k][k]?' on':'');
+        el.textContent=txt;
+        el.addEventListener('click',()=>{
+          ind[f.k][k]=!ind[f.k][k];
+          el.classList.toggle('on',ind[f.k][k]);
+          if(key==='sr'&&!ind[f.k][k])delete srStore.data[k];
+          cfgApply(key);
+        });
+        box.appendChild(el);
+      }
+      row.appendChild(box);
+    }
+    cfgBody.appendChild(row);
+  }
+  if(schema.hint){
+    const h=document.createElement('div');h.className='hint';h.textContent=schema.hint;
+    cfgBody.appendChild(h);
+  }
+  if(!schema.fields.length&&!schema.hint){
+    const h=document.createElement('div');h.className='hint';
+    h.textContent='Cet indicateur n a pas de réglage.';
+    cfgBody.appendChild(h);
+  }
+
+  cfgFoot.innerHTML='';
+  const toggle=document.createElement('button');
+  toggle.className=ind.on?'rm':'add';
+  toggle.textContent=ind.on?'Retirer du graphique':'Ajouter au graphique';
+  toggle.addEventListener('click',()=>{ind.on=!ind.on;cfgApply(key);openSettings(key);});
+  const close=document.createElement('button');
+  close.textContent='Fermer';
+  close.addEventListener('click',closeSettings);
+  cfgFoot.appendChild(toggle);cfgFoot.appendChild(close);
+
+  cfgBack.classList.add('open');
+}
+function closeSettings(){cfgBack.classList.remove('open');}
+document.getElementById('cfg-close').addEventListener('click',closeSettings);
+cfgBack.addEventListener('click',e=>{if(e.target===cfgBack)closeSettings();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&cfgBack.classList.contains('open'))closeSettings();});
+
 menu.querySelectorAll('.ind-item').forEach(item=>{
   const key=item.dataset.ind;
-  const input=item.querySelector('input');
-  item.addEventListener('click',e=>{
-    if(e.target.tagName==='INPUT')return;
-    if(e.target.classList&&e.target.classList.contains('srtf'))return;
+  /* la pastille on/off bascule directement */
+  item.querySelector('.state').addEventListener('click',e=>{
+    e.stopPropagation();
     state.indicators[key].on=!state.indicators[key].on;
-    if(key==='sr'&&state.indicators.sr.on)ensureSR();
-    if(['ob','fvg','swp'].includes(key)&&state.indicators[key].on)ensureMTF();
-    syncMenu();saveConfig();render();
+    cfgApply(key);
   });
-  if(input)input.addEventListener('change',()=>{
-    const v=Math.max(2,Math.min(200,parseInt(input.value)||14));
-    input.value=v;
-    state.indicators[key].period=v;
-    delete state.cache[key+''];state.cache={};
-    saveConfig();render();
-  });
+  /* le reste de la ligne (nom, engrenage) ouvre la fenêtre de réglages */
+  item.addEventListener('click',()=>openSettings(key));
 });
 function syncMenu(){
   menu.querySelectorAll('.ind-item').forEach(item=>{
@@ -1990,23 +2120,6 @@ function syncMenu(){
     item.querySelector('.state').textContent=on?'on':'off';
   });
 }
-/* Cases d'UT : partagées par S/R, Order Blocks, FVG et Prises de liquidité.
-   Le sélecteur exclut les boutons Spot/Perpétuels, qui empruntent la même
-   classe pour leur style mais portent data-mk au lieu de data-tf. */
-document.querySelectorAll('.ind-item .srtf[data-tf]').forEach(el=>{
-  el.addEventListener('click',e=>{
-    e.stopPropagation();
-    const key=el.closest('.ind-item').dataset.ind, tf=el.dataset.tf;
-    const t=state.indicators[key].tfs;
-    t[tf]=!t[tf];
-    el.classList.toggle('on',t[tf]);
-    if(key==='sr'){
-      if(!t[tf])delete srStore.data[tf];
-      if(state.indicators.sr.on&&t[tf])ensureSR();
-    } else {state.cache={};ensureMTF();}
-    saveConfig();render();
-  });
-});
 
 /* ---------- Sélecteurs d'en-tête ---------- */
 /* ---------- Sélecteur de paires USDT (toutes les paires Binance) ---------- */
