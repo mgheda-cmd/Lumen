@@ -1890,10 +1890,11 @@ function drawOBMTF(zones,s,e,yOf,cw,p){
   for(const z of zones){
     const zi=idxOfTime(z.t); if(zi==null||zi>e-1)continue;
     const base=z.type==='bull'?cB:cR, a=alpha[z.k]||.17;
-    const x0=Math.max(xOf(zi)-cw/2,0), x1=W-AXIS_W;
+    const x0=Math.max(xOf(zi)-cw/2,0), x1=laneRight('ob');
     if(x1<=x0)continue;
     const y0=yOf(z.top), y1=yOf(z.bot);
     ctx.fillStyle=hexA(base,a); ctx.fillRect(x0,y0,x1-x0,Math.max(1,y1-y0));
+    laneCap(x1,y0,y1,base);
     ctx.strokeStyle=hexA(base,.7);ctx.lineWidth=1;
     ctx.strokeRect(x0+.5,y0+.5,Math.max(1,x1-x0-1),Math.max(1,y1-y0-1));
     if(Math.abs(y1-y0)>=14){
@@ -1910,13 +1911,14 @@ function drawReversal(zones,s,e,yOf,cw,p){
   for(const z of zones){
     const zi=idxOfTime(z.t); if(zi==null||zi>e-1)continue;
     const col=z.type==='h'?cH:cL;
-    const x0=Math.max(xOf(zi)-cw/2,0), x1=W-AXIS_W;
+    const x0=Math.max(xOf(zi)-cw/2,0), x1=laneRight('rev');
     if(x1<=x0)continue;
     const yt=yOf(z.lvl+z.band), yb=yOf(z.lvl-z.band);
     ctx.fillStyle=hexA(col,Math.min(.30,.07+.0022*z.conf));   // plus de confluence = plus visible
     ctx.fillRect(x0,yt,x1-x0,Math.max(1,yb-yt));
     ctx.strokeStyle=hexA(col,.7);ctx.setLineDash([4,3]);ctx.lineWidth=1;
     ctx.strokeRect(x0+.5,yt+.5,Math.max(1,x1-x0-1),Math.max(1,yb-yt-1));ctx.setLineDash([]);
+    laneCap(x1,yt,yb,col);
     ctx.textAlign='right';ctx.fillStyle=hexA(col,.98);
     ctx.fillText(`${z.type==='h'?'▼':'▲'} Renv. ${z.conf}%`, x1-6, yOf(z.lvl)+(z.type==='h'?-4:12));
     ctx.textAlign='left';
@@ -1931,7 +1933,8 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
     const zi=idxOfTime(z.t); if(zi==null||zi>e-1)continue;
     const ze=z.endT==null?null:idxOfTime(z.endT);
     const x0=Math.max(xOf(zi)-cw/2,0);
-    const x1=ze==null?(W-AXIS_W):Math.min(Math.max(xOf(ze)+cw/2,x0+2),W-AXIS_W);
+    const R=laneRight(key);
+    const x1=ze==null?R:Math.min(Math.max(xOf(ze)+cw/2,x0+2),R);
     if(x1<=x0)continue;
     const w=x1-x0, pos=z.pct>=50, mitig=z.endT!=null;
     const br=mitig?hexA(YEL,.75):hexA(pos?cPos:cNeg,.65);
@@ -1949,6 +1952,7 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
     ctx.strokeStyle=br;ctx.lineWidth=1;
     ctx.strokeRect(x0+.5,byA+.5,Math.max(1,w-1),Math.max(1,byH-1));
     ctx.strokeRect(x0+.5,syA+.5,Math.max(1,w-1),Math.max(1,syH-1));
+    if(ze==null)laneCap(x1,Math.min(byA,syA),Math.max(byA+byH,syA+syH),pos?cPos:cNeg);
     if(w>120&&byH>=12&&syH>=12){
       ctx.textAlign='right';ctx.font='11px "IBM Plex Mono",monospace';
       ctx.fillStyle=TXT_G;
@@ -1964,6 +1968,14 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
     }
   }
   ctx.restore();
+}
+function laneRight(key){
+  const ins=S(key,'inset');
+  return (W-AXIS_W)-(typeof ins==='number'?ins:0);
+}
+function laneCap(x,yA,yB,col){        // liseré vertical marquant la fin de voie
+  ctx.fillStyle=hexA(col,.85);
+  ctx.fillRect(x-2,yA,2,Math.max(1,yB-yA));
 }
 function drawZoneSet(zones,s,e,yOf,cw,colBull,colBear,withBorder,bBull,bBear){
   for(const z of zones){
@@ -3004,6 +3016,7 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier',def:'#F45B7D'},
   ]},
   fvg:{title:'FVG',fields:[
+    {k:'inset',t:'num',lab:'Décalage à droite (px)',min:0,max:700,def:130},
     {k:'cPos',t:'col',lab:'Positif (cadre bleu)',def:'#1E6EFF'},
     {k:'cNeg',t:'col',lab:'Négatif (cadre violet)',def:'#9B37D7'},
   ]},
@@ -3012,6 +3025,7 @@ const SCHEMA={
     {k:'cNeg',t:'col',lab:'Négatif (cadre violet)',def:'#9B37D7'},
   ]},
   ob:{title:'Order Blocks',fields:[
+    {k:'inset',t:'num',lab:'Décalage à droite (px)',min:0,max:700,def:0},
     {k:'cBull',t:'col',lab:'Haussier',def:'#7AA2FF'},
     {k:'cBear',t:'col',lab:'Baissier',def:'#FF9D66'},
   ]},
@@ -3024,6 +3038,7 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Liquidité basse prise',def:'#00A55A'},
   ]},
   rev:{title:'Zones de renversement',fields:[
+    {k:'inset',t:'num',lab:'Décalage à droite (px)',min:0,max:700,def:260},
     {k:'cBear',t:'col',lab:'Au sommet (retournement bas)',def:'#F23345'},
     {k:'cBull',t:'col',lab:'Au creux (retournement haut)',def:'#089981'},
   ]},
