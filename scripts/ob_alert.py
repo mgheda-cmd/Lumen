@@ -65,6 +65,55 @@ def order_blocks(bars):
     return out
 
 
+
+def ema(vals, length):
+    out = [None] * len(vals)
+    k = 2.0 / (length + 1)
+    e = None
+    c = 0
+    for i, v in enumerate(vals):
+        if v is None:
+            continue
+        e = v if e is None else v * k + e * (1 - k)
+        c += 1
+        if c >= length:
+            out[i] = e
+    return out
+
+
+def smooth_ha(bars, ln=10):
+    eo = ema([b["o"] for b in bars], ln); eh = ema([b["h"] for b in bars], ln)
+    el = ema([b["l"] for b in bars], ln); ec = ema([b["c"] for b in bars], ln)
+    n = len(bars)
+    haO = [None]*n; haC = [None]*n; haH = [None]*n; haL = [None]*n
+    for i in range(n):
+        if None in (eo[i], eh[i], el[i], ec[i]):
+            continue
+        c = (eo[i] + eh[i] + el[i] + ec[i]) / 4
+        o = (haO[i-1] + haC[i-1]) / 2 if i > 0 and haO[i-1] is not None else (eo[i] + ec[i]) / 2
+        haO[i] = o; haC[i] = c
+        haH[i] = max(eh[i], o, c); haL[i] = min(el[i], o, c)
+    o2 = ema(haO, ln); c2 = ema(haC, ln)
+    out = []
+    for i in range(n):
+        if o2[i] is None or c2[i] is None:
+            out.append(None)
+        else:
+            out.append({"t": bars[i]["t"], "up": c2[i] >= o2[i]})
+    return out
+
+
+def ha_flip(bars):
+    """Renvoie ('bull'/'bear', t) si la derniere bougie CLOTUREE a change de couleur."""
+    ha = [x for x in smooth_ha(bars) if x is not None]
+    if len(ha) < 2:
+        return None
+    last, prev = ha[-1], ha[-2]
+    if last["up"] != prev["up"]:
+        return ("bull" if last["up"] else "bear", last["t"])
+    return None
+
+
 def notify(title, body, tags):
     data = body.encode("utf-8")
     req = urllib.request.Request("https://ntfy.sh/" + TOPIC, data=data, method="POST")
@@ -90,6 +139,24 @@ def main():
 
     new_ids, messages = [], []
     for sym in SYMBOLS:
+        # --- Heikin Ashi lisse 3m : changement de couleur ---
+        try:
+            b3 = klines(sym, "3m", 200)
+            closed3 = b3[:-1]
+            flip = ha_flip(closed3)
+            if flip:
+                color, ft = flip
+                fid = f"{sym}|HA3m|{color}|{ft}"
+                if fid not in sent:
+                    new_ids.append(fid)
+                    sens = "HAUSSIER (vert)" if color == "bull" else "BAISSIER (rouge)"
+                    px = closed3[-1]["c"]
+                    messages.append((f"Heikin Ashi 3m -> {sens}",
+                                     f"{sym} — bascule de couleur a {px:.2f}",
+                                     "green_square" if color == "bull" else "red_square"))
+        except Exception as e:
+            print(f"{sym} HA3m : echec ({e})")
+
         for interval, label in TFS:
             try:
                 bars = klines(sym, interval)
