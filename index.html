@@ -78,8 +78,8 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 .btn-ind{display:flex;align-items:center;gap:7px;font-weight:600}
 .btn-ind .fx{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-style:italic}
 .ind-menu{
-  position:absolute; top:calc(100% + 8px); left:0; z-index:50;
-  width:300px; background:var(--panel-2); border:1px solid var(--line);
+  position:fixed; top:calc(100% + 8px); left:6px; z-index:50;
+  width:min(280px,74vw); background:var(--panel-2); border:1px solid var(--line);
   border-radius:var(--radius); box-shadow:0 16px 40px rgba(0,0,0,.5);
   padding:8px; display:none; max-height:70vh; overflow:auto;
 }
@@ -162,26 +162,27 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 
 /* Chips indicateurs actifs */
 #chips{
-  position:absolute; top:10px; left:12px; display:flex; flex-direction:column;
-  gap:5px; z-index:10; pointer-events:none;
+  position:absolute; top:5px; left:6px; display:flex; flex-direction:column;
+  gap:2px; z-index:10; pointer-events:none; max-width:58%;
 }
 .legend-ohlc{
-  font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted);
+  font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted);
   background:var(--chip-bg); backdrop-filter:blur(4px);
-  padding:4px 8px; border-radius:6px; width:max-content;
+  padding:1px 5px; border-radius:4px; width:max-content; line-height:1.35;
 }
 .legend-ohlc b{color:var(--text);font-weight:600}
 .chip{
-  display:flex; align-items:center; gap:7px; width:max-content;
+  display:flex; align-items:center; gap:4px; width:max-content;
   background:var(--chip-bg); backdrop-filter:blur(4px);
-  border:1px solid var(--line); border-radius:6px; padding:3px 8px;
-  font-size:12px; font-family:'IBM Plex Mono',monospace; pointer-events:auto;
+  border:1px solid var(--line); border-radius:4px; padding:0 5px;
+  font-size:9.5px; font-family:'IBM Plex Mono',monospace; pointer-events:auto;
+  line-height:1.6; white-space:nowrap;
 }
-.chip .dot{width:8px;height:8px;border-radius:50%}
+.chip .dot{width:6px;height:6px;border-radius:50%;flex:none}
 .chip .val{color:var(--muted)}
 .chip button{
-  background:none;border:none;color:var(--faint);cursor:pointer;font-size:13px;
-  padding:0 0 0 2px;line-height:1;
+  background:none;border:none;color:var(--faint);cursor:pointer;font-size:11px;
+  padding:0 0 0 1px;line-height:1;
 }
 .chip button:hover{color:var(--down)}
 
@@ -2577,8 +2578,16 @@ function applyTheme(t){
 btnTheme.addEventListener('click',()=>
   applyTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));
 applyTheme(localStorage.getItem('lumen-theme')||'dark');
+function anchorLeft(el,btn){
+  const r=btn.getBoundingClientRect();
+  el.style.left='6px';
+  el.style.right='auto';
+  el.style.top=(r.bottom+6)+'px';
+  el.style.maxHeight=(window.innerHeight-r.bottom-16)+'px';
+}
 btnInd.addEventListener('click',()=>{
   const open=menu.classList.toggle('open');
+  if(open)anchorLeft(menu,btnInd);
   btnInd.setAttribute('aria-expanded',open);
 });
 document.addEventListener('click',e=>{
@@ -2680,6 +2689,7 @@ async function loadPairs(force){
 }
 symBtn.addEventListener('click',()=>{
   const open=symMenu.classList.toggle('open');
+  if(open)anchorLeft(symMenu,symBtn);
   if(open){
     menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');
     symSearch.value='';renderSymList('');loadPairs();
