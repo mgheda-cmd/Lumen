@@ -785,31 +785,46 @@ const calc = {
   },
   sr(d){
     const L=5, piv=[];
+    const atr=this.atr(d,14);
     for(let i=L;i<d.length-L;i++){
       let ph=true,pl=true;
       for(let k=1;k<=L;k++){
         if(d[i].h<d[i-k].h||d[i].h<d[i+k].h)ph=false;
         if(d[i].l>d[i-k].l||d[i].l>d[i+k].l)pl=false;
       }
-      if(ph)piv.push({p:d[i].h,i});
-      if(pl)piv.push({p:d[i].l,i});
+      if(ph)piv.push({p:d[i].h,i,type:'h'});
+      if(pl)piv.push({p:d[i].l,i,type:'l'});
     }
     if(!piv.length)return [];
-    const atr=this.atr(d,14);
+    // Force de réaction : ampleur du rejet après chaque pivot (sur K bougies),
+    // exprimée en multiples d'ATR. Un gros rebond = niveau qui a fait réagir.
+    const K=8;
+    for(const v of piv){
+      const a=atr[v.i]||(d[v.i].c*0.005)||1;
+      let ext=v.p;
+      for(let j=v.i+1;j<=Math.min(d.length-1,v.i+K);j++){
+        if(v.type==='h')ext=Math.min(ext,d[j].l);
+        else ext=Math.max(ext,d[j].h);
+      }
+      v.reac=Math.abs(v.p-ext)/a;
+    }
     const ref=atr[d.length-1]||(d[d.length-1].c*0.005);
-    const tol=ref*0.6;
+    const tol=ref*0.75;   // regroupement un peu plus large -> niveaux consolidés
     piv.sort((a,b)=>a.p-b.p);
     const clusters=[];
     for(const v of piv){
       const c=clusters[clusters.length-1];
-      if(c&&Math.abs(v.p-c.sum/c.n)<=tol){c.sum+=v.p;c.n++;c.i=Math.min(c.i,v.i);}
-      else clusters.push({sum:v.p,n:1,i:v.i});
+      if(c&&Math.abs(v.p-c.sum/c.n)<=tol){c.sum+=v.p;c.n++;c.i=Math.max(c.i,v.i);c.reac+=v.reac;}
+      else clusters.push({sum:v.p,n:1,i:v.i,reac:v.reac});
     }
     const lastC=d[d.length-1].c;
+    // Score d'importance : nombre de touches + force cumulée des rejets.
+    // On ne garde que les 6 niveaux les plus marquants.
     return clusters
-      .map(c=>({p:c.sum/c.n,touches:c.n,i:c.i,res:c.sum/c.n>=lastC}))
-      .sort((a,b)=>b.touches-a.touches||b.i-a.i)
-      .slice(0,10);
+      .map(c=>({p:c.sum/c.n,touches:c.n,reac:c.reac,i:c.i,
+                score:c.n+c.reac, res:c.sum/c.n>=lastC}))
+      .sort((a,b)=>b.score-a.score)
+      .slice(0,6);
   }
 };
 /* Unité de temps supérieure pour le MTF : 1m→15m, 15m→1H, 1H→4H, 4H→1J, 1J→1S */
