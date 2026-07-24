@@ -1897,9 +1897,10 @@ function drawOBMTF(zones,s,e,yOf,cw,p){
     laneCap(x1,y0,y1,base);
     ctx.strokeStyle=hexA(base,.7);ctx.lineWidth=1;
     ctx.strokeRect(x0+.5,y0+.5,Math.max(1,x1-x0-1),Math.max(1,y1-y0-1));
-    if(Math.abs(y1-y0)>=14){
-      ctx.font='bold 12px "IBM Plex Mono",monospace';ctx.fillStyle=base;
-      ctx.fillText((z.type==='bull'?'OB achat ':'OB vente ')+z.tf, x1-8,(y0+y1)/2+4);
+    {
+      const long=(z.type==='bull'?'OB achat ':'OB vente ')+z.tf;
+      const f=fitLabel([long,'OB '+z.tf,z.tf],x1-x0,Math.abs(y1-y0),true);
+      if(f){ctx.fillStyle=base;ctx.fillText(f.t,x1-8,(y0+y1)/2+f.fs/2-1);}
     }
   }
   ctx.textAlign='left';ctx.restore();
@@ -1919,9 +1920,13 @@ function drawReversal(zones,s,e,yOf,cw,p){
     ctx.strokeStyle=hexA(col,.7);ctx.setLineDash([4,3]);ctx.lineWidth=1;
     ctx.strokeRect(x0+.5,yt+.5,Math.max(1,x1-x0-1),Math.max(1,yb-yt-1));ctx.setLineDash([]);
     laneCap(x1,yt,yb,col);
-    ctx.textAlign='right';ctx.fillStyle=hexA(col,.98);
-    ctx.fillText(`${z.type==='h'?'▼':'▲'} Renv. ${z.conf}%`, x1-6, yOf(z.lvl)+(z.type==='h'?-4:12));
-    ctx.textAlign='left';
+    {
+      const ar=z.type==='h'?'▼':'▲';
+      const fr=fitLabel([`${ar} Renv. ${z.conf}%`,`${ar} ${z.conf}%`,`${z.conf}%`],
+                        x1-x0,Math.max(12,Math.abs(yb-yt)),true);
+      if(fr){ctx.textAlign='right';ctx.fillStyle=hexA(col,.98);
+        ctx.fillText(fr.t,x1-6,yOf(z.lvl)+(z.type==='h'?-4:fr.fs+2));ctx.textAlign='left';}
+    }
   }
   ctx.restore();
 }
@@ -1953,21 +1958,31 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
     ctx.strokeRect(x0+.5,byA+.5,Math.max(1,w-1),Math.max(1,byH-1));
     ctx.strokeRect(x0+.5,syA+.5,Math.max(1,w-1),Math.max(1,syH-1));
     if(ze==null)laneCap(x1,Math.min(byA,syA),Math.max(byA+byH,syA+syH),pos?cPos:cNeg);
-    if(w>120&&byH>=12&&syH>=12){
-      ctx.textAlign='right';ctx.font='11px "IBM Plex Mono",monospace';
-      ctx.fillStyle=TXT_G;
-      ctx.fillText(`FVG ${z.type==='bull'?'achat':'vente'} ${z.tf} · ${Math.round(z.pct)}% ach`,x1-6,byA+byH/2+4);
-      ctx.fillStyle=TXT_R;
-      ctx.fillText(`${Math.round(100-z.pct)}% vend`,x1-6,syA+syH/2+4);
+    {
+      const pb=Math.round(z.pct), ps=100-pb;
+      ctx.textAlign='right';
+      const fb=fitLabel([`FVG ${z.type==='bull'?'achat':'vente'} ${z.tf} · ${pb}% ach`,
+                         `${z.tf} · ${pb}% ach`,`${pb}% ach`,`${pb}%`],w,byH);
+      if(fb){ctx.fillStyle=TXT_G;ctx.fillText(fb.t,x1-6,byA+byH/2+fb.fs/2-1);}
+      const fs2=fitLabel([`${ps}% vend`,`${ps}%`],w,syH);
+      if(fs2){ctx.fillStyle=TXT_R;ctx.fillText(fs2.t,x1-6,syA+syH/2+fs2.fs/2-1);}
       ctx.textAlign='left';
     }
-    if(mitig&&byH+syH>=16&&w>=40){
-      ctx.textAlign='center';ctx.font='bold 11px "IBM Plex Mono",monospace';
-      ctx.fillStyle='#8A6D00'; ctx.fillText('MITIGATED',(x0+x1)/2,yOf(mid)+4);
-      ctx.textAlign='left';
+    if(mitig){
+      const fm=fitLabel(['MITIGATED','MITIG.','MIT'],w,byH+syH,true);
+      if(fm){ctx.textAlign='center';ctx.fillStyle='#8A6D00';
+        ctx.fillText(fm.t,(x0+x1)/2,yOf(mid)+fm.fs/2-1);ctx.textAlign='left';}
     }
   }
   ctx.restore();
+}
+function fitLabel(cands,maxW,maxH,bold){
+  const cap=Math.max(6,Math.min(12,Math.floor(maxH-2)));
+  for(let fs=cap;fs>=6;fs--){
+    ctx.font=(bold?'bold ':'')+fs+'px "IBM Plex Mono",monospace';
+    for(const t of cands)if(ctx.measureText(t).width<=maxW-6)return {t,fs};
+  }
+  return null;
 }
 function laneRight(key){
   const ins=S(key,'inset');
