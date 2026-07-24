@@ -1969,9 +1969,18 @@ function drawBOS(evts,s,e,yOf,cw,p){
     let ly=y+(m.up?-11:f.fs+9);
     while(used.some(u=>Math.abs(u.y-ly)<f.fs+2&&Math.abs(u.x-x)<130)){ly+=m.up?-(f.fs+3):(f.fs+3);}
     used.push({x,y:ly});
-    ctx.fillStyle=col;ctx.fillText(f.t,x+7,ly);
-    if(m.mss){ctx.strokeStyle=hexA(col,.5);ctx.lineWidth=1;
-      ctx.strokeRect(x+5.5,ly-f.fs-1.5,ctx.measureText(f.t).width+4,f.fs+5);}
+    // étiquette placée À GAUCHE du point de cassure, sur un fond opaque
+    const tw=ctx.measureText(f.t).width;
+    let xr=x-9;                                  // bord droit du texte
+    if(xr-tw-6<0)xr=Math.min(tw+15,W-AXIS_W-4);  // recalage si l'on sort à gauche
+    const bx=xr-tw-5, by=ly-f.fs-2, bw2=tw+10, bh=f.fs+7;
+    ctx.fillStyle='rgba(10,17,31,.82)';
+    ctx.fillRect(bx,by,bw2,bh);
+    ctx.strokeStyle=hexA(col,m.mss?.85:.45);ctx.lineWidth=m.mss?1.4:1;
+    ctx.strokeRect(bx+.5,by+.5,bw2-1,bh-1);
+    ctx.textAlign='right';ctx.fillStyle=col;
+    ctx.fillText(f.t,xr,ly);
+    ctx.textAlign='left';
   }
   ctx.restore();
 }
