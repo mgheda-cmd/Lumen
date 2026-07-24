@@ -319,6 +319,11 @@ footer{
         <input type="number" min="5" max="500" value="100" aria-label="Longueur du canal">
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="emacloud">
+        <span class="dot" style="background:#3DDC97"></span>
+        <span class="name">Nuage EMA 30/90 <span class="desc">EMA Cloud</span></span>
+        <span class="state">off</span>
+      </div>
       <div class="ind-item" data-ind="ichi">
         <span class="dot" style="background:#5AB0FF"></span>
         <span class="name">Ichimoku <span class="desc">9 / 26 / 52 + nuage</span></span>
@@ -995,6 +1000,7 @@ const state = {
     ema:{on:false,period:50},
     ema2:{on:false,period:200},
     ema3:{on:false,period:9},
+    emacloud:{on:false,fast:30,slow:90},
     bb:{on:false,period:20},
     vwap:{on:false},
     ichi:{on:false},
@@ -1488,6 +1494,7 @@ function getInd(key){
     }
     if(key==='ema2')state.cache[ck]=calc.ema(d,ind.period);
     if(key==='ema3')state.cache[ck]=calc.ema(d,ind.period);
+    if(key==='emacloud')state.cache[ck]={fast:calc.ema(d,ind.fast),slow:calc.ema(d,ind.slow)};
     if(key==='swp'){
       const list=[['1','1m'],['3','3m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
       const out=[];
@@ -1675,6 +1682,8 @@ function drawPrice(p,s,e,cw){
       lo=Math.min(lo,v-L.dev);hi=Math.max(hi,v+L.dev);}}}
   if(state.indicators.ema3.on){const a=getInd('ema3');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
+  if(state.indicators.emacloud.on){const c=getInd('emacloud');
+    for(const a of [c.fast,c.slow])for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
   for(const hk of ['sha','sha2','sha3'])if(state.indicators[hk].on){
     for(const ha of getInd(hk)){if(!ha)continue;
       const i=idxOfTime(ha.t);if(i!=null&&i>=s-10&&i<e){lo=Math.min(lo,ha.l);hi=Math.max(hi,ha.h);}}}
@@ -1821,6 +1830,21 @@ function drawPrice(p,s,e,cw){
   // superpositions
   if(state.indicators.sma.on) plotLine(getInd('sma'),s,e,yOf,S('sma','cLine'),1.4);
   if(state.indicators.ema.on) plotLine(getInd('ema'),s,e,yOf,S('ema','cLine'),1.4);
+  if(state.indicators.emacloud.on){
+    const c=getInd('emacloud'), F=c.fast, Sl=c.slow;
+    const up=S('emacloud','cUp'), dn=S('emacloud','cDown');
+    for(let i=Math.max(s,1);i<e;i++){
+      if(F[i]==null||Sl[i]==null||F[i-1]==null||Sl[i-1]==null)continue;
+      ctx.beginPath();
+      ctx.moveTo(xOf(i-1),yOf(F[i-1]));ctx.lineTo(xOf(i),yOf(F[i]));
+      ctx.lineTo(xOf(i),yOf(Sl[i]));ctx.lineTo(xOf(i-1),yOf(Sl[i-1]));
+      ctx.closePath();
+      const bull=(F[i]+F[i-1])>=(Sl[i]+Sl[i-1]);
+      ctx.fillStyle=hexA(bull?up:dn,.16);ctx.fill();
+    }
+    plotLine(Sl,s,e,yOf,hexA(dn,.85),1.3);
+    plotLine(F,s,e,yOf,hexA(up,.9),1.5);
+  }
   if(state.indicators.vwap.on)plotLine(getInd('vwap'),s,e,yOf,S('vwap','cLine'),1.4);
   if(state.indicators.lrc.on){
     const L=getInd('lrc');
@@ -2337,6 +2361,7 @@ const IND_META={
   rsi:{label:p=>'RSI '+p,color:'var(--ema)'},
   macd:{label:()=>'MACD 12/26/9',color:'var(--accent)'},
   ema2:{label:p=>'EMA '+p,color:'#4FD1C5'},
+  emacloud:{label:()=>'Nuage EMA '+state.indicators.emacloud.fast+'/'+state.indicators.emacloud.slow,color:'#3DDC97'},
   ema3:{label:p=>'EMA '+p,color:'#FF7AB6'},
   ichi:{label:()=>'Ichimoku 9/26/52',color:'#5AB0FF'},
   st:{label:()=>'SuperTrend 10×3',color:'#25D0A4'},
@@ -3119,6 +3144,12 @@ const SCHEMA={
     {k:'period',t:'num',lab:'Période',min:2,max:400,ind:1},
     {k:'cLine',t:'col',lab:'Couleur',def:'#F2C14E'},
   ]},
+  emacloud:{title:'Nuage EMA 30 / 90',fields:[
+    {k:'fast',t:'num',lab:'EMA rapide',min:2,max:400,ind:1},
+    {k:'slow',t:'num',lab:'EMA lente',min:2,max:400,ind:1},
+    {k:'cUp',t:'col',lab:'Haussier (rapide > lente)',def:'#25D0A4'},
+    {k:'cDown',t:'col',lab:'Baissier',def:'#F45B7D'},
+  ]},
   ema:{title:'EMA',fields:[
     {k:'period',t:'num',lab:'Période',min:2,max:400,ind:1},
     {k:'cLine',t:'col',lab:'Couleur',def:'#B48BFF'},
@@ -3365,3 +3396,4 @@ resize();
 </script>
 </body>
 </html>
+
