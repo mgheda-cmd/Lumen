@@ -555,7 +555,8 @@ const SYMBOLS = {
   DOGEUSDT:{seed:9, base:0.12,  vol:0.025},
 };
 const TF_MAP = {1:'1m',3:'3m',5:'5m',15:'15m',60:'1h',240:'4h',1440:'1d'};
-const N_BARS = 500;
+const N_BARS = 1000;          // chargement initial
+const MAX_BARS = 12000;       // profondeur maximale conservée en mémoire
 
 function genData(symbol, tfMin){
   const cfg = SYMBOLS[symbol] || {seed:(symbol.length*97)%1000, base:100, vol:0.02};
@@ -1232,9 +1233,29 @@ async function ensureSR(){
   }
 }
 
+let histBusy=false, histDone=false;
+async function loadMoreHistory(){
+  if(histBusy||histDone)return;
+  if(!state.data.length||state.data.length>=MAX_BARS)return;
+  histBusy=true;
+  const g=gen, first=state.data[0].t;
+  try{
+    const rows=await fetchJSON(
+      `/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000&endTime=${first-1}`);
+    if(g!==gen||!Array.isArray(rows)){histBusy=false;return;}
+    const old=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}))
+                  .filter(b=>b.t<first);
+    if(!old.length){histDone=true;histBusy=false;return;}
+    state.data=old.concat(state.data);
+    state.view.start+=old.length;          // la vue reste sur les mêmes bougies
+    state.cache={};
+    render();
+  }catch(e){}
+  histBusy=false;
+}
 async function loadData(){
   const g=++gen; stopFeeds(); setStatus('loading');
-  state.data=[]; state.cache={};
+  state.data=[]; state.cache={}; histBusy=false; histDone=false;
   state.yScale={auto:true,lo:0,hi:0};
   try{
     let rows;
@@ -1540,6 +1561,7 @@ function render(){
       for(let k=-1;k<=1;k++)ctx.fillRect(W/2-8+k*7,p.y-1,5,2);
     }
   }
+  if(state.view.start<60&&!histBusy&&!histDone)loadMoreHistory();
   drawTimeAxis(s,e);
   if(state.mouse) drawCrosshair(panes,s,e);
   updateChips();
@@ -2253,7 +2275,7 @@ canvas.addEventListener('mousemove',e=>{
     }else if(state.dragMode==='time'){
       // étirer l'axe du temps, bord droit fixe (comme TV)
       const f=Math.exp(-(x-state.dragX)*0.005);
-      const nc=Math.max(20,Math.min(N_BARS,state.dragCount*f));
+      const nc=Math.max(20,Math.min(state.data.length||N_BARS,state.dragCount*f));
       state.view.count=nc;
       state.view.start=Math.max(-nc*0.5,state.dragRight-nc);
     }else if(state.dragMode==='price'){
@@ -2325,7 +2347,7 @@ canvas.addEventListener('wheel',e=>{
     const factor=e.deltaY>0?1.12:1/1.12;
     const cw=(W-AXIS_W)/state.view.count;
     const anchor=state.view.start+e.offsetX/cw;
-    let nc=Math.max(20,Math.min(N_BARS,state.view.count*factor));
+    let nc=Math.max(20,Math.min(state.data.length||N_BARS,state.view.count*factor));
     state.view.start=anchor-(anchor-state.view.start)*(nc/state.view.count);
     state.view.count=nc;
   }
@@ -2381,7 +2403,7 @@ canvas.addEventListener('touchmove',e=>{
       state.paneH[key]=Math.max(40,Math.min((H-AXIS_H)*0.6,touch.paneH-(y-touch.y)));
     }else if(touch.mode==='time'){
       const f=Math.exp(-(x-touch.x)*0.006);
-      const nc=Math.max(20,Math.min(N_BARS,touch.count*f));
+      const nc=Math.max(20,Math.min(state.data.length||N_BARS,touch.count*f));
       state.view.count=nc;
       state.view.start=Math.max(-nc*0.5,touch.right-nc);
     }else if(touch.mode==='price'){
@@ -2414,7 +2436,7 @@ canvas.addEventListener('touchmove',e=>{
     const ndx=Math.abs(a.x-b.x)||1, ndy=Math.abs(a.y-b.y)||1;
     if(Math.max(ndx,pinch.dx)>=Math.max(ndy,pinch.dy)){
       // pincement horizontal → zoom temps ancré au centre des doigts
-      const nc=Math.max(20,Math.min(N_BARS,pinch.count*(pinch.dx/ndx)));
+      const nc=Math.max(20,Math.min(state.data.length||N_BARS,pinch.count*(pinch.dx/ndx)));
       const cw0=(W-AXIS_W)/pinch.count;
       const anchor=pinch.start+pinch.mid/cw0;
       state.view.count=nc;
