@@ -315,6 +315,16 @@ footer{
         <span class="name">SuperTrend <span class="desc">10 × 3</span></span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="sha">
+        <span class="dot" style="background:#26C6DA"></span>
+        <span class="name">Heikin Ashi lissé <span class="desc">Bougies HA lissées</span></span>
+        <input type="number" min="2" max="50" value="10" aria-label="Lissage Heikin Ashi">
+        <span class="srtf mtf on" data-ind2="sha" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="sha" data-tf="15">15m</span>
+        <span class="srtf mtf" data-ind2="sha" data-tf="60">1H</span>
+        <span class="srtf mtf" data-ind2="sha" data-tf="240">4H</span>
+        <span class="state">off</span>
+      </div>
       <h4>Smart Money Concepts</h4>
       <div class="ind-item" data-ind="fvg">
         <span class="dot" style="background:#1E6EFF"></span>
@@ -866,6 +876,25 @@ const calc = {
       out.push({type,t:b.t,i,lvl,band:at*0.4,conf:Math.max(0,Math.min(100,Math.round(sc)))});
     }
     return out.filter(z=>z.conf>=35).slice(-10);
+  },
+  /* Heikin Ashi lisse : EMA(OHLC) -> Heikin Ashi -> EMA(HA). */
+  smoothHA(bars,len1,len2){
+    const eo=this.ema(bars,len1,bars.map(x=>x.o)),eh=this.ema(bars,len1,bars.map(x=>x.h)),
+          el=this.ema(bars,len1,bars.map(x=>x.l)),ec=this.ema(bars,len1,bars.map(x=>x.c));
+    const haO=new Array(bars.length).fill(null),haC=[...haO],haH=[...haO],haL=[...haO];
+    for(let i=0;i<bars.length;i++){
+      if(eo[i]==null||eh[i]==null||el[i]==null||ec[i]==null)continue;
+      const c=(eo[i]+eh[i]+el[i]+ec[i])/4;
+      const o=(i>0&&haO[i-1]!=null)?(haO[i-1]+haC[i-1])/2:(eo[i]+ec[i])/2;
+      haO[i]=o;haC[i]=c;haH[i]=Math.max(eh[i],o,c);haL[i]=Math.min(el[i],o,c);
+    }
+    const o2=this.ema(bars,len2,haO),c2=this.ema(bars,len2,haC),
+          h2=this.ema(bars,len2,haH),l2=this.ema(bars,len2,haL);
+    const out=[];
+    for(let i=0;i<bars.length;i++)
+      out.push((o2[i]==null||c2[i]==null||h2[i]==null||l2[i]==null)?null
+        :{t:bars[i].t,o:o2[i],h:h2[i],l:l2[i],c:c2[i]});
+    return out;
   }
 };
 /* Unité de temps supérieure pour le MTF : 1m→15m, 15m→1H, 1H→4H, 4H→1J, 1J→1S */
@@ -885,6 +914,7 @@ const state = {
     vwap:{on:false},
     ichi:{on:false},
     st:{on:false},
+    sha:{on:false,period:10,tf:'chart'},
     fvg:{on:false,tfs:{'1':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:false,tfs:{'1':false,'5':false,'15':true,'60':true,'240':true}},
     lrc:{on:false,period:100},
@@ -1328,6 +1358,12 @@ function getInd(key){
     if(key==='stoch')state.cache[ck]=calc.stoch(d,ind.period);
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
+    if(key==='sha'){
+      const mtf=(ind.tf&&ind.tf!=='chart')?+ind.tf:null;
+      if(!mtf)state.cache[ck]=calc.smoothHA(d,ind.period,ind.period);
+      else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
+        state.cache[ck]=bars?calc.smoothHA(bars,ind.period,ind.period):[];}
+    }
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
     if(key==='fvg')state.cache[ck]=mtfCollect2(ind.tfs,(b,n)=>calc.fvgOne(b,n));
@@ -1484,6 +1520,8 @@ function drawPrice(p,s,e,cw){
       lo=Math.min(lo,v-L.dev);hi=Math.max(hi,v+L.dev);}}}
   if(state.indicators.ema3.on){const a=getInd('ema3');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
+  if(state.indicators.sha.on){for(const ha of getInd('sha')){if(!ha)continue;
+    const i=idxOfTime(ha.t);if(i!=null&&i>=s-10&&i<e){lo=Math.min(lo,ha.l);hi=Math.max(hi,ha.h);}}}
   if(state.indicators.ema2.on){const a=getInd('ema2');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
   if(state.indicators.st.on){const a=getInd('st').line;
@@ -1601,6 +1639,23 @@ function drawPrice(p,s,e,cw){
       ctx.fillStyle=g;ctx.fill();
     }
     plotLine(closes,s,e,yOf,css('--accent'),1.6);
+  }
+
+  // Heikin Ashi lissé : bougies dessinées directement sur le graphe
+  if(state.indicators.sha.on){
+    const cU=S('sha','cUp'), cD=S('sha','cDown'), arr=getInd('sha');
+    for(let k=0;k<arr.length;k++){
+      const ha=arr[k]; if(!ha)continue;
+      const i=idxOfTime(ha.t); if(i==null||i>e)continue;
+      let nxt=null; for(let m=k+1;m<arr.length;m++){if(arr[m]){nxt=idxOfTime(arr[m].t);break;}}
+      const xl=xOf(i)-cw/2, xr=(nxt!=null&&nxt>i)?xOf(nxt)-cw/2:xOf(i)+cw/2;
+      if(xr<0||xl>W-AXIS_W)continue;
+      const xc=(xl+xr)/2, bw=Math.max(1,(xr-xl)*0.72), col=ha.c>=ha.o?cU:cD;
+      ctx.strokeStyle=col;ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(xc,yOf(ha.h));ctx.lineTo(xc,yOf(ha.l));ctx.stroke();
+      ctx.fillStyle=col;const yo=yOf(ha.o),yc=yOf(ha.c);
+      ctx.fillRect(xc-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));
+    }
   }
 
   // superpositions
@@ -2056,6 +2111,7 @@ const IND_META={
   ema3:{label:p=>'EMA '+p,color:'#FF7AB6'},
   ichi:{label:()=>'Ichimoku 9/26/52',color:'#5AB0FF'},
   st:{label:()=>'SuperTrend 10×3',color:'#25D0A4'},
+  sha:{label:p=>'Heikin Ashi lissé '+p,color:'#26C6DA'},
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
@@ -2847,6 +2903,11 @@ const SCHEMA={
     {k:'extend',t:'bool',lab:'Prolonger à droite',def:true},
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
+  sha:{title:'Heikin Ashi lissé',fields:[
+    {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
+    {k:'cUp',t:'col',lab:'Haussier',def:'#089981'},
+    {k:'cDown',t:'col',lab:'Baissier',def:'#F23345'},
+  ]},
   st:{title:'SuperTrend',fields:[
     {k:'cUp',t:'col',lab:'Haussier',def:'#25D0A4'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F45B7D'},
