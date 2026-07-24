@@ -1738,7 +1738,7 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
     ctx.strokeStyle=br;ctx.lineWidth=1;
     ctx.strokeRect(x0+.5,byA+.5,Math.max(1,w-1),Math.max(1,byH-1));
     ctx.strokeRect(x0+.5,syA+.5,Math.max(1,w-1),Math.max(1,syH-1));
-    if(!mitig&&w>120&&byH>=12&&syH>=12){
+    if(w>120&&byH>=12&&syH>=12){
       ctx.textAlign='right';ctx.font='11px "IBM Plex Mono",monospace';
       ctx.fillStyle=TXT_G;
       ctx.fillText(`FVG ${z.type==='bull'?'achat':'vente'} ${z.tf} · ${Math.round(z.pct)}% ach`,x1-6,byA+byH/2+4);
