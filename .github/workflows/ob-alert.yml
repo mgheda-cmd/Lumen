@@ -1,0 +1,37 @@
+name: Alerte Order Blocks
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'      # toutes les 5 minutes
+  workflow_dispatch:            # lancement manuel possible
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ob-alert
+  cancel-in-progress: false
+
+jobs:
+  surveiller:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Détection et notification
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          SYMBOLS: ${{ vars.SYMBOLS || 'BTCUSDT' }}
+        run: python scripts/ob_alert.py
+
+      - name: Mémoriser les alertes envoyées
+        run: |
+          git config user.name  "lumen-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add alerts-state.json || true
+          git diff --quiet --cached || git commit -m "Etat des alertes [skip ci]"
+          git push || true
