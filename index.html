@@ -350,6 +350,11 @@ footer{
         <span class="srtf on" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="rev">
+        <span class="dot" style="background:#F0A020"></span>
+        <span class="name">Zones de renversement <span class="desc">Confluence de signaux</span></span>
+        <span class="state">off</span>
+      </div>
       <h4>Panneaux séparés</h4>
       <div class="ind-item" data-ind="volume">
         <span class="dot" style="background:var(--faint)"></span>
@@ -825,6 +830,36 @@ const calc = {
                 score:c.n+c.reac, res:c.sum/c.n>=lastC}))
       .sort((a,b)=>b.score-a.score)
       .slice(0,6);
+  },
+  /* Zones de renversement : pivots portant des signaux de retournement,
+     notes par CONFLUENCE (somme des signaux presents, sur 100). Ce n'est PAS
+     une probabilite : juste combien de signaux classiques s'alignent. */
+  reversal(d){
+    const rsi=this.rsi(d,14), atr=this.atr(d,14), ema=this.ema(d,20);
+    const {H,Lo}=this.pivots(d,5);
+    const sr=this.sr(d);
+    const avgVol=i=>{let s=0,c=0;for(let j=Math.max(0,i-20);j<i;j++){s+=d[j].v;c++;}return c?s/c:d[i].v;};
+    const piv=[...H.map(i=>({i,type:'h'})),...Lo.map(i=>({i,type:'l'}))].sort((x,y)=>x.i-y.i);
+    const prevH=[],prevL=[]; const out=[];
+    for(const {i,type} of piv){
+      const b=d[i], at=atr[i]||b.c*0.005||1; let sc=0;
+      const range=(b.h-b.l)||1;
+      const wick=type==='h'?(b.h-Math.max(b.o,b.c)):(Math.min(b.o,b.c)-b.l);
+      sc+=Math.min(30,(wick/range)*55);                                  // rejet en meche
+      const rv=rsi[i];
+      if(rv!=null){ if(type==='h'&&rv>=58)sc+=Math.min(20,(rv-58)/32*20);
+        else if(type==='l'&&rv<=42)sc+=Math.min(20,(42-rv)/32*20); }     // RSI extreme
+      const vr=b.v/(avgVol(i)||1); sc+=Math.max(0,Math.min(15,(vr-1)*15)); // pic de volume
+      if(type==='h'&&prevH.length){const pv=prevH[prevH.length-1];
+        if(b.h>d[pv].h&&rv!=null&&rsi[pv]!=null&&rv<rsi[pv])sc+=20;}        // divergence RSI
+      if(type==='l'&&prevL.length){const pv=prevL[prevL.length-1];
+        if(b.l<d[pv].l&&rv!=null&&rsi[pv]!=null&&rv>rsi[pv])sc+=20;}
+      if(type==='h')prevH.push(i); else prevL.push(i);
+      const lvl=type==='h'?b.h:b.l;
+      if(sr.some(l=>Math.abs(l.p-lvl)<=at*0.9))sc+=15;                    // confluence S/R
+      out.push({type,t:b.t,i,lvl,band:at*0.4,conf:Math.max(0,Math.min(100,Math.round(sc)))});
+    }
+    return out.filter(z=>z.conf>=35).slice(-10);
   }
 };
 /* Unité de temps supérieure pour le MTF : 1m→15m, 15m→1H, 1H→4H, 4H→1J, 1J→1S */
@@ -848,6 +883,7 @@ const state = {
     lrc:{on:false,period:100},
     sr:{on:false,tfs:{'1':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'5':false,'15':true,'60':true,'240':true}},
+    rev:{on:false},
     volume:{on:true},
     rsi:{on:false,period:14},
     macd:{on:false,tf:'chart'},
@@ -1280,6 +1316,7 @@ function getInd(key){
       }
       state.cache[ck]=out;
     }
+    if(key==='rev')state.cache[ck]=calc.reversal(d);
     if(key==='stoch')state.cache[ck]=calc.stoch(d,ind.period);
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
@@ -1510,6 +1547,9 @@ function drawPrice(p,s,e,cw){
     ctx.restore();
   }
 
+  // zones de renversement : bande + etiquette de confluence
+  if(state.indicators.rev.on) drawReversal(getInd('rev'),s,e,yOf,cw,p);
+
   // nuage Ichimoku (sous le prix)
   if(state.indicators.ichi.on){
     const ic=getInd('ichi');
@@ -1726,6 +1766,26 @@ function drawOBMTF(zones,s,e,yOf,cw,p){
     }
   }
   ctx.textAlign='left';ctx.restore();
+}
+function drawReversal(zones,s,e,yOf,cw,p){
+  const cH=S('rev','cBear'), cL=S('rev','cBull');
+  ctx.save();ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
+  ctx.font='bold 10px "IBM Plex Mono",monospace';
+  for(const z of zones){
+    const zi=idxOfTime(z.t); if(zi==null||zi>e-1)continue;
+    const col=z.type==='h'?cH:cL;
+    const x0=Math.max(xOf(zi)-cw/2,0), x1=W-AXIS_W;
+    if(x1<=x0)continue;
+    const yt=yOf(z.lvl+z.band), yb=yOf(z.lvl-z.band);
+    ctx.fillStyle=hexA(col,Math.min(.30,.07+.0022*z.conf));   // plus de confluence = plus visible
+    ctx.fillRect(x0,yt,x1-x0,Math.max(1,yb-yt));
+    ctx.strokeStyle=hexA(col,.7);ctx.setLineDash([4,3]);ctx.lineWidth=1;
+    ctx.strokeRect(x0+.5,yt+.5,Math.max(1,x1-x0-1),Math.max(1,yb-yt-1));ctx.setLineDash([]);
+    ctx.textAlign='right';ctx.fillStyle=hexA(col,.98);
+    ctx.fillText(`${z.type==='h'?'▼':'▲'} Renv. ${z.conf}%`, x1-6, yOf(z.lvl)+(z.type==='h'?-4:12));
+    ctx.textAlign='left';
+  }
+  ctx.restore();
 }
 function drawFVGMTF(zones,s,e,yOf,cw,p,key){
   const cPos=S(key,'cPos'), cNeg=S(key,'cNeg');
@@ -1998,6 +2058,7 @@ const IND_META={
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   lrc:{label:p=>'Régression '+p,color:'#9BE6FF'},
   swp:{label:()=>'Prises de liquidité',color:'#E1424B'},
+  rev:{label:()=>'Zones de renversement',color:'#F0A020'},
 };
 function updateChips(){
   const i=hoverIndex()??state.data.length-1;
@@ -2802,6 +2863,10 @@ const SCHEMA={
   swp:{title:'Prises de liquidité',fields:[
     {k:'cUp',t:'col',lab:'Liquidité haute prise',def:'#E1424B'},
     {k:'cDown',t:'col',lab:'Liquidité basse prise',def:'#00A55A'},
+  ]},
+  rev:{title:'Zones de renversement',fields:[
+    {k:'cBear',t:'col',lab:'Au sommet (retournement bas)',def:'#F23345'},
+    {k:'cBull',t:'col',lab:'Au creux (retournement haut)',def:'#089981'},
   ]},
 };
 function S(ind,key){
