@@ -186,6 +186,17 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 }
 .chip button:hover{color:var(--down)}
 
+#toast{
+  position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+  z-index:300;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;
+}
+.toast-item{
+  background:var(--panel-2);border:1px solid var(--up);border-left:4px solid var(--up);
+  color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;
+  font-family:'IBM Plex Mono',monospace;box-shadow:0 10px 30px rgba(0,0,0,.55);
+  animation:tin .25s ease-out;
+}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 #paper-bar{border-top:1px solid var(--line);background:var(--panel);font-size:12px}
 #paper-summary{
   display:flex;gap:14px;align-items:center;padding:8px 16px;cursor:pointer;
@@ -517,6 +528,8 @@ footer{
     </div>
   </div>
 </div>
+
+<div id="toast"></div>
 
 <div id="paper-bar">
   <div id="paper-summary">
@@ -1714,7 +1727,7 @@ function drawPrice(p,s,e,cw){
   }
 
   // Order Blocks MTF : zones par UT, étiquetées, les mitigées disparaissent
-  if(state.indicators.ob.on) drawOBMTF(getInd('ob'),s,e,yOf,cw,p);
+  if(state.indicators.ob.on){const _ob=getInd('ob');drawOBMTF(_ob,s,e,yOf,cw,p);alertNewOB(_ob);}
   // FVG enrichie MTF : moitiés % acheteur/vendeur, bleu/violet, MITIGATED
   if(state.indicators.fvg.on) drawFVGMTF(getInd('fvg'),s,e,yOf,cw,p,'fvg');
 
@@ -3173,6 +3186,7 @@ const SCHEMA={
     {k:'cBear',t:'col',lab:'Cassure baissière',def:'#F45B7D'},
   ]},
   ob:{title:'Order Blocks',fields:[
+    {k:'alert',t:'bool',lab:'Alerte à la formation (5m/15m/1H)',def:false},
     {k:'inset',t:'num',lab:'Décalage à droite (px)',min:0,max:700,def:0},
     {k:'cBull',t:'col',lab:'Haussier',def:'#7AA2FF'},
     {k:'cBear',t:'col',lab:'Baissier',def:'#FF9D66'},
@@ -3269,6 +3283,67 @@ menu.querySelectorAll('.ind-item').forEach(item=>{
   g.addEventListener('click',e=>{e.stopPropagation();openCfg(k);});
   item.insertBefore(g,item.querySelector('.state'));
 });
+
+/* ---------- Alertes locales : nouvelles Order Blocks ---------- */
+let audioCtx=null;
+function beep(){
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    const t=audioCtx.currentTime;
+    [880,1320].forEach((f,k)=>{
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t+k*0.14);
+      g.gain.exponentialRampToValueAtTime(0.22,t+k*0.14+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+k*0.14+0.13);
+      o.connect(g);g.connect(audioCtx.destination);o.start(t+k*0.14);o.stop(t+k*0.14+0.15);
+    });
+  }catch(e){}
+}
+document.addEventListener('touchstart',()=>{
+  if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+},{once:true,passive:true});
+
+function toast(msg,col){
+  const box=document.getElementById('toast');
+  const el=document.createElement('div');
+  el.className='toast-item';
+  if(col){el.style.borderColor=col;el.style.borderLeftColor=col;}
+  el.textContent=msg;
+  box.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';
+    setTimeout(()=>el.remove(),450);},6000);
+}
+const ALERT_KEY='lumen-ob-seen-v1';
+let obSeen=null;
+function alertNewOB(zones){
+  if(!S('ob','alert'))return;
+  const watch=['5','15','60'];
+  const key=state.symbol+'|'+state.market;
+  if(!obSeen||obSeen.k!==key){
+    let st=null; try{st=JSON.parse(localStorage.getItem(ALERT_KEY)||'null');}catch(e){}
+    obSeen=(st&&st.k===key)?st:{k:key,ids:[]};
+  }
+  const set=new Set(obSeen.ids);
+  const fresh=[];
+  for(const z of zones){
+    if(!watch.includes(String(z.k)))continue;
+    const id=z.k+'|'+z.t+'|'+z.type;
+    if(!set.has(id)){set.add(id);fresh.push(z);}
+  }
+  const first=obSeen.ids.length===0;     // première visite : on mémorise sans alerter
+  obSeen.ids=[...set].slice(-400);
+  try{localStorage.setItem(ALERT_KEY,JSON.stringify(obSeen));}catch(e){}
+  if(first||!fresh.length)return;
+  for(const z of fresh.slice(0,3)){
+    const sens=z.type==='bull'?'achat':'vente';
+    toast(`Order Block ${sens} ${z.tf} · ${state.symbol.replace('USDT','')} ${fmt((z.top+z.bot)/2)}`,
+      z.type==='bull'?S('ob','cBull'):S('ob','cBear'));
+  }
+  beep();
+}
 
 /* ---------- Démarrage ---------- */
 loadConfig();
