@@ -246,6 +246,8 @@ footer{
 
   <div class="tf-group" role="group" aria-label="Unité de temps">
     <button data-tf="1">1m</button>
+    <button data-tf="3">3m</button>
+    <button data-tf="5">5m</button>
     <button data-tf="15">15m</button>
     <button data-tf="60" class="active">1H</button>
     <button data-tf="240">4H</button>
@@ -320,6 +322,8 @@ footer{
         <span class="name">Heikin Ashi lissé <span class="desc">Bougies HA lissées</span></span>
         <input type="number" min="2" max="50" value="10" aria-label="Lissage Heikin Ashi">
         <span class="srtf mtf on" data-ind2="sha" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="sha" data-tf="3">3m</span>
+        <span class="srtf mtf" data-ind2="sha" data-tf="5">5m</span>
         <span class="srtf mtf" data-ind2="sha" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="sha" data-tf="60">1H</span>
         <span class="srtf mtf" data-ind2="sha" data-tf="240">4H</span>
@@ -330,6 +334,7 @@ footer{
         <span class="dot" style="background:#1E6EFF"></span>
         <span class="name">FVG MTF <span class="desc">% acheteur / vendeur</span></span>
         <span class="srtf" data-tf="1">1m</span>
+        <span class="srtf" data-tf="3">3m</span>
         <span class="srtf on" data-tf="5">5m</span>
         <span class="srtf on" data-tf="15">15m</span>
         <span class="srtf" data-tf="60">1H</span>
@@ -340,6 +345,7 @@ footer{
         <span class="dot" style="background:#7AA2FF"></span>
         <span class="name">Order Blocks MTF <span class="desc">Blocs d'ordres</span></span>
         <span class="srtf" data-tf="1">1m</span>
+        <span class="srtf" data-tf="3">3m</span>
         <span class="srtf" data-tf="5">5m</span>
         <span class="srtf on" data-tf="15">15m</span>
         <span class="srtf on" data-tf="60">1H</span>
@@ -350,6 +356,7 @@ footer{
         <span class="dot" style="background:#A8B8D8"></span>
         <span class="name">S/R MTF <span class="desc">Multi unités de temps</span></span>
         <span class="srtf" data-tf="1">1m</span>
+        <span class="srtf" data-tf="3">3m</span>
         <span class="srtf" data-tf="5">5m</span>
         <span class="srtf" data-tf="15">15m</span>
         <span class="srtf on" data-tf="60">1H</span>
@@ -360,6 +367,7 @@ footer{
         <span class="dot" style="background:#E1424B"></span>
         <span class="name">Prises de liquidité <span class="desc">Sweep MTF</span></span>
         <span class="srtf" data-tf="1">1m</span>
+        <span class="srtf" data-tf="3">3m</span>
         <span class="srtf" data-tf="5">5m</span>
         <span class="srtf on" data-tf="15">15m</span>
         <span class="srtf on" data-tf="60">1H</span>
@@ -387,6 +395,8 @@ footer{
         <span class="dot" style="background:var(--accent)"></span>
         <span class="name">MACD <span class="desc">12/26/9</span></span>
         <span class="srtf mtf on" data-ind2="macd" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="macd" data-tf="3">3m</span>
+        <span class="srtf mtf" data-ind2="macd" data-tf="5">5m</span>
         <span class="srtf mtf" data-ind2="macd" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="macd" data-tf="60">1H</span>
         <span class="srtf mtf" data-ind2="macd" data-tf="240">4H</span>
@@ -397,6 +407,8 @@ footer{
         <span class="name">Impulse MACD <span class="desc">LazyBear</span></span>
         <input type="number" min="5" max="200" value="34" aria-label="Période Impulse MACD">
         <span class="srtf mtf on" data-ind2="imp" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="3">3m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="5">5m</span>
         <span class="srtf mtf" data-ind2="imp" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="imp" data-tf="60">1H</span>
         <span class="srtf mtf" data-ind2="imp" data-tf="240">4H</span>
@@ -518,7 +530,7 @@ const SYMBOLS = {
   XRPUSDT:{seed:55, base:0.55,  vol:0.020},
   DOGEUSDT:{seed:9, base:0.12,  vol:0.025},
 };
-const TF_MAP = {1:'1m',5:'5m',15:'15m',60:'1h',240:'4h',1440:'1d'};
+const TF_MAP = {1:'1m',3:'3m',5:'5m',15:'15m',60:'1h',240:'4h',1440:'1d'};
 const N_BARS = 500;
 
 function genData(symbol, tfMin){
@@ -915,11 +927,11 @@ const state = {
     ichi:{on:false},
     st:{on:false},
     sha:{on:false,period:10,tf:'chart'},
-    fvg:{on:false,tfs:{'1':false,'5':true,'15':true,'60':false,'240':false}},
-    ob:{on:false,tfs:{'1':false,'5':false,'15':true,'60':true,'240':true}},
+    fvg:{on:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
+    ob:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     lrc:{on:false,period:100},
-    sr:{on:false,tfs:{'1':false,'5':false,'15':false,'60':true,'240':true}},
-    swp:{on:false,tfs:{'1':false,'5':false,'15':true,'60':true,'240':true}},
+    sr:{on:false,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
+    swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     rev:{on:false},
     volume:{on:true},
     rsi:{on:false,period:14},
@@ -973,7 +985,7 @@ function mergeConfig(c){
   if(c.indicators)for(const k of Object.keys(state.indicators)){
     const s=c.indicators[k]; if(!s)continue;
     if(typeof s.on==='boolean')state.indicators[k].on=s.on;
-    if(typeof s.tf==='string'&&['chart','auto','15','60','240'].includes(s.tf)&&'tf'in state.indicators[k])
+    if(typeof s.tf==='string'&&['chart','auto','3','5','15','60','240'].includes(s.tf)&&'tf'in state.indicators[k])
       state.indicators[k].tf=s.tf;
     if(typeof s.period==='number'&&s.period>=2&&s.period<=400)
       state.indicators[k].period=s.period;
@@ -1230,7 +1242,7 @@ async function loadData(){
 const mtfStore={key:'',data:{}};
 /* Collecte des zones multi-UT : bougies du graphe pour l'UT courante, sinon fetch. */
 function mtfCollect2(tfs,fn){
-  const list=[['1','1m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
+  const list=[['1','1m'],['3','3m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
   const out=[];
   for(const [tf,name] of list){
     if(!tfs[tf])continue;
@@ -1343,7 +1355,7 @@ function getInd(key){
     if(key==='ema2')state.cache[ck]=calc.ema(d,ind.period);
     if(key==='ema3')state.cache[ck]=calc.ema(d,ind.period);
     if(key==='swp'){
-      const list=[['1','1m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
+      const list=[['1','1m'],['3','3m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
       const out=[];
       for(const [tf,name] of list){
         if(!ind.tfs[tf])continue;
