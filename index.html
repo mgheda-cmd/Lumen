@@ -1289,6 +1289,43 @@ async function loadMoreHistory(){
   }catch(e){}
   histBusy=false;
 }
+/* ---------- Mémorisation de la vue : zoom, position, échelle des prix ---------- */
+const VIEW_KEY='lumen-view-v1';
+let viewTimer=null;
+function viewKey(){return state.symbol+'|'+state.tf+'|'+state.market;}
+function saveView(){
+  clearTimeout(viewTimer);
+  viewTimer=setTimeout(()=>{
+    const d=state.data; if(!d.length)return;
+    // on mémorise l'instant du bord droit : stable même si l'historique s'allonge
+    const iR=Math.round(state.view.start+state.view.count);
+    const span=state.tf*60000;
+    const rightT=(iR>=0&&iR<d.length)?d[iR].t:d[d.length-1].t+(iR-(d.length-1))*span;
+    try{localStorage.setItem(VIEW_KEY,JSON.stringify({
+      k:viewKey(),count:state.view.count,rightT,
+      auto:state.yScale.auto,lo:state.yScale.lo,hi:state.yScale.hi}));}catch(e){}
+  },400);
+}
+function restoreView(){
+  let v=null;
+  try{v=JSON.parse(localStorage.getItem(VIEW_KEY)||'null');}catch(e){}
+  const d=state.data;
+  if(!v||v.k!==viewKey()||!d.length)return false;
+  const count=Math.max(20,Math.min(d.length,v.count||150));
+  const span=state.tf*60000;
+  let iR;
+  if(v.rightT<=d[d.length-1].t){
+    iR=idxOfTime(v.rightT);
+    if(iR==null)iR=d.length-1;
+  }else{
+    iR=(d.length-1)+Math.round((v.rightT-d[d.length-1].t)/span); // bord droit dans le futur
+  }
+  state.view={start:iR-count,count};
+  state.view.start=Math.max(-count*0.5,Math.min(d.length-count*0.5,state.view.start));
+  if(v.auto===false&&isFinite(v.lo)&&isFinite(v.hi)&&v.hi>v.lo)
+    state.yScale={auto:false,lo:v.lo,hi:v.hi};
+  return true;
+}
 async function loadData(){
   const g=++gen; stopFeeds(); setStatus('loading');
   state.data=[]; state.cache={}; histBusy=false; histDone=false;
@@ -1304,6 +1341,7 @@ async function loadData(){
     if(!Array.isArray(rows))throw new Error('format');
     state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
     state.view={start:state.data.length-150,count:150};
+    restoreView();
     updateHeader(); render();
     startStream(g);
     ensureSR();
@@ -1603,6 +1641,7 @@ function render(){
   if(state.mouse) drawCrosshair(panes,s,e);
   updateChips();
   updatePaper();
+  saveView();
 }
 
 /* ----- panneau prix ----- */
