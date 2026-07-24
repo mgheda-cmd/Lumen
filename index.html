@@ -319,7 +319,7 @@ footer{
       </div>
       <div class="ind-item" data-ind="sha">
         <span class="dot" style="background:#26C6DA"></span>
-        <span class="name">Heikin Ashi lissé <span class="desc">Bougies HA lissées</span></span>
+        <span class="name">Heikin Ashi lissé ① <span class="desc">Bougies HA lissées</span></span>
         <input type="number" min="2" max="50" value="10" aria-label="Lissage Heikin Ashi">
         <span class="srtf mtf on" data-ind2="sha" data-tf="chart">UT</span>
         <span class="srtf mtf" data-ind2="sha" data-tf="3">3m</span>
@@ -327,6 +327,30 @@ footer{
         <span class="srtf mtf" data-ind2="sha" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="sha" data-tf="60">1H</span>
         <span class="srtf mtf" data-ind2="sha" data-tf="240">4H</span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="sha2">
+        <span class="dot" style="background:#7AA2FF"></span>
+        <span class="name">Heikin Ashi lissé ② <span class="desc">Bougies HA lissées</span></span>
+        <input type="number" min="2" max="50" value="10" aria-label="Lissage Heikin Ashi lissé ②">
+        <span class="srtf mtf" data-ind2="sha2" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="sha2" data-tf="3">3m</span>
+        <span class="srtf mtf" data-ind2="sha2" data-tf="5">5m</span>
+        <span class="srtf mtf on" data-ind2="sha2" data-tf="15">15m</span>
+        <span class="srtf mtf" data-ind2="sha2" data-tf="60">1H</span>
+        <span class="srtf mtf" data-ind2="sha2" data-tf="240">4H</span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="sha3">
+        <span class="dot" style="background:#B48BFF"></span>
+        <span class="name">Heikin Ashi lissé ③ <span class="desc">Bougies HA lissées</span></span>
+        <input type="number" min="2" max="50" value="10" aria-label="Lissage Heikin Ashi lissé ③">
+        <span class="srtf mtf" data-ind2="sha3" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="sha3" data-tf="3">3m</span>
+        <span class="srtf mtf" data-ind2="sha3" data-tf="5">5m</span>
+        <span class="srtf mtf" data-ind2="sha3" data-tf="15">15m</span>
+        <span class="srtf mtf on" data-ind2="sha3" data-tf="60">1H</span>
+        <span class="srtf mtf" data-ind2="sha3" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
       <h4>Smart Money Concepts</h4>
@@ -927,6 +951,8 @@ const state = {
     ichi:{on:false},
     st:{on:false},
     sha:{on:false,period:10,tf:'chart'},
+    sha2:{on:false,period:10,tf:'15'},
+    sha3:{on:false,period:10,tf:'60'},
     fvg:{on:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     lrc:{on:false,period:100},
@@ -1376,6 +1402,12 @@ function getInd(key){
       else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
         state.cache[ck]=bars?calc.smoothHA(bars,ind.period,ind.period):[];}
     }
+    if(key==='sha2'||key==='sha3'){
+      const mtf=(ind.tf&&ind.tf!=='chart')?+ind.tf:null;
+      if(!mtf)state.cache[ck]=calc.smoothHA(d,ind.period,ind.period);
+      else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
+        state.cache[ck]=bars?calc.smoothHA(bars,ind.period,ind.period):[];}
+    }
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
     if(key==='fvg')state.cache[ck]=mtfCollect2(ind.tfs,(b,n)=>calc.fvgOne(b,n));
@@ -1532,8 +1564,9 @@ function drawPrice(p,s,e,cw){
       lo=Math.min(lo,v-L.dev);hi=Math.max(hi,v+L.dev);}}}
   if(state.indicators.ema3.on){const a=getInd('ema3');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
-  if(state.indicators.sha.on){for(const ha of getInd('sha')){if(!ha)continue;
-    const i=idxOfTime(ha.t);if(i!=null&&i>=s-10&&i<e){lo=Math.min(lo,ha.l);hi=Math.max(hi,ha.h);}}}
+  for(const hk of ['sha','sha2','sha3'])if(state.indicators[hk].on){
+    for(const ha of getInd(hk)){if(!ha)continue;
+      const i=idxOfTime(ha.t);if(i!=null&&i>=s-10&&i<e){lo=Math.min(lo,ha.l);hi=Math.max(hi,ha.h);}}}
   if(state.indicators.ema2.on){const a=getInd('ema2');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
   if(state.indicators.st.on){const a=getInd('st').line;
@@ -1654,8 +1687,10 @@ function drawPrice(p,s,e,cw){
   }
 
   // Heikin Ashi lissé : bougies dessinées directement sur le graphe
-  if(state.indicators.sha.on){
-    const cU=S('sha','cUp'), cD=S('sha','cDown'), arr=getInd('sha');
+  for(const hk of ['sha','sha2','sha3']){
+   if(!state.indicators[hk].on)continue;
+   {
+    const cU=S(hk,'cUp'), cD=S(hk,'cDown'), arr=getInd(hk);
     for(let k=0;k<arr.length;k++){
       const ha=arr[k]; if(!ha)continue;
       const i=idxOfTime(ha.t); if(i==null||i>e)continue;
@@ -1668,6 +1703,7 @@ function drawPrice(p,s,e,cw){
       ctx.fillStyle=col;const yo=yOf(ha.o),yc=yOf(ha.c);
       ctx.fillRect(xc-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));
     }
+   }
   }
 
   // superpositions
@@ -2123,7 +2159,9 @@ const IND_META={
   ema3:{label:p=>'EMA '+p,color:'#FF7AB6'},
   ichi:{label:()=>'Ichimoku 9/26/52',color:'#5AB0FF'},
   st:{label:()=>'SuperTrend 10×3',color:'#25D0A4'},
-  sha:{label:p=>'Heikin Ashi lissé '+p,color:'#26C6DA'},
+  sha:{label:p=>'HA lissé ① '+p,color:'#26C6DA'},
+  sha2:{label:p=>'HA lissé ② '+p,color:'#7AA2FF'},
+  sha3:{label:p=>'HA lissé ③ '+p,color:'#B48BFF'},
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
@@ -2915,10 +2953,20 @@ const SCHEMA={
     {k:'extend',t:'bool',lab:'Prolonger à droite',def:true},
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
-  sha:{title:'Heikin Ashi lissé',fields:[
+  sha:{title:'Heikin Ashi lissé ①',fields:[
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#089981'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F23345'},
+  ]},
+  sha2:{title:'Heikin Ashi lissé ②',fields:[
+    {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
+    {k:'cUp',t:'col',lab:'Haussier',def:'#7AA2FF'},
+    {k:'cDown',t:'col',lab:'Baissier',def:'#FF9D66'},
+  ]},
+  sha3:{title:'Heikin Ashi lissé ③',fields:[
+    {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
+    {k:'cUp',t:'col',lab:'Haussier',def:'#B48BFF'},
+    {k:'cDown',t:'col',lab:'Baissier',def:'#F2C14E'},
   ]},
   st:{title:'SuperTrend',fields:[
     {k:'cUp',t:'col',lab:'Haussier',def:'#25D0A4'},
