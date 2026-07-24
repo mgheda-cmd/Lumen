@@ -2371,6 +2371,8 @@ function updateChips(){
     const m=IND_META[k];
     let val='';
     if(k==='sma'||k==='ema'||k==='ema2'||k==='vwap'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'—';}
+    if(k==='ema3'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'—';}
+    if(k==='emacloud'){const c=getInd(k);val=(c.fast[i]!=null&&c.slow[i]!=null)?(c.fast[i]>=c.slow[i]?'▲ haussier':'▼ baissier'):'—';}
     if(k==='st'){const a=getInd(k);val=a.line[i]!=null?fmt(a.line[i]):'—';}
     if(k==='lrc'){const L=getInd(k);val=L?fmt(L.a+L.b*(i-L.s0)):'—';}
     if(k==='bb'){const a=getInd(k);val=a.mid[i]!=null?fmt(a.mid[i]):'—';}
