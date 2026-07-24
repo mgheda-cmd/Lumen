@@ -376,6 +376,17 @@ footer{
         <span class="srtf on" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="bos">
+        <span class="dot" style="background:#FFD166"></span>
+        <span class="name">Structure BOS / CHoCH <span class="desc">MSS multi-UT</span></span>
+        <span class="srtf" data-tf="1">1m</span>
+        <span class="srtf" data-tf="3">3m</span>
+        <span class="srtf" data-tf="5">5m</span>
+        <span class="srtf on" data-tf="15">15m</span>
+        <span class="srtf on" data-tf="60">1H</span>
+        <span class="srtf on" data-tf="240">4H</span>
+        <span class="state">off</span>
+      </div>
       <div class="ind-item" data-ind="sr">
         <span class="dot" style="background:#A8B8D8"></span>
         <span class="name">S/R MTF <span class="desc">Multi unités de temps</span></span>
@@ -596,6 +607,29 @@ const calc = {
   },
   /* Order Block : dernière bougie opposée avant l'impulsion qui casse la
      structure (BOS). Mitigé (clôture au travers) -> retiré. */
+  /* Structure de marché : BOS (continuation), CHoCH (retournement), MSS (avec déplacement) */
+  bosOne(bars,name,tf){
+    const L=5,N=bars.length,atr=this.atr(bars,14);
+    const {H:pivH,Lo:pivL}=this.pivots(bars,L);
+    let lastH=null,lastHt=null,lastL=null,lastLt=null,hp=0,lp=0,trend=0;
+    const out=[];
+    for(let i=1;i<N;i++){
+      while(hp<pivH.length&&pivH[hp]+L<=i){lastH=bars[pivH[hp]].h;lastHt=bars[pivH[hp]].t;hp++;}
+      while(lp<pivL.length&&pivL[lp]+L<=i){lastL=bars[pivL[lp]].l;lastLt=bars[pivL[lp]].t;lp++;}
+      const b=bars[i], a=atr[i]||0;
+      const disp=a>0&&Math.abs(b.c-b.o)>1.3*a;      // bougie de déplacement
+      if(lastH!=null&&b.c>lastH){
+        out.push({t:b.t,fromT:lastHt,lvl:lastH,up:true,
+          kind:trend>=0?'BOS':'CHoCH',mss:disp&&trend<0,tf:name,k:tf});
+        trend=1;lastH=null;
+      }else if(lastL!=null&&b.c<lastL){
+        out.push({t:b.t,fromT:lastLt,lvl:lastL,up:false,
+          kind:trend<=0?'BOS':'CHoCH',mss:disp&&trend>0,tf:name,k:tf});
+        trend=-1;lastL=null;
+      }
+    }
+    return out.slice(-40);
+  },
   obOne(bars,name,tf){
     const L=5,N=bars.length,atr=this.atr(bars,14);
     const {H:pivH,Lo:pivL}=this.pivots(bars,L);
@@ -959,6 +993,7 @@ const state = {
     lrc:{on:false,period:100},
     sr:{on:false,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
+    bos:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     rev:{on:false},
     volume:{on:true},
     rsi:{on:false,period:14},
@@ -1433,6 +1468,7 @@ function getInd(key){
     const f=HTF_FACTOR[state.tf]||4;
     if(key==='fvg')state.cache[ck]=mtfCollect2(ind.tfs,(b,n)=>calc.fvgOne(b,n));
     if(key==='ob')state.cache[ck]=mtfCollect2(ind.tfs,(b,n,t)=>calc.obOne(b,n,t));
+    if(key==='bos')state.cache[ck]=mtfCollect2(ind.tfs,(b,n,t)=>calc.bosOne(b,n,t));
     if(key==='sr')state.cache[ck]=calc.sr(d);
     if(key==='lrc')state.cache[ck]=calc.lrc(d,ind.period,S('lrc','mult'));
   }
@@ -1663,6 +1699,7 @@ function drawPrice(p,s,e,cw){
   }
 
   // zones de renversement : bande + etiquette de confluence
+  if(state.indicators.bos.on) drawBOS(getInd('bos'),s,e,yOf,cw,p);
   if(state.indicators.rev.on) drawReversal(getInd('rev'),s,e,yOf,cw,p);
 
   // nuage Ichimoku (sous le prix)
@@ -1904,6 +1941,39 @@ function drawOBMTF(zones,s,e,yOf,cw,p){
     }
   }
   ctx.textAlign='left';ctx.restore();
+}
+function drawBOS(evts,s,e,yOf,cw,p){
+  const cU=S('bos','cBull'), cD=S('bos','cBear');
+  ctx.save();ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
+  const used=[];                                   // évite les étiquettes superposées
+  for(const m of evts){
+    const i=idxOfTime(m.t); if(i==null||i>e-1)continue;
+    const jf=idxOfTime(m.fromT); if(jf==null)continue;
+    const x=xOf(i), xf=xOf(jf), y=yOf(m.lvl);
+    if(x<-60||xf>W-AXIS_W)continue;
+    const col=m.up?cU:cD;
+    // niveau cassé
+    ctx.strokeStyle=hexA(col,.85);ctx.lineWidth=m.kind==='CHoCH'?1.6:1.1;
+    ctx.setLineDash(m.kind==='CHoCH'?[]:[5,3]);
+    ctx.beginPath();ctx.moveTo(Math.max(xf,0),y+.5);ctx.lineTo(x,y+.5);ctx.stroke();
+    ctx.setLineDash([]);
+    // marqueur de cassure
+    ctx.fillStyle=col;ctx.beginPath();
+    if(m.up){ctx.moveTo(x,y-8);ctx.lineTo(x-5,y);ctx.lineTo(x+5,y);}
+    else{ctx.moveTo(x,y+8);ctx.lineTo(x-5,y);ctx.lineTo(x+5,y);}
+    ctx.closePath();ctx.fill();
+    // étiquette : type + UT (+ MSS)
+    const base=m.kind+' '+m.tf+(m.mss?' · MSS':'');
+    const f=fitLabel([base,m.kind+' '+m.tf,m.kind,m.tf],150,14,true);
+    if(!f)continue;
+    let ly=y+(m.up?-11:f.fs+9);
+    while(used.some(u=>Math.abs(u.y-ly)<f.fs+2&&Math.abs(u.x-x)<130)){ly+=m.up?-(f.fs+3):(f.fs+3);}
+    used.push({x,y:ly});
+    ctx.fillStyle=col;ctx.fillText(f.t,x+7,ly);
+    if(m.mss){ctx.strokeStyle=hexA(col,.5);ctx.lineWidth=1;
+      ctx.strokeRect(x+5.5,ly-f.fs-1.5,ctx.measureText(f.t).width+4,f.fs+5);}
+  }
+  ctx.restore();
 }
 function drawReversal(zones,s,e,yOf,cw,p){
   const cH=S('rev','cBear'), cL=S('rev','cBull');
@@ -2222,6 +2292,7 @@ const IND_META={
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.obm.tf]||'')
     :(HTF_NAME[state.tf]||'')),color:'#FF9D66'},
   sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
+  bos:{label:()=>'Structure BOS/CHoCH',color:'#FFD166'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   lrc:{label:p=>'Régression '+p,color:'#9BE6FF'},
   swp:{label:()=>'Prises de liquidité',color:'#E1424B'},
@@ -3038,6 +3109,10 @@ const SCHEMA={
   fvgm:{title:'FVG MTF',fields:[
     {k:'cPos',t:'col',lab:'Positif (cadre bleu)',def:'#1E6EFF'},
     {k:'cNeg',t:'col',lab:'Négatif (cadre violet)',def:'#9B37D7'},
+  ]},
+  bos:{title:'Structure BOS / CHoCH / MSS',fields:[
+    {k:'cBull',t:'col',lab:'Cassure haussière',def:'#25D0A4'},
+    {k:'cBear',t:'col',lab:'Cassure baissière',def:'#F45B7D'},
   ]},
   ob:{title:'Order Blocks',fields:[
     {k:'inset',t:'num',lab:'Décalage à droite (px)',min:0,max:700,def:0},
