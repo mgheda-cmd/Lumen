@@ -1722,20 +1722,23 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
     const x0=Math.max(xOf(zi)-cw/2,0);
     const x1=ze==null?(W-AXIS_W):Math.min(Math.max(xOf(ze)+cw/2,x0+2),W-AXIS_W);
     if(x1<=x0)continue;
-    const w=x1-x0, pos=z.pct>=50;
-    const br=hexA(pos?cPos:cNeg,.65), bg=hexA(pos?cPos:cNeg,.12);
+    const w=x1-x0, pos=z.pct>=50, mitig=z.endT!=null;
+    const br=mitig?hexA(YEL,.75):hexA(pos?cPos:cNeg,.65);
+    const bg=mitig?hexA(YEL,.22):hexA(pos?cPos:cNeg,.12);
     const mid=(z.top+z.bot)/2;
     const buyT=pos?mid:z.top, buyB=pos?z.bot:mid;
     const selT=pos?z.top:mid, selB=pos?mid:z.bot;
     const rect=(t,b)=>{const ya=yOf(t),yb=yOf(b);return [ya,Math.max(1,yb-ya)];};
     const [byA,byH]=rect(buyT,buyB), [syA,syH]=rect(selT,selB);
     ctx.fillStyle=bg; ctx.fillRect(x0,byA,w,byH); ctx.fillRect(x0,syA,w,syH);
-    ctx.fillStyle='rgba(0,170,70,.45)'; ctx.fillRect(x0,byA,w*z.pct/100,byH);
-    ctx.fillStyle='rgba(220,40,40,.45)'; ctx.fillRect(x0,syA,w*(100-z.pct)/100,syH);
+    if(!mitig){
+      ctx.fillStyle='rgba(0,170,70,.45)'; ctx.fillRect(x0,byA,w*z.pct/100,byH);
+      ctx.fillStyle='rgba(220,40,40,.45)'; ctx.fillRect(x0,syA,w*(100-z.pct)/100,syH);
+    }
     ctx.strokeStyle=br;ctx.lineWidth=1;
     ctx.strokeRect(x0+.5,byA+.5,Math.max(1,w-1),Math.max(1,byH-1));
     ctx.strokeRect(x0+.5,syA+.5,Math.max(1,w-1),Math.max(1,syH-1));
-    if(w>120&&byH>=12&&syH>=12){
+    if(!mitig&&w>120&&byH>=12&&syH>=12){
       ctx.textAlign='right';ctx.font='11px "IBM Plex Mono",monospace';
       ctx.fillStyle=TXT_G;
       ctx.fillText(`FVG ${z.type==='bull'?'achat':'vente'} ${z.tf} · ${Math.round(z.pct)}% ach`,x1-6,byA+byH/2+4);
@@ -1743,9 +1746,9 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
       ctx.fillText(`${Math.round(100-z.pct)}% vend`,x1-6,syA+syH/2+4);
       ctx.textAlign='left';
     }
-    if(z.endT!=null&&byH+syH>=16&&w>=40){
+    if(mitig&&byH+syH>=16&&w>=40){
       ctx.textAlign='center';ctx.font='bold 11px "IBM Plex Mono",monospace';
-      ctx.fillStyle=YEL; ctx.fillText('MITIGATED',(x0+x1)/2,yOf(mid)+4);
+      ctx.fillStyle='#8A6D00'; ctx.fillText('MITIGATED',(x0+x1)/2,yOf(mid)+4);
       ctx.textAlign='left';
     }
   }
