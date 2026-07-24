@@ -38,18 +38,18 @@ body{
 
 /* ---------- Header ---------- */
 header{
-  display:flex; align-items:center; gap:14px;
-  padding:10px 16px; border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:6px;
+  padding:3px 10px; border-bottom:1px solid var(--line);
   background:var(--panel); flex-wrap:wrap;
-  padding-top:calc(10px + env(safe-area-inset-top));
+  padding-top:calc(3px + env(safe-area-inset-top));
 }
-.logo{display:flex; align-items:center; gap:8px; font-weight:700; letter-spacing:.02em}
-.logo .pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
-.sep{width:1px;height:24px;background:var(--line)}
+.logo{display:flex; align-items:center; gap:7px; font-weight:700; letter-spacing:.02em; font-size:13px}
+.logo .pulse{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.sep{width:1px;height:16px;background:var(--line)}
 
 select, .btn{
   background:var(--panel-2); color:var(--text); border:1px solid var(--line);
-  border-radius:8px; padding:7px 12px; font-family:inherit; font-size:13px;
+  border-radius:7px; padding:4px 9px; font-family:inherit; font-size:12px;
   cursor:pointer; transition:border-color .15s, background .15s;
 }
 select:hover,.btn:hover{border-color:var(--accent)}
@@ -57,15 +57,16 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 
 .tf-group,.type-group{display:flex; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; overflow:hidden}
 .tf-group button,.type-group button{
-  background:none;border:none;color:var(--muted);padding:7px 11px;cursor:pointer;
-  font-family:'IBM Plex Mono',monospace;font-size:12px;transition:.15s;
+  background:none;border:none;color:var(--muted);padding:4px 8px;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;transition:.15s;
 }
 .type-group button{font-family:'Space Grotesk',sans-serif}
 .tf-group button:hover,.type-group button:hover{color:var(--text)}
 .tf-group button.active,.type-group button.active{background:var(--accent);color:#0A111F;font-weight:600}
 
-.price-block{margin-left:auto;text-align:right}
-.price-block .last{font-size:18px;font-weight:600}
+.price-block{margin-left:16px;text-align:right}
+.price-block{line-height:1.25}
+.price-block .last{font-size:14px;font-weight:600}
 .price-block .chg{font-size:12px}
 .chg.up{color:var(--up)} .chg.down{color:var(--down)}
 
@@ -258,7 +259,6 @@ footer{
     <button class="btn btn-ind" id="btn-ind" aria-haspopup="true" aria-expanded="false">
       <span class="fx">ƒx</span> Indicateurs
     </button>
-    <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
     <div class="ind-menu" id="ind-menu" role="menu">
       <h4>Superposés au prix</h4>
       <div class="ind-item" data-ind="sma">
@@ -392,6 +392,7 @@ footer{
       </div>
     </div>
   </div>
+  <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
 
   <div class="ind-wrap">
     <button class="btn" id="sync-btn" title="Synchroniser entre appareils">⇅</button>
@@ -419,8 +420,10 @@ footer{
 
   <div class="price-block">
     <div class="last mono" id="last-price">—</div>
-    <div class="chg mono" id="last-chg">—</div>
-    <div class="mono" id="countdown" style="font-size:11px;color:var(--muted)">—</div>
+    <div class="mono" style="display:flex;gap:6px;justify-content:flex-end;font-size:11px;line-height:1.3">
+      <span class="chg" id="last-chg">—</span>
+      <span id="countdown" style="color:var(--muted)">—</span>
+    </div>
   </div>
 </header>
 
@@ -836,7 +839,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
-  yScale:{auto:true,lo:0,hi:0}, pricePaneH:0, paneH:{}, lastPanes:[], style:{},
+  yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{},
 };
 
 /* ---------- Portefeuille de trading démo ---------- */
@@ -1317,6 +1320,21 @@ function niceStep(range,target){
 }
 
 /* Structure des panneaux (prix + sous-panneaux actifs) */
+/* Échelle verticale d'un sous-panneau : auto par défaut (recalculée à
+   chaque rendu), ou fixée par l'utilisateur (molette/glisser sur son axe,
+   double-clic pour revenir à auto) — même logique que le panneau prix. */
+function subYOf(p,key,lo0,hi0,padded){
+  const sc=state.subScale[key];
+  let lo,hi;
+  if(!sc||sc.auto){lo=lo0;hi=hi0;}
+  else{lo=sc.lo;hi=sc.hi;}
+  if(hi<=lo)hi=lo+1e-6;
+  p.lo=lo;p.hi=hi;p.subKey=key;
+  const pad=padded?8:5, span=padded?16:10;
+  const yOf=v=>p.y+pad+(1-(v-lo)/(hi-lo))*(p.h-span);
+  p.yOf=yOf;
+  return yOf;
+}
 function computePanes(){
   const subs=[];
   if(state.indicators.rsi.on) subs.push('rsi');
@@ -1360,12 +1378,17 @@ function render(){
   const cw = (W-AXIS_W)/state.view.count;
 
   for(const p of panes){
+    // chaque panneau est borné à sa propre hauteur : un zoom vertical
+    // (prix ou sous-panneau) ne peut plus déborder sur ses voisins.
+    ctx.save();
+    ctx.beginPath();ctx.rect(0,p.y,W,p.h);ctx.clip();
     if(p.key==='price') drawPrice(p,s,e,cw);
     else if(p.key==='rsi') drawRSI(p,s,e,cw);
     else if(p.key==='macd') drawMACD(p,s,e,cw);
     else if(p.key==='imp') drawImp(p,s,e,cw);
     else if(p.key==='stoch') drawStoch(p,s,e,cw);
     else if(p.key==='atr') drawATR(p,s,e,cw);
+    ctx.restore();
     // séparation
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
@@ -1763,8 +1786,8 @@ function subLabel(p,txt,val,color){
 }
 function drawRSI(p,s,e,cw){
   const arr=getInd('rsi');
-  const yOf=v=>p.y+8+(1-v/100)*(p.h-16);
-  p.yOf=yOf;p.lo=0;p.hi=100;p.isRsi=true;
+  const yOf=subYOf(p,'rsi',0,100,true);
+  p.isRsi=true;
   // zones 30/70
   const OB=S('rsi','ob'),OS=S('rsi','os'),CR=S('rsi','cLine');
   if(S('rsi','showZone')){
@@ -1786,13 +1809,13 @@ function drawMACD(p,s,e,cw){
   const m=getInd('macd');
   let mx=0;for(let i=s;i<e;i++){for(const v of [m.line[i],m.sig[i],m.hist[i]]) if(v!=null)mx=Math.max(mx,Math.abs(v));}
   mx=mx||1;
-  const yOf=v=>p.y+p.h/2-(v/mx)*(p.h/2-10);
-  p.yOf=yOf;p.lo=-mx;p.hi=mx;
-  ctx.strokeStyle='rgba(74,88,120,.5)';ctx.beginPath();ctx.moveTo(0,p.y+p.h/2+.5);ctx.lineTo(W-AXIS_W,p.y+p.h/2+.5);ctx.stroke();
+  const yOf=subYOf(p,'macd',-mx,mx,false);
+  const y0line=yOf(0);
+  ctx.strokeStyle='rgba(74,88,120,.5)';ctx.beginPath();ctx.moveTo(0,y0line+.5);ctx.lineTo(W-AXIS_W,y0line+.5);ctx.stroke();
   const bw=Math.max(1,cw*0.5);
   if(S('macd','showHist'))for(let i=s;i<e;i++){
     if(m.hist[i]==null)continue;
-    const x=xOf(i),y=yOf(m.hist[i]),y0=p.y+p.h/2;
+    const x=xOf(i),y=yOf(m.hist[i]),y0=y0line;
     ctx.fillStyle=hexA(m.hist[i]>=0?S('macd','cUp'):S('macd','cDown'),.55);
     ctx.fillRect(x-bw/2,Math.min(y,y0),bw,Math.abs(y-y0)||1);
   }
@@ -1812,9 +1835,8 @@ function drawImp(p,s,e,cw){
   for(let i=s;i<e;i++)for(const v of [m.md[i],m.sb[i],m.sh[i]])
     if(v!=null)mx=Math.max(mx,Math.abs(v));
   mx=mx||1;
-  const yOf=v=>p.y+p.h/2-(v/mx)*(p.h/2-10);
-  p.yOf=yOf;p.lo=-mx;p.hi=mx;
-  const y0=p.y+p.h/2;
+  const yOf=subYOf(p,'imp',-mx,mx,false);
+  const y0=yOf(0);
   if(S('imp','showZero')){
     ctx.strokeStyle='rgba(74,88,120,.6)';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,y0+.5);ctx.lineTo(W-AXIS_W,y0+.5);ctx.stroke();
@@ -1846,8 +1868,8 @@ function drawImp(p,s,e,cw){
 }
 function drawStoch(p,s,e,cw){
   const st=getInd('stoch');
-  const yOf=v=>p.y+8+(1-v/100)*(p.h-16);
-  p.yOf=yOf;p.lo=0;p.hi=100;p.isRsi=true;
+  const yOf=subYOf(p,'stoch',0,100,true);
+  p.isRsi=true;
   const CK=S('stoch','cK'),CD=S('stoch','cD');
   if(S('stoch','showZone')){
     ctx.fillStyle=hexA(CK,.07);
@@ -1872,8 +1894,7 @@ function drawATR(p,s,e,cw){
   for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}
   if(!isFinite(lo)){lo=0;hi=1;}
   const pad=(hi-lo)*0.15||1;lo-=pad;hi+=pad;
-  const yOf=v=>p.y+(1-(v-lo)/(hi-lo))*p.h;
-  p.yOf=yOf;p.lo=lo;p.hi=hi;
+  const yOf=subYOf(p,'atr',lo,hi,false);
   const CA=S('atr','cLine');
   plotLine(a,s,e,yOf,CA,1.4);
   const i=hoverIndex()??state.data.length-1;
@@ -1987,7 +2008,10 @@ function hitZone(x,y){
     if(x<W-AXIS_W&&Math.abs(y-panes[i].y)<8)return 'resize:'+panes[i].key;
   }
   if(y>H-AXIS_H) return 'time';
-  if(x>W-AXIS_W && y<(state.pricePaneH||H-AXIS_H)) return 'price';
+  if(x>W-AXIS_W){
+    const pane=panes.find(q=>y>=q.y&&y<q.y+q.h);
+    if(pane) return pane.key==='price' ? 'price' : 'sub:'+pane.key;
+  }
   return 'pan';
 }
 function paneHeightOf(key){
@@ -2006,6 +2030,12 @@ canvas.addEventListener('mousedown',e=>{
     state.dragPaneH=paneHeightOf(state.dragMode.slice(7));
   if(state.dragMode==='price'&&state.yScale.auto)state.yScale.auto=false;
   state.dragLo=state.yScale.lo; state.dragHi=state.yScale.hi;
+  if(state.dragMode.startsWith('sub:')){
+    const key=state.dragMode.slice(4);
+    const pane=(state.lastPanes||[]).find(q=>q.key===key);
+    state.subScale[key]={auto:false,lo:pane?pane.lo:0,hi:pane?pane.hi:1};
+    state.dragSubLo=state.subScale[key].lo; state.dragSubHi=state.subScale[key].hi;
+  }
   canvas.style.cursor='grabbing';
 });
 window.addEventListener('mouseup',()=>{
@@ -2032,6 +2062,13 @@ canvas.addEventListener('mousemove',e=>{
       const c=(state.dragLo+state.dragHi)/2;
       const r=Math.max((state.dragHi-state.dragLo)/2*f,1e-9);
       state.yScale.lo=c-r; state.yScale.hi=c+r;
+    }else if(state.dragMode.startsWith('sub:')){
+      // même geste que le prix, appliqué à l'échelle du sous-panneau visé
+      const key=state.dragMode.slice(4);
+      const f=Math.exp((y-state.dragY)*0.006);
+      const c=(state.dragSubLo+state.dragSubHi)/2;
+      const r=Math.max((state.dragSubHi-state.dragSubLo)/2*f,1e-9);
+      state.subScale[key]={auto:false,lo:c-r,hi:c+r};
     }else{
       // déplacement du graphique : temps + prix
       const cw=(W-AXIS_W)/state.view.count;
@@ -2049,7 +2086,7 @@ canvas.addEventListener('mousemove',e=>{
   }else{
     const z=hitZone(x,y);
     canvas.style.cursor=z.startsWith('resize:')?'row-resize':
-      z==='time'?'ew-resize':z==='price'?'ns-resize':'crosshair';
+      z==='time'?'ew-resize':(z==='price'||z.startsWith('sub:'))?'ns-resize':'crosshair';
   }
   render();
 });
@@ -2058,6 +2095,7 @@ canvas.addEventListener('dblclick',e=>{
   const z=hitZone(e.offsetX,e.offsetY);
   if(z.startsWith('resize:')){delete state.paneH[z.slice(7)];saveConfig();render();}
   else if(z==='price'){state.yScale.auto=true;render();}
+  else if(z.startsWith('sub:')){delete state.subScale[z.slice(4)];render();}
   else if(z==='time'){
     state.view={start:Math.max(0,state.data.length-150),count:150};
     render();
@@ -2072,6 +2110,17 @@ canvas.addEventListener('wheel',e=>{
     const c=(state.yScale.lo+state.yScale.hi)/2;
     const r=Math.max((state.yScale.hi-state.yScale.lo)/2*f,1e-9);
     state.yScale.lo=c-r; state.yScale.hi=c+r;
+  }else if(z.startsWith('sub:')){
+    const key=z.slice(4);
+    let sc=state.subScale[key];
+    if(!sc||sc.auto){
+      const pane=(state.lastPanes||[]).find(q=>q.key===key);
+      sc=state.subScale[key]={auto:false,lo:pane?pane.lo:0,hi:pane?pane.hi:1};
+    }
+    const f=e.deltaY>0?1.1:1/1.1;
+    const c=(sc.lo+sc.hi)/2;
+    const r=Math.max((sc.hi-sc.lo)/2*f,1e-9);
+    sc.lo=c-r; sc.hi=c+r;
   }else{
     const factor=e.deltaY>0?1.12:1/1.12;
     const cw=(W-AXIS_W)/state.view.count;
@@ -2098,12 +2147,23 @@ canvas.addEventListener('touchstart',e=>{
       else state.view={start:Math.max(0,state.data.length-150),count:150};
       lastTap={t:0,z:''}; touch=null; render(); return;
     }
+    if(z.startsWith('sub:')&&lastTap.z===z&&now-lastTap.t<320){
+      delete state.subScale[z.slice(4)];
+      lastTap={t:0,z:''}; touch=null; render(); return;
+    }
     lastTap={t:now,z};
     if(z==='price'&&state.yScale.auto)state.yScale.auto=false;
+    let subLo=0,subHi=1;
+    if(z.startsWith('sub:')){
+      const key=z.slice(4);
+      const pane=(state.lastPanes||[]).find(q=>q.key===key);
+      state.subScale[key]={auto:false,lo:pane?pane.lo:0,hi:pane?pane.hi:1};
+      subLo=state.subScale[key].lo; subHi=state.subScale[key].hi;
+    }
     touch={mode:z,x,y,start:state.view.start,count:state.view.count,
       right:state.view.start+state.view.count,
       paneH:z.startsWith('resize:')?paneHeightOf(z.slice(7)):0,
-      lo:state.yScale.lo,hi:state.yScale.hi};
+      lo:state.yScale.lo,hi:state.yScale.hi,subLo,subHi};
     pinch=null;
   }else if(e.touches.length===2){
     touch=null;
@@ -2129,6 +2189,12 @@ canvas.addEventListener('touchmove',e=>{
       const c=(touch.lo+touch.hi)/2;
       const r=Math.max((touch.hi-touch.lo)/2*f,1e-9);
       state.yScale.lo=c-r; state.yScale.hi=c+r;
+    }else if(touch.mode&&touch.mode.startsWith('sub:')){
+      const key=touch.mode.slice(4);
+      const f=Math.exp((y-touch.y)*0.007);
+      const c=(touch.subLo+touch.subHi)/2;
+      const r=Math.max((touch.subHi-touch.subLo)/2*f,1e-9);
+      state.subScale[key]={auto:false,lo:c-r,hi:c+r};
     }else{
       const cw=(W-AXIS_W)/state.view.count;
       state.view.start=Math.max(-state.view.count*0.5,
