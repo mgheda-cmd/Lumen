@@ -2,8 +2,13 @@ name: Alerte Order Blocks
 
 on:
   schedule:
-    - cron: '*/3 * * * *'      # toutes les 3 minutes
-  workflow_dispatch:            # lancement manuel possible
+    - cron: '*/5 * * * *'      # toutes les 5 minutes (plus fiable que 3 chez GitHub)
+  workflow_dispatch:
+    inputs:
+      heartbeat:
+        description: "Envoyer une notification de test"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -17,17 +22,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Détection et notification
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           SYMBOLS: ${{ vars.SYMBOLS || 'BTCUSDT' }}
+          HEARTBEAT: ${{ inputs.heartbeat && '1' || '0' }}
         run: python scripts/ob_alert.py
-
       - name: Mémoriser les alertes envoyées
         run: |
           git config user.name  "lumen-bot"
