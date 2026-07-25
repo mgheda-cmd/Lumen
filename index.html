@@ -178,8 +178,12 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 }
 #zoom-title{font-weight:600}
 #zoom-n{color:var(--muted); font-size:11px}
-#zoom-close{margin-left:auto; background:var(--panel-2); color:var(--text);
-  border:1px solid var(--line); border-radius:8px; padding:5px 12px; cursor:pointer; font-size:14px}
+#zoom-head button{margin-left:6px; background:var(--panel-2); color:var(--text);
+  border:1px solid var(--line); border-radius:8px; padding:5px 12px; cursor:pointer; font-size:15px;
+  min-width:38px}
+#zoom-out{margin-left:auto}
+#zoom-canvas{cursor:grab}
+#zoom-canvas:active{cursor:grabbing}
 #zoom-canvas{flex:1; width:100%; touch-action:none}
 
 /* Chips indicateurs actifs */
@@ -549,7 +553,10 @@ footer{
   <div id="zoom-box">
     <div id="zoom-head">
       <span id="zoom-title">Vue rapprochée</span>
-      <span id="zoom-n">20 bougies</span>
+      <span id="zoom-n">glisser / pincer pour naviguer</span>
+      <button id="zoom-out" title="Dézoomer">−</button>
+      <button id="zoom-in" title="Zoomer">+</button>
+      <button id="zoom-reset" title="Réinitialiser">⟲</button>
       <button id="zoom-close">✕</button>
     </div>
     <canvas id="zoom-canvas"></canvas>
@@ -3421,7 +3428,10 @@ const zoomBack=document.getElementById('zoom-back');
 const zoomCanvas=document.getElementById('zoom-canvas');
 const zoomCtx=zoomCanvas.getContext('2d');
 let zoomOpen=false;
-const ZOOM_N=20;
+
+// vue propre à la fenêtre agrandie (indépendante du graphe principal)
+const zoomState={view:{start:0,count:20}, yScale:{auto:true,lo:0,hi:0},
+  drag:null, pinch:null, touch:null, mouse:null};
 
 function renderZoom(){
   if(!zoomOpen||!state.data.length)return;
@@ -3431,34 +3441,154 @@ function renderZoom(){
   if(!zw||!zh)return;
   zoomCanvas.width=zw*dpr; zoomCanvas.height=zh*dpr;
   zoomCtx.setTransform(dpr,0,0,dpr,0,0);
-  // sauvegarde de l'état du graphe principal
-  const savedCtx=ctx, savedW=W, savedH=H;
-  const savedView={...state.view}, savedMouse=state.mouse, savedYS={...state.yScale};
-  // on bascule le moteur sur le canvas agrandi
-  ctx=zoomCtx; W=zw; H=zh; state.mouse=null;
-  const n=Math.min(ZOOM_N,state.data.length);
-  state.view={start:state.data.length-n, count:n};
-  state.yScale={auto:true,lo:0,hi:0};   // échelle auto pour un cadrage net
-  state.cache=state.cache;              // caches partagés, pas de recalcul
+  // basculer le moteur sur le canvas agrandi + la vue de la fenêtre
+  const sCtx=ctx,sW=W,sH=H,sView={...state.view},sMouse=state.mouse,sYS={...state.yScale};
+  ctx=zoomCtx; W=zw; H=zh;
+  state.view=zoomState.view; state.yScale=zoomState.yScale; state.mouse=zoomState.mouse;
   try{ render(); }catch(e){ console.error(e); }
-  // restauration intégrale
-  ctx=savedCtx; W=savedW; H=savedH;
-  state.view=savedView; state.mouse=savedMouse; state.yScale=savedYS;
+  ctx=sCtx; W=sW; H=sH; state.view=sView; state.mouse=sMouse; state.yScale=sYS;
 }
 function openZoom(){
   zoomOpen=true; zoomBack.classList.add('open');
+  const n=Math.min(30,state.data.length);
+  zoomState.view={start:state.data.length-n, count:n};
+  zoomState.yScale={auto:true,lo:0,hi:0};
+  zoomState.mouse=null;
   requestAnimationFrame(renderZoom);
 }
 function closeZoom(){
-  zoomOpen=false; zoomBack.classList.remove('open');
-  render();
+  zoomOpen=false; zoomBack.classList.remove('open'); render();
 }
 document.getElementById('zoom-btn').addEventListener('click',openZoom);
 document.getElementById('zoom-close').addEventListener('click',closeZoom);
 zoomBack.addEventListener('click',e=>{ if(e.target===zoomBack)closeZoom(); });
 window.addEventListener('resize',()=>{ if(zoomOpen)renderZoom(); });
-// rafraîchit la vue agrandie au rythme du flux temps réel
 setInterval(()=>{ if(zoomOpen)renderZoom(); },1500);
+
+// ---- interactions dans la fenêtre agrandie ----
+function zpos(t){const r=zoomCanvas.getBoundingClientRect();return {x:t.clientX-r.left,y:t.clientY-r.top};}
+function zAxisW(){return (zoomCanvas.getBoundingClientRect().width<500)?58:72;}
+function zIsPrice(x){return x> zoomCanvas.getBoundingClientRect().width-zAxisW();}
+const zData=()=>state.data;
+
+// souris (desktop)
+zoomCanvas.addEventListener('mousedown',e=>{
+  const {x,y}=zpos(e);
+  zoomState.drag={x,y,start:zoomState.view.start,price:zIsPrice(x),
+    lo:zoomState.yScale.lo,hi:zoomState.yScale.hi};
+  if(zIsPrice(x)&&zoomState.yScale.auto)zoomState.yScale.auto=false;
+});
+window.addEventListener('mousemove',e=>{
+  if(!zoomOpen)return;
+  const {x,y}=zpos(e); zoomState.mouse={x,y};
+  const d=zoomState.drag;
+  if(d){
+    const w=zoomCanvas.getBoundingClientRect().width-zAxisW();
+    if(d.price){
+      const f=Math.exp((y-d.y)*0.006);
+      const c=(d.lo+d.hi)/2,rg=Math.max((d.hi-d.lo)/2*f,1e-9);
+      zoomState.yScale.lo=c-rg; zoomState.yScale.hi=c+rg;
+    }else{
+      const cw=w/zoomState.view.count;
+      let ns=d.start-(x-d.x)/cw;
+      ns=Math.max(-zoomState.view.count*0.5,Math.min(zData().length-zoomState.view.count*0.5,ns));
+      zoomState.view.start=ns;
+      const dy=y-d.y;
+      if(Math.abs(dy)>2){ if(zoomState.yScale.auto)zoomState.yScale.auto=false;
+        const h=zoomCanvas.getBoundingClientRect().height;
+        const dP=dy*(d.hi-d.lo)/h; zoomState.yScale.lo=d.lo+dP; zoomState.yScale.hi=d.hi+dP; }
+    }
+  }
+  if(zoomOpen)renderZoom();
+});
+window.addEventListener('mouseup',()=>{ if(zoomState.drag)zoomState.drag=null; });
+zoomCanvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const {x}=zpos(e);
+  if(zIsPrice(x)){
+    if(zoomState.yScale.auto)zoomState.yScale.auto=false;
+    const f=e.deltaY>0?1.1:1/1.1;
+    const c=(zoomState.yScale.lo+zoomState.yScale.hi)/2;
+    const rg=Math.max((zoomState.yScale.hi-zoomState.yScale.lo)/2*f,1e-9);
+    zoomState.yScale.lo=c-rg; zoomState.yScale.hi=c+rg;
+  }else{
+    const w=zoomCanvas.getBoundingClientRect().width-zAxisW();
+    const factor=e.deltaY>0?1.12:1/1.12;
+    const cw=w/zoomState.view.count, anchor=zoomState.view.start+x/cw;
+    const nc=Math.max(5,Math.min(zData().length,zoomState.view.count*factor));
+    zoomState.view.start=anchor-(anchor-zoomState.view.start)*(nc/zoomState.view.count);
+    zoomState.view.count=nc;
+  }
+  renderZoom();
+},{passive:false});
+
+// tactile
+zoomCanvas.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){
+    const {x,y}=zpos(e.touches[0]);
+    zoomState.touch={x,y,start:zoomState.view.start,price:zIsPrice(x),
+      lo:zoomState.yScale.lo,hi:zoomState.yScale.hi};
+    zoomState.mouse={x,y};
+    if(zIsPrice(x)&&zoomState.yScale.auto)zoomState.yScale.auto=false;
+    zoomState.pinch=null;
+  }else if(e.touches.length===2){
+    zoomState.touch=null;
+    const a=zpos(e.touches[0]),b=zpos(e.touches[1]);
+    zoomState.pinch={dx:Math.abs(a.x-b.x)||1,dy:Math.abs(a.y-b.y)||1,
+      mid:(a.x+b.x)/2,count:zoomState.view.count,start:zoomState.view.start,
+      lo:zoomState.yScale.lo,hi:zoomState.yScale.hi};
+  }
+},{passive:true});
+zoomCanvas.addEventListener('touchmove',e=>{
+  const w=zoomCanvas.getBoundingClientRect().width-zAxisW();
+  if(zoomState.touch&&e.touches.length===1){
+    const {x,y}=zpos(e.touches[0]); zoomState.mouse={x,y};
+    const t=zoomState.touch;
+    if(t.price){
+      const f=Math.exp((y-t.y)*0.007);
+      const c=(t.lo+t.hi)/2,rg=Math.max((t.hi-t.lo)/2*f,1e-9);
+      zoomState.yScale.lo=c-rg; zoomState.yScale.hi=c+rg;
+    }else{
+      const cw=w/zoomState.view.count;
+      zoomState.view.start=Math.max(-zoomState.view.count*0.5,
+        Math.min(zData().length-zoomState.view.count*0.5, t.start-(x-t.x)/cw));
+      const dy=y-t.y;
+      if(Math.abs(dy)>4){ if(zoomState.yScale.auto)zoomState.yScale.auto=false;
+        const h=zoomCanvas.getBoundingClientRect().height;
+        const dP=dy*(t.hi-t.lo)/h; zoomState.yScale.lo=t.lo+dP; zoomState.yScale.hi=t.hi+dP; }
+    }
+  }else if(zoomState.pinch&&e.touches.length===2){
+    const a=zpos(e.touches[0]),b=zpos(e.touches[1]);
+    const ndx=Math.abs(a.x-b.x)||1, ndy=Math.abs(a.y-b.y)||1, pk=zoomState.pinch;
+    if(Math.max(ndx,pk.dx)>=Math.max(ndy,pk.dy)){
+      const nc=Math.max(5,Math.min(zData().length,pk.count*(pk.dx/ndx)));
+      const cw0=w/pk.count, anchor=pk.start+pk.mid/cw0;
+      zoomState.view.count=nc;
+      zoomState.view.start=anchor-pk.mid/(w/nc);
+    }else{
+      if(zoomState.yScale.auto)zoomState.yScale.auto=false;
+      const f=pk.dy/ndy, c=(pk.lo+pk.hi)/2, rg=Math.max((pk.hi-pk.lo)/2*f,1e-9);
+      zoomState.yScale.lo=c-rg; zoomState.yScale.hi=c+rg;
+    }
+  }
+  renderZoom();
+},{passive:true});
+zoomCanvas.addEventListener('touchend',()=>{ zoomState.touch=null; zoomState.pinch=null; });
+
+// boutons +/- et réinitialiser
+function zZoom(f){
+  const anchor=zoomState.view.start+zoomState.view.count/2;
+  const nc=Math.max(5,Math.min(zData().length,zoomState.view.count*f));
+  zoomState.view.start=anchor-(anchor-zoomState.view.start)*(nc/zoomState.view.count);
+  zoomState.view.count=nc; renderZoom();
+}
+document.getElementById('zoom-in').addEventListener('click',()=>zZoom(1/1.4));
+document.getElementById('zoom-out').addEventListener('click',()=>zZoom(1.4));
+document.getElementById('zoom-reset').addEventListener('click',()=>{
+  const n=Math.min(30,zData().length);
+  zoomState.view={start:zData().length-n,count:n};
+  zoomState.yScale={auto:true,lo:0,hi:0}; renderZoom();
+});
 
 /* ---------- Démarrage ---------- */
 loadConfig();
