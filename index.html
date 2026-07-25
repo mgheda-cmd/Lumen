@@ -1879,10 +1879,36 @@ function drawPrice(p,s,e,cw){
 
   // prix
   const up=css('--up'), dn=css('--down');
+  // Alma SD SuperTrend : nuage rempli entre la ligne ST et l'ALMA (dessiné en fond)
+  if(state.indicators.almasd.on){
+    const A=getInd('almasd'), L=A.line, M=A.ma, D=A.dir;
+    const cU=S('almasd','cUp'), cD=S('almasd','cDown');
+    for(let i=Math.max(s,1);i<e;i++){
+      if(L[i]==null||L[i-1]==null||M[i]==null||M[i-1]==null)continue;
+      ctx.beginPath();
+      ctx.moveTo(xOf(i-1),yOf(M[i-1]));ctx.lineTo(xOf(i),yOf(M[i]));
+      ctx.lineTo(xOf(i),yOf(L[i]));ctx.lineTo(xOf(i-1),yOf(L[i-1]));
+      ctx.closePath();
+      ctx.fillStyle=hexA(D[i]===1?cU:cD,.20);ctx.fill();
+    }
+    // contour de la ligne SuperTrend
+    ctx.lineWidth=1.6;
+    for(let i=Math.max(s,1);i<e;i++){
+      if(L[i]==null||L[i-1]==null||D[i]!==D[i-1])continue;
+      ctx.strokeStyle=hexA(D[i]===1?cU:cD,.9);
+      ctx.beginPath();ctx.moveTo(xOf(i-1),yOf(L[i-1]));ctx.lineTo(xOf(i),yOf(L[i]));ctx.stroke();
+    }
+    if(S('almasd','showMa'))plotLine(M,s,e,yOf,hexA(S('almasd','cMa'),.9),1.2);
+  }
+
   if(state.type==='candles'){
     const bw=Math.max(1,cw*0.62);
+    const asdColor=(state.indicators.almasd.on&&S('almasd','colorBars'))?getInd('almasd').dir:null;
+    const acU=S('almasd','cUp'), acD=S('almasd','cDown');
     for(let i=s;i<e;i++){
-      const b=d[i],x=xOf(i),c=b.c>=b.o?up:dn;
+      const b=d[i],x=xOf(i);
+      let c=b.c>=b.o?up:dn;
+      if(asdColor&&asdColor[i]!=null)c=asdColor[i]===1?acU:acD; // couleur selon la tendance ST
       ctx.strokeStyle=c;ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(x,yOf(b.h));ctx.lineTo(x,yOf(b.l));ctx.stroke();
       ctx.fillStyle=c;
@@ -1939,30 +1965,6 @@ function drawPrice(p,s,e,cw){
     }
     plotLine(Sl,s,e,yOf,hexA(dn,.85),1.3);
     plotLine(F,s,e,yOf,hexA(up,.9),1.5);
-  }
-  if(state.indicators.almasd.on){
-    const A=getInd('almasd'), L=A.line, D=A.dir;
-    const cU=S('almasd','cUp'), cD=S('almasd','cDown');
-    // ligne SuperTrend : segment vert quand haussier (support), rouge quand baissier (résistance)
-    ctx.lineWidth=2;
-    for(let i=Math.max(s,1);i<e;i++){
-      if(L[i]==null||L[i-1]==null)continue;
-      if(D[i]!==D[i-1])continue;               // pas de trait au moment du retournement
-      ctx.strokeStyle=D[i]===1?cU:cD;
-      ctx.beginPath();ctx.moveTo(xOf(i-1),yOf(L[i-1]));ctx.lineTo(xOf(i),yOf(L[i]));ctx.stroke();
-    }
-    // marqueurs de retournement
-    for(let i=Math.max(s,1);i<e;i++){
-      if(L[i]==null||D[i]===D[i-1])continue;
-      ctx.fillStyle=D[i]===1?cU:cD;
-      const x=xOf(i),y=yOf(L[i]);
-      ctx.beginPath();
-      if(D[i]===1){ctx.moveTo(x,y+9);ctx.lineTo(x-5,y+1);ctx.lineTo(x+5,y+1);}
-      else{ctx.moveTo(x,y-9);ctx.lineTo(x-5,y-1);ctx.lineTo(x+5,y-1);}
-      ctx.closePath();ctx.fill();
-    }
-    // ligne ALMA (Plot oc2)
-    if(S('almasd','showMa'))plotLine(A.ma,s,e,yOf,hexA(S('almasd','cMa'),.9),1.3);
   }
   if(state.indicators.vwap.on)plotLine(getInd('vwap'),s,e,yOf,S('vwap','cLine'),1.4);
   if(state.indicators.lrc.on){
@@ -3318,10 +3320,11 @@ const SCHEMA={
     {k:'alen',t:'num',lab:'Alma Length',min:2,max:200,ind:1},
     {k:'asig',t:'num',lab:'Alma Sigma',min:1,max:20,ind:1},
     {k:'aoff',t:'num',lab:'Alma Offset',min:0,max:1,ind:1},
-    {k:'cUp',t:'col',lab:'ST Up (haussier)',def:'#089981'},
-    {k:'cDown',t:'col',lab:'ST Down (baissier)',def:'#F23345'},
+    {k:'cUp',t:'col',lab:'Haussier (vert)',def:'#3DDC97'},
+    {k:'cDown',t:'col',lab:'Baissier (violet)',def:'#9B5DE5'},
     {k:'showMa',t:'bool',lab:'Ligne ALMA (oc2)',def:true},
-    {k:'cMa',t:'col',lab:'Couleur ALMA',def:'#00E5D0'},
+    {k:'cMa',t:'col',lab:'Couleur ALMA',def:'#6A3FB5'},
+    {k:'colorBars',t:'bool',lab:'Colorer les bougies',def:true},
   ]},
   st:{title:'SuperTrend',fields:[
     {k:'cUp',t:'col',lab:'Haussier',def:'#25D0A4'},
