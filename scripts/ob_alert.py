@@ -129,6 +129,17 @@ def main():
         print("NTFY_TOPIC absent : rien à faire.")
         return 0
 
+    # Mode test : envoie une notification immédiate puis s'arrête
+    if os.environ.get("HEARTBEAT") == "1":
+        try:
+            notify("Lumen — robot actif",
+                   "Le robot de surveillance fonctionne. Tu recevras une alerte à chaque Order Block (5m/15m/1H) et changement de couleur Heikin Ashi 3m.",
+                   "white_check_mark")
+            print("Heartbeat envoyé.")
+        except Exception as e:
+            print("Échec heartbeat :", e)
+        return 0
+
     try:
         with open(STATE) as f:
             state = json.load(f)
@@ -172,7 +183,7 @@ def main():
                 continue
             last = obs[-1]
             # ne signaler que si la cassure vient de se produire
-            recent = closed[-3:]
+            recent = closed[-6:]
             if last["brk"] < recent[0]["t"]:
                 continue
             oid = f"{sym}|{label}|{last['type']}|{last['t']}"
