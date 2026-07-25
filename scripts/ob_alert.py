@@ -202,6 +202,20 @@ def main():
     with open(STATE, "w") as f:
         json.dump(state, f, indent=1)
 
+    # battement quotidien : confirme que le robot tourne (une fois par jour, vers 8h UTC)
+    import datetime
+    today=datetime.datetime.utcnow().strftime("%Y-%m-%d")
+    hour=datetime.datetime.utcnow().hour
+    if state.get("DAILY_PING")!=today and hour>=8:
+        state["DAILY_PING"]=today
+        try:
+            notify("Lumen — surveillance active",
+                   f"Robot OK ({today}). Ordre Blocks 5m/15m/1H + Heikin Ashi 3m surveilles.",
+                   "hourglass_flowing_sand")
+        except Exception as e:
+            print("ping quotidien echoue:",e)
+        with open(STATE,"w") as f: json.dump(state,f,indent=1)
+
     if first_run:
         print(f"Première exécution : {len(new_ids)} évènements mémorisés sans alerte.")
         return 0
