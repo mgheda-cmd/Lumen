@@ -1929,10 +1929,12 @@ function drawPrice(p,s,e,cw){
   }
 
   // Heikin Ashi lissé : bougies dessinées directement sur le graphe
+  const HA_TFN={'chart':(TF_MAP[state.tf]||''),'3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'};
   for(const hk of ['sha','sha2','sha3']){
    if(!state.indicators[hk].on)continue;
    {
     const cU=S(hk,'cUp'), cD=S(hk,'cDown'), arr=getInd(hk);
+    let midHa=null, midX=null, midY=null;   // pour l'étiquette d'UT au centre du tracé visible
     for(let k=0;k<arr.length;k++){
       const ha=arr[k]; if(!ha)continue;
       const i=idxOfTime(ha.t); if(i==null||i>e)continue;
@@ -1944,6 +1946,23 @@ function drawPrice(p,s,e,cw){
       ctx.beginPath();ctx.moveTo(xc,yOf(ha.h));ctx.lineTo(xc,yOf(ha.l));ctx.stroke();
       ctx.fillStyle=col;const yo=yOf(ha.o),yc=yOf(ha.c);
       ctx.fillRect(xc-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));
+      // mémorise la bougie la plus proche du centre de l'écran
+      const cxScreen=(W-AXIS_W)/2;
+      if(xc>=0&&xc<=W-AXIS_W&&(midX==null||Math.abs(xc-cxScreen)<Math.abs(midX-cxScreen))){
+        midHa=ha; midX=xc; midY=(yOf(ha.h)+yOf(ha.l))/2;
+      }
+    }
+    // étiquette blanche : UT choisie pour cette instance, au milieu du tracé
+    if(midHa&&S(hk,'showTf')!==false){
+      const tf=state.indicators[hk].tf, lbl=HA_TFN[tf]||'';
+      if(lbl){
+        ctx.font='bold 13px "IBM Plex Mono",monospace';
+        const tw=ctx.measureText(lbl).width;
+        ctx.fillStyle='rgba(10,17,31,.55)';
+        ctx.fillRect(midX-tw/2-5,midY-9,tw+10,18);
+        ctx.fillStyle='#FFFFFF';ctx.textAlign='center';
+        ctx.fillText(lbl,midX,midY+4);ctx.textAlign='left';
+      }
     }
    }
   }
@@ -3300,16 +3319,19 @@ const SCHEMA={
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
   sha:{title:'Heikin Ashi lissé ①',fields:[
+    {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#089981'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F23345'},
   ]},
   sha2:{title:'Heikin Ashi lissé ②',fields:[
+    {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#7AA2FF'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#FF9D66'},
   ]},
   sha3:{title:'Heikin Ashi lissé ③',fields:[
+    {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#B48BFF'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F2C14E'},
