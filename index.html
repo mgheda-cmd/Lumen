@@ -273,7 +273,7 @@ footer{
 
 <header>
   <div class="logo"><span class="pulse"></span>Lumen&nbsp;Charts</div>
-  <span id="status" class="mono" style="font-size:10px;letter-spacing:.06em;color:#7E8CA8">CHARGEMENT…</span>
+  <span id="status" class="mono" title="Appuyer pour reconnecter" style="font-size:10px;letter-spacing:.06em;color:#7E8CA8;cursor:pointer">CHARGEMENT…</span>
   <div class="sep"></div>
 
   <div class="ind-wrap">
@@ -1233,7 +1233,7 @@ function applyConfigToUI(){
 /* ---------- Flux Binance (temps réel) ---------- */
 const SPOT_REST=['https://api.binance.com','https://data-api.binance.vision'];
 const SPOT_WS=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'];
-const PERP_REST=['https://fapi.binance.com'];
+const PERP_REST=['https://fapi.binance.com','https://fapi1.binance.com','https://fapi2.binance.com'];
 const PERP_WS=['wss://fstream.binance.com'];
 let wsHost=SPOT_WS[0];
 function isPerp(){return state.market==='perp';}
@@ -1246,7 +1246,7 @@ async function fetchJSON(path){
   for(let i=0;i<HOSTS.length;i++){
     try{
       const ctl=new AbortController();
-      const to=setTimeout(()=>ctl.abort(),6000);
+      const to=setTimeout(()=>ctl.abort(),10000);
       const r=await fetch(HOSTS[i]+p,{signal:ctl.signal});
       clearTimeout(to);
       if(!r.ok)throw new Error(r.status);
@@ -1286,6 +1286,8 @@ function loadViaWS(){
     }catch(e){reject(e);}
   });
 }
+function reconnectNow(){ if(typeof loadData==='function')loadData(); }
+try{document.getElementById('status').addEventListener('click',reconnectNow);}catch(e){}
 function setStatus(mode){
   const map={loading:['CHARGEMENT…','#7E8CA8'],live:['EN DIRECT','#25D0A4'],
     poll:['EN DIRECT (REST)','#25D0A4'],demo:['DÉMO — réseau indisponible','#F2C14E']};
@@ -1485,6 +1487,23 @@ async function loadData(){
     startStream(g);
     ensureSR();
   }catch(e){
+    if(g!==gen)return;
+    // nouvelle tentative avant de basculer en démo (rate limit temporaire ?)
+    for(let attempt=1;attempt<=3;attempt++){
+      setStatus('loading');
+      await new Promise(r=>setTimeout(r,attempt*2500));
+      if(g!==gen)return;
+      try{
+        const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${N_BARS}`);
+        if(g!==gen)return;
+        if(Array.isArray(rows)){
+          state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+          state.view={start:state.data.length-150,count:150};
+          restoreView(); updateHeader(); render(); startStream(g); ensureSR();
+          return;
+        }
+      }catch(err){}
+    }
     if(g!==gen)return;
     state.data=genData(state.symbol,state.tf);
     state.view={start:N_BARS-150,count:150};
