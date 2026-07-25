@@ -1949,7 +1949,7 @@ function drawPrice(p,s,e,cw){
       // mémorise la bougie la plus proche du centre de l'écran
       const cxScreen=(W-AXIS_W)/2;
       if(xc>=0&&xc<=W-AXIS_W&&(midX==null||Math.abs(xc-cxScreen)<Math.abs(midX-cxScreen))){
-        midHa=ha; midX=xc; midY=(yOf(ha.h)+yOf(ha.l))/2;
+        midHa=ha; midX=xc; midY=(yOf(ha.o)+yOf(ha.c))/2;
       }
     }
     // étiquette blanche : UT choisie pour cette instance, au milieu du tracé
