@@ -1997,9 +1997,10 @@ function drawPrice(p,s,e,cw){
       const xl=xOf(i)-cw/2, xr=(nxt!=null&&nxt>i)?xOf(nxt)-cw/2:xOf(i)+cw/2;
       if(xr<0||xl>W-AXIS_W)continue;
       const xc=(xl+xr)/2, bw=Math.max(1,(xr-xl)*0.72), col=ha.c>=ha.o?cU:cD;
-      ctx.strokeStyle=col;ctx.lineWidth=1;
+      const op=S(hk,'opacity'); const al=(typeof op==='number')?op:0.55;
+      ctx.strokeStyle=hexA(col,Math.min(1,al+0.25));ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(xc,yOf(ha.h));ctx.lineTo(xc,yOf(ha.l));ctx.stroke();
-      ctx.fillStyle=col;const yo=yOf(ha.o),yc=yOf(ha.c);
+      ctx.fillStyle=hexA(col,al);const yo=yOf(ha.o),yc=yOf(ha.c);
       ctx.fillRect(xc-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));
       // mémorise la bougie la plus proche du centre de l'écran
       const cxScreen=(W-AXIS_W)/2;
@@ -3386,6 +3387,7 @@ const SCHEMA={
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
   sha:{title:'Heikin Ashi lissé ①',fields:[
+    {k:'opacity',t:'num',lab:'Opacité (0.2 à 1)',min:0.2,max:1,def:0.55},
     {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
     {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
@@ -3393,6 +3395,7 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier',def:'#F23345'},
   ]},
   sha2:{title:'Heikin Ashi lissé ②',fields:[
+    {k:'opacity',t:'num',lab:'Opacité (0.2 à 1)',min:0.2,max:1,def:0.55},
     {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
     {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
@@ -3400,6 +3403,7 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier',def:'#FF9D66'},
   ]},
   sha3:{title:'Heikin Ashi lissé ③',fields:[
+    {k:'opacity',t:'num',lab:'Opacité (0.2 à 1)',min:0.2,max:1,def:0.55},
     {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
     {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
@@ -3502,7 +3506,7 @@ function openCfg(ind){
         f.opts.map(o=>`<button class="cfg-choice ${v===o.v?'on':''}" data-f="${f.k}" data-v="${o.v}">${o.t}</button>`).join('')+
         `</div></div>`;
     return `<div class="cfg-row"><label>${f.lab}</label>
-      <input type="number" value="${v}" min="${f.min}" max="${f.max}" data-f="${f.k}"></div>`;
+      <input type="number" value="${v}" min="${f.min}" max="${f.max}" step="${(f.max<=1||String(f.def).includes('.')||String(f.min).includes('.'))?0.05:1}" data-f="${f.k}"></div>`;
   }).join('');
   body.querySelectorAll('.cfg-sw').forEach(el=>el.addEventListener('click',()=>{
     const on=!el.classList.contains('on');
