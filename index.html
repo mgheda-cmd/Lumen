@@ -144,10 +144,7 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   width:38px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;
   background:var(--panel);cursor:pointer;
 }
-  .cfg-choice{background:var(--panel);border:1px solid var(--line);color:var(--muted);
-    border-radius:7px;padding:6px 14px;cursor:pointer;font-size:13px;font-family:inherit}
-  .cfg-choice.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
-  .cfg-sw{
+.cfg-sw{
   width:40px;height:22px;border-radius:11px;background:var(--line);position:relative;
   cursor:pointer;flex:none;transition:background .15s;
 }
@@ -178,10 +175,7 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 #zoom-head{
   display:flex; align-items:center; gap:12px; padding:10px 14px;
   border-bottom:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:13px;
-  position:relative; z-index:2; flex:none;
 }
-#zoom-head button{touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none}
-#zoom-head button:active{transform:scale(.92); background:var(--accent); color:#fff}
 #zoom-title{font-weight:600}
 #zoom-n{color:var(--muted); font-size:11px}
 #zoom-head button{margin-left:6px; background:var(--panel-2); color:var(--text);
@@ -210,10 +204,7 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
   font-size:9.5px; font-family:'IBM Plex Mono',monospace; pointer-events:auto;
   line-height:1.6; white-space:nowrap;
 }
-  .chip .dot{width:6px;height:6px;border-radius:50%;flex:none}
-  .chip .chip-eye{background:none;border:none;cursor:pointer;padding:0 1px;font-size:11px;line-height:1;filter:grayscale(.3)}
-  .chip.chip-off{opacity:.45}
-  .chip.chip-off .chip-name{text-decoration:line-through}
+.chip .dot{width:6px;height:6px;border-radius:50%;flex:none}
 .chip .val{color:var(--muted)}
 .chip button{
   background:none;border:none;color:var(--faint);cursor:pointer;font-size:11px;
@@ -273,7 +264,7 @@ footer{
 
 <header>
   <div class="logo"><span class="pulse"></span>Lumen&nbsp;Charts</div>
-  <span id="status" class="mono" title="Appuyer pour reconnecter" style="font-size:10px;letter-spacing:.06em;color:#7E8CA8;cursor:pointer">CHARGEMENT…</span>
+  <span id="status" class="mono" style="font-size:10px;letter-spacing:.06em;color:#7E8CA8">CHARGEMENT…</span>
   <div class="sep"></div>
 
   <div class="ind-wrap">
@@ -372,11 +363,6 @@ footer{
       <div class="ind-item" data-ind="almasd">
         <span class="dot" style="background:#00E5D0"></span>
         <span class="name">Alma SD SuperTrend <span class="desc">Oquant</span></span>
-        <span class="state">off</span>
-      </div>
-      <div class="ind-item" data-ind="signal">
-        <span class="dot" style="background:#FFE24D"></span>
-        <span class="name">Signaux Achat/Vente <span class="desc">Confluence 3 signaux</span></span>
         <span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="sha">
@@ -1088,19 +1074,6 @@ const calc = {
       out.push((o2[i]==null||c2[i]==null||h2[i]==null||l2[i]==null)?null
         :{t:bars[i].t,o:o2[i],h:h2[i],l:l2[i],c:c2[i]});
     return out;
-  },
-  plainHA(bars){
-    const haO=new Array(bars.length).fill(null),haC=[...haO],haH=[...haO],haL=[...haO];
-    for(let i=0;i<bars.length;i++){
-      const b=bars[i];
-      const c=(b.o+b.h+b.l+b.c)/4;
-      const o=(i>0&&haO[i-1]!=null)?(haO[i-1]+haC[i-1])/2:(b.o+b.c)/2;
-      haO[i]=o;haC[i]=c;haH[i]=Math.max(b.h,o,c);haL[i]=Math.min(b.l,o,c);
-    }
-    const out=[];
-    for(let i=0;i<bars.length;i++)
-      out.push({t:bars[i].t,o:haO[i],h:haH[i],l:haL[i],c:haC[i]});
-    return out;
   }
 };
 /* Unité de temps supérieure pour le MTF : 1m→15m, 15m→1H, 1H→4H, 4H→1J, 1J→1S */
@@ -1117,15 +1090,14 @@ const state = {
     ema2:{on:false,period:200},
     ema3:{on:false,period:9},
     emacloud:{on:false,fast:30,slow:90},
-    signal:{on:false,emaFast:9,emaSlow:30,window:3},
     bb:{on:false,period:20},
     vwap:{on:false},
     ichi:{on:false},
     st:{on:false},
     almasd:{on:false,fac:1.8,sd:33,alen:35,asig:4,aoff:0.85},
-    sha:{on:false,period:10,tf:'chart',mode:'lisse'},
-    sha2:{on:false,period:10,tf:'15',mode:'lisse'},
-    sha3:{on:false,period:10,tf:'60',mode:'lisse'},
+    sha:{on:false,period:10,tf:'chart'},
+    sha2:{on:false,period:10,tf:'15'},
+    sha3:{on:false,period:10,tf:'60'},
     fvg:{on:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     lrc:{on:false,period:100},
@@ -1179,14 +1151,12 @@ function mergeConfig(c){
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
     for(const k of ['rsi','macd','imp','stoch','atr'])
-      if(typeof c.paneH[k]==='number'&&c.paneH[k]>=34&&c.paneH[k]<=800)
+      if(typeof c.paneH[k]==='number'&&c.paneH[k]>=40&&c.paneH[k]<=800)
         state.paneH[k]=c.paneH[k];
   }
   if(c.indicators)for(const k of Object.keys(state.indicators)){
     const s=c.indicators[k]; if(!s)continue;
     if(typeof s.on==='boolean')state.indicators[k].on=s.on;
-    if(typeof s.hidden==='boolean')state.indicators[k].hidden=s.hidden;
-    if(s.mode==='normal'||s.mode==='lisse')state.indicators[k].mode=s.mode;
     if(typeof s.tf==='string'&&['chart','auto','3','5','15','60','240'].includes(s.tf)&&'tf'in state.indicators[k])
       state.indicators[k].tf=s.tf;
     if(typeof s.period==='number'&&s.period>=2&&s.period<=400)
@@ -1233,7 +1203,7 @@ function applyConfigToUI(){
 /* ---------- Flux Binance (temps réel) ---------- */
 const SPOT_REST=['https://api.binance.com','https://data-api.binance.vision'];
 const SPOT_WS=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'];
-const PERP_REST=['https://fapi.binance.com','https://fapi1.binance.com','https://fapi2.binance.com'];
+const PERP_REST=['https://fapi.binance.com'];
 const PERP_WS=['wss://fstream.binance.com'];
 let wsHost=SPOT_WS[0];
 function isPerp(){return state.market==='perp';}
@@ -1246,7 +1216,7 @@ async function fetchJSON(path){
   for(let i=0;i<HOSTS.length;i++){
     try{
       const ctl=new AbortController();
-      const to=setTimeout(()=>ctl.abort(),10000);
+      const to=setTimeout(()=>ctl.abort(),6000);
       const r=await fetch(HOSTS[i]+p,{signal:ctl.signal});
       clearTimeout(to);
       if(!r.ok)throw new Error(r.status);
@@ -1286,8 +1256,6 @@ function loadViaWS(){
     }catch(e){reject(e);}
   });
 }
-function reconnectNow(){ if(typeof loadData==='function')loadData(); }
-try{document.getElementById('status').addEventListener('click',reconnectNow);}catch(e){}
 function setStatus(mode){
   const map={loading:['CHARGEMENT…','#7E8CA8'],live:['EN DIRECT','#25D0A4'],
     poll:['EN DIRECT (REST)','#25D0A4'],demo:['DÉMO — réseau indisponible','#F2C14E']};
@@ -1488,23 +1456,6 @@ async function loadData(){
     ensureSR();
   }catch(e){
     if(g!==gen)return;
-    // nouvelle tentative avant de basculer en démo (rate limit temporaire ?)
-    for(let attempt=1;attempt<=3;attempt++){
-      setStatus('loading');
-      await new Promise(r=>setTimeout(r,attempt*2500));
-      if(g!==gen)return;
-      try{
-        const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${N_BARS}`);
-        if(g!==gen)return;
-        if(Array.isArray(rows)){
-          state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
-          state.view={start:state.data.length-150,count:150};
-          restoreView(); updateHeader(); render(); startStream(g); ensureSR();
-          return;
-        }
-      }catch(err){}
-    }
-    if(g!==gen)return;
     state.data=genData(state.symbol,state.tf);
     state.view={start:N_BARS-150,count:150};
     setStatus('demo');
@@ -1651,13 +1602,17 @@ function getInd(key){
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='almasd')state.cache[ck]=calc.almaSD(d,ind.fac,ind.sd,ind.alen,ind.asig,ind.aoff);
-    if(key==='signal')state.cache[ck]=computeSignals(d,ind);
-    if(key==='sha'||key==='sha2'||key==='sha3'){
+    if(key==='sha'){
       const mtf=(ind.tf&&ind.tf!=='chart')?+ind.tf:null;
-      const calcHA=b=>(ind.mode==='normal')?calc.plainHA(b):calc.smoothHA(b,ind.period,ind.period);
-      if(!mtf)state.cache[ck]=calcHA(d);
+      if(!mtf)state.cache[ck]=calc.smoothHA(d,ind.period,ind.period);
       else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
-        state.cache[ck]=bars?calcHA(bars):[];}
+        state.cache[ck]=bars?calc.smoothHA(bars,ind.period,ind.period):[];}
+    }
+    if(key==='sha2'||key==='sha3'){
+      const mtf=(ind.tf&&ind.tf!=='chart')?+ind.tf:null;
+      if(!mtf)state.cache[ck]=calc.smoothHA(d,ind.period,ind.period);
+      else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
+        state.cache[ck]=bars?calc.smoothHA(bars,ind.period,ind.period):[];}
     }
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
@@ -1734,11 +1689,11 @@ function subYOf(p,key,lo0,hi0,padded){
 }
 function computePanes(){
   const subs=[];
-  if(vis('rsi')) subs.push('rsi');
-  if(vis('macd')) subs.push('macd');
-  if(vis('imp')) subs.push('imp');
-  if(vis('stoch')) subs.push('stoch');
-  if(vis('atr')) subs.push('atr');
+  if(state.indicators.rsi.on) subs.push('rsi');
+  if(state.indicators.macd.on) subs.push('macd');
+  if(state.indicators.imp.on) subs.push('imp');
+  if(state.indicators.stoch.on) subs.push('stoch');
+  if(state.indicators.atr.on) subs.push('atr');
   const avail=H-AXIS_H;
   const def=subs.length?Math.min(110,avail*0.5/subs.length):0;
   let hs=subs.map(k=>{
@@ -1790,42 +1745,13 @@ function render(){
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
     if(p.key!=='price'){ // poignée de redimensionnement en haut du sous-panneau
-      ctx.fillStyle='rgba(126,140,168,.14)';
-      ctx.fillRect(0,p.y-3,W-AXIS_W,6);           // bande de préhension large
-      ctx.fillStyle='rgba(160,175,205,.6)';
-      for(let k=-2;k<=2;k++)ctx.fillRect(W/2-14+k*7,p.y-1,5,2);  // 5 traits centraux
+      ctx.fillStyle='rgba(126,140,168,.35)';
+      for(let k=-1;k<=1;k++)ctx.fillRect(W/2-8+k*7,p.y-1,5,2);
     }
   }
   if(state.view.start<60&&!histBusy&&!histDone)loadMoreHistory();
   drawTimeAxis(s,e);
   if(state.mouse) drawCrosshair(panes,s,e);
-  // Flèches de signaux de confluence
-  if(vis('signal')){
-    const sig=getInd('signal');
-    for(const g of sig){
-      const i=g.i; if(i<s-1||i>e)continue;
-      const x=xOf(i);
-      if(g.dir===1){
-        const y=yOf(g.price)+16;
-        ctx.fillStyle='#25D0A4';
-        ctx.beginPath();
-        ctx.moveTo(x,y-11);ctx.lineTo(x-6,y);ctx.lineTo(x-2.5,y);
-        ctx.lineTo(x-2.5,y+6);ctx.lineTo(x+2.5,y+6);ctx.lineTo(x+2.5,y);
-        ctx.lineTo(x+6,y);ctx.closePath();ctx.fill();
-        ctx.fillStyle='#0A111F';ctx.font='bold 8px "IBM Plex Mono",monospace';ctx.textAlign='center';
-        ctx.fillText('B',x,y+4);ctx.textAlign='left';
-      }else{
-        const y=yOf(g.price)-16;
-        ctx.fillStyle='#F45B7D';
-        ctx.beginPath();
-        ctx.moveTo(x,y+11);ctx.lineTo(x-6,y);ctx.lineTo(x-2.5,y);
-        ctx.lineTo(x-2.5,y-6);ctx.lineTo(x+2.5,y-6);ctx.lineTo(x+2.5,y);
-        ctx.lineTo(x+6,y);ctx.closePath();ctx.fill();
-        ctx.fillStyle='#0A111F';ctx.font='bold 8px "IBM Plex Mono",monospace';ctx.textAlign='center';
-        ctx.fillText('S',x,y-2);ctx.textAlign='left';
-      }
-    }
-  }
   updateChips();
   updatePaper();
   saveView();
@@ -1841,26 +1767,26 @@ function drawPrice(p,s,e,cw){
     const arr=getInd(k);
     for(let i=s;i<e;i++) if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}
   }
-  if(vis('bb')){const b=getInd('bb');
+  if(state.indicators.bb.on){const b=getInd('bb');
     for(let i=s;i<e;i++){if(b.up[i]!=null)hi=Math.max(hi,b.up[i]);if(b.lo[i]!=null)lo=Math.min(lo,b.lo[i]);}}
-  if(vis('lrc')){const L=getInd('lrc');
+  if(state.indicators.lrc.on){const L=getInd('lrc');
     if(L){for(const i of [L.s0,d.length-1]){
       const v=L.a+L.b*(i-L.s0);
       lo=Math.min(lo,v-L.dev);hi=Math.max(hi,v+L.dev);}}}
-  if(vis('ema3')){const a=getInd('ema3');
+  if(state.indicators.ema3.on){const a=getInd('ema3');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
-  if(vis('emacloud')){const c=getInd('emacloud');
+  if(state.indicators.emacloud.on){const c=getInd('emacloud');
     for(const a of [c.fast,c.slow])for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
   for(const hk of ['sha','sha2','sha3'])if(state.indicators[hk].on){
     for(const ha of getInd(hk)){if(!ha)continue;
       const i=idxOfTime(ha.t);if(i!=null&&i>=s-10&&i<e){lo=Math.min(lo,ha.l);hi=Math.max(hi,ha.h);}}}
-  if(vis('ema2')){const a=getInd('ema2');
+  if(state.indicators.ema2.on){const a=getInd('ema2');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
-  if(vis('st')){const a=getInd('st').line;
+  if(state.indicators.st.on){const a=getInd('st').line;
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
-  if(vis('almasd')){const A=getInd('almasd');
+  if(state.indicators.almasd.on){const A=getInd('almasd');
     for(const arr of [A.line,A.ma])for(let i=s;i<e;i++)if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}}
-  if(vis('ichi')){const ic=getInd('ichi');
+  if(state.indicators.ichi.on){const ic=getInd('ichi');
     for(const arr of [ic.T,ic.K,ic.A,ic.B])
       for(let i=s;i<e;i++)if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}}
   const pad=(hi-lo)*0.08||1; lo-=pad; hi+=pad;
@@ -1880,7 +1806,7 @@ function drawPrice(p,s,e,cw){
   }
 
   // volume (bas du panneau prix)
-  if(vis('volume')){
+  if(state.indicators.volume.on){
     let vmax=0;for(let i=s;i<e;i++)vmax=Math.max(vmax,d[i].v);
     const vh=p.h*0.18;
     for(let i=s;i<e;i++){
@@ -1891,7 +1817,7 @@ function drawPrice(p,s,e,cw){
   }
 
   // bandes de Bollinger (fond)
-  if(vis('bb')){
+  if(state.indicators.bb.on){
     const b=getInd('bb');
     ctx.beginPath();let started=false;
     for(let i=s;i<e;i++){if(b.up[i]==null)continue;const x=xOf(i),y=yOf(b.up[i]);
@@ -1905,12 +1831,12 @@ function drawPrice(p,s,e,cw){
   }
 
   // Order Blocks MTF : zones par UT, étiquetées, les mitigées disparaissent
-  if(vis('ob')){const _ob=getInd('ob');drawOBMTF(_ob,s,e,yOf,cw,p);alertNewOB(_ob);}
+  if(state.indicators.ob.on){const _ob=getInd('ob');drawOBMTF(_ob,s,e,yOf,cw,p);alertNewOB(_ob);}
   // FVG enrichie MTF : moitiés % acheteur/vendeur, bleu/violet, MITIGATED
-  if(vis('fvg')) drawFVGMTF(getInd('fvg'),s,e,yOf,cw,p,'fvg');
+  if(state.indicators.fvg.on) drawFVGMTF(getInd('fvg'),s,e,yOf,cw,p,'fvg');
 
   // prises de liquidité MTF : niveau balayé (pointillé) + marqueur + UT
-  if(vis('swp')){
+  if(state.indicators.swp.on){
     const cU=S('swp','cUp'), cD=S('swp','cDown');
     ctx.save();ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
     ctx.font='10px "IBM Plex Mono",monospace';
@@ -1930,11 +1856,11 @@ function drawPrice(p,s,e,cw){
   }
 
   // zones de renversement : bande + etiquette de confluence
-  if(vis('bos')) drawBOS(getInd('bos'),s,e,yOf,cw,p);
-  if(vis('rev')) drawReversal(getInd('rev'),s,e,yOf,cw,p);
+  if(state.indicators.bos.on) drawBOS(getInd('bos'),s,e,yOf,cw,p);
+  if(state.indicators.rev.on) drawReversal(getInd('rev'),s,e,yOf,cw,p);
 
   // nuage Ichimoku (sous le prix)
-  if(vis('ichi')){
+  if(state.indicators.ichi.on){
     const ic=getInd('ichi');
     for(let i=Math.max(s,1);i<e;i++){
       if(ic.A[i]==null||ic.B[i]==null||ic.A[i-1]==null||ic.B[i-1]==null)continue;
@@ -1954,7 +1880,7 @@ function drawPrice(p,s,e,cw){
   // prix
   const up=css('--up'), dn=css('--down');
   // Alma SD SuperTrend : nuage rempli entre la ligne ST et l'ALMA (dessiné en fond)
-  if(vis('almasd')){
+  if(state.indicators.almasd.on){
     const A=getInd('almasd'), L=A.line, M=A.ma, D=A.dir;
     const cU=S('almasd','cUp'), cD=S('almasd','cDown');
     for(let i=Math.max(s,1);i<e;i++){
@@ -1977,7 +1903,7 @@ function drawPrice(p,s,e,cw){
 
   if(state.type==='candles'){
     const bw=Math.max(1,cw*0.62);
-    const asdColor=(vis('almasd')&&S('almasd','colorBars'))?getInd('almasd').dir:null;
+    const asdColor=(state.indicators.almasd.on&&S('almasd','colorBars'))?getInd('almasd').dir:null;
     const acU=S('almasd','cUp'), acD=S('almasd','cDown');
     for(let i=s;i<e;i++){
       const b=d[i],x=xOf(i);
@@ -2003,12 +1929,10 @@ function drawPrice(p,s,e,cw){
   }
 
   // Heikin Ashi lissé : bougies dessinées directement sur le graphe
-  const HA_TFN={'chart':(TF_MAP[state.tf]||''),'3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'};
   for(const hk of ['sha','sha2','sha3']){
    if(!state.indicators[hk].on)continue;
    {
     const cU=S(hk,'cUp'), cD=S(hk,'cDown'), arr=getInd(hk);
-    let midHa=null, midX=null, midY=null;   // pour l'étiquette d'UT au centre du tracé visible
     for(let k=0;k<arr.length;k++){
       const ha=arr[k]; if(!ha)continue;
       const i=idxOfTime(ha.t); if(i==null||i>e)continue;
@@ -2016,36 +1940,18 @@ function drawPrice(p,s,e,cw){
       const xl=xOf(i)-cw/2, xr=(nxt!=null&&nxt>i)?xOf(nxt)-cw/2:xOf(i)+cw/2;
       if(xr<0||xl>W-AXIS_W)continue;
       const xc=(xl+xr)/2, bw=Math.max(1,(xr-xl)*0.72), col=ha.c>=ha.o?cU:cD;
-      const op=S(hk,'opacity'); const al=(typeof op==='number')?op:0.55;
-      ctx.strokeStyle=hexA(col,Math.min(1,al+0.25));ctx.lineWidth=1;
+      ctx.strokeStyle=col;ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(xc,yOf(ha.h));ctx.lineTo(xc,yOf(ha.l));ctx.stroke();
-      ctx.fillStyle=hexA(col,al);const yo=yOf(ha.o),yc=yOf(ha.c);
+      ctx.fillStyle=col;const yo=yOf(ha.o),yc=yOf(ha.c);
       ctx.fillRect(xc-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));
-      // mémorise la bougie la plus proche du centre de l'écran
-      const cxScreen=(W-AXIS_W)/2;
-      if(xc>=0&&xc<=W-AXIS_W&&(midX==null||Math.abs(xc-cxScreen)<Math.abs(midX-cxScreen))){
-        midHa=ha; midX=xc; midY=(yOf(ha.o)+yOf(ha.c))/2;
-      }
-    }
-    // étiquette blanche : UT choisie pour cette instance, au milieu du tracé
-    if(midHa&&S(hk,'showTf')!==false){
-      const tf=state.indicators[hk].tf, lbl=HA_TFN[tf]||'';
-      if(lbl){
-        ctx.font='bold 13px "IBM Plex Mono",monospace';
-        const tw=ctx.measureText(lbl).width;
-        ctx.fillStyle='rgba(10,17,31,.55)';
-        ctx.fillRect(midX-tw/2-5,midY-9,tw+10,18);
-        ctx.fillStyle='#FFFFFF';ctx.textAlign='center';
-        ctx.fillText(lbl,midX,midY+4);ctx.textAlign='left';
-      }
     }
    }
   }
 
   // superpositions
-  if(vis('sma')) plotLine(getInd('sma'),s,e,yOf,S('sma','cLine'),1.4);
-  if(vis('ema')) plotLine(getInd('ema'),s,e,yOf,S('ema','cLine'),1.4);
-  if(vis('emacloud')){
+  if(state.indicators.sma.on) plotLine(getInd('sma'),s,e,yOf,S('sma','cLine'),1.4);
+  if(state.indicators.ema.on) plotLine(getInd('ema'),s,e,yOf,S('ema','cLine'),1.4);
+  if(state.indicators.emacloud.on){
     const c=getInd('emacloud'), F=c.fast, Sl=c.slow;
     const up=S('emacloud','cUp'), dn=S('emacloud','cDown');
     for(let i=Math.max(s,1);i<e;i++){
@@ -2060,8 +1966,8 @@ function drawPrice(p,s,e,cw){
     plotLine(Sl,s,e,yOf,hexA(dn,.85),1.3);
     plotLine(F,s,e,yOf,hexA(up,.9),1.5);
   }
-  if(vis('vwap'))plotLine(getInd('vwap'),s,e,yOf,S('vwap','cLine'),1.4);
-  if(vis('lrc')){
+  if(state.indicators.vwap.on)plotLine(getInd('vwap'),s,e,yOf,S('vwap','cLine'),1.4);
+  if(state.indicators.lrc.on){
     const L=getInd('lrc');
     if(L){
       const iEnd=S('lrc','extend')?Math.max(d.length-1,Math.ceil(state.view.start+state.view.count)):d.length-1;
@@ -2087,9 +1993,9 @@ function drawPrice(p,s,e,cw){
       ctx.beginPath();ctx.moveTo(x0,yAt(L.s0));ctx.lineTo(x1,yAt(iEnd));ctx.stroke();
     }
   }
-  if(vis('ema2'))plotLine(getInd('ema2'),s,e,yOf,S('ema2','cLine'),1.4);
-  if(vis('ema3'))plotLine(getInd('ema3'),s,e,yOf,S('ema3','cLine'),1.4);
-  if(vis('st')){
+  if(state.indicators.ema2.on)plotLine(getInd('ema2'),s,e,yOf,S('ema2','cLine'),1.4);
+  if(state.indicators.ema3.on)plotLine(getInd('ema3'),s,e,yOf,S('ema3','cLine'),1.4);
+  if(state.indicators.st.on){
     const sup=getInd('st');
     ctx.lineWidth=1.6;
     for(let i=Math.max(s,1);i<e;i++){
@@ -2101,7 +2007,7 @@ function drawPrice(p,s,e,cw){
   }
 
   // supports / résistances multi-timeframe
-  if(vis('sr')){
+  if(state.indicators.sr.on){
     const lastC=d[d.length-1].c;
     const TFL={'5':'5m','15':'15m','60':'1H','240':'4H'};
     ctx.font='10px "IBM Plex Mono",monospace';
@@ -2596,53 +2502,41 @@ const IND_META={
   sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
   almasd:{label:()=>'Alma SD ST',color:'#00E5D0'},
   bos:{label:()=>'Structure BOS/CHoCH',color:'#FFD166'},
-  signal:{label:()=>'Signaux A/V',color:'#FFE24D'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   lrc:{label:p=>'Régression '+p,color:'#9BE6FF'},
   swp:{label:()=>'Prises de liquidité',color:'#E1424B'},
   rev:{label:()=>'Zones de renversement',color:'#F0A020'},
 };
-function vis(k){return state.indicators[k] && state.indicators[k].on && !state.indicators[k].hidden;}
 function updateChips(){
   const i=hoverIndex()??state.data.length-1;
   const b=state.data[i];
   const chg=b.c-b.o, cls=chg>=0?'up':'down';
   let html=`<div class="legend-ohlc">${state.symbol} · O <b>${fmt(b.o)}</b> H <b>${fmt(b.h)}</b> L <b>${fmt(b.l)}</b> C <b class="chg ${cls}">${fmt(b.c)}</b>`
-    + (vis('volume')?` · Vol <b>${fmtCompact(b.v)}</b>`:'') + `</div>`;
+    + (state.indicators.volume.on?` · Vol <b>${fmtCompact(b.v)}</b>`:'') + `</div>`;
   for(const [k,ind] of Object.entries(state.indicators)){
-    if(!ind.on||!IND_META[k])continue;
+    if(!ind.on||['volume','rsi','macd','imp','stoch','atr'].includes(k))continue;
     const m=IND_META[k];
     let val='';
-    try{
-      if(k==='sma'||k==='ema'||k==='ema2'||k==='vwap'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'';}
-      else if(k==='ema3'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'';}
-      else if(k==='emacloud'){const c=getInd(k);val=(c.fast[i]!=null&&c.slow[i]!=null)?(c.fast[i]>=c.slow[i]?'▲':'▼'):'';}
-      else if(k==='st'){const a=getInd(k);val=a.line[i]!=null?fmt(a.line[i]):'';}
-      else if(k==='lrc'){const L=getInd(k);val=L?fmt(L.a+L.b*(i-L.s0)):'';}
-      else if(k==='bb'){const a=getInd(k);val=a.mid[i]!=null?fmt(a.mid[i]):'';}
-    }catch(e){}
-    const hidden=!!ind.hidden;
-    const eye=hidden?'🚫':'👁';
-    html+=`<div class="chip${hidden?' chip-off':''}"><span class="dot" style="background:${m.color}"></span>`+
-      `<span class="chip-name">${m.label(ind.period)}</span>`+
-      (val?` <span class="val">${val}</span>`:'')+
-      `<button class="chip-eye" data-eye="${k}" title="Afficher / masquer">${eye}</button>`+
-      `<button data-off="${k}" aria-label="Retirer ${k}">×</button></div>`;
+    if(k==='sma'||k==='ema'||k==='ema2'||k==='vwap'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'—';}
+    if(k==='ema3'){const a=getInd(k);val=a[i]!=null?fmt(a[i]):'—';}
+    if(k==='emacloud'){const c=getInd(k);val=(c.fast[i]!=null&&c.slow[i]!=null)?(c.fast[i]>=c.slow[i]?'▲ haussier':'▼ baissier'):'—';}
+    if(k==='st'){const a=getInd(k);val=a.line[i]!=null?fmt(a.line[i]):'—';}
+    if(k==='lrc'){const L=getInd(k);val=L?fmt(L.a+L.b*(i-L.s0)):'—';}
+    if(k==='bb'){const a=getInd(k);val=a.mid[i]!=null?fmt(a.mid[i]):'—';}
+    html+=`<div class="chip"><span class="dot" style="background:${m.color}"></span>${m.label(ind.period)} <span class="val">${val}</span><button data-off="${k}" aria-label="Retirer ${k}">×</button></div>`;
   }
   chips.innerHTML=html;
 }
 chips.addEventListener('click',e=>{
-  const ek=e.target.dataset.eye;
-  if(ek){state.indicators[ek].hidden=!state.indicators[ek].hidden;saveConfig();render();return;}
   const k=e.target.dataset.off;
-  if(k){state.indicators[k].on=false;state.indicators[k].hidden=false;syncMenu();saveConfig();render();}
+  if(k){state.indicators[k].on=false;syncMenu();render();}
 });
 
 /* ---------- Interactions façon TradingView ---------- */
 function hitZone(x,y){
   const panes=state.lastPanes||[];
   for(let i=1;i<panes.length;i++){
-    if(x<W-AXIS_W&&Math.abs(y-panes[i].y)<14)return 'resize:'+panes[i].key;
+    if(x<W-AXIS_W&&Math.abs(y-panes[i].y)<8)return 'resize:'+panes[i].key;
   }
   if(y>H-AXIS_H) return 'time';
   if(x>W-AXIS_W){
@@ -2685,7 +2579,7 @@ canvas.addEventListener('mousemove',e=>{
   if(state.dragging){
     if(state.dragMode&&state.dragMode.startsWith('resize:')){
       const key=state.dragMode.slice(7);
-      state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,
+      state.paneH[key]=Math.max(40,Math.min((H-AXIS_H)*0.6,
         state.dragPaneH-(y-state.dragY)));
     }else if(state.dragMode==='time'){
       // étirer l'axe du temps, bord droit fixe (comme TV)
@@ -2815,7 +2709,7 @@ canvas.addEventListener('touchmove',e=>{
     const {x,y}=tpos(e.touches[0]);
     if(touch.mode.startsWith('resize:')){
       const key=touch.mode.slice(7);
-      state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,touch.paneH-(y-touch.y)));
+      state.paneH[key]=Math.max(40,Math.min((H-AXIS_H)*0.6,touch.paneH-(y-touch.y)));
     }else if(touch.mode==='time'){
       const f=Math.exp(-(x-touch.x)*0.006);
       const nc=Math.max(20,Math.min(state.data.length||N_BARS,touch.count*f));
@@ -3406,33 +3300,19 @@ const SCHEMA={
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
   sha:{title:'Heikin Ashi lissé ①',fields:[
-    {k:'opacity',t:'num',lab:'Opacité (0.2 à 1)',min:0.2,max:1,def:0.55},
-    {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
-    {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#089981'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F23345'},
   ]},
   sha2:{title:'Heikin Ashi lissé ②',fields:[
-    {k:'opacity',t:'num',lab:'Opacité (0.2 à 1)',min:0.2,max:1,def:0.55},
-    {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
-    {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#7AA2FF'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#FF9D66'},
   ]},
   sha3:{title:'Heikin Ashi lissé ③',fields:[
-    {k:'opacity',t:'num',lab:'Opacité (0.2 à 1)',min:0.2,max:1,def:0.55},
-    {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
-    {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#B48BFF'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F2C14E'},
-  ]},
-  signal:{title:'Signaux Achat / Vente (confluence)',fields:[
-    {k:'emaFast',t:'num',lab:'EMA rapide',min:2,max:100,ind:1},
-    {k:'emaSlow',t:'num',lab:'EMA lente',min:5,max:200,ind:1},
-    {k:'window',t:'num',lab:'Fenêtre de confluence (bougies)',min:1,max:10,ind:1},
   ]},
   almasd:{title:'Alma SD SuperTrend',fields:[
     {k:'fac',t:'num',lab:'Facteur',min:0.1,max:10,ind:1},
@@ -3493,7 +3373,6 @@ const SCHEMA={
   ]},
 };
 function S(ind,key){
-  if(key==='mode')return state.indicators[ind].mode||'lisse';
   const st=state.style[ind];
   if(st&&st[key]!==undefined)return st[key];
   const f=(SCHEMA[ind]||{fields:[]}).fields.find(x=>x.k===key);
@@ -3519,13 +3398,8 @@ function openCfg(ind){
     if(f.t==='col')
       return `<div class="cfg-row"><label>${f.lab}</label>
         <input type="color" value="${v}" data-f="${f.k}"></div>`;
-    if(f.t==='choice')
-      return `<div class="cfg-row"><label>${f.lab}</label>
-        <div style="display:flex;gap:4px">`+
-        f.opts.map(o=>`<button class="cfg-choice ${v===o.v?'on':''}" data-f="${f.k}" data-v="${o.v}">${o.t}</button>`).join('')+
-        `</div></div>`;
     return `<div class="cfg-row"><label>${f.lab}</label>
-      <input type="number" value="${v}" min="${f.min}" max="${f.max}" step="${(f.max<=1||String(f.def).includes('.')||String(f.min).includes('.'))?0.05:1}" data-f="${f.k}"></div>`;
+      <input type="number" value="${v}" min="${f.min}" max="${f.max}" data-f="${f.k}"></div>`;
   }).join('');
   body.querySelectorAll('.cfg-sw').forEach(el=>el.addEventListener('click',()=>{
     const on=!el.classList.contains('on');
@@ -3534,12 +3408,6 @@ function openCfg(ind){
   }));
   body.querySelectorAll('input[type=color]').forEach(el=>
     el.addEventListener('input',()=>setStyle(ind,el.dataset.f,el.value)));
-  body.querySelectorAll('.cfg-choice').forEach(el=>el.addEventListener('click',()=>{
-    body.querySelectorAll(`.cfg-choice[data-f="${el.dataset.f}"]`).forEach(x=>x.classList.remove('on'));
-    el.classList.add('on');
-    state.indicators[ind][el.dataset.f]=el.dataset.v;   // mode rangé dans l'état
-    state.cache={}; saveConfig(); render();
-  }));
   body.querySelectorAll('input[type=number]').forEach(el=>
     el.addEventListener('change',()=>{
       const f=sc.fields.find(x=>x.k===el.dataset.f);
@@ -3644,53 +3512,6 @@ function alertNewOB(zones){
   beep();
 }
 
-/* ---------- Signaux de confluence (façon flèches d'achat/vente) ---------- */
-function computeSignals(d,ind){
-  const win=ind.window||3;                 // fenêtre de tolérance (bougies)
-  const emaF=calc.ema(d,ind.emaFast||9), emaS=calc.ema(d,ind.emaSlow||30);
-  const asd=calc.almaSD(d,1.8,33,35,4,0.85);
-  // événements de structure (toutes UT confondues, on prend l'UT du graphe)
-  const bos=calc.bosOne(d,'',state.tf);
-  // marque, pour chaque bougie, le sens du dernier BOS/CHoCH récent
-  const bosDir=new Array(d.length).fill(0);
-  for(const ev of bos){
-    const i=idxOfTime(ev.fromT===undefined?ev.t:ev.t);
-    let j=null; for(let k=0;k<d.length;k++){if(d[k].t===ev.t){j=k;break;}}
-    if(j!=null)bosDir[j]=ev.up?1:-1;
-  }
-  // croisements EMA
-  const emaCross=new Array(d.length).fill(0);
-  for(let i=1;i<d.length;i++){
-    if(emaF[i]==null||emaS[i]==null||emaF[i-1]==null||emaS[i-1]==null)continue;
-    const prev=emaF[i-1]-emaS[i-1], cur=emaF[i]-emaS[i];
-    if(prev<=0&&cur>0)emaCross[i]=1;
-    else if(prev>=0&&cur<0)emaCross[i]=-1;
-  }
-  // retournements Alma SD
-  const asdFlip=new Array(d.length).fill(0);
-  for(let i=1;i<d.length;i++){
-    if(asd.dir[i]!=null&&asd.dir[i-1]!=null&&asd.dir[i]!==asd.dir[i-1])
-      asdFlip[i]=asd.dir[i];
-  }
-  // confluence : les 3 signaux du même sens dans une fenêtre de 'win' bougies
-  const out=[];
-  const recent=(arr,i,sign)=>{for(let k=Math.max(0,i-win+1);k<=i;k++)if(arr[k]===sign)return true;return false;};
-  let lastSig=0, lastIdx=-99;
-  for(let i=0;i<d.length;i++){
-    for(const sign of [1,-1]){
-      if(emaCross[i]===sign || asdFlip[i]===sign || bosDir[i]===sign){
-        // un des trois vient de basculer sur cette bougie -> vérifier que les 2 autres suivent dans la fenêtre
-        const a=recent(emaCross,i,sign), b=recent(asdFlip,i,sign), c=recent(bosDir,i,sign);
-        if(a&&b&&c && !(lastSig===sign && i-lastIdx<win*2)){
-          out.push({i,t:d[i].t,dir:sign,price:sign===1?d[i].l:d[i].h});
-          lastSig=sign; lastIdx=i;
-        }
-      }
-    }
-  }
-  return out;
-}
-
 /* ---------- Vue rapprochée (20 dernières bougies) ---------- */
 const zoomBack=document.getElementById('zoom-back');
 const zoomCanvas=document.getElementById('zoom-canvas');
@@ -3728,27 +3549,8 @@ function closeZoom(){
   zoomOpen=false; zoomBack.classList.remove('open'); render();
 }
 document.getElementById('zoom-btn').addEventListener('click',openZoom);
-// bouton fermer : réagit au clic ET au tactile, empêche la propagation vers le fond/canvas
-function bindBtn(id,fn){
-  const el=document.getElementById(id);
-  const h=e=>{ e.preventDefault(); e.stopPropagation(); fn(); };
-  el.addEventListener('click',h);
-  el.addEventListener('touchend',h,{passive:false});
-}
-bindBtn('zoom-close',closeZoom);
-// fermeture au clic/tap à l'extérieur de la boîte (sur le fond sombre)
-function onBackTap(e){
-  const box=document.getElementById('zoom-box');
-  const t=(e.changedTouches&&e.changedTouches[0])||e;
-  // si le point touché n'est pas dans la boîte -> fermer
-  if(box){
-    const r=box.getBoundingClientRect();
-    const x=t.clientX, y=t.clientY;
-    if(x<r.left||x>r.right||y<r.top||y>r.bottom){ closeZoom(); }
-  }
-}
+document.getElementById('zoom-close').addEventListener('click',closeZoom);
 zoomBack.addEventListener('click',e=>{ if(e.target===zoomBack)closeZoom(); });
-zoomBack.addEventListener('touchend',onBackTap,{passive:true});
 window.addEventListener('resize',()=>{ if(zoomOpen)renderZoom(); });
 setInterval(()=>{ if(zoomOpen)renderZoom(); },1500);
 
@@ -3869,9 +3671,9 @@ function zZoom(f){
   zoomState.view.start=anchor-(anchor-zoomState.view.start)*(nc/zoomState.view.count);
   zoomState.view.count=nc; renderZoom();
 }
-bindBtn('zoom-in',()=>zZoom(1/1.4));
-bindBtn('zoom-out',()=>zZoom(1.4));
-bindBtn('zoom-reset',()=>{
+document.getElementById('zoom-in').addEventListener('click',()=>zZoom(1/1.4));
+document.getElementById('zoom-out').addEventListener('click',()=>zZoom(1.4));
+document.getElementById('zoom-reset').addEventListener('click',()=>{
   const n=Math.min(30,zData().length);
   zoomState.view={start:zData().length-n,count:n};
   zoomState.yScale={auto:true,lo:0,hi:0}; renderZoom();
