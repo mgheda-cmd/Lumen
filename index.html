@@ -1179,7 +1179,7 @@ function mergeConfig(c){
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
     for(const k of ['rsi','macd','imp','stoch','atr'])
-      if(typeof c.paneH[k]==='number'&&c.paneH[k]>=40&&c.paneH[k]<=800)
+      if(typeof c.paneH[k]==='number'&&c.paneH[k]>=34&&c.paneH[k]<=800)
         state.paneH[k]=c.paneH[k];
   }
   if(c.indicators)for(const k of Object.keys(state.indicators)){
@@ -1771,8 +1771,10 @@ function render(){
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
     if(p.key!=='price'){ // poignée de redimensionnement en haut du sous-panneau
-      ctx.fillStyle='rgba(126,140,168,.35)';
-      for(let k=-1;k<=1;k++)ctx.fillRect(W/2-8+k*7,p.y-1,5,2);
+      ctx.fillStyle='rgba(126,140,168,.14)';
+      ctx.fillRect(0,p.y-3,W-AXIS_W,6);           // bande de préhension large
+      ctx.fillStyle='rgba(160,175,205,.6)';
+      for(let k=-2;k<=2;k++)ctx.fillRect(W/2-14+k*7,p.y-1,5,2);  // 5 traits centraux
     }
   }
   if(state.view.start<60&&!histBusy&&!histDone)loadMoreHistory();
@@ -2620,7 +2622,7 @@ chips.addEventListener('click',e=>{
 function hitZone(x,y){
   const panes=state.lastPanes||[];
   for(let i=1;i<panes.length;i++){
-    if(x<W-AXIS_W&&Math.abs(y-panes[i].y)<8)return 'resize:'+panes[i].key;
+    if(x<W-AXIS_W&&Math.abs(y-panes[i].y)<14)return 'resize:'+panes[i].key;
   }
   if(y>H-AXIS_H) return 'time';
   if(x>W-AXIS_W){
@@ -2663,7 +2665,7 @@ canvas.addEventListener('mousemove',e=>{
   if(state.dragging){
     if(state.dragMode&&state.dragMode.startsWith('resize:')){
       const key=state.dragMode.slice(7);
-      state.paneH[key]=Math.max(40,Math.min((H-AXIS_H)*0.6,
+      state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,
         state.dragPaneH-(y-state.dragY)));
     }else if(state.dragMode==='time'){
       // étirer l'axe du temps, bord droit fixe (comme TV)
@@ -2793,7 +2795,7 @@ canvas.addEventListener('touchmove',e=>{
     const {x,y}=tpos(e.touches[0]);
     if(touch.mode.startsWith('resize:')){
       const key=touch.mode.slice(7);
-      state.paneH[key]=Math.max(40,Math.min((H-AXIS_H)*0.6,touch.paneH-(y-touch.y)));
+      state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,touch.paneH-(y-touch.y)));
     }else if(touch.mode==='time'){
       const f=Math.exp(-(x-touch.x)*0.006);
       const nc=Math.max(20,Math.min(state.data.length||N_BARS,touch.count*f));
