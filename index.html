@@ -178,7 +178,10 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 #zoom-head{
   display:flex; align-items:center; gap:12px; padding:10px 14px;
   border-bottom:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:13px;
+  position:relative; z-index:2; flex:none;
 }
+#zoom-head button{touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none}
+#zoom-head button:active{transform:scale(.92); background:var(--accent); color:#fff}
 #zoom-title{font-weight:600}
 #zoom-n{color:var(--muted); font-size:11px}
 #zoom-head button{margin-left:6px; background:var(--panel-2); color:var(--text);
@@ -3613,8 +3616,27 @@ function closeZoom(){
   zoomOpen=false; zoomBack.classList.remove('open'); render();
 }
 document.getElementById('zoom-btn').addEventListener('click',openZoom);
-document.getElementById('zoom-close').addEventListener('click',closeZoom);
+// bouton fermer : réagit au clic ET au tactile, empêche la propagation vers le fond/canvas
+function bindBtn(id,fn){
+  const el=document.getElementById(id);
+  const h=e=>{ e.preventDefault(); e.stopPropagation(); fn(); };
+  el.addEventListener('click',h);
+  el.addEventListener('touchend',h,{passive:false});
+}
+bindBtn('zoom-close',closeZoom);
+// fermeture au clic/tap à l'extérieur de la boîte (sur le fond sombre)
+function onBackTap(e){
+  const box=document.getElementById('zoom-box');
+  const t=(e.changedTouches&&e.changedTouches[0])||e;
+  // si le point touché n'est pas dans la boîte -> fermer
+  if(box){
+    const r=box.getBoundingClientRect();
+    const x=t.clientX, y=t.clientY;
+    if(x<r.left||x>r.right||y<r.top||y>r.bottom){ closeZoom(); }
+  }
+}
 zoomBack.addEventListener('click',e=>{ if(e.target===zoomBack)closeZoom(); });
+zoomBack.addEventListener('touchend',onBackTap,{passive:true});
 window.addEventListener('resize',()=>{ if(zoomOpen)renderZoom(); });
 setInterval(()=>{ if(zoomOpen)renderZoom(); },1500);
 
@@ -3735,9 +3757,9 @@ function zZoom(f){
   zoomState.view.start=anchor-(anchor-zoomState.view.start)*(nc/zoomState.view.count);
   zoomState.view.count=nc; renderZoom();
 }
-document.getElementById('zoom-in').addEventListener('click',()=>zZoom(1/1.4));
-document.getElementById('zoom-out').addEventListener('click',()=>zZoom(1.4));
-document.getElementById('zoom-reset').addEventListener('click',()=>{
+bindBtn('zoom-in',()=>zZoom(1/1.4));
+bindBtn('zoom-out',()=>zZoom(1.4));
+bindBtn('zoom-reset',()=>{
   const n=Math.min(30,zData().length);
   zoomState.view={start:zData().length-n,count:n};
   zoomState.yScale={auto:true,lo:0,hi:0}; renderZoom();
