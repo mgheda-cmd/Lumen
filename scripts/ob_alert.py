@@ -125,8 +125,9 @@ def notify(title, body, tags):
 
 
 def main():
+    print(f"NTFY_TOPIC configuré : {'oui ('+str(len(TOPIC))+' caractères)' if TOPIC else 'NON — secret manquant ou vide'}")
     if not TOPIC:
-        print("NTFY_TOPIC absent : rien à faire.")
+        print("=> Le secret NTFY_TOPIC est vide. Vérifie github.com/mgheda-cmd/Lumen/settings/secrets/actions")
         return 0
 
     # Mode test : envoie une notification immédiate puis s'arrête
