@@ -360,6 +360,11 @@ footer{
         <span class="name">SuperTrend <span class="desc">10 × 3</span></span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="almasd">
+        <span class="dot" style="background:#00E5D0"></span>
+        <span class="name">Alma SD SuperTrend <span class="desc">Oquant</span></span>
+        <span class="state">off</span>
+      </div>
       <div class="ind-item" data-ind="sha">
         <span class="dot" style="background:#26C6DA"></span>
         <span class="name">Heikin Ashi lissé ① <span class="desc">Bougies HA lissées</span></span>
@@ -791,6 +796,47 @@ const calc = {
       if(i<=p){a=(a==null?0:a)+tr;if(i===p){a/=p;o[i]=a;}}
       else{a=(a*(p-1)+tr)/p;o[i]=a;}}
     return o;},
+  alma(vals,len,offset,sigma){
+    const o=new Array(vals.length).fill(null);
+    const m=offset*(len-1), sg=len/sigma;
+    const w=[]; let wsum=0;
+    for(let k=0;k<len;k++){const ww=Math.exp(-((k-m)*(k-m))/(2*sg*sg));w.push(ww);wsum+=ww;}
+    for(let i=len-1;i<vals.length;i++){
+      let acc=0;
+      for(let k=0;k<len;k++)acc+=vals[i-len+1+k]*w[k];
+      o[i]=acc/wsum;
+    }
+    return o;
+  },
+  stdev(vals,len){
+    const o=new Array(vals.length).fill(null);
+    for(let i=len-1;i<vals.length;i++){
+      let m=0;for(let k=0;k<len;k++)m+=vals[i-len+1+k];m/=len;
+      let v=0;for(let k=0;k<len;k++){const df=vals[i-len+1+k]-m;v+=df*df;}
+      o[i]=Math.sqrt(v/len);
+    }
+    return o;
+  },
+  almaSD(d,fac,sdLen,almaLen,sigma,offset){
+    const src=d.map(b=>b.c);
+    const ma=this.alma(src,almaLen,offset,sigma);
+    const sd=this.stdev(src,sdLen);
+    const line=new Array(d.length).fill(null);
+    const dir=new Array(d.length).fill(1);
+    let up=null, lo=null, dr=1;
+    for(let i=0;i<d.length;i++){
+      if(ma[i]==null||sd[i]==null){line[i]=null;continue;}
+      const bub=ma[i]+fac*sd[i], blb=ma[i]-fac*sd[i];
+      if(up==null){up=bub;lo=blb;}
+      else{
+        up=(bub<up||d[i-1].c>up)?bub:up;
+        lo=(blb>lo||d[i-1].c<lo)?blb:lo;
+      }
+      if(d[i].c>up)dr=1; else if(d[i].c<lo)dr=-1;
+      dir[i]=dr; line[i]=dr===1?lo:up;
+    }
+    return {line,dir,ma};
+  },
   supertrend(d){const p=10,m=3,atr=this.atr(d,p);
     const line=new Array(d.length).fill(null),dir=new Array(d.length).fill(1);
     let fub=null,flb=null,dr=1;
@@ -1048,6 +1094,7 @@ const state = {
     vwap:{on:false},
     ichi:{on:false},
     st:{on:false},
+    almasd:{on:false,fac:1.8,sd:33,alen:35,asig:4,aoff:0.85},
     sha:{on:false,period:10,tf:'chart'},
     sha2:{on:false,period:10,tf:'15'},
     sha3:{on:false,period:10,tf:'60'},
@@ -1554,6 +1601,7 @@ function getInd(key){
     if(key==='stoch')state.cache[ck]=calc.stoch(d,ind.period);
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
+    if(key==='almasd')state.cache[ck]=calc.almaSD(d,ind.fac,ind.sd,ind.alen,ind.asig,ind.aoff);
     if(key==='sha'){
       const mtf=(ind.tf&&ind.tf!=='chart')?+ind.tf:null;
       if(!mtf)state.cache[ck]=calc.smoothHA(d,ind.period,ind.period);
@@ -1736,6 +1784,8 @@ function drawPrice(p,s,e,cw){
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
   if(state.indicators.st.on){const a=getInd('st').line;
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
+  if(state.indicators.almasd.on){const A=getInd('almasd');
+    for(const arr of [A.line,A.ma])for(let i=s;i<e;i++)if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}}
   if(state.indicators.ichi.on){const ic=getInd('ichi');
     for(const arr of [ic.T,ic.K,ic.A,ic.B])
       for(let i=s;i<e;i++)if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}}
@@ -1889,6 +1939,30 @@ function drawPrice(p,s,e,cw){
     }
     plotLine(Sl,s,e,yOf,hexA(dn,.85),1.3);
     plotLine(F,s,e,yOf,hexA(up,.9),1.5);
+  }
+  if(state.indicators.almasd.on){
+    const A=getInd('almasd'), L=A.line, D=A.dir;
+    const cU=S('almasd','cUp'), cD=S('almasd','cDown');
+    // ligne SuperTrend : segment vert quand haussier (support), rouge quand baissier (résistance)
+    ctx.lineWidth=2;
+    for(let i=Math.max(s,1);i<e;i++){
+      if(L[i]==null||L[i-1]==null)continue;
+      if(D[i]!==D[i-1])continue;               // pas de trait au moment du retournement
+      ctx.strokeStyle=D[i]===1?cU:cD;
+      ctx.beginPath();ctx.moveTo(xOf(i-1),yOf(L[i-1]));ctx.lineTo(xOf(i),yOf(L[i]));ctx.stroke();
+    }
+    // marqueurs de retournement
+    for(let i=Math.max(s,1);i<e;i++){
+      if(L[i]==null||D[i]===D[i-1])continue;
+      ctx.fillStyle=D[i]===1?cU:cD;
+      const x=xOf(i),y=yOf(L[i]);
+      ctx.beginPath();
+      if(D[i]===1){ctx.moveTo(x,y+9);ctx.lineTo(x-5,y+1);ctx.lineTo(x+5,y+1);}
+      else{ctx.moveTo(x,y-9);ctx.lineTo(x-5,y-1);ctx.lineTo(x+5,y-1);}
+      ctx.closePath();ctx.fill();
+    }
+    // ligne ALMA (Plot oc2)
+    if(S('almasd','showMa'))plotLine(A.ma,s,e,yOf,hexA(S('almasd','cMa'),.9),1.3);
   }
   if(state.indicators.vwap.on)plotLine(getInd('vwap'),s,e,yOf,S('vwap','cLine'),1.4);
   if(state.indicators.lrc.on){
@@ -2424,6 +2498,7 @@ const IND_META={
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.obm.tf]||'')
     :(HTF_NAME[state.tf]||'')),color:'#FF9D66'},
   sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
+  almasd:{label:()=>'Alma SD ST',color:'#00E5D0'},
   bos:{label:()=>'Structure BOS/CHoCH',color:'#FFD166'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   lrc:{label:p=>'Régression '+p,color:'#9BE6FF'},
@@ -3236,6 +3311,17 @@ const SCHEMA={
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#B48BFF'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F2C14E'},
+  ]},
+  almasd:{title:'Alma SD SuperTrend',fields:[
+    {k:'fac',t:'num',lab:'Facteur',min:0.1,max:10,ind:1},
+    {k:'sd',t:'num',lab:'SD Length',min:2,max:200,ind:1},
+    {k:'alen',t:'num',lab:'Alma Length',min:2,max:200,ind:1},
+    {k:'asig',t:'num',lab:'Alma Sigma',min:1,max:20,ind:1},
+    {k:'aoff',t:'num',lab:'Alma Offset',min:0,max:1,ind:1},
+    {k:'cUp',t:'col',lab:'ST Up (haussier)',def:'#089981'},
+    {k:'cDown',t:'col',lab:'ST Down (baissier)',def:'#F23345'},
+    {k:'showMa',t:'bool',lab:'Ligne ALMA (oc2)',def:true},
+    {k:'cMa',t:'col',lab:'Couleur ALMA',def:'#00E5D0'},
   ]},
   st:{title:'SuperTrend',fields:[
     {k:'cUp',t:'col',lab:'Haussier',def:'#25D0A4'},
