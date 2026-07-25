@@ -144,7 +144,10 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   width:38px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;
   background:var(--panel);cursor:pointer;
 }
-.cfg-sw{
+  .cfg-choice{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+    border-radius:7px;padding:6px 14px;cursor:pointer;font-size:13px;font-family:inherit}
+  .cfg-choice.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
+  .cfg-sw{
   width:40px;height:22px;border-radius:11px;background:var(--line);position:relative;
   cursor:pointer;flex:none;transition:background .15s;
 }
@@ -1077,6 +1080,19 @@ const calc = {
       out.push((o2[i]==null||c2[i]==null||h2[i]==null||l2[i]==null)?null
         :{t:bars[i].t,o:o2[i],h:h2[i],l:l2[i],c:c2[i]});
     return out;
+  },
+  plainHA(bars){
+    const haO=new Array(bars.length).fill(null),haC=[...haO],haH=[...haO],haL=[...haO];
+    for(let i=0;i<bars.length;i++){
+      const b=bars[i];
+      const c=(b.o+b.h+b.l+b.c)/4;
+      const o=(i>0&&haO[i-1]!=null)?(haO[i-1]+haC[i-1])/2:(b.o+b.c)/2;
+      haO[i]=o;haC[i]=c;haH[i]=Math.max(b.h,o,c);haL[i]=Math.min(b.l,o,c);
+    }
+    const out=[];
+    for(let i=0;i<bars.length;i++)
+      out.push({t:bars[i].t,o:haO[i],h:haH[i],l:haL[i],c:haC[i]});
+    return out;
   }
 };
 /* Unité de temps supérieure pour le MTF : 1m→15m, 15m→1H, 1H→4H, 4H→1J, 1J→1S */
@@ -1098,9 +1114,9 @@ const state = {
     ichi:{on:false},
     st:{on:false},
     almasd:{on:false,fac:1.8,sd:33,alen:35,asig:4,aoff:0.85},
-    sha:{on:false,period:10,tf:'chart'},
-    sha2:{on:false,period:10,tf:'15'},
-    sha3:{on:false,period:10,tf:'60'},
+    sha:{on:false,period:10,tf:'chart',mode:'lisse'},
+    sha2:{on:false,period:10,tf:'15',mode:'lisse'},
+    sha3:{on:false,period:10,tf:'60',mode:'lisse'},
     fvg:{on:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     lrc:{on:false,period:100},
@@ -1161,6 +1177,7 @@ function mergeConfig(c){
     const s=c.indicators[k]; if(!s)continue;
     if(typeof s.on==='boolean')state.indicators[k].on=s.on;
     if(typeof s.hidden==='boolean')state.indicators[k].hidden=s.hidden;
+    if(s.mode==='normal'||s.mode==='lisse')state.indicators[k].mode=s.mode;
     if(typeof s.tf==='string'&&['chart','auto','3','5','15','60','240'].includes(s.tf)&&'tf'in state.indicators[k])
       state.indicators[k].tf=s.tf;
     if(typeof s.period==='number'&&s.period>=2&&s.period<=400)
@@ -1606,17 +1623,12 @@ function getInd(key){
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='almasd')state.cache[ck]=calc.almaSD(d,ind.fac,ind.sd,ind.alen,ind.asig,ind.aoff);
-    if(key==='sha'){
+    if(key==='sha'||key==='sha2'||key==='sha3'){
       const mtf=(ind.tf&&ind.tf!=='chart')?+ind.tf:null;
-      if(!mtf)state.cache[ck]=calc.smoothHA(d,ind.period,ind.period);
+      const calcHA=b=>(ind.mode==='normal')?calc.plainHA(b):calc.smoothHA(b,ind.period,ind.period);
+      if(!mtf)state.cache[ck]=calcHA(d);
       else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
-        state.cache[ck]=bars?calc.smoothHA(bars,ind.period,ind.period):[];}
-    }
-    if(key==='sha2'||key==='sha3'){
-      const mtf=(ind.tf&&ind.tf!=='chart')?+ind.tf:null;
-      if(!mtf)state.cache[ck]=calc.smoothHA(d,ind.period,ind.period);
-      else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
-        state.cache[ck]=bars?calc.smoothHA(bars,ind.period,ind.period):[];}
+        state.cache[ck]=bars?calcHA(bars):[];}
     }
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
@@ -3334,18 +3346,21 @@ const SCHEMA={
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
   sha:{title:'Heikin Ashi lissé ①',fields:[
+    {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
     {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#089981'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F23345'},
   ]},
   sha2:{title:'Heikin Ashi lissé ②',fields:[
+    {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
     {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#7AA2FF'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#FF9D66'},
   ]},
   sha3:{title:'Heikin Ashi lissé ③',fields:[
+    {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
     {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
     {k:'period',t:'num',lab:'Lissage',min:2,max:50,ind:1},
     {k:'cUp',t:'col',lab:'Haussier',def:'#B48BFF'},
@@ -3410,6 +3425,7 @@ const SCHEMA={
   ]},
 };
 function S(ind,key){
+  if(key==='mode')return state.indicators[ind].mode||'lisse';
   const st=state.style[ind];
   if(st&&st[key]!==undefined)return st[key];
   const f=(SCHEMA[ind]||{fields:[]}).fields.find(x=>x.k===key);
@@ -3435,6 +3451,11 @@ function openCfg(ind){
     if(f.t==='col')
       return `<div class="cfg-row"><label>${f.lab}</label>
         <input type="color" value="${v}" data-f="${f.k}"></div>`;
+    if(f.t==='choice')
+      return `<div class="cfg-row"><label>${f.lab}</label>
+        <div style="display:flex;gap:4px">`+
+        f.opts.map(o=>`<button class="cfg-choice ${v===o.v?'on':''}" data-f="${f.k}" data-v="${o.v}">${o.t}</button>`).join('')+
+        `</div></div>`;
     return `<div class="cfg-row"><label>${f.lab}</label>
       <input type="number" value="${v}" min="${f.min}" max="${f.max}" data-f="${f.k}"></div>`;
   }).join('');
@@ -3445,6 +3466,12 @@ function openCfg(ind){
   }));
   body.querySelectorAll('input[type=color]').forEach(el=>
     el.addEventListener('input',()=>setStyle(ind,el.dataset.f,el.value)));
+  body.querySelectorAll('.cfg-choice').forEach(el=>el.addEventListener('click',()=>{
+    body.querySelectorAll(`.cfg-choice[data-f="${el.dataset.f}"]`).forEach(x=>x.classList.remove('on'));
+    el.classList.add('on');
+    state.indicators[ind][el.dataset.f]=el.dataset.v;   // mode rangé dans l'état
+    state.cache={}; saveConfig(); render();
+  }));
   body.querySelectorAll('input[type=number]').forEach(el=>
     el.addEventListener('change',()=>{
       const f=sc.fields.find(x=>x.k===el.dataset.f);
