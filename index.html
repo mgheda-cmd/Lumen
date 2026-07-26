@@ -536,6 +536,10 @@ footer{
       <div class="ind-item" data-ind="macdsr">
         <span class="dot" style="background:#4A90FF"></span>
         <span class="name">MACD S/R <span class="desc">ChartPrime</span></span>
+        <span class="srtf mtf on" data-ind2="macdsr" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="macdsr" data-tf="15">15m</span>
+        <span class="srtf mtf" data-ind2="macdsr" data-tf="60">1H</span>
+        <span class="srtf mtf" data-ind2="macdsr" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
     </div>
@@ -1221,7 +1225,7 @@ const state = {
     stoch:{on:false,period:14},
     atr:{on:false,period:14},
     rosc:{on:false,period:50,smooth:2,tf:'chart'},
-    macdsr:{on:false,fast:12,slow:26,sig:9},
+    macdsr:{on:false,fast:12,slow:26,sig:9,tf:'chart'},
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
@@ -1741,7 +1745,22 @@ function getInd(key){
         state.cache[ck]=bars?mapHTF(bars,calc.rangeOsc(bars,ind.period,S('rosc','smooth'))):[];
       }
     }
-    if(key==='macdsr')state.cache[ck]=calc.macdSR(d,ind.fast,ind.slow,ind.sig);
+    if(key==='macdsr'){
+      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
+      if(!mtf)state.cache[ck]=calc.macdSR(d,ind.fast,ind.slow,ind.sig);
+      else{
+        ensureMTF(mtf);
+        const bars=mtfStore.data[mtf];
+        if(!bars)state.cache[ck]={macd:[],sg:[],levels:[]};
+        else{
+          const m=calc.macdSR(bars,ind.fast,ind.slow,ind.sig);
+          // ramener les niveaux sur l'échelle du graphe (via le temps de la bougie HTF)
+          const lv=m.levels.map(l=>{const t=bars[l.i]?bars[l.i].t:null;const gi=t!=null?idxOfTime(t):null;
+            return gi!=null?{i:gi,price:l.price,type:l.type}:null;}).filter(Boolean);
+          state.cache[ck]={macd:mapHTF(bars,m.macd),sg:mapHTF(bars,m.sg),levels:lv};
+        }
+      }
+    }
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='almasd')state.cache[ck]=calc.almaSD(d,ind.fac,ind.sd,ind.alen,ind.asig,ind.aoff);
     if(key==='signal')state.cache[ck]=computeSignals(d,ind);
@@ -2748,7 +2767,7 @@ const IND_META={
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
   rosc:{label:p=>'Range Osc '+p+((state.indicators.rosc.tf&&state.indicators.rosc.tf!=='chart')?' '+({'15':'15m','60':'1H','240':'4H'}[state.indicators.rosc.tf]||''):''),color:'#3DDC97'},
-  macdsr:{label:()=>'MACD S/R',color:'#4A90FF'},
+  macdsr:{label:()=>'MACD S/R'+((state.indicators.macdsr.tf&&state.indicators.macdsr.tf!=='chart')?' '+({'15':'15m','60':'1H','240':'4H'}[state.indicators.macdsr.tf]||''):''),color:'#4A90FF'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
   fvgm:{label:()=>'FVG MTF '+(state.indicators.fvgm.tf!=='auto'
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.fvgm.tf]||'')
