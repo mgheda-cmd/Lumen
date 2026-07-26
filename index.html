@@ -529,6 +529,11 @@ footer{
         <input type="number" min="5" max="300" value="50" aria-label="Période Range Oscillator">
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="macdsr">
+        <span class="dot" style="background:#4A90FF"></span>
+        <span class="name">MACD S/R <span class="desc">ChartPrime</span></span>
+        <span class="state">off</span>
+      </div>
     </div>
   </div>
   <div style="display:flex;gap:6px;flex:none">
@@ -805,6 +810,22 @@ const calc = {
   },
   sma(d,p){const out=new Array(d.length).fill(null);let s=0;
     for(let i=0;i<d.length;i++){s+=d[i].c; if(i>=p)s-=d[i-p].c; if(i>=p-1)out[i]=s/p;}return out;},
+  macdSR(d,fast,slow,sig){
+    fast=fast||12; slow=slow||26; sig=sig||9;
+    const ef=this.ema(d,fast), es=this.ema(d,slow);
+    const macd=ef.map((v,i)=>(v!=null&&es[i]!=null)?v-es[i]:null);
+    const sg=new Array(d.length).fill(null);
+    const k=2/(sig+1); let e=null;
+    for(let i=0;i<d.length;i++){if(macd[i]==null)continue;e=e==null?macd[i]:macd[i]*k+e*(1-k);sg[i]=e;}
+    const levels=[];
+    for(let i=1;i<d.length;i++){
+      if(macd[i]==null||sg[i]==null||macd[i-1]==null||sg[i-1]==null)continue;
+      const pv=macd[i-1]-sg[i-1], cu=macd[i]-sg[i];
+      if(pv<=0&&cu>0)levels.push({i,price:d[i].l,type:'sup'});
+      else if(pv>=0&&cu<0)levels.push({i,price:d[i].h,type:'res'});
+    }
+    return {macd,sg,levels};
+  },
   ema(d,p,src){const out=new Array(d.length).fill(null);const k=2/(p+1);let e=null;
     const val=i=>src?src[i]:d[i].c;
     for(let i=0;i<d.length;i++){const v=val(i);if(v==null)continue;
@@ -1196,6 +1217,7 @@ const state = {
     stoch:{on:false,period:14},
     atr:{on:false,period:14},
     rosc:{on:false,period:50,smooth:2},
+    macdsr:{on:false,fast:12,slow:26,sig:9},
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
@@ -1707,6 +1729,7 @@ function getInd(key){
     if(key==='stoch')state.cache[ck]=calc.stoch(d,ind.period);
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
     if(key==='rosc')state.cache[ck]=calc.rangeOsc(d,ind.period,S('rosc','smooth'));
+    if(key==='macdsr')state.cache[ck]=calc.macdSR(d,ind.fast,ind.slow,ind.sig);
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='almasd')state.cache[ck]=calc.almaSD(d,ind.fac,ind.sd,ind.alen,ind.asig,ind.aoff);
     if(key==='signal')state.cache[ck]=computeSignals(d,ind);
@@ -1798,6 +1821,7 @@ function computePanes(){
   if(vis('stoch')) subs.push('stoch');
   if(vis('atr')) subs.push('atr');
   if(vis('rosc')) subs.push('rosc');
+  if(vis('macdsr')) subs.push('macdsr');
   const avail=H-AXIS_H;
   const def=subs.length?Math.min(110,avail*0.5/subs.length):0;
   let hs=subs.map(k=>{
@@ -1845,6 +1869,7 @@ function render(){
     else if(p.key==='stoch') drawStoch(p,s,e,cw);
     else if(p.key==='atr') drawATR(p,s,e,cw);
     else if(p.key==='rosc') drawROsc(p,s,e,cw);
+    else if(p.key==='macdsr') drawMacdSR(p,s,e,cw);
     ctx.restore();
     // séparation
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
@@ -2121,6 +2146,16 @@ function drawPrice(p,s,e,cw){
     plotLine(F,s,e,yOf,hexA(up,.9),1.5);
   }
   if(vis('vwap'))plotLine(getInd('vwap'),s,e,yOf,S('vwap','cLine'),1.4);
+  if(vis('macdsr')){
+    const lv=getInd('macdsr').levels, cUp=S('macdsr','cUp'), cDn=S('macdsr','cDown');
+    ctx.lineWidth=1;
+    for(const l of lv.slice(-12)){
+      if(l.i>e)continue;
+      const y=yOf(l.price); if(y<0||y>H)continue;
+      ctx.strokeStyle=hexA(l.type==='sup'?cUp:cDn,.5);
+      ctx.beginPath();ctx.moveTo(Math.max(xOf(l.i),0),y);ctx.lineTo(W-AXIS_W,y);ctx.stroke();
+    }
+  }
   if(vis('lrc')){
     const L=getInd('lrc');
     if(L){
@@ -2569,6 +2604,33 @@ function drawROsc(p,s,e,cw){
   subLabel(p,'Range Oscillator '+state.indicators.rosc.period,
     arr[i]!=null?arr[i].toFixed(1):'—', arr[i]!=null?(arr[i]>=0?cUp:cDown):css('--muted'));
 }
+function drawMacdSR(p,s,e,cw){
+  const m=getInd('macdsr'); const M=m.macd, G=m.sg;
+  const cUp=S('macdsr','cUp'), cDn=S('macdsr','cDown');
+  let mx=1e-9;
+  for(let i=s;i<e;i++)for(const v of [M[i],G[i]])if(v!=null)mx=Math.max(mx,Math.abs(v));
+  const yOf=v=>p.y+p.h/2-(v/mx)*(p.h/2-8);
+  const y0=p.y+p.h/2;
+  ctx.strokeStyle='rgba(126,140,168,.3)';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(W-AXIS_W,y0);ctx.stroke();
+  for(let i=Math.max(s,1);i<e;i++){
+    if(M[i]==null||G[i]==null||M[i-1]==null||G[i-1]==null)continue;
+    const bull=M[i]>=G[i];
+    ctx.beginPath();
+    ctx.moveTo(xOf(i-1),yOf(M[i-1]));ctx.lineTo(xOf(i),yOf(M[i]));
+    ctx.lineTo(xOf(i),yOf(G[i]));ctx.lineTo(xOf(i-1),yOf(G[i-1]));ctx.closePath();
+    ctx.fillStyle=hexA(bull?cUp:cDn,.3);ctx.fill();
+  }
+  plotLine(M,s,e,yOf,cUp,1.5);
+  plotLine(G,s,e,yOf,cDn,1.3);
+  for(const lv of m.levels){
+    if(lv.i<s||lv.i>e)continue;
+    ctx.fillStyle=lv.type==='sup'?cUp:cDn;
+    ctx.beginPath();ctx.arc(xOf(lv.i),yOf(M[lv.i]),3.5,0,7);ctx.fill();
+  }
+  const i=hoverIndex()??state.data.length-1;
+  subLabel(p,'MACD S/R '+state.indicators.macdsr.fast+' '+state.indicators.macdsr.slow,
+    M[i]!=null?M[i].toFixed(1):'—', M[i]!=null?(M[i]>=G[i]?cUp:cDn):css('--muted'));
+}
 function drawStoch(p,s,e,cw){
   const st=getInd('stoch');
   const yOf=subYOf(p,'stoch',0,100,true);
@@ -2674,6 +2736,7 @@ const IND_META={
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
   rosc:{label:p=>'Range Osc '+p,color:'#3DDC97'},
+  macdsr:{label:()=>'MACD S/R',color:'#4A90FF'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
   fvgm:{label:()=>'FVG MTF '+(state.indicators.fvgm.tf!=='auto'
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.fvgm.tf]||'')
@@ -3461,6 +3524,13 @@ const SCHEMA={
     {k:'cK',t:'col',lab:'%K',def:'#FF8FD8'},
     {k:'cD',t:'col',lab:'%D',def:'#FFFFFF'},
     {k:'showZone',t:'bool',lab:'Zone 20–80',def:true},
+  ]},
+  macdsr:{title:'MACD S/R (ChartPrime)',fields:[
+    {k:'fast',t:'num',lab:'Longueur rapide',min:2,max:100,ind:1},
+    {k:'slow',t:'num',lab:'Longueur lente',min:5,max:200,ind:1},
+    {k:'sig',t:'num',lab:'Signal',min:2,max:50,ind:1},
+    {k:'cUp',t:'col',lab:'Haussier (bleu)',def:'#4A90FF'},
+    {k:'cDown',t:'col',lab:'Baissier (orange)',def:'#FF9D42'},
   ]},
   rosc:{title:'Range Oscillator (Zeiierman)',fields:[
     {k:'period',t:'num',lab:'Longueur',min:5,max:300,ind:1},
