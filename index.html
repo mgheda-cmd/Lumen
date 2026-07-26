@@ -4053,7 +4053,8 @@ function runBacktest(){
     return {dir:perBar,flip};
   }
   const ha15=aggHAdir(15), ha3=aggHAdir(3);
-  function confluenceStrat(tgt){
+  function confluenceStrat(tgt,invert){
+    const F=invert?-1:1;
     let pos=null,eq=0,tr=[],peak=0,dd=0;
     for(let i=1;i<d.length;i++){
       if(cF[i]==null||cS[i]==null||e9[i]==null)continue;
@@ -4066,8 +4067,8 @@ function runBacktest(){
       }
       if(!pos){
         const bias=ha15.dir[i];
-        if(ha3.flip[i]===1 && bias===1 && cF[i]>cS[i] && pc>e9[i])pos={entry:pc,dir:1};
-        else if(ha3.flip[i]===-1 && bias===-1 && cF[i]<cS[i] && pc<e9[i])pos={entry:pc,dir:-1};
+        if(ha3.flip[i]===1 && bias===1 && cF[i]>cS[i] && pc>e9[i])pos={entry:pc,dir:1*F};
+        else if(ha3.flip[i]===-1 && bias===-1 && cF[i]<cS[i] && pc<e9[i])pos={entry:pc,dir:-1*F};
       }
     }
     const w=tr.filter(x=>x>0).length;
@@ -4075,7 +4076,9 @@ function runBacktest(){
     return {n:tr.length,net:eq,wr:tr.length?w/tr.length*100:0,dd:Math.abs(dd),
       pf:l!==0?Math.abs(g/l):(g>0?Infinity:0)};
   }
-  const confResults=[100,200,300].map(t=>({t,...confluenceStrat(t)}));
+  const confResults=[100,200,300].map(t=>({t,...confluenceStrat(t,false)}));
+  const confInvResults=[100,200,300].map(t=>({t,...confluenceStrat(t,true)}));
+  const bestConfInv=confInvResults.slice().sort((a,b)=>b.net-a.net)[0];
   const bestConf=confResults.slice().sort((a,b)=>b.net-a.net)[0];
   const bestCloud=cloudResults.slice().sort((a,b)=>b.net-a.net)[0];
 
@@ -4145,11 +4148,22 @@ function runBacktest(){
         Trades : ${r.n}<br>Réussite : ${r.wr.toFixed(0)}%<br>
         PF : ${r.pf===Infinity?'∞':r.pf.toFixed(2)}<br>Recul : <span style="color:var(--down)">-${r.dd.toFixed(0)}$</span>
       </div></div>`).join('');
+  const confInvCards=confInvResults.map(r=>
+    `<div style="flex:1;min-width:150px;background:var(--panel-2);border:1px solid ${r===bestConfInv&&r.net>0?'var(--up)':'var(--line)'};border-radius:10px;padding:10px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px">Cible ${r.t}$ ${r===bestConfInv&&r.n>0?'★':''}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.8">
+        Net : <b style="color:${r.net>=0?'var(--up)':'var(--down)'}">${(r.net>=0?'+':'')+r.net.toFixed(0)}$</b><br>
+        Trades : ${r.n}<br>Réussite : ${r.wr.toFixed(0)}%<br>
+        PF : ${r.pf===Infinity?'∞':r.pf.toFixed(2)}<br>Recul : <span style="color:var(--down)">-${r.dd.toFixed(0)}$</span>
+      </div></div>`).join('');
+  const confInvBlock=`<div style="margin-bottom:16px"><div style="font-weight:600;font-size:13px;margin-bottom:6px">🔄 Confluence INVERSÉE (on fait le contraire)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${confInvCards}</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Exactement le contraire : là où la confluence disait long, on short, et inversement. Même conditions d'entrée, direction inversée.</div></div>`;
   const confBlock=`<div style="margin-bottom:16px"><div style="font-weight:600;font-size:13px;margin-bottom:6px">⭐ Confluence : Nuage + EMA9 + filtre HA 15m/3m</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">${confCards}</div>
     <div style="margin-top:8px;font-size:11px;color:var(--muted)">Long si HA15m vert + HA3m bascule vert + nuage vert + prix>EMA9. Short : l'inverse. HA15m rouge = jamais de long. Sortie : cible atteinte ou HA3m bascule contre la position.</div></div>`;
   document.getElementById('bt-results').innerHTML=
-    confBlock+cloudBlock+
+    confBlock+confInvBlock+cloudBlock+
     `<div style="margin-top:16px;font-weight:600;font-size:13px;margin-bottom:6px">Comparaison croisement EMA simple</div>`+
     `<div style="display:flex;gap:10px;flex-wrap:wrap">${card('Sortie cible '+target+' $',A,aBetter&&A.n>0)}${card('Sortie signal inverse',B,!aBetter&&B.n>0)}</div>`+verdict+sweep+
     `<div style="margin-top:10px;font-size:11px;color:var(--muted)">⚠️ Données passées, frais inclus, hors slippage. Le passé ne garantit rien.</div>`;
