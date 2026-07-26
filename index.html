@@ -615,7 +615,7 @@ footer{
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
         Entrée : croisement EMA rapide/lente, filtré par le Nuage EMA (achat seulement si nuage haussier, vente si baissier).
-        Frais 0,1% par trade inclus. Testé sur les <span id="bt-n">—</span> bougies chargées (<span id="bt-tf">—</span>).
+        Frais 0,1% par trade inclus. Testé sur <span id="bt-n">—</span> bougies chargées automatiquement (<span id="bt-tf">—</span>).
       </div>
       <button class="btn" id="bt-run" style="border-color:var(--accent);color:var(--accent);width:100%;padding:9px;margin-bottom:14px">▶ Lancer le backtest</button>
       <div id="bt-results"></div>
@@ -3913,9 +3913,35 @@ bindBtn('zoom-reset',()=>{
 });
 
 /* ---------- Backtest : croisement EMA + filtre Nuage EMA ---------- */
-function runBacktest(){
-  const d=state.data;
-  if(!d||d.length<120){document.getElementById('bt-results').innerHTML='<div style="color:var(--down)">Pas assez de données chargées. Dézoome pour charger plus d\'historique.</div>';return;}
+async function fetchBigHistory(bars){
+  // récupère jusqu'à ~'bars' bougies chez Binance via pagination (1500 max par appel)
+  const per=1500, out=[]; let endTime=Date.now();
+  const rounds=Math.ceil(bars/per);
+  for(let r=0;r<rounds;r++){
+    let rows;
+    try{
+      rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${per}&endTime=${endTime}`);
+    }catch(e){break;}
+    if(!Array.isArray(rows)||!rows.length)break;
+    const mapped=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+    out.unshift(...mapped);
+    endTime=mapped[0].t-1;
+    if(rows.length<per)break;
+  }
+  // dédoublonnage
+  const seen=new Set(), uniq=[];
+  for(const b of out){if(!seen.has(b.t)){seen.add(b.t);uniq.push(b);}}
+  uniq.sort((a,b)=>a.t-b.t);
+  return uniq;
+}
+async function runBacktest(){
+  const btn=document.getElementById('bt-run');
+  btn.textContent='⏳ Chargement de l\'historique…'; btn.style.pointerEvents='none';
+  let d;
+  try{ d=await fetchBigHistory(6000); }catch(e){ d=state.data; }
+  btn.textContent='▶ Lancer le backtest'; btn.style.pointerEvents='auto';
+  if(!d||d.length<120){document.getElementById('bt-results').innerHTML='<div style="color:var(--down)">Impossible de charger l\'historique (réseau).</div>';return;}
+  document.getElementById('bt-n').textContent=d.length;
   const fast=+document.getElementById('bt-fast').value||9;
   const slow=+document.getElementById('bt-slow').value||30;
   const cf=+document.getElementById('bt-cf').value||30;
