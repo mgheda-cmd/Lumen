@@ -4094,7 +4094,31 @@ async function runBacktest(){
     for(let k=1;k<d.length;k++)if(perBar[k]!==perBar[k-1]&&perBar[k]!==0)flip[k]=perBar[k];
     return {dir:perBar,flip};
   }
-  const ha15=aggHAdir(15), ha3=aggHAdir(3);
+  const ha15=aggHAdir(15), ha3=aggHAdir(3), ha1h=aggHAdir(60);
+  // === Stratégie simple : biais 1H + bascule 3m (celle demandée) ===
+  function simpleHA(tgt){
+    let pos=null,eq=0,tr=[],peak=0,dd=0;
+    for(let i=1;i<d.length;i++){
+      const pc=d[i].c;
+      if(pos){
+        const mv=(pc-pos.entry)*pos.dir; let ex=false;
+        if(mv>=tgt||mv<=-tgt)ex=true;
+        else if(ha3.flip[i]===-pos.dir)ex=true;   // le 3m bascule contre nous
+        if(ex){const net=mv-(pos.entry+pc)*FEE;eq+=net;tr.push(net);peak=Math.max(peak,eq);dd=Math.min(dd,eq-peak);pos=null;}
+      }
+      if(!pos){
+        const bias=ha1h.dir[i];                    // biais 1H
+        if(ha3.flip[i]===1 && bias===1)pos={entry:pc,dir:1};    // 1H positif + 3m passe positif
+        else if(ha3.flip[i]===-1 && bias===-1)pos={entry:pc,dir:-1}; // 1H négatif + 3m passe négatif
+      }
+    }
+    const w=tr.filter(x=>x>0).length;
+    const g=tr.filter(x=>x>0).reduce((a,b)=>a+b,0), l=tr.filter(x=>x<=0).reduce((a,b)=>a+b,0);
+    return {n:tr.length,net:eq,wr:tr.length?w/tr.length*100:0,dd:Math.abs(dd),
+      pf:l!==0?Math.abs(g/l):(g>0?Infinity:0)};
+  }
+  const simpleResults=[100,200,300].map(t=>({t,...simpleHA(t)}));
+  const bestSimple=simpleResults.slice().sort((a,b)=>b.net-a.net)[0];
   function confluenceStrat(tgt,invert){
     const F=invert?-1:1;
     let pos=null,eq=0,tr=[],peak=0,dd=0;
@@ -4243,8 +4267,19 @@ async function runBacktest(){
   const confBlock=`<div style="margin-bottom:16px"><div style="font-weight:600;font-size:13px;margin-bottom:6px">⭐ Confluence : Nuage + EMA9 + filtre HA 15m/3m</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">${confCards}</div>
     <div style="margin-top:8px;font-size:11px;color:var(--muted)">Long si HA15m vert + HA3m bascule vert + nuage vert + prix>EMA9. Short : l'inverse. HA15m rouge = jamais de long. Sortie : cible atteinte ou HA3m bascule contre la position.</div></div>`;
+  const simpleCards=simpleResults.map(r=>
+    `<div style="flex:1;min-width:150px;background:var(--panel-2);border:1px solid ${r===bestSimple&&r.net>0?'var(--up)':'var(--line)'};border-radius:10px;padding:10px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px">Cible ${r.t}$ ${r===bestSimple&&r.n>0?'★':''}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.8">
+        Net : <b style="color:${r.net>=0?'var(--up)':'var(--down)'}">${(r.net>=0?'+':'')+r.net.toFixed(0)}$</b><br>
+        Trades : ${r.n}<br>Réussite : ${r.wr.toFixed(0)}%<br>
+        PF : ${r.pf===Infinity?'∞':r.pf.toFixed(2)}<br>Recul : <span style="color:var(--down)">-${r.dd.toFixed(0)}$</span>
+      </div></div>`).join('');
+  const simpleBlock=`<div style="margin-bottom:16px"><div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 Biais 1H + bascule 3m (nouvelle stratégie)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${simpleCards}</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Long : le Heikin Ashi 1H est positif ET le 3m passe positif. Short : le 1H est négatif ET le 3m passe négatif. Sortie : cible atteinte, ou le 3m bascule contre la position.</div></div>`;
   document.getElementById('bt-results').innerHTML=
-    confBlock+confImpBlock+confInvBlock+cloudBlock+
+    simpleBlock+confBlock+confImpBlock+confInvBlock+cloudBlock+
     `<div style="margin-top:16px;font-weight:600;font-size:13px;margin-bottom:6px">Comparaison croisement EMA simple</div>`+
     `<div style="display:flex;gap:10px;flex-wrap:wrap">${card('Sortie cible '+target+' $',A,aBetter&&A.n>0)}${card('Sortie signal inverse',B,!aBetter&&B.n>0)}</div>`+verdict+sweep+
     `<div style="margin-top:10px;font-size:11px;color:var(--muted)">⚠️ Données passées, frais inclus, hors slippage. Le passé ne garantit rien.</div>`;
