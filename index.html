@@ -527,6 +527,7 @@ footer{
   </div>
   <div style="display:flex;gap:6px;flex:none">
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
+  <button class="btn" id="btn-backtest" title="Backtest de stratégie" style="font-size:14px;padding:6px 11px">🧪</button>
   <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
   </div>
 
@@ -597,6 +598,30 @@ footer{
 </div>
 
 <div id="toast"></div>
+
+<div id="bt-back" style="position:fixed;inset:0;background:rgba(6,10,20,.8);z-index:400;display:none;align-items:center;justify-content:center;padding:14px">
+  <div id="bt-box" style="background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(560px,98vw);max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)">
+      <h3 style="flex:1;font-size:15px;font-weight:600">🧪 Backtest — Croisement EMA + filtre Nuage EMA</h3>
+      <button class="btn" id="bt-close" style="padding:4px 10px">✕</button>
+    </div>
+    <div style="padding:14px 16px" id="bt-body">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:12px">
+        <label>EMA rapide <input type="number" id="bt-fast" value="9" min="2" max="100" style="width:56px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:4px 6px"></label>
+        <label>EMA lente <input type="number" id="bt-slow" value="30" min="5" max="200" style="width:56px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:4px 6px"></label>
+        <label>Nuage <input type="number" id="bt-cf" value="30" min="5" max="200" style="width:50px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:4px 6px"></label>
+        <label>/ <input type="number" id="bt-cs" value="90" min="10" max="400" style="width:56px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:4px 6px"></label>
+        <label>Cible $ <input type="number" id="bt-tgt" value="300" min="10" style="width:64px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:4px 6px"></label>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
+        Entrée : croisement EMA rapide/lente, filtré par le Nuage EMA (achat seulement si nuage haussier, vente si baissier).
+        Frais 0,1% par trade inclus. Testé sur les <span id="bt-n">—</span> bougies chargées (<span id="bt-tf">—</span>).
+      </div>
+      <button class="btn" id="bt-run" style="border-color:var(--accent);color:var(--accent);width:100%;padding:9px;margin-bottom:14px">▶ Lancer le backtest</button>
+      <div id="bt-results"></div>
+    </div>
+  </div>
+</div>
 
 <div id="paper-bar">
   <div id="paper-summary">
@@ -3876,6 +3901,101 @@ bindBtn('zoom-reset',()=>{
   zoomState.view={start:zData().length-n,count:n};
   zoomState.yScale={auto:true,lo:0,hi:0}; renderZoom();
 });
+
+/* ---------- Backtest : croisement EMA + filtre Nuage EMA ---------- */
+function runBacktest(){
+  const d=state.data;
+  if(!d||d.length<120){document.getElementById('bt-results').innerHTML='<div style="color:var(--down)">Pas assez de données chargées. Dézoome pour charger plus d\'historique.</div>';return;}
+  const fast=+document.getElementById('bt-fast').value||9;
+  const slow=+document.getElementById('bt-slow').value||30;
+  const cf=+document.getElementById('bt-cf').value||30;
+  const cs=+document.getElementById('bt-cs').value||90;
+  const target=+document.getElementById('bt-tgt').value||300;
+  const FEE=0.001;
+  const eF=calc.ema(d,fast), eS=calc.ema(d,slow);
+  const cF=calc.ema(d,cf), cS=calc.ema(d,cs);
+  // signaux de croisement filtrés par le nuage
+  const sig=new Array(d.length).fill(0);
+  for(let i=1;i<d.length;i++){
+    if(eF[i]==null||eS[i]==null||cF[i]==null||cS[i]==null)continue;
+    const prev=eF[i-1]-eS[i-1], cur=eF[i]-eS[i];
+    const cloudBull=cF[i]>=cS[i];
+    if(prev<=0&&cur>0&&cloudBull)sig[i]=1;        // achat si nuage haussier
+    else if(prev>=0&&cur<0&&!cloudBull)sig[i]=-1; // vente si nuage baissier
+  }
+  // deux stratégies de sortie testées en parallèle
+  function simulate(exitMode){
+    let pos=null, trades=[], equity=0, peak=0, maxDD=0;
+    for(let i=1;i<d.length;i++){
+      const price=d[i].c;
+      if(pos){
+        let exit=false, reason='';
+        const move=(price-pos.entry)*pos.dir;
+        if(exitMode==='target'&&move>=target){exit=true;reason='cible';}
+        else if(exitMode==='target'&&move<=-target){exit=true;reason='stop';}
+        else if(exitMode==='inverse'&&sig[i]===-pos.dir){exit=true;reason='signal inverse';}
+        // en mode cible, le signal inverse ferme aussi (sécurité)
+        else if(exitMode==='target'&&sig[i]===-pos.dir){exit=true;reason='signal inverse';}
+        if(exit){
+          const gross=(price-pos.entry)*pos.dir;
+          const fees=(pos.entry+price)*FEE;
+          const net=gross-fees;
+          equity+=net;
+          trades.push({net,gross,reason,dir:pos.dir});
+          peak=Math.max(peak,equity); maxDD=Math.min(maxDD,equity-peak);
+          pos=null;
+        }
+      }
+      if(!pos&&sig[i]!==0){
+        pos={entry:price,dir:sig[i],i};
+      }
+    }
+    const wins=trades.filter(t=>t.net>0).length;
+    const gd=trades.filter(t=>t.net>0).reduce((a,t)=>a+t.net,0);
+    const gl=trades.filter(t=>t.net<=0).reduce((a,t)=>a+t.net,0);
+    return {
+      n:trades.length, wins, wr:trades.length?wins/trades.length*100:0,
+      net:equity, maxDD:Math.abs(maxDD),
+      avgWin:wins?gd/wins:0, avgLoss:(trades.length-wins)?gl/(trades.length-wins):0,
+      pf:gl!==0?Math.abs(gd/gl):(gd>0?Infinity:0)
+    };
+  }
+  const A=simulate('target'), B=simulate('inverse');
+  document.getElementById('bt-n').textContent=d.length;
+  document.getElementById('bt-tf').textContent=TF_MAP[state.tf]||state.tf;
+  const fmt2=v=>(v>=0?'+':'')+v.toFixed(0);
+  const col=v=>v>=0?'var(--up)':'var(--down)';
+  function card(title,r,best){
+    return `<div style="flex:1;min-width:210px;background:var(--panel-2);border:1px solid ${best?'var(--up)':'var(--line)'};border-radius:10px;padding:12px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px">${title}${best?' &nbsp;<span style="color:var(--up);font-size:11px">★ meilleure</span>':''}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.9">
+        Résultat net : <b style="color:${col(r.net)}">${fmt2(r.net)} $</b><br>
+        Trades : ${r.n}<br>
+        Réussite : ${r.wr.toFixed(0)}%<br>
+        Gain moyen : <span style="color:var(--up)">${fmt2(r.avgWin)}</span> / Perte moy. : <span style="color:var(--down)">${fmt2(r.avgLoss)}</span><br>
+        Profit factor : ${r.pf===Infinity?'∞':r.pf.toFixed(2)}<br>
+        Pire recul : <span style="color:var(--down)">-${r.maxDD.toFixed(0)} $</span>
+      </div></div>`;
+  }
+  const aBetter=A.net>=B.net;
+  const verdict = A.n===0&&B.n===0
+    ? '<div style="color:var(--muted)">Aucun trade généré sur cette période. Change d\'unité de temps ou charge plus d\'historique.</div>'
+    : `<div style="margin-top:12px;padding:10px;background:rgba(122,162,255,.08);border-radius:8px;font-size:12px">
+        <b>Verdict :</b> sur ces ${d.length} bougies, la sortie <b>${aBetter?'à cible fixe ('+target+' $)':'au signal inverse'}</b> a été la meilleure (${fmt2(aBetter?A.net:B.net)} $ net).
+        ${(aBetter?A.net:B.net)<=0?' ⚠️ Mais elle est négative — cette stratégie aurait fait perdre de l\'argent sur cette période.':''}
+       </div>`;
+  document.getElementById('bt-results').innerHTML=
+    `<div style="display:flex;gap:10px;flex-wrap:wrap">${card('Sortie cible '+target+' $',A,aBetter&&A.n>0)}${card('Sortie signal inverse',B,!aBetter&&B.n>0)}</div>`+verdict+
+    `<div style="margin-top:10px;font-size:11px;color:var(--muted)">⚠️ Résultat sur données passées, frais inclus mais hors slippage. Le passé ne garantit pas le futur. À confirmer sur plusieurs périodes avant toute conclusion.</div>`;
+}
+document.getElementById('btn-backtest').addEventListener('click',()=>{
+  document.getElementById('bt-back').style.display='flex';
+  document.getElementById('bt-n').textContent=state.data.length;
+  document.getElementById('bt-tf').textContent=TF_MAP[state.tf]||state.tf;
+});
+document.getElementById('bt-close').addEventListener('click',()=>document.getElementById('bt-back').style.display='none');
+document.getElementById('bt-back').addEventListener('click',e=>{if(e.target.id==='bt-back')document.getElementById('bt-back').style.display='none';});
+document.getElementById('bt-run').addEventListener('click',runBacktest);
 
 /* ---------- Démarrage ---------- */
 loadConfig();
