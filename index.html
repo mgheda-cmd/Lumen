@@ -672,6 +672,7 @@ const SYMBOLS = {
   DOGEUSDT:{seed:9, base:0.12,  vol:0.025},
 };
 const TF_MAP = {1:'1m',3:'3m',5:'5m',15:'15m',60:'1h',240:'4h',1440:'1d'};
+const TF_MIN = {1:1,3:3,5:5,15:15,60:60,240:240,1440:1440};
 const N_BARS = 1000;          // chargement initial
 const MAX_BARS = 12000;       // profondeur maximale conservée en mémoire
 
@@ -4032,6 +4033,50 @@ function runBacktest(){
       pf:(()=>{const g=tr.filter(x=>x>0).reduce((a,b)=>a+b,0),l=tr.filter(x=>x<=0).reduce((a,b)=>a+b,0);return l!==0?Math.abs(g/l):(g>0?Infinity:0);})()};
   }
   const cloudResults=[100,200,300].map(t=>({t,...cloudStrat(t)}));
+
+  // === Confluence : Nuage + EMA9 filtrés par Heikin Ashi 15m (biais) + 3m (déclencheur) ===
+  const tfMin=TF_MIN[state.tf]||1;
+  function aggHAdir(mins){
+    const per=Math.max(1,Math.round(mins/tfMin));
+    const agg=[]; const mapIdx=new Array(d.length).fill(0);
+    for(let i=0;i<d.length;i+=per){
+      const chunk=d.slice(i,i+per); if(!chunk.length)break;
+      agg.push({t:chunk[0].t,o:chunk[0].o,h:Math.max.apply(0,chunk.map(b=>b.h)),
+        l:Math.min.apply(0,chunk.map(b=>b.l)),c:chunk[chunk.length-1].c});
+      for(let k=i;k<Math.min(i+per,d.length);k++)mapIdx[k]=agg.length-1;
+    }
+    const ha=calc.smoothHA(agg,10,10);
+    const dir=agg.map((_,j)=>(ha[j]&&ha[j].c!=null)?(ha[j].c>=ha[j].o?1:-1):0);
+    const perBar=d.map((_,k)=>dir[mapIdx[k]]||0);
+    const flip=new Array(d.length).fill(0);
+    for(let k=1;k<d.length;k++)if(perBar[k]!==perBar[k-1]&&perBar[k]!==0)flip[k]=perBar[k];
+    return {dir:perBar,flip};
+  }
+  const ha15=aggHAdir(15), ha3=aggHAdir(3);
+  function confluenceStrat(tgt){
+    let pos=null,eq=0,tr=[],peak=0,dd=0;
+    for(let i=1;i<d.length;i++){
+      if(cF[i]==null||cS[i]==null||e9[i]==null)continue;
+      const pc=d[i].c;
+      if(pos){
+        const mv=(pc-pos.entry)*pos.dir; let ex=false;
+        if(mv>=tgt||mv<=-tgt)ex=true;
+        else if(ha3.flip[i]===-pos.dir)ex=true;
+        if(ex){const net=mv-(pos.entry+pc)*FEE;eq+=net;tr.push(net);peak=Math.max(peak,eq);dd=Math.min(dd,eq-peak);pos=null;}
+      }
+      if(!pos){
+        const bias=ha15.dir[i];
+        if(ha3.flip[i]===1 && bias===1 && cF[i]>cS[i] && pc>e9[i])pos={entry:pc,dir:1};
+        else if(ha3.flip[i]===-1 && bias===-1 && cF[i]<cS[i] && pc<e9[i])pos={entry:pc,dir:-1};
+      }
+    }
+    const w=tr.filter(x=>x>0).length;
+    const g=tr.filter(x=>x>0).reduce((a,b)=>a+b,0), l=tr.filter(x=>x<=0).reduce((a,b)=>a+b,0);
+    return {n:tr.length,net:eq,wr:tr.length?w/tr.length*100:0,dd:Math.abs(dd),
+      pf:l!==0?Math.abs(g/l):(g>0?Infinity:0)};
+  }
+  const confResults=[100,200,300].map(t=>({t,...confluenceStrat(t)}));
+  const bestConf=confResults.slice().sort((a,b)=>b.net-a.net)[0];
   const bestCloud=cloudResults.slice().sort((a,b)=>b.net-a.net)[0];
 
   const A=simulate('target'), B=simulate('inverse');
@@ -4092,8 +4137,19 @@ function runBacktest(){
   const cloudBlock=`<div style="margin-top:16px"><div style="font-weight:600;font-size:13px;margin-bottom:6px">🌤️ Stratégie Nuage EMA + déclencheur EMA9 (celle que tu décris)</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">${cloudCards}</div>
     <div style="margin-top:8px;font-size:11px;color:var(--muted)">Entrée : le nuage se croise (vert→long, rouge→short) ET le prix confirme du bon côté de l'EMA9. Sortie : cible atteinte, ou l'EMA9 casse pendant que le nuage se retourne.</div></div>`;
+  const confCards=confResults.map(r=>
+    `<div style="flex:1;min-width:150px;background:var(--panel-2);border:1px solid ${r===bestConf&&r.net>0?'var(--up)':'var(--line)'};border-radius:10px;padding:10px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px">Cible ${r.t}$ ${r===bestConf&&r.n>0?'★':''}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.8">
+        Net : <b style="color:${r.net>=0?'var(--up)':'var(--down)'}">${(r.net>=0?'+':'')+r.net.toFixed(0)}$</b><br>
+        Trades : ${r.n}<br>Réussite : ${r.wr.toFixed(0)}%<br>
+        PF : ${r.pf===Infinity?'∞':r.pf.toFixed(2)}<br>Recul : <span style="color:var(--down)">-${r.dd.toFixed(0)}$</span>
+      </div></div>`).join('');
+  const confBlock=`<div style="margin-bottom:16px"><div style="font-weight:600;font-size:13px;margin-bottom:6px">⭐ Confluence : Nuage + EMA9 + filtre HA 15m/3m</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${confCards}</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Long si HA15m vert + HA3m bascule vert + nuage vert + prix>EMA9. Short : l'inverse. HA15m rouge = jamais de long. Sortie : cible atteinte ou HA3m bascule contre la position.</div></div>`;
   document.getElementById('bt-results').innerHTML=
-    cloudBlock+
+    confBlock+cloudBlock+
     `<div style="margin-top:16px;font-weight:600;font-size:13px;margin-bottom:6px">Comparaison croisement EMA simple</div>`+
     `<div style="display:flex;gap:10px;flex-wrap:wrap">${card('Sortie cible '+target+' $',A,aBetter&&A.n>0)}${card('Sortie signal inverse',B,!aBetter&&B.n>0)}</div>`+verdict+sweep+
     `<div style="margin-top:10px;font-size:11px;color:var(--muted)">⚠️ Données passées, frais inclus, hors slippage. Le passé ne garantit rien.</div>`;
