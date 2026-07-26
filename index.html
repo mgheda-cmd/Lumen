@@ -1059,12 +1059,17 @@ const calc = {
     }
     const lastC=d[d.length-1].c;
     // Score d'importance : nombre de touches + force cumulée des rejets.
-    // On ne garde que les 6 niveaux les plus marquants.
-    return clusters
+    // Filtre : ne garder que les niveaux ayant réellement interagi avec le prix.
+    const minTouch=(state.style.sr&&state.style.sr.minTouch)||2;
+    const maxN=(state.style.sr&&state.style.sr.maxLevels)||6;
+    let kept=clusters
       .map(c=>({p:c.sum/c.n,touches:c.n,reac:c.reac,i:c.i,
                 score:c.n+c.reac, res:c.sum/c.n>=lastC}))
-      .sort((a,b)=>b.score-a.score)
-      .slice(0,6);
+      .filter(c=>c.touches>=minTouch);           // au moins N interactions
+    // repli : si le filtre ne laisse rien, on garde les mieux notés touchés ≥2
+    if(!kept.length)kept=clusters.map(c=>({p:c.sum/c.n,touches:c.n,reac:c.reac,i:c.i,
+                score:c.n+c.reac, res:c.sum/c.n>=lastC})).filter(c=>c.touches>=2);
+    return kept.sort((a,b)=>b.score-a.score).slice(0,maxN);
   },
   /* Zones de renversement : pivots portant des signaux de retournement,
      notes par CONFLUENCE (somme des signaux presents, sur 100). Ce n'est PAS
@@ -3486,6 +3491,8 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier',def:'#F45B7D'},
   ]},
   sr:{title:'Supports / Résistances',fields:[
+    {k:'minTouch',t:'num',lab:'Touches minimum (interactions)',min:1,max:6,def:2},
+    {k:'maxLevels',t:'num',lab:'Nombre de niveaux affichés',min:2,max:12,def:6},
     {k:'cRes',t:'col',lab:'Résistance',def:'#F45B7D'},
     {k:'cSup',t:'col',lab:'Support',def:'#25D0A4'},
     {k:'showLbl',t:'bool',lab:'Étiquettes de prix',def:true},
