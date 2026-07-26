@@ -523,6 +523,12 @@ footer{
         <input type="number" min="2" max="50" value="14" aria-label="Période ATR">
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="rosc">
+        <span class="dot" style="background:#3DDC97"></span>
+        <span class="name">Range Oscillator <span class="desc">Zeiierman</span></span>
+        <input type="number" min="5" max="300" value="50" aria-label="Période Range Oscillator">
+        <span class="state">off</span>
+      </div>
     </div>
   </div>
   <div style="display:flex;gap:6px;flex:none">
@@ -1023,6 +1029,25 @@ const calc = {
     for(let k=0;k<len;k++){const e=d[s0+k].c-(a+b*k);se+=e*e;}
     return {s0,len,a,b,dev:Math.sqrt(se/len)*(mult||2)};
   },
+  rangeOsc(d,len,smooth){
+    len=len||50; smooth=smooth||2;
+    const raw=new Array(d.length).fill(null);
+    for(let i=0;i<d.length;i++){
+      if(i<len-1)continue;
+      let hi=-Infinity,lo=Infinity;
+      for(let j=i-len+1;j<=i;j++){hi=Math.max(hi,d[j].h);lo=Math.min(lo,d[j].l);}
+      const rng=hi-lo;
+      raw[i]=rng>0?((d[i].c-lo)/rng*200-100):0;   // position dans le range, -100..+100
+    }
+    // lissage EMA
+    const out=new Array(d.length).fill(null);
+    const k=2/(smooth+1); let e=null;
+    for(let i=0;i<d.length;i++){
+      if(raw[i]==null)continue;
+      e=e==null?raw[i]:raw[i]*k+e*(1-k); out[i]=e;
+    }
+    return out;
+  },
   sr(d){
     const L=5, piv=[];
     const atr=this.atr(d,14);
@@ -1170,6 +1195,7 @@ const state = {
     imp:{on:false,period:34,tf:'chart'},
     stoch:{on:false,period:14},
     atr:{on:false,period:14},
+    rosc:{on:false,period:50,smooth:2},
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
@@ -1680,6 +1706,7 @@ function getInd(key){
     if(key==='rev')state.cache[ck]=calc.reversal(d);
     if(key==='stoch')state.cache[ck]=calc.stoch(d,ind.period);
     if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
+    if(key==='rosc')state.cache[ck]=calc.rangeOsc(d,ind.period,S('rosc','smooth'));
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='almasd')state.cache[ck]=calc.almaSD(d,ind.fac,ind.sd,ind.alen,ind.asig,ind.aoff);
     if(key==='signal')state.cache[ck]=computeSignals(d,ind);
@@ -1770,6 +1797,7 @@ function computePanes(){
   if(vis('imp')) subs.push('imp');
   if(vis('stoch')) subs.push('stoch');
   if(vis('atr')) subs.push('atr');
+  if(vis('rosc')) subs.push('rosc');
   const avail=H-AXIS_H;
   const def=subs.length?Math.min(110,avail*0.5/subs.length):0;
   let hs=subs.map(k=>{
@@ -1816,6 +1844,7 @@ function render(){
     else if(p.key==='imp') drawImp(p,s,e,cw);
     else if(p.key==='stoch') drawStoch(p,s,e,cw);
     else if(p.key==='atr') drawATR(p,s,e,cw);
+    else if(p.key==='rosc') drawROsc(p,s,e,cw);
     ctx.restore();
     // séparation
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
@@ -2512,6 +2541,34 @@ function drawImp(p,s,e,cw){
   subLabel(p,'Impulse MACD '+state.indicators.imp.period+(tfName?' · '+tfName:''),
     val, m.col[i]!=null?C0[m.col[i]]:css('--muted'));
 }
+function drawROsc(p,s,e,cw){
+  const arr=getInd('rosc');
+  const cUp=S('rosc','cUp'), cDown=S('rosc','cDown'), cTrans=S('rosc','cTrans');
+  const yOf=v=>p.y+p.h/2-(v/100)*(p.h/2-8);
+  const y0=yOf(0);
+  // lignes +100 / 0 / -100
+  ctx.strokeStyle='rgba(126,140,168,.25)';ctx.setLineDash([2,4]);ctx.lineWidth=1;
+  for(const lv of [100,0,-100]){const y=yOf(lv);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W-AXIS_W,y);ctx.stroke();}
+  ctx.setLineDash([]);
+  // remplissage coloré + ligne
+  for(let i=Math.max(s,1);i<e;i++){
+    if(arr[i]==null||arr[i-1]==null)continue;
+    const x1=xOf(i-1),x2=xOf(i),v1=arr[i-1],v2=arr[i];
+    // couleur : vert si >0, rouge si <0, bleu à la transition (changement de signe)
+    let col;
+    if((v1>=0)!==(v2>=0))col=cTrans;
+    else col=v2>=0?cUp:cDown;
+    // aire jusqu'à zéro
+    ctx.beginPath();ctx.moveTo(x1,y0);ctx.lineTo(x1,yOf(v1));ctx.lineTo(x2,yOf(v2));ctx.lineTo(x2,y0);ctx.closePath();
+    ctx.fillStyle=hexA(col,.32);ctx.fill();
+    // ligne
+    ctx.strokeStyle=col;ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(x1,yOf(v1));ctx.lineTo(x2,yOf(v2));ctx.stroke();
+  }
+  const i=hoverIndex()??state.data.length-1;
+  subLabel(p,'Range Oscillator '+state.indicators.rosc.period,
+    arr[i]!=null?arr[i].toFixed(1):'—', arr[i]!=null?(arr[i]>=0?cUp:cDown):css('--muted'));
+}
 function drawStoch(p,s,e,cw){
   const st=getInd('stoch');
   const yOf=subYOf(p,'stoch',0,100,true);
@@ -2616,6 +2673,7 @@ const IND_META={
   sha3:{label:p=>'HA lissé ③ '+p,color:'#B48BFF'},
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
+  rosc:{label:p=>'Range Osc '+p,color:'#3DDC97'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
   fvgm:{label:()=>'FVG MTF '+(state.indicators.fvgm.tf!=='auto'
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.fvgm.tf]||'')
@@ -3403,6 +3461,13 @@ const SCHEMA={
     {k:'cK',t:'col',lab:'%K',def:'#FF8FD8'},
     {k:'cD',t:'col',lab:'%D',def:'#FFFFFF'},
     {k:'showZone',t:'bool',lab:'Zone 20–80',def:true},
+  ]},
+  rosc:{title:'Range Oscillator (Zeiierman)',fields:[
+    {k:'period',t:'num',lab:'Longueur',min:5,max:300,ind:1},
+    {k:'smooth',t:'num',lab:'Lissage',min:1,max:20,def:2},
+    {k:'cUp',t:'col',lab:'Haussier (vert)',def:'#3DDC97'},
+    {k:'cDown',t:'col',lab:'Baissier (rouge)',def:'#F45B7D'},
+    {k:'cTrans',t:'col',lab:'Transition (bleu)',def:'#4A90FF'},
   ]},
   atr:{title:'ATR',fields:[
     {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
