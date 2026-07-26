@@ -3140,6 +3140,15 @@ syncBtn.addEventListener('click',()=>{
   const open=syncMenuEl.classList.toggle('open');
   if(open){
     menu.classList.remove('open');symMenu.classList.remove('open');
+    // positionnement robuste : sous le bouton, ancré au bord droit, dans l'écran
+    const r=syncBtn.getBoundingClientRect();
+    syncMenuEl.style.position='fixed';
+    syncMenuEl.style.top=(r.bottom+6)+'px';
+    syncMenuEl.style.right='8px';
+    syncMenuEl.style.left='auto';
+    syncMenuEl.style.maxHeight=(window.innerHeight-r.bottom-16)+'px';
+    syncMenuEl.style.overflowY='auto';
+    syncMenuEl.style.zIndex='120';
     document.getElementById('sync-token').value=syncToken;
     setSyncStatus(syncToken?'Synchro active':'Synchro désactivée');
   }
