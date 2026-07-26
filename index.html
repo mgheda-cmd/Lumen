@@ -4118,6 +4118,33 @@ async function runBacktest(){
       pf:l!==0?Math.abs(g/l):(g>0?Infinity:0)};
   }
   const simpleResults=[100,200,300].map(t=>({t,...simpleHA(t)}));
+
+  // === Asymétrique : petit stop, grande cible (biais 1H + bascule 3m) ===
+  function asymHA(stopD,ratio){
+    const tgt=stopD*ratio;
+    let pos=null,eq=0,tr=[],peak=0,dd=0;
+    for(let i=1;i<d.length;i++){
+      const pc=d[i].c;
+      if(pos){
+        const mv=(pc-pos.entry)*pos.dir; let ex=false;
+        if(mv>=tgt)ex=true;               // cible = ratio × stop
+        else if(mv<=-stopD)ex=true;       // stop serré
+        if(ex){const net=mv-(pos.entry+pc)*FEE;eq+=net;tr.push(net);peak=Math.max(peak,eq);dd=Math.min(dd,eq-peak);pos=null;}
+      }
+      if(!pos){
+        const bias=ha1h.dir[i];
+        if(ha3.flip[i]===1 && bias===1)pos={entry:pc,dir:1};
+        else if(ha3.flip[i]===-1 && bias===-1)pos={entry:pc,dir:-1};
+      }
+    }
+    const w=tr.filter(x=>x>0).length;
+    const g=tr.filter(x=>x>0).reduce((a,b)=>a+b,0), l=tr.filter(x=>x<=0).reduce((a,b)=>a+b,0);
+    return {n:tr.length,net:eq,wr:tr.length?w/tr.length*100:0,dd:Math.abs(dd),
+      pf:l!==0?Math.abs(g/l):(g>0?Infinity:0),ratio};
+  }
+  // stop 150$, on teste des ratios 2:1, 3:1, 4:1
+  const asymResults=[2,3,4].map(r=>({r,...asymHA(150,r)}));
+  const bestAsym=asymResults.slice().sort((a,b)=>b.net-a.net)[0];
   const bestSimple=simpleResults.slice().sort((a,b)=>b.net-a.net)[0];
   function confluenceStrat(tgt,invert){
     const F=invert?-1:1;
@@ -4278,8 +4305,20 @@ async function runBacktest(){
   const simpleBlock=`<div style="margin-bottom:16px"><div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 Biais 1H + bascule 3m (nouvelle stratégie)</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">${simpleCards}</div>
     <div style="margin-top:8px;font-size:11px;color:var(--muted)">Long : le Heikin Ashi 1H est positif ET le 3m passe positif. Short : le 1H est négatif ET le 3m passe négatif. Sortie : cible atteinte, ou le 3m bascule contre la position.</div></div>`;
+  const asymCards=asymResults.map(r=>
+    `<div style="flex:1;min-width:150px;background:var(--panel-2);border:1px solid ${r===bestAsym&&r.net>0?'var(--up)':'var(--line)'};border-radius:10px;padding:10px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px">Ratio ${r.r}:1 ${r===bestAsym&&r.n>0?'★':''}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.8">
+        Net : <b style="color:${r.net>=0?'var(--up)':'var(--down)'}">${(r.net>=0?'+':'')+r.net.toFixed(0)}$</b><br>
+        Trades : ${r.n}<br>Réussite : ${r.wr.toFixed(0)}%<br>
+        Cible ${150*r.r}$ / Stop 150$<br>
+        PF : ${r.pf===Infinity?'∞':r.pf.toFixed(2)}<br>Recul : <span style="color:var(--down)">-${r.dd.toFixed(0)}$</span>
+      </div></div>`).join('');
+  const asymBlock=`<div style="margin-bottom:16px"><div style="font-weight:600;font-size:13px;margin-bottom:6px">⚖️ Cibles ASYMÉTRIQUES : petit stop, grande cible</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${asymCards}</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Même entrée (biais 1H + bascule 3m) mais stop serré à 150$ et cible plus grande (2×, 3×, 4× le stop). L'idée : gagner gros quand on a raison, perdre peu quand on a tort. Un ratio 3:1 est rentable dès ~30% de réussite.</div></div>`;
   document.getElementById('bt-results').innerHTML=
-    simpleBlock+confBlock+confImpBlock+confInvBlock+cloudBlock+
+    asymBlock+simpleBlock+confBlock+confImpBlock+confInvBlock+cloudBlock+
     `<div style="margin-top:16px;font-weight:600;font-size:13px;margin-bottom:6px">Comparaison croisement EMA simple</div>`+
     `<div style="display:flex;gap:10px;flex-wrap:wrap">${card('Sortie cible '+target+' $',A,aBetter&&A.n>0)}${card('Sortie signal inverse',B,!aBetter&&B.n>0)}</div>`+verdict+sweep+
     `<div style="margin-top:10px;font-size:11px;color:var(--muted)">⚠️ Données passées, frais inclus, hors slippage. Le passé ne garantit rien.</div>`;
