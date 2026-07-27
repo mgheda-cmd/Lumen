@@ -1231,7 +1231,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
-  yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{},
+  yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{}, subOrder:[], subMergeUp:{},
 };
 
 /* ---------- Portefeuille de trading démo ---------- */
@@ -1243,7 +1243,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, paneH:state.paneH, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -1265,9 +1265,11 @@ function mergeConfig(c){
     for(const k of Object.keys(SCHEMA))if(c.style[k]&&typeof c.style[k]==='object')
       state.style[k]=c.style[k];
   }
+  if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
+  if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
-    for(const k of ['rsi','macd','imp','stoch','atr'])
+    for(const k of ['rsi','macd','imp','stoch','atr','rosc','macdsr'])
       if(typeof c.paneH[k]==='number'&&c.paneH[k]>=34&&c.paneH[k]<=800)
         state.paneH[k]=c.paneH[k];
   }
@@ -1847,7 +1849,7 @@ function subYOf(p,key,lo0,hi0,padded){
   return yOf;
 }
 function computePanes(){
-  const subs=[];
+  let subs=[];
   if(vis('rsi')) subs.push('rsi');
   if(vis('macd')) subs.push('macd');
   if(vis('imp')) subs.push('imp');
@@ -1855,19 +1857,30 @@ function computePanes(){
   if(vis('atr')) subs.push('atr');
   if(vis('rosc')) subs.push('rosc');
   if(vis('macdsr')) subs.push('macdsr');
+  // appliquer l'ordre personnalisé (les clés connues d'abord, dans l'ordre choisi)
+  if(state.subOrder&&state.subOrder.length){
+    const known=state.subOrder.filter(k=>subs.includes(k));
+    const rest=subs.filter(k=>!known.includes(k));
+    subs=[...known,...rest];
+  }
+  // grouper : un indicateur avec subMergeUp partage la case du précédent
+  const groups=[];
+  subs.forEach((k,i)=>{
+    if(i>0 && state.subMergeUp[k] && groups.length){groups[groups.length-1].push(k);}
+    else groups.push([k]);
+  });
   const avail=H-AXIS_H;
-  const def=subs.length?Math.min(110,avail*0.5/subs.length):0;
-  let hs=subs.map(k=>{
-    let h=state.paneH[k]||def;
+  const def=groups.length?Math.min(110,avail*0.5/groups.length):0;
+  let hs=groups.map(g=>{
+    let h=state.paneH[g[0]]||def;
     return Math.max(40,Math.min(h,avail*0.6));
   });
-  // le panneau des prix conserve au moins 30 % de la hauteur
   const maxSubs=avail*0.7, tot=hs.reduce((a,b)=>a+b,0);
   if(tot>maxSubs){const f=maxSubs/tot;hs=hs.map(h=>h*f);}
   const priceH=avail-hs.reduce((a,b)=>a+b,0);
-  const panes=[{key:'price', y:0, h:priceH}];
+  const panes=[{key:'price', y:0, h:priceH, members:['price']}];
   let y=priceH;
-  subs.forEach((k,i)=>{panes.push({key:k, y, h:hs[i]}); y+=hs[i];});
+  groups.forEach((g,i)=>{panes.push({key:g[0], y, h:hs[i], members:g}); y+=hs[i];});
   state.lastPanes=panes;
   return panes;
 }
@@ -1883,9 +1896,12 @@ function xOf(i){
   return (i-state.view.start)*cw + cw/2;
 }
 
+let paneCtrls=[];
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 function render(){
   if(!W||!state.data.length)return;
   ctx.clearRect(0,0,W,H);
+  paneCtrls=[];
   const panes = computePanes();
   const {s,e} = visible();
   const cw = (W-AXIS_W)/state.view.count;
@@ -1896,17 +1912,30 @@ function render(){
     ctx.save();
     ctx.beginPath();ctx.rect(0,p.y,W,p.h);ctx.clip();
     if(p.key==='price') drawPrice(p,s,e,cw);
-    else if(p.key==='rsi') drawRSI(p,s,e,cw);
-    else if(p.key==='macd') drawMACD(p,s,e,cw);
-    else if(p.key==='imp') drawImp(p,s,e,cw);
-    else if(p.key==='stoch') drawStoch(p,s,e,cw);
-    else if(p.key==='atr') drawATR(p,s,e,cw);
-    else if(p.key==='rosc') drawROsc(p,s,e,cw);
-    else if(p.key==='macdsr') drawMacdSR(p,s,e,cw);
+    else {
+      const DR={rsi:drawRSI,macd:drawMACD,imp:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,macdsr:drawMacdSR};
+      for(const mk of (p.members||[p.key])){ if(DR[mk])DR[mk](p,s,e,cw); }
+    }
     ctx.restore();
     // séparation
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
+    // commandes de panneau (monter / descendre / fusionner) en haut à droite
+    if(p.key!=='price'){
+      const bx=W-AXIS_W-78, by=p.y+4, bw=22, bh=16;
+      const btns=[['▲','up'],['▼','down'],['⧉','merge']];
+      ctx.font='11px system-ui';ctx.textAlign='center';
+      btns.forEach((b,i)=>{
+        const x=bx+i*(bw+2);
+        ctx.fillStyle='rgba(90,105,140,.18)';
+        if(b[1]==='merge'&&state.subMergeUp[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
+        roundRect(x,by,bw,bh,4);ctx.fill();
+        ctx.fillStyle='rgba(200,212,235,.9)';
+        ctx.fillText(b[0],x+bw/2,by+bh-4);
+        paneCtrls.push({x,y:by,w:bw,h:bh,key:p.key,act:b[1]});
+      });
+      ctx.textAlign='left';
+    }
     if(p.key!=='price'){ // poignée de redimensionnement en haut du sous-panneau
       ctx.fillStyle='rgba(126,140,168,.14)';
       ctx.fillRect(0,p.y-3,W-AXIS_W,6);           // bande de préhension large
@@ -2865,6 +2894,8 @@ function paneHeightOf(key){
 }
 canvas.addEventListener('mousedown',e=>{
   const x=e.offsetX,y=e.offsetY;
+  const cc=hitPaneCtrl(x,y);
+  if(cc){applyPaneCtrl(cc.key,cc.act);state.dragging=false;state.dragMode='none';return;}
   state.dragMode=hitZone(x,y);
   state.dragging=true;
   state.dragX=x; state.dragY=y;
@@ -2937,6 +2968,12 @@ canvas.addEventListener('mousemove',e=>{
 });
 canvas.addEventListener('mouseleave',()=>{state.mouse=null;state.dragging=false;render();});
 // tactile : le crosshair suit le doigt
+canvas.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1)return;
+  const r=canvas.getBoundingClientRect();
+  const cc=hitPaneCtrl(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top);
+  if(cc){ if(e.cancelable)e.preventDefault(); applyPaneCtrl(cc.key,cc.act); }
+},{passive:false});
 canvas.addEventListener('touchmove',e=>{
   if(e.touches.length!==1)return;
   const r=canvas.getBoundingClientRect();
@@ -2958,6 +2995,19 @@ canvas.addEventListener('touchend',e=>{
   }
   _lastTap=now; _lastTapY=y;
 });
+function applyPaneCtrl(key,act){
+  // construire l'ordre courant des sous-panneaux visibles
+  const cur=(state.lastPanes||[]).filter(p=>p.key!=='price').flatMap(p=>p.members||[p.key]);
+  if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); render(); return; }
+  const i=cur.indexOf(key); if(i<0)return;
+  if(act==='up'&&i>0){ [cur[i-1],cur[i]]=[cur[i],cur[i-1]]; state.subMergeUp[key]=false; }
+  else if(act==='down'&&i<cur.length-1){ [cur[i+1],cur[i]]=[cur[i],cur[i+1]]; }
+  state.subOrder=cur; saveConfig(); render();
+}
+function hitPaneCtrl(x,y){
+  for(const c of paneCtrls){ if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h)return c; }
+  return null;
+}
 function paneIndicatorAt(y){
   const panes=state.lastPanes||[];
   for(const pane of panes){
