@@ -196,9 +196,18 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 
 /* Chips indicateurs actifs */
 #chips{
-  position:absolute; top:5px; left:6px; display:flex; flex-direction:column;
+  position:absolute; top:26px; left:6px; display:flex; flex-direction:column;
   gap:2px; z-index:10; pointer-events:none; max-width:58%;
 }
+#chips-toggle{
+  position:absolute; top:5px; left:6px; z-index:12; cursor:pointer;
+  background:var(--chip-bg); backdrop-filter:blur(4px); border:1px solid var(--line);
+  color:var(--muted); border-radius:4px; width:20px; height:18px; font-size:11px;
+  line-height:1; padding:0; display:none;
+}
+body.chips-collapsed #chips{ display:none; }
+body.chips-collapsed #chips-toggle{ transform:none; }
+#chips-toggle.showing{ display:block; }
 .legend-ohlc{
   font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted);
   background:var(--chip-bg); backdrop-filter:blur(4px);
@@ -587,6 +596,7 @@ footer{
 </header>
 
 <div id="chart-area">
+  <button id="chips-toggle" title="Masquer / afficher la liste des indicateurs">▾</button>
   <div id="chips"></div>
   <canvas id="chart"></canvas>
 </div>
@@ -1898,6 +1908,22 @@ function xOf(i){
 }
 
 let paneCtrls=[]; let labelHits=[]; let _subRow=0; let _subRowKey='';
+try{
+  const ct=document.getElementById('chips-toggle');
+  ct.classList.add('showing');
+  const applyCollapsed=()=>{
+    const col=document.body.classList.contains('chips-collapsed');
+    ct.textContent=col?'▸':'▾';
+    ct.title=col?'Afficher les indicateurs':'Masquer les indicateurs';
+  };
+  ct.addEventListener('click',()=>{
+    document.body.classList.toggle('chips-collapsed');
+    applyCollapsed();
+    try{localStorage.setItem('lumenChipsCollapsed',document.body.classList.contains('chips-collapsed')?'1':'0');}catch(e){}
+  });
+  // note : localStorage indispo dans certains cadres -> on ignore l'erreur
+  applyCollapsed();
+}catch(e){}
 state.xhairMode=false;
 try{
   const xb=document.getElementById('xhair-btn');
