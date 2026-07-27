@@ -548,6 +548,7 @@ footer{
   </div>
   <div style="display:flex;gap:6px;flex:none">
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
+    <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
   <button class="btn" id="btn-backtest" title="Backtest de stratégie" style="font-size:14px;padding:6px 11px">🧪</button>
   <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
   </div>
@@ -1897,6 +1898,16 @@ function xOf(i){
 }
 
 let paneCtrls=[];
+state.xhairMode=false;
+try{
+  const xb=document.getElementById('xhair-btn');
+  xb.addEventListener('click',()=>{
+    state.xhairMode=!state.xhairMode;
+    xb.style.background=state.xhairMode?'var(--accent)':'';
+    xb.style.color=state.xhairMode?'#fff':'';
+    render();
+  });
+}catch(e){}
 function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 function render(){
   if(!W||!state.data.length)return;
@@ -2945,6 +2956,8 @@ canvas.addEventListener('mousemove',e=>{
       const c=(state.dragSubLo+state.dragSubHi)/2;
       const r=Math.max((state.dragSubHi-state.dragSubLo)/2*f,1e-9);
       state.subScale[key]={auto:false,lo:c-r,hi:c+r};
+    }else if(state.xhairMode){
+      state.mouse={x,y};   // mode curseur : on bouge seulement la ligne
     }else{
       // déplacement du graphique : temps + prix
       const cw=(W-AXIS_W)/state.view.count;
@@ -2980,7 +2993,7 @@ canvas.addEventListener('touchmove',e=>{
   state.mouse={x:e.touches[0].clientX-r.left, y:e.touches[0].clientY-r.top};
   if(!state.dragging)render();
 },{passive:true});
-canvas.addEventListener('touchend',()=>{ if(!state.dragging){state.mouse=null;render();} });
+canvas.addEventListener('touchend',()=>{ if(!state.dragging&&!state.xhairMode){state.mouse=null;render();} });
 // double-tap tactile sur un sous-panneau -> paramètres
 let _lastTap=0,_lastTapY=0;
 canvas.addEventListener('touchend',e=>{
@@ -3123,6 +3136,8 @@ canvas.addEventListener('touchmove',e=>{
       const c=(touch.subLo+touch.subHi)/2;
       const r=Math.max((touch.subHi-touch.subLo)/2*f,1e-9);
       state.subScale[key]={auto:false,lo:c-r,hi:c+r};
+    }else if(state.xhairMode){
+      state.mouse={x,y};   // mode curseur : bouger seulement la ligne
     }else{
       const cw=(W-AXIS_W)/state.view.count;
       state.view.start=Math.max(-state.view.count*0.5,
