@@ -1951,10 +1951,31 @@ function render(){
     if(p.key==='price') drawPrice(p,s,e,cw);
     else {
       const DR={rsi:drawRSI,macd:drawMACD,imp:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,macdsr:drawMacdSR};
-      (p.members||[p.key]).forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw); });
+      const members=p.members||[p.key];
+      members.forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw); p['scale_'+mk]={lo:p.lo,hi:p.hi}; });
       _subRow=0; _subRowKey='';
     }
     ctx.restore();
+    // axe de valeurs à droite du sous-panneau (une colonne par indicateur fusionné)
+    if(p.key!=='price'){
+      const members=p.members||[p.key];
+      const colW=AXIS_W/members.length;
+      ctx.font='9px "IBM Plex Mono",monospace'; ctx.textAlign='left';
+      members.forEach((mk,mi)=>{
+        const sc=p['scale_'+mk]; if(!sc)return;
+        const colX=W-AXIS_W+mi*colW;
+        // 3 graduations : haut, milieu, bas
+        const pad=8, span=16;
+        for(const t of [0,0.5,1]){
+          const val=sc.hi-(sc.hi-sc.lo)*t;
+          const y=p.y+pad+t*(p.h-span);
+          ctx.strokeStyle=css('--grid');ctx.beginPath();ctx.moveTo(W-AXIS_W,y+.5);ctx.lineTo(W-AXIS_W+4,y+.5);ctx.stroke();
+          ctx.fillStyle=IND_META[mk]?IND_META[mk].color:css('--muted');
+          const lab=Math.abs(val)>=1000?val.toFixed(0):val.toFixed(1);
+          ctx.fillText(lab, colX+3, y+3);
+        }
+      });
+    }
     // séparation
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
