@@ -2665,6 +2665,11 @@ function plotLine(arr,s,e,yOf,color,w){
 }
 
 /* ----- sous-panneaux ----- */
+function tfLabel(key){
+  const tf=state.indicators[key]&&state.indicators[key].tf;
+  if(!tf||tf==='chart'||+tf===state.tf)return '';
+  return ' · '+({'3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[tf]||tf);
+}
 function subLabel(p,txt,val,color){
   ctx.font='11px "IBM Plex Mono",monospace';
   const row=(typeof _subRow==='number')?_subRow:0;
@@ -2695,7 +2700,7 @@ function drawRSI(p,s,e,cw){
   }
   plotLine(arr,s,e,yOf,CR,1.4);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'RSI '+state.indicators.rsi.period, arr[i]!=null?arr[i].toFixed(1):'—', CR);
+  subLabel(p,'RSI '+state.indicators.rsi.period+tfLabel('rsi'), arr[i]!=null?arr[i].toFixed(1):'—', CR);
 }
 function drawMACD(p,s,e,cw){
   const m=getInd('macd');
@@ -2791,7 +2796,7 @@ function drawROsc(p,s,e,cw){
     ctx.beginPath();ctx.moveTo(x1,yOf(v1));ctx.lineTo(x2,yOf(v2));ctx.stroke();
   }
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'Range Oscillator '+state.indicators.rosc.period,
+  subLabel(p,'Range Oscillator '+state.indicators.rosc.period+tfLabel('rosc'),
     arr[i]!=null?arr[i].toFixed(1):'—', arr[i]!=null?(arr[i]>=0?cUp:cDown):css('--muted'));
 }
 function drawMacdSR(p,s,e,cw){
@@ -2818,7 +2823,7 @@ function drawMacdSR(p,s,e,cw){
     ctx.beginPath();ctx.arc(xOf(lv.i),yOf(M[lv.i]),3.5,0,7);ctx.fill();
   }
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'MACD S/R '+state.indicators.macdsr.fast+' '+state.indicators.macdsr.slow,
+  subLabel(p,'MACD S/R '+state.indicators.macdsr.fast+' '+state.indicators.macdsr.slow+tfLabel('macdsr'),
     M[i]!=null?M[i].toFixed(1):'—', M[i]!=null?(M[i]>=G[i]?cUp:cDn):css('--muted'));
 }
 function drawStoch(p,s,e,cw){
@@ -2840,7 +2845,7 @@ function drawStoch(p,s,e,cw){
   plotLine(st.k,s,e,yOf,CK,1.4);
   plotLine(st.d,s,e,yOf,hexA(CD,.6),1.1);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'Stoch '+state.indicators.stoch.period,
+  subLabel(p,'Stoch '+state.indicators.stoch.period+tfLabel('stoch'),
     st.k[i]!=null?st.k[i].toFixed(1):'—', CK);
 }
 function drawATR(p,s,e,cw){
@@ -2853,7 +2858,7 @@ function drawATR(p,s,e,cw){
   const CA=S('atr','cLine');
   plotLine(a,s,e,yOf,CA,1.4);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'ATR '+state.indicators.atr.period, a[i]!=null?fmt(a[i]):'—', CA);
+  subLabel(p,'ATR '+state.indicators.atr.period+tfLabel('atr'), a[i]!=null?fmt(a[i]):'—', CA);
 }
 
 /* ----- axe temps ----- */
