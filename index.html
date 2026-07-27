@@ -2944,7 +2944,32 @@ canvas.addEventListener('touchmove',e=>{
   if(!state.dragging)render();
 },{passive:true});
 canvas.addEventListener('touchend',()=>{ if(!state.dragging){state.mouse=null;render();} });
+// double-tap tactile sur un sous-panneau -> paramètres
+let _lastTap=0,_lastTapY=0;
+canvas.addEventListener('touchend',e=>{
+  const now=Date.now();
+  const t=(e.changedTouches&&e.changedTouches[0]);
+  if(!t)return;
+  const r=canvas.getBoundingClientRect();
+  const y=t.clientY-r.top;
+  if(now-_lastTap<320 && Math.abs(y-_lastTapY)<30){
+    const k=paneIndicatorAt(y);
+    if(k){openCfg(k); _lastTap=0; return;}
+  }
+  _lastTap=now; _lastTapY=y;
+});
+function paneIndicatorAt(y){
+  const panes=state.lastPanes||[];
+  for(const pane of panes){
+    if(pane.key==='price')continue;
+    if(y>=pane.y && y<=pane.y+pane.h && SCHEMA[pane.key])return pane.key;
+  }
+  return null;
+}
 canvas.addEventListener('dblclick',e=>{
+  // double-clic dans un sous-panneau -> ouvrir ses paramètres
+  const k=paneIndicatorAt(e.offsetY);
+  if(k){openCfg(k);return;}
   const z=hitZone(e.offsetX,e.offsetY);
   if(z.startsWith('resize:')){delete state.paneH[z.slice(7)];saveConfig();render();}
   else if(z==='price'){state.yScale.auto=true;render();}
