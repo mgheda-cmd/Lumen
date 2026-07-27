@@ -1848,7 +1848,9 @@ function niceStep(range,target){
    chaque rendu), ou fixée par l'utilisateur (molette/glisser sur son axe,
    double-clic pour revenir à auto) — même logique que le panneau prix. */
 function subYOf(p,key,lo0,hi0,padded){
-  const sc=state.subScale[key];
+  let useKey=key;
+  if(p._sameScale){ useKey=p._groupKey; lo0=p._forceLo; hi0=p._forceHi; }
+  const sc=state.subScale[useKey];
   let lo,hi;
   if(!sc||sc.auto){lo=lo0;hi=hi0;}
   else{lo=sc.lo;hi=sc.hi;}
@@ -1924,7 +1926,7 @@ try{
   // note : localStorage indispo dans certains cadres -> on ignore l'erreur
   applyCollapsed();
 }catch(e){}
-state.xhairMode=false;
+state.xhairMode=false; state.subSameScale=state.subSameScale||{};
 try{
   const xb=document.getElementById('xhair-btn');
   xb.addEventListener('click',()=>{
@@ -1952,7 +1954,15 @@ function render(){
     else {
       const DR={rsi:drawRSI,macd:drawMACD,imp:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,macdsr:drawMacdSR};
       const members=p.members||[p.key];
-      members.forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw); p['scale_'+mk]={lo:p.lo,hi:p.hi}; });
+      state._lastRange=state._lastRange||{};
+      // même échelle : calculer l'union des plages connues des membres
+      p._sameScale=false;
+      if(state.subSameScale[p.key] && members.length>1){
+        let lo=Infinity,hi=-Infinity;
+        for(const mk of members){const r=state._lastRange[mk];if(r){lo=Math.min(lo,r.lo);hi=Math.max(hi,r.hi);}}
+        if(lo<hi){p._sameScale=true;p._forceLo=lo;p._forceHi=hi;p._groupKey=p.key;}
+      }
+      members.forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw); p['scale_'+mk]={lo:p.lo,hi:p.hi}; state._lastRange[mk]={lo:p.lo,hi:p.hi}; });
       _subRow=0; _subRowKey='';
     }
     ctx.restore();
@@ -1981,13 +1991,14 @@ function render(){
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
     // commandes de panneau (monter / descendre / fusionner) en haut à droite
     if(p.key!=='price'){
-      const bx=W-AXIS_W-78, by=p.y+4, bw=22, bh=16;
-      const btns=[['▲','up'],['▼','down'],['⧉','merge']];
+      const bx=W-AXIS_W-102, by=p.y+4, bw=22, bh=16;
+      const btns=[['▲','up'],['▼','down'],['⧉','merge'],['=','same']];
       ctx.font='11px system-ui';ctx.textAlign='center';
       btns.forEach((b,i)=>{
         const x=bx+i*(bw+2);
         ctx.fillStyle='rgba(90,105,140,.18)';
         if(b[1]==='merge'&&state.subMergeUp[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
+        if(b[1]==='same'&&state.subSameScale[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
         roundRect(x,by,bw,bh,4);ctx.fill();
         ctx.fillStyle='rgba(200,212,235,.9)';
         ctx.fillText(b[0],x+bw/2,by+bh-4);
@@ -2947,6 +2958,11 @@ function hitZone(x,y){
     if(x<W-AXIS_W&&Math.abs(y-panes[i].y)<14)return 'resize:'+panes[i].key;
   }
   if(y>H-AXIS_H) return 'time';
+  // corps d'un sous-panneau : permettre de déplacer l'indicateur verticalement
+  if(x<W-AXIS_W){
+    const sp=panes.find(q=>q.key!=='price'&&y>=q.y+14&&y<q.y+q.h);
+    if(sp)return 'subpan:'+sp.key;
+  }
   if(x>W-AXIS_W){
     const pane=panes.find(q=>y>=q.y&&y<q.y+q.h);
     if(pane){
@@ -2986,6 +3002,11 @@ canvas.addEventListener('mousedown',e=>{
     state.subScale[key]={auto:false,lo:sc.lo,hi:sc.hi};
     state.dragSubLo=sc.lo; state.dragSubHi=sc.hi;
   }
+  if(state.dragMode.startsWith('subpan:')){
+    const pane=(state.lastPanes||[]).find(q=>q.key===state.dragMode.slice(7));
+    state.dragSubPan={};
+    if(pane)for(const mk of (pane.members||[pane.key]))state.dragSubPan[mk]=pane['scale_'+mk]?{...pane['scale_'+mk]}:{lo:pane.lo,hi:pane.hi};
+  }
   canvas.style.cursor='grabbing';
 });
 window.addEventListener('mouseup',()=>{
@@ -3013,12 +3034,21 @@ canvas.addEventListener('mousemove',e=>{
       const r=Math.max((state.dragHi-state.dragLo)/2*f,1e-9);
       state.yScale.lo=c-r; state.yScale.hi=c+r;
     }else if(state.dragMode.startsWith('sub:')){
-      // même geste que le prix, appliqué à l'échelle du sous-panneau visé
       const key=state.dragMode.slice(4);
       const f=Math.exp((y-state.dragY)*0.006);
       const c=(state.dragSubLo+state.dragSubHi)/2;
       const r=Math.max((state.dragSubHi-state.dragSubLo)/2*f,1e-9);
       state.subScale[key]={auto:false,lo:c-r,hi:c+r};
+    }else if(state.dragMode.startsWith('subpan:')){
+      // corps du sous-panneau : temps (horizontal) + décalage vertical de l'indicateur
+      const cw=(W-AXIS_W)/state.view.count;
+      state.view.start=Math.max(-state.view.count*0.5,Math.min(state.data.length-state.view.count*0.5,state.dragStart-(x-state.dragX)/cw));
+      const pane=(state.lastPanes||[]).find(q=>q.key===state.dragMode.slice(7));
+      if(pane){for(const mk of (pane.members||[pane.key])){
+        const base=state.dragSubPan&&state.dragSubPan[mk]?state.dragSubPan[mk]:(pane['scale_'+mk]||{lo:0,hi:1});
+        const dP=(y-state.dragY)*(base.hi-base.lo)/Math.max(pane.h,1);
+        state.subScale[mk]={auto:false,lo:base.lo+dP,hi:base.hi+dP};
+      }}
     }else if(state.xhairMode){
       state.mouse={x,y};   // mode curseur : on bouge seulement la ligne
     }else{
@@ -3078,6 +3108,7 @@ function applyPaneCtrl(key,act){
   // construire l'ordre courant des sous-panneaux visibles
   const cur=(state.lastPanes||[]).filter(p=>p.key!=='price').flatMap(p=>p.members||[p.key]);
   if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); render(); return; }
+  if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); render(); return; }
   const i=cur.indexOf(key); if(i<0)return;
   if(act==='up'&&i>0){ [cur[i-1],cur[i]]=[cur[i],cur[i-1]]; state.subMergeUp[key]=false; }
   else if(act==='down'&&i<cur.length-1){ [cur[i+1],cur[i]]=[cur[i],cur[i+1]]; }
@@ -3168,10 +3199,15 @@ canvas.addEventListener('touchstart',e=>{
       state.subScale[key]={auto:false,lo:sc.lo,hi:sc.hi};
       subLo=sc.lo; subHi=sc.hi;
     }
+    let subPan=null;
+    if(z.startsWith('subpan:')){
+      const pane=(state.lastPanes||[]).find(q=>q.key===z.slice(7));
+      subPan={}; if(pane)for(const mk of (pane.members||[pane.key]))subPan[mk]=pane['scale_'+mk]?{...pane['scale_'+mk]}:{lo:pane.lo,hi:pane.hi};
+    }
     touch={mode:z,x,y,start:state.view.start,count:state.view.count,
       right:state.view.start+state.view.count,
       paneH:z.startsWith('resize:')?paneHeightOf(z.slice(7)):0,
-      lo:state.yScale.lo,hi:state.yScale.hi,subLo,subHi};
+      lo:state.yScale.lo,hi:state.yScale.hi,subLo,subHi,subPan};
     pinch=null;
   }else if(e.touches.length===2){
     touch=null;
@@ -3203,6 +3239,15 @@ canvas.addEventListener('touchmove',e=>{
       const c=(touch.subLo+touch.subHi)/2;
       const r=Math.max((touch.subHi-touch.subLo)/2*f,1e-9);
       state.subScale[key]={auto:false,lo:c-r,hi:c+r};
+    }else if(touch.mode&&touch.mode.startsWith('subpan:')){
+      const cw=(W-AXIS_W)/state.view.count;
+      state.view.start=Math.max(-state.view.count*0.5,Math.min(state.data.length-state.view.count*0.5,touch.start-(x-touch.x)/cw));
+      const pane=(state.lastPanes||[]).find(q=>q.key===touch.mode.slice(7));
+      if(pane&&touch.subPan){for(const mk of (pane.members||[pane.key])){
+        const base=touch.subPan[mk]; if(!base)continue;
+        const dP=(y-touch.y)*(base.hi-base.lo)/Math.max(pane.h,1);
+        state.subScale[mk]={auto:false,lo:base.lo+dP,hi:base.hi+dP};
+      }}
     }else if(state.xhairMode){
       state.mouse={x,y};   // mode curseur : bouger seulement la ligne
     }else{
