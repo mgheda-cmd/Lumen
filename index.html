@@ -1254,7 +1254,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -1278,6 +1278,8 @@ function mergeConfig(c){
   }
   if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
+  if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
+  if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
     for(const k of ['rsi','macd','imp','stoch','atr','rosc','macdsr'])
@@ -1926,7 +1928,7 @@ try{
   // note : localStorage indispo dans certains cadres -> on ignore l'erreur
   applyCollapsed();
 }catch(e){}
-state.xhairMode=false; state.subSameScale=state.subSameScale||{};
+state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{};
 try{
   const xb=document.getElementById('xhair-btn');
   xb.addEventListener('click',()=>{
@@ -1953,7 +1955,10 @@ function render(){
     if(p.key==='price') drawPrice(p,s,e,cw);
     else {
       const DR={rsi:drawRSI,macd:drawMACD,imp:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,macdsr:drawMacdSR};
-      const members=p.members||[p.key];
+      let members=(p.members||[p.key]).slice();
+      // membre au premier plan -> dessiné en dernier (au-dessus)
+      const front=state.subFront&&state.subFront[p.key];
+      if(front&&members.includes(front)){members=members.filter(k=>k!==front);members.push(front);}
       state._lastRange=state._lastRange||{};
       // même échelle : calculer l'union des plages connues des membres
       p._sameScale=false;
@@ -1991,14 +1996,15 @@ function render(){
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
     // commandes de panneau (monter / descendre / fusionner) en haut à droite
     if(p.key!=='price'){
-      const bx=W-AXIS_W-102, by=p.y+4, bw=22, bh=16;
-      const btns=[['▲','up'],['▼','down'],['⧉','merge'],['=','same']];
+      const bx=W-AXIS_W-126, by=p.y+4, bw=22, bh=16;
+      const btns=[['▲','up'],['▼','down'],['⧉','merge'],['=','same'],['⬍','front']];
       ctx.font='11px system-ui';ctx.textAlign='center';
       btns.forEach((b,i)=>{
         const x=bx+i*(bw+2);
         ctx.fillStyle='rgba(90,105,140,.18)';
         if(b[1]==='merge'&&state.subMergeUp[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
         if(b[1]==='same'&&state.subSameScale[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
+        if(b[1]==='front'&&state.subFront&&state.subFront[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
         roundRect(x,by,bw,bh,4);ctx.fill();
         ctx.fillStyle='rgba(200,212,235,.9)';
         ctx.fillText(b[0],x+bw/2,by+bh-4);
@@ -3117,6 +3123,13 @@ function applyPaneCtrl(key,act){
   const cur=(state.lastPanes||[]).filter(p=>p.key!=='price').flatMap(p=>p.members||[p.key]);
   if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); render(); return; }
   if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); render(); return; }
+  if(act==='front'){
+    // mémoriser quel membre est au premier plan pour le groupe (clé = 1er membre du groupe)
+    const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
+    const gk=pane?pane.key:key;
+    state.subFront[gk]=(state.subFront[gk]===key)?null:key;
+    saveConfig(); render(); return;
+  }
   const i=cur.indexOf(key); if(i<0)return;
   if(act==='up'&&i>0){ [cur[i-1],cur[i]]=[cur[i],cur[i-1]]; state.subMergeUp[key]=false; }
   else if(act==='down'&&i<cur.length-1){ [cur[i+1],cur[i]]=[cur[i],cur[i+1]]; }
