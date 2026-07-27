@@ -146,9 +146,10 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   width:38px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;
   background:var(--panel);cursor:pointer;
 }
-  .cfg-choice{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  .cfg-choice,.cfg-tf{background:var(--panel);border:1px solid var(--line);color:var(--muted);
     border-radius:7px;padding:6px 14px;cursor:pointer;font-size:13px;font-family:inherit}
-  .cfg-choice.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
+  .cfg-choice.on,.cfg-tf.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
+  .cfg-tf{padding:5px 11px}
   .cfg-sw{
   width:40px;height:22px;border-radius:11px;background:var(--line);position:relative;
   cursor:pointer;flex:none;transition:background .15s;
@@ -1232,11 +1233,11 @@ const state = {
     bos:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     rev:{on:false},
     volume:{on:true},
-    rsi:{on:false,period:14},
+    rsi:{on:false,period:14,tf:'chart'},
     macd:{on:false,tf:'chart'},
     imp:{on:false,period:34,tf:'chart'},
-    stoch:{on:false,period:14},
-    atr:{on:false,period:14},
+    stoch:{on:false,period:14,tf:'chart'},
+    atr:{on:false,period:14,tf:'chart'},
     rosc:{on:false,period:50,smooth:2,tf:'chart'},
     macdsr:{on:false,fast:12,slow:26,sig:9,tf:'chart'},
   },
@@ -1707,7 +1708,11 @@ function getInd(key){
     if(key==='ema') state.cache[ck]=calc.ema(d,ind.period);
     if(key==='bb')  state.cache[ck]=calc.bb(d,ind.period);
     if(key==='vwap')state.cache[ck]=calc.vwap(d);
-    if(key==='rsi') state.cache[ck]=calc.rsi(d,ind.period);
+    if(key==='rsi'){
+      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
+      if(!mtf)state.cache[ck]=calc.rsi(d,ind.period);
+      else{ensureMTF(mtf);const bars=mtfStore.data[mtf];state.cache[ck]=bars?mapHTF(bars,calc.rsi(bars,ind.period)):[];}
+    }
     if(key==='imp'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       if(!mtf)state.cache[ck]=calc.impmacd(d,ind.period,S('imp','sig'));
@@ -1751,8 +1756,18 @@ function getInd(key){
       state.cache[ck]=out;
     }
     if(key==='rev')state.cache[ck]=calc.reversal(d);
-    if(key==='stoch')state.cache[ck]=calc.stoch(d,ind.period);
-    if(key==='atr')state.cache[ck]=calc.atr(d,ind.period);
+    if(key==='stoch'){
+      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
+      if(!mtf)state.cache[ck]=calc.stoch(d,ind.period);
+      else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
+        if(!bars)state.cache[ck]={k:[],d:[]};
+        else{const st=calc.stoch(bars,ind.period);state.cache[ck]={k:mapHTF(bars,st.k),d:mapHTF(bars,st.d)};}}
+    }
+    if(key==='atr'){
+      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
+      if(!mtf)state.cache[ck]=calc.atr(d,ind.period);
+      else{ensureMTF(mtf);const bars=mtfStore.data[mtf];state.cache[ck]=bars?mapHTF(bars,calc.atr(bars,ind.period)):[];}
+    }
     if(key==='rosc'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       if(!mtf)state.cache[ck]=calc.rangeOsc(d,ind.period,S('rosc','smooth'));
@@ -3777,6 +3792,7 @@ setInterval(tickCountdown,1000);
 /* ---------- Paramètres par indicateur (couleurs, affichage) ---------- */
 const SCHEMA={
   imp:{title:'Impulse MACD',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'cSigUp',t:'col',lab:'Signal qui monte',def:'#1A1A1A'},
     {k:'cSigDown',t:'col',lab:'Signal qui descend',def:'#F45B7D'},
     {k:'period',t:'num',lab:'Longueur',min:5,max:200,ind:1},
@@ -3793,6 +3809,7 @@ const SCHEMA={
     {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
   ]},
   macd:{title:'MACD',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'showHist',t:'bool',lab:'Histogramme',def:true},
     {k:'cUp',t:'col',lab:'Histogramme haussier',def:'#25D0A4'},
     {k:'cDown',t:'col',lab:'Histogramme baissier',def:'#F45B7D'},
@@ -3802,6 +3819,7 @@ const SCHEMA={
     {k:'cSig',t:'col',lab:'Couleur signal',def:'#F2C14E'},
   ]},
   rsi:{title:'RSI',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
     {k:'cLine',t:'col',lab:'Couleur',def:'#B48BFF'},
     {k:'showZone',t:'bool',lab:'Zone 30–70',def:true},
@@ -3809,6 +3827,7 @@ const SCHEMA={
     {k:'os',t:'num',lab:'Survente',min:1,max:50,def:30},
   ]},
   stoch:{title:'Stochastique',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
     {k:'cK',t:'col',lab:'%K',def:'#FF8FD8'},
     {k:'cD',t:'col',lab:'%D',def:'#FFFFFF'},
@@ -3829,6 +3848,7 @@ const SCHEMA={
     {k:'cTrans',t:'col',lab:'Transition (bleu)',def:'#4A90FF'},
   ]},
   atr:{title:'ATR',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
     {k:'cLine',t:'col',lab:'Couleur',def:'#C9D46B'},
   ]},
@@ -3990,6 +4010,14 @@ function openCfg(ind){
         <div style="display:flex;gap:4px">`+
         f.opts.map(o=>`<button class="cfg-choice ${v===o.v?'on':''}" data-f="${f.k}" data-v="${o.v}">${o.t}</button>`).join('')+
         `</div></div>`;
+    if(f.t==='tf'){
+      const cur=state.indicators[ind].tf||'chart';
+      const opts=[['chart','UT'],['3','3m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
+      return `<div class="cfg-row"><label>Unité de temps</label>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">`+
+        opts.map(o=>`<button class="cfg-tf ${cur===o[0]?'on':''}" data-tf="${o[0]}">${o[1]}</button>`).join('')+
+        `</div></div>`;
+    }
     return `<div class="cfg-row"><label>${f.lab}</label>
       <input type="number" value="${v}" min="${f.min}" max="${f.max}" step="${(f.max<=1||String(f.def).includes('.')||String(f.min).includes('.'))?0.05:1}" data-f="${f.k}"></div>`;
   }).join('');
@@ -4003,7 +4031,13 @@ function openCfg(ind){
   body.querySelectorAll('.cfg-choice').forEach(el=>el.addEventListener('click',()=>{
     body.querySelectorAll(`.cfg-choice[data-f="${el.dataset.f}"]`).forEach(x=>x.classList.remove('on'));
     el.classList.add('on');
-    state.indicators[ind][el.dataset.f]=el.dataset.v;   // mode rangé dans l'état
+    state.indicators[ind][el.dataset.f]=el.dataset.v;
+    state.cache={}; saveConfig(); render();
+  }));
+  body.querySelectorAll('.cfg-tf').forEach(el=>el.addEventListener('click',()=>{
+    body.querySelectorAll('.cfg-tf').forEach(x=>x.classList.remove('on'));
+    el.classList.add('on');
+    state.indicators[ind].tf=el.dataset.tf;
     state.cache={}; saveConfig(); render();
   }));
   body.querySelectorAll('input[type=number]').forEach(el=>
