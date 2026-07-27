@@ -2729,7 +2729,7 @@ function drawImp(p,s,e,cw){
 function drawROsc(p,s,e,cw){
   const arr=getInd('rosc');
   const cUp=S('rosc','cUp'), cDown=S('rosc','cDown'), cTrans=S('rosc','cTrans');
-  const yOf=v=>p.y+p.h/2-(v/100)*(p.h/2-8);
+  const yOf=subYOf(p,'rosc',-100,100,true);
   const y0=yOf(0);
   // lignes +100 / 0 / -100
   ctx.strokeStyle='rgba(126,140,168,.25)';ctx.setLineDash([2,4]);ctx.lineWidth=1;
@@ -2759,8 +2759,8 @@ function drawMacdSR(p,s,e,cw){
   const cUp=S('macdsr','cUp'), cDn=S('macdsr','cDown');
   let mx=1e-9;
   for(let i=s;i<e;i++)for(const v of [M[i],G[i]])if(v!=null)mx=Math.max(mx,Math.abs(v));
-  const yOf=v=>p.y+p.h/2-(v/mx)*(p.h/2-8);
-  const y0=p.y+p.h/2;
+  const yOf=subYOf(p,'macdsr',-mx,mx,true);
+  const y0=yOf(0);
   ctx.strokeStyle='rgba(126,140,168,.3)';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(W-AXIS_W,y0);ctx.stroke();
   for(let i=Math.max(s,1);i<e;i++){
     if(M[i]==null||G[i]==null||M[i-1]==null||G[i-1]==null)continue;
