@@ -1290,7 +1290,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, tz:state.tz, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -1317,6 +1317,7 @@ function mergeConfig(c){
   if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
   if(Array.isArray(c.zones))state.zones=c.zones.filter(z=>z&&typeof z.t0==='number');
   if(c.tz&&['ny','london','tunis'].includes(c.tz))state.tz=c.tz;
+  if(Array.isArray(c.sessZones))state.sessZones=c.sessZones.filter(z=>z&&typeof z.t0==='number');
   if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
@@ -1987,7 +1988,7 @@ try{
   applyCollapsed();
 }catch(e){}
 state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{};
-state.zones=state.zones||[]; state.zoneMode=false; state.tz=state.tz||'tunis';
+state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'tunis';
 function applyTzButtons(){
   for(const id of ['tz-ny','tz-london','tz-tunis']){
     const b=document.getElementById(id); if(!b)continue;
@@ -2194,25 +2195,35 @@ function londonMinute(t){
   let h=0,m=0; for(const q of parts){if(q.type==='hour')h=+q.value;if(q.type==='minute')m=+q.value;}
   return h*60+m;
 }
-let _sessCache={sig:'',marks:[]};
-function sessMarks(target){
-  const d=state.data;
-  const sig=d.length+'|'+state.symbol+'|'+state.tf+'|'+target;
-  if(_sessCache.sig===sig)return _sessCache.marks;
-  const marks=[]; let lastDay=null;
-  for(let i=0;i<d.length;i++){
-    const lm=londonMinute(d[i].t);
-    const day=Math.floor((d[i].t)/86400000);   // jour approximatif
-    // 1ère bougie du jour ayant atteint/dépassé l'heure cible -> celle qui couvre 15:29
-    if(lm>=target && day!==lastDay){
-      // vérifier que la bougie précédente était avant la cible (sinon on est déjà passé)
-      if(i===0 || londonMinute(d[i-1].t)<target || Math.floor(d[i-1].t/86400000)!==day){
-        marks.push(i); lastDay=day;
-      }
+// index fractionnaire de la bougie du graphe correspondant à un horodatage
+function timeToIdxF(t){
+  const d=state.data; if(!d.length)return 0;
+  if(t<=d[0].t)return 0;
+  if(t>=d[d.length-1].t)return d.length-1;
+  let lo=0,hi=d.length-1;
+  while(hi-lo>1){const mid=(lo+hi)>>1; if(d[mid].t<t)lo=mid; else hi=mid;}
+  const span=d[hi].t-d[lo].t||1;
+  return lo+(t-d[lo].t)/span;
+}
+// (re)calcule les zones de session à partir des bougies 1 minute, mémorise par horodatage
+let _sessSig='';
+function computeSessZones(target){
+  // source 1 minute : le graphe lui-même s'il est en 1m, sinon le flux 1m chargé
+  let one=null;
+  if(+state.tf===1) one=state.data;
+  else{ ensureMTF(1); one=mtfStore.data[1]||null; }
+  if(!one||!one.length)return;
+  const sig=one.length+'|'+state.symbol+'|'+target+'|'+(one[one.length-1]?one[one.length-1].t:0);
+  if(_sessSig===sig && (state.sessZones||[]).length)return;
+  const zones=[];
+  for(let i=0;i<one.length;i++){
+    if(londonMinute(one[i].t)===target){         // bougie 1m pile à 15:29 Londres
+      zones.push({t0:one[i].t, hi:one[i].h, lo:one[i].l});
     }
   }
-  _sessCache={sig,marks};
-  return marks;
+  // borne de fin de chaque zone = début de la suivante
+  for(let k=0;k<zones.length;k++) zones[k].t1=(k+1<zones.length)?zones[k+1].t0:null;
+  state.sessZones=zones; _sessSig=sig; saveConfig();
 }
 function drawPrice(p,s,e,cw){
   const d=state.data;
@@ -2254,22 +2265,19 @@ function drawPrice(p,s,e,cw){
   // Indicateur "Session 15:29 Londres" : rectangle high/low prolongé jusqu'au prochain 15:29
   if(vis('sess')){
     const hh=state.indicators.sess.hour, mm=state.indicators.sess.min;
-    const target=hh*60+mm;
-    const marks=sessMarks(target);   // indices des bougies 15:29 (Londres)
+    computeSessZones(hh*60+mm);
     const col=S('sess','col');
-    for(let m=0;m<marks.length;m++){
-      const i0=marks[m];
-      const i1=(m+1<marks.length)?marks[m+1]:e;   // jusqu'au prochain 15:29, ou bord droit
-      if(i1<s||i0>e)continue;
-      const c=state.data[i0];
-      const x0=xOf(i0), x1=(m+1<marks.length)?xOf(i1):(W-AXIS_W);
-      const yH=yOf(c.h), yL=yOf(c.l);
+    for(const Z of (state.sessZones||[])){
+      const x0=xOf(timeToIdxF(Z.t0));
+      const x1=(Z.t1!=null)?xOf(timeToIdxF(Z.t1)):(W-AXIS_W);
+      if(x1<0||x0>W-AXIS_W)continue;
+      const yH=yOf(Z.hi), yL=yOf(Z.lo);
+      const xa=Math.max(x0,0), xb=Math.min(Math.max(x1,0),W-AXIS_W);
       ctx.fillStyle=hexA(col,.12);
-      ctx.fillRect(Math.max(x0,0),Math.min(yH,yL),Math.max(x1,0)-Math.max(x0,0),Math.abs(yL-yH));
+      ctx.fillRect(xa,Math.min(yH,yL),xb-xa,Math.abs(yL-yH));
       ctx.strokeStyle=hexA(col,.7);ctx.lineWidth=1;
-      ctx.strokeRect(Math.max(x0,0)+.5,Math.min(yH,yL)+.5,Math.max(x1,0)-Math.max(x0,0),Math.abs(yL-yH));
-      // étiquette
-      if(x0>-40&&x0<W-AXIS_W){ctx.fillStyle=hexA(col,.9);ctx.font='9px "IBM Plex Mono",monospace';ctx.textAlign='left';ctx.fillText(mm===undefined?'':(String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+' LDN'),Math.max(x0,0)+3,Math.min(yH,yL)+10);}
+      ctx.strokeRect(xa+.5,Math.min(yH,yL)+.5,xb-xa,Math.abs(yL-yH));
+      if(x0>-40&&x0<W-AXIS_W){ctx.fillStyle=hexA(col,.9);ctx.font='9px "IBM Plex Mono",monospace';ctx.textAlign='left';ctx.fillText(String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+' LDN',xa+3,Math.min(yH,yL)+10);}
     }
   }
   // Zones (rectangles étirés jusqu'à maintenant)
