@@ -1892,7 +1892,7 @@ function niceStep(range,target){
    double-clic pour revenir à auto) — même logique que le panneau prix. */
 function subYOf(p,key,lo0,hi0,padded){
   let useKey=key;
-  if(p._sameScale){ useKey=p._groupKey; lo0=p._forceLo; hi0=p._forceHi; }
+  if(p._sameScale && isFinite(p._forceLo) && isFinite(p._forceHi) && p._forceHi>p._forceLo){ useKey=p._groupKey; lo0=p._forceLo; hi0=p._forceHi; }
   const sc=state.subScale[useKey];
   let lo,hi;
   if(!sc||sc.auto){lo=lo0;hi=hi0;}
@@ -2044,9 +2044,10 @@ function render(){
       // même échelle : calculer l'union des plages connues des membres
       p._sameScale=false;
       if(state.subSameScale[p.key] && members.length>1){
-        let lo=Infinity,hi=-Infinity;
-        for(const mk of members){const r=state._lastRange[mk];if(r){lo=Math.min(lo,r.lo);hi=Math.max(hi,r.hi);}}
-        if(lo<hi){p._sameScale=true;p._forceLo=lo;p._forceHi=hi;p._groupKey=p.key;}
+        let lo=Infinity,hi=-Infinity, ok=true;
+        for(const mk of members){const r=state._lastRange[mk];if(r&&isFinite(r.lo)&&isFinite(r.hi)){lo=Math.min(lo,r.lo);hi=Math.max(hi,r.hi);}else{ok=false;}}
+        // n'appliquer que si toutes les plages sont connues et l'étendue est valide
+        if(ok&&lo<hi&&isFinite(lo)&&isFinite(hi)){p._sameScale=true;p._forceLo=lo;p._forceHi=hi;p._groupKey=p.key;}
       }
       members.forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw,mk); p['scale_'+mk]={lo:p.lo,hi:p.hi}; state._lastRange[mk]={lo:p.lo,hi:p.hi}; });
       _subRow=0; _subRowKey='';
