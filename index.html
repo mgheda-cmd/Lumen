@@ -348,6 +348,11 @@ footer{
         <span class="name">VWAP <span class="desc">Prix moyen pondéré volume</span></span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="sess">
+        <span class="dot" style="background:#E8B84B"></span>
+        <span class="name">Session 15:29 <span class="desc">Londres · high/low</span></span>
+        <span class="state">off</span>
+      </div>
       <div class="ind-item" data-ind="ema2">
         <span class="dot" style="background:#4FD1C5"></span>
         <span class="name">EMA ② <span class="desc">Seconde moyenne exp.</span></span>
@@ -1244,6 +1249,7 @@ const state = {
     signal:{on:false,emaFast:9,emaSlow:30,window:3},
     bb:{on:false,period:20},
     vwap:{on:false},
+    sess:{on:false,hour:15,min:29},
     ichi:{on:false},
     st:{on:false},
     almasd:{on:false,fac:1.8,sd:33,alen:35,asig:4,aoff:0.85},
@@ -2183,6 +2189,31 @@ function render(){
 }
 
 /* ----- panneau prix ----- */
+function londonMinute(t){
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date(t));
+  let h=0,m=0; for(const q of parts){if(q.type==='hour')h=+q.value;if(q.type==='minute')m=+q.value;}
+  return h*60+m;
+}
+let _sessCache={sig:'',marks:[]};
+function sessMarks(target){
+  const d=state.data;
+  const sig=d.length+'|'+state.symbol+'|'+state.tf+'|'+target;
+  if(_sessCache.sig===sig)return _sessCache.marks;
+  const marks=[]; let lastDay=null;
+  for(let i=0;i<d.length;i++){
+    const lm=londonMinute(d[i].t);
+    const day=Math.floor((d[i].t)/86400000);   // jour approximatif
+    // 1ère bougie du jour ayant atteint/dépassé l'heure cible -> celle qui couvre 15:29
+    if(lm>=target && day!==lastDay){
+      // vérifier que la bougie précédente était avant la cible (sinon on est déjà passé)
+      if(i===0 || londonMinute(d[i-1].t)<target || Math.floor(d[i-1].t/86400000)!==day){
+        marks.push(i); lastDay=day;
+      }
+    }
+  }
+  _sessCache={sig,marks};
+  return marks;
+}
 function drawPrice(p,s,e,cw){
   const d=state.data;
   let lo=Infinity,hi=-Infinity;
@@ -2220,6 +2251,27 @@ function drawPrice(p,s,e,cw){
   state.pricePaneH=p.h;
   const yOf=v=>p.y + (1-(v-lo)/(hi-lo))*p.h;
   p.lo=lo;p.hi=hi;p.yOf=yOf;
+  // Indicateur "Session 15:29 Londres" : rectangle high/low prolongé jusqu'au prochain 15:29
+  if(vis('sess')){
+    const hh=state.indicators.sess.hour, mm=state.indicators.sess.min;
+    const target=hh*60+mm;
+    const marks=sessMarks(target);   // indices des bougies 15:29 (Londres)
+    const col=S('sess','col');
+    for(let m=0;m<marks.length;m++){
+      const i0=marks[m];
+      const i1=(m+1<marks.length)?marks[m+1]:e;   // jusqu'au prochain 15:29, ou bord droit
+      if(i1<s||i0>e)continue;
+      const c=state.data[i0];
+      const x0=xOf(i0), x1=(m+1<marks.length)?xOf(i1):(W-AXIS_W);
+      const yH=yOf(c.h), yL=yOf(c.l);
+      ctx.fillStyle=hexA(col,.12);
+      ctx.fillRect(Math.max(x0,0),Math.min(yH,yL),Math.max(x1,0)-Math.max(x0,0),Math.abs(yL-yH));
+      ctx.strokeStyle=hexA(col,.7);ctx.lineWidth=1;
+      ctx.strokeRect(Math.max(x0,0)+.5,Math.min(yH,yL)+.5,Math.max(x1,0)-Math.max(x0,0),Math.abs(yL-yH));
+      // étiquette
+      if(x0>-40&&x0<W-AXIS_W){ctx.fillStyle=hexA(col,.9);ctx.font='9px "IBM Plex Mono",monospace';ctx.textAlign='left';ctx.fillText(mm===undefined?'':(String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+' LDN'),Math.max(x0,0)+3,Math.min(yH,yL)+10);}
+    }
+  }
   // Zones (rectangles étirés jusqu'à maintenant)
   for(const Z of (state.zones||[])){
     const i0=idxOfTime(Z.t0); if(i0==null)continue;
@@ -3020,6 +3072,7 @@ const IND_META={
   ema:{label:p=>'EMA '+p,color:'var(--ema)'},
   bb:{label:p=>'BB '+p+' ±2σ',color:'var(--bb)'},
   vwap:{label:()=>'VWAP',color:'var(--vwap)'},
+  sess:{label:()=>'Session '+String(state.indicators.sess.hour).padStart(2,'0')+':'+String(state.indicators.sess.min).padStart(2,'0')+' LDN',color:'#E8B84B'},
   volume:{label:()=>'Volume',color:'var(--faint)'},
   rsi:{label:p=>'RSI '+p,color:'var(--ema)'},
   rsi2:{label:p=>'RSI ② '+p,color:'#F2A65A'},
@@ -4063,6 +4116,11 @@ const SCHEMA={
     {k:'cBand',t:'col',lab:'Couleur bandes',def:'#9BE6FF'},
     {k:'showFill',t:'bool',lab:'Remplissage',def:true},
     {k:'extend',t:'bool',lab:'Prolonger à droite',def:true},
+  ]},
+  sess:{title:'Session 15:29 (Londres)',fields:[
+    {k:'hour',t:'num',lab:'Heure (Londres)',min:0,max:23,ind:1},
+    {k:'min',t:'num',lab:'Minute',min:0,max:59,ind:1},
+    {k:'col',t:'col',lab:'Couleur',def:'#E8B84B'},
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
   sha:{title:'Heikin Ashi lissé ①',fields:[
