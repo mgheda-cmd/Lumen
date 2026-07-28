@@ -464,6 +464,7 @@ footer{
         <span class="srtf on" data-tf="15">15m</span>
         <span class="srtf on" data-tf="60">1H</span>
         <span class="srtf on" data-tf="240">4H</span>
+        <span class="srtf" data-bosopt="after1529" title="Marquer la 1ère cassure après 15:29 Londres">★15:29</span>
         <span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="sr">
@@ -839,8 +840,14 @@ const calc = {
     }
     for(const q of z){
       q.endT=null;
-      for(let j=q.si+1;j<N;j++)
-        if(q.type==='bull'?bars[j].c<q.bot:bars[j].c>q.top){q.endT=bars[j].t;break;}
+      for(let j=q.si+1;j<N;j++){
+        // mitigé dès que le prix remplit le gap : mèche qui atteint le côté opposé,
+        // OU clôture au-delà (l'un des deux suffit)
+        const filled = q.type==='bull'
+          ? (bars[j].l<=q.bot || bars[j].c<q.bot)
+          : (bars[j].h>=q.top || bars[j].c>q.top);
+        if(filled){q.endT=bars[j].t;break;}
+      }
     }
     return [...z.filter(q=>q.type==='bull').slice(-4),...z.filter(q=>q.type==='bear').slice(-4)];
   },
@@ -1261,7 +1268,7 @@ const state = {
     lrc:{on:false,period:100},
     sr:{on:false,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
-    bos:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
+    bos:{on:false,after1529:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     rev:{on:false},
     volume:{on:true},
     rsi:{on:false,period:14,tf:'chart'},
@@ -2668,6 +2675,18 @@ function drawBOS(evts,s,e,yOf,cw,p){
   const cU=S('bos','cBull'), cD=S('bos','cBear');
   ctx.save();ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
   const used=[];                                   // évite les étiquettes superposées
+  // option : repérer la 1ère cassure (toute UT) juste après chaque 15:29 Londres
+  const afterSet=new Set();
+  if(state.indicators.bos.after1529){
+    computeSessZones(15*60+29);
+    const sess=(state.sessZones||[]).map(z=>z.t0).sort((a,b)=>a-b);
+    const evSorted=evts.slice().sort((a,b)=>a.t-b.t);
+    for(let k=0;k<sess.length;k++){
+      const t0=sess[k], t1=(k+1<sess.length)?sess[k+1]:Infinity;
+      const first=evSorted.find(m=>m.t>=t0&&m.t<t1);   // 1ère cassure de la session
+      if(first)afterSet.add(first.t+'|'+first.tf+'|'+first.lvl);
+    }
+  }
   for(const m of evts){
     const i=idxOfTime(m.t); if(i==null||i>e-1)continue;
     const jf=idxOfTime(m.fromT); if(jf==null)continue;
@@ -2684,6 +2703,13 @@ function drawBOS(evts,s,e,yOf,cw,p){
     if(m.up){ctx.moveTo(x,y-8);ctx.lineTo(x-5,y);ctx.lineTo(x+5,y);}
     else{ctx.moveTo(x,y+8);ctx.lineTo(x-5,y);ctx.lineTo(x+5,y);}
     ctx.closePath();ctx.fill();
+    // marqueur spécial "après 15:29"
+    if(afterSet.has(m.t+'|'+m.tf+'|'+m.lvl)){
+      ctx.fillStyle='#FFD166';ctx.font='13px system-ui';ctx.textAlign='center';
+      ctx.fillText('★', x, m.up?y-16:y+22); ctx.textAlign='left';
+      ctx.strokeStyle='#FFD166';ctx.lineWidth=1.5;ctx.setLineDash([2,2]);
+      ctx.beginPath();ctx.moveTo(x,p.y);ctx.lineTo(x,p.y+p.h);ctx.stroke();ctx.setLineDash([]);
+    }
     // étiquette : type + UT (+ MSS)
     const base=m.kind+' '+m.tf+(m.mss?' · MSS':'');
     const f=fitLabel([base,m.kind+' '+m.tf,m.kind,m.tf],150,14,true);
@@ -3597,6 +3623,16 @@ document.querySelectorAll('.ind-item .srtf[data-tf]:not(.mtf)').forEach(el=>{
     const t=state.indicators[key].tfs; t[tf]=!t[tf];
     el.classList.toggle('on',t[tf]);
     onTfChip(key,tf,t[tf]);
+  });
+});
+document.querySelectorAll('.srtf[data-bosopt]').forEach(el=>{
+  el.classList.toggle('on', !!state.indicators.bos[el.dataset.bosopt]);
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    const o=el.dataset.bosopt;
+    state.indicators.bos[o]=!state.indicators.bos[o];
+    el.classList.toggle('on',state.indicators.bos[o]);
+    state.cache={}; saveConfig(); render();
   });
 });
 /* Sélecteur mono-UT pour les oscillateurs macd / imp (une seule UT active). */
