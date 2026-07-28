@@ -580,6 +580,10 @@ footer{
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
     <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
+    <span style="width:1px;height:20px;background:var(--line);margin:0 4px;display:inline-block"></span>
+    <button class="btn tzb" id="tz-ny" data-tz="ny" title="Heure de New York" style="font-size:12px;padding:6px 9px">NY</button>
+    <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:12px;padding:6px 9px">LDN</button>
+    <button class="btn tzb" id="tz-tunis" data-tz="tunis" title="Heure de Tunis" style="font-size:12px;padding:6px 9px">TUN</button>
   <button class="btn" id="btn-backtest" title="Backtest de stratégie" style="font-size:14px;padding:6px 11px">🧪</button>
   <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
   </div>
@@ -1280,7 +1284,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -1306,6 +1310,7 @@ function mergeConfig(c){
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
   if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
   if(Array.isArray(c.zones))state.zones=c.zones.filter(z=>z&&typeof z.t0==='number');
+  if(c.tz&&['ny','london','tunis'].includes(c.tz))state.tz=c.tz;
   if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
@@ -1875,10 +1880,12 @@ function fmtCompact(v){
   if(v>=1e3)return (v/1e3).toFixed(1)+' k';
   return v.toFixed(0);
 }
+const TZ_MAP={ny:'America/New_York',london:'Europe/London',tunis:'Africa/Tunis'};
 function fmtTime(t){
   const d=new Date(t);
-  if(state.tf>=1440)return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'});
-  return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const tz=TZ_MAP[state.tz]; const opt=tz?{timeZone:tz}:{};
+  if(state.tf>=1440)return d.toLocaleDateString('fr-FR',Object.assign({day:'2-digit',month:'short'},opt));
+  return d.toLocaleTimeString('fr-FR',Object.assign({hour:'2-digit',minute:'2-digit'},opt));
 }
 function niceStep(range,target){
   const raw=range/target, mag=Math.pow(10,Math.floor(Math.log10(raw)));
@@ -1974,7 +1981,23 @@ try{
   applyCollapsed();
 }catch(e){}
 state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{};
-state.zones=state.zones||[]; state.zoneMode=false;
+state.zones=state.zones||[]; state.zoneMode=false; state.tz=state.tz||'tunis';
+function applyTzButtons(){
+  for(const id of ['tz-ny','tz-london','tz-tunis']){
+    const b=document.getElementById(id); if(!b)continue;
+    const on=b.dataset.tz===state.tz;
+    b.style.background=on?'var(--accent)':''; b.style.color=on?'#fff':'';
+  }
+}
+try{
+  ['tz-ny','tz-london','tz-tunis'].forEach(id=>{
+    document.getElementById(id).addEventListener('click',()=>{
+      state.tz=document.getElementById(id).dataset.tz;
+      applyTzButtons(); saveConfig(); render();
+    });
+  });
+  applyTzButtons();
+}catch(e){}
 try{
   const zb=document.getElementById('zone-btn');
   zb.addEventListener('click',()=>{
@@ -2144,7 +2167,7 @@ function render(){
     // étiquette heure de la bougie en bas
     if(idx!=null && state.data[idx]){
       const d=new Date(state.data[idx].t);
-      const lab=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+      const lab=fmtTime(state.data[idx].t);
       ctx.font='10px "IBM Plex Mono",monospace';
       const tw=ctx.measureText(lab).width+10;
       ctx.fillStyle='#2A3550';
