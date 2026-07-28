@@ -3229,9 +3229,10 @@ canvas.addEventListener('touchstart',e=>{
 },{passive:false});
 canvas.addEventListener('touchmove',e=>{
   if(e.touches.length!==1)return;
+  if(touch)return;   // un geste (pan/appui long) est en cours : géré par l'autre handler
   const r=canvas.getBoundingClientRect();
   state.mouse={x:e.touches[0].clientX-r.left, y:e.touches[0].clientY-r.top};
-  if(!state.dragging)render();
+  render();
 },{passive:true});
 canvas.addEventListener('touchend',()=>{ if(!state.dragging&&!state.xhairMode){state.mouse=null;render();} });
 // double-tap tactile sur un sous-panneau -> paramètres
@@ -3321,7 +3322,7 @@ canvas.addEventListener('wheel',e=>{
   render();
 },{passive:false});
 /* --- tactile : glisser par zone, double-tap sur les axes, pincement 2 axes --- */
-let touch=null, pinch=null, lastTap={t:0,z:''};
+let touch=null, pinch=null, lastTap={t:0,z:''}, lpTimer=null;
 function tpos(t){const r=canvas.getBoundingClientRect();
   return {x:t.clientX-r.left,y:t.clientY-r.top};}
 canvas.addEventListener('touchstart',e=>{
@@ -3351,16 +3352,22 @@ canvas.addEventListener('touchstart',e=>{
       subLo=sc.lo; subHi=sc.hi;
     }
     if(state.xhairMode){
-      const r=canvas.getBoundingClientRect();
       touch={mode:'xhair'}; state.mouse={x,y}; render();
       return;
+    }
+    // appui long -> mode curseur temporaire (ne bouge que la ligne)
+    if(z==='pan'||z==='price'||(z&&z.startsWith('subpan:'))){
+      clearTimeout(lpTimer);
+      lpTimer=setTimeout(()=>{
+        if(touch){ touch.mode='xhair'; state.mouse={x:touch.sx,y:touch.sy}; try{navigator.vibrate&&navigator.vibrate(8);}catch(e){} render(); }
+      },260);
     }
     let subPan=null;
     if(z.startsWith('subpan:')){
       const pane=(state.lastPanes||[]).find(q=>q.key===z.slice(7));
       subPan={}; if(pane)for(const mk of (pane.members||[pane.key]))subPan[mk]=pane['scale_'+mk]?{...pane['scale_'+mk]}:{lo:pane.lo,hi:pane.hi};
     }
-    touch={mode:z,x,y,start:state.view.start,count:state.view.count,
+    touch={mode:z,x,y,sx:x,sy:y,start:state.view.start,count:state.view.count,
       right:state.view.start+state.view.count,
       paneH:z.startsWith('resize:')?paneHeightOf(z.slice(7)):0,
       lo:state.yScale.lo,hi:state.yScale.hi,subLo,subHi,subPan};
@@ -3376,6 +3383,9 @@ canvas.addEventListener('touchstart',e=>{
 canvas.addEventListener('touchmove',e=>{
   if(touch&&e.touches.length===1){
     const {x,y}=tpos(e.touches[0]);
+    // mouvement franc avant l'appui long -> c'est un déplacement, on annule le minuteur
+    if(lpTimer&&(Math.abs(x-touch.sx)>10||Math.abs(y-touch.sy)>10)){clearTimeout(lpTimer);lpTimer=null;}
+    if(touch.mode==='xhair'){ state.mouse={x,y}; render(); if(e.cancelable)e.preventDefault(); return; }
     if(touch.mode.startsWith('resize:')){
       const key=touch.mode.slice(7);
       state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,touch.paneH-(y-touch.y)));
@@ -3443,6 +3453,9 @@ canvas.addEventListener('touchmove',e=>{
 },{passive:true});
 canvas.addEventListener('touchend',()=>{
   if(touch&&touch.mode&&touch.mode.startsWith('resize:'))saveConfig();
+  clearTimeout(lpTimer); lpTimer=null;
+  // fin d'un appui long temporaire (hors mode ✛ permanent) -> effacer la ligne
+  if(touch&&touch.mode==='xhair'&&!state.xhairMode){ state.mouse=null; render(); }
   touch=null;pinch=null;
 },{passive:true});
 
