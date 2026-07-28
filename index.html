@@ -500,6 +500,11 @@ footer{
         <input type="number" min="2" max="50" value="14" aria-label="Période RSI">
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="rsi2">
+        <span class="dot" style="background:var(--ema)"></span>
+        <span class="name">RSI ② <span class="desc">Copie · autre UT</span></span>
+        <span class="state">off</span>
+      </div>
       <div class="ind-item" data-ind="macd">
         <span class="dot" style="background:var(--accent)"></span>
         <span class="name">MACD <span class="desc">12/26/9</span></span>
@@ -521,6 +526,11 @@ footer{
         <span class="srtf mtf" data-ind2="imp" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="imp" data-tf="60">1H</span>
         <span class="srtf mtf" data-ind2="imp" data-tf="240">4H</span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="imp2">
+        <span class="dot" style="background:#7CE38B"></span>
+        <span class="name">Impulse MACD ② <span class="desc">Copie · autre UT</span></span>
         <span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="stoch">
@@ -545,6 +555,11 @@ footer{
         <span class="srtf mtf" data-ind2="rosc" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="rosc2">
+        <span class="dot" style="background:#3DDC97"></span>
+        <span class="name">Range Oscillator ② <span class="desc">Copie · autre UT</span></span>
+        <span class="state">off</span>
+      </div>
       <div class="ind-item" data-ind="macdsr">
         <span class="dot" style="background:#4A90FF"></span>
         <span class="name">MACD S/R <span class="desc">ChartPrime</span></span>
@@ -552,6 +567,11 @@ footer{
         <span class="srtf mtf" data-ind2="macdsr" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="macdsr" data-tf="60">1H</span>
         <span class="srtf mtf" data-ind2="macdsr" data-tf="240">4H</span>
+        <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="macdsr2">
+        <span class="dot" style="background:#4A90FF"></span>
+        <span class="name">MACD S/R ② <span class="desc">Copie · autre UT</span></span>
         <span class="state">off</span>
       </div>
     </div>
@@ -1234,12 +1254,16 @@ const state = {
     rev:{on:false},
     volume:{on:true},
     rsi:{on:false,period:14,tf:'chart'},
+    rsi2:{on:false,period:14,tf:'60'},
     macd:{on:false,tf:'chart'},
     imp:{on:false,period:34,tf:'chart'},
+    imp2:{on:false,period:34,tf:'60'},
     stoch:{on:false,period:14,tf:'chart'},
     atr:{on:false,period:14,tf:'chart'},
     rosc:{on:false,period:50,smooth:2,tf:'chart'},
+    rosc2:{on:false,period:50,smooth:2,tf:'60'},
     macdsr:{on:false,fast:12,slow:26,sig:9,tf:'chart'},
+    macdsr2:{on:false,fast:12,slow:26,sig:9,tf:'60'},
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
@@ -1708,12 +1732,12 @@ function getInd(key){
     if(key==='ema') state.cache[ck]=calc.ema(d,ind.period);
     if(key==='bb')  state.cache[ck]=calc.bb(d,ind.period);
     if(key==='vwap')state.cache[ck]=calc.vwap(d);
-    if(key==='rsi'){
+    if(key==='rsi'||key==='rsi2'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       if(!mtf)state.cache[ck]=calc.rsi(d,ind.period);
       else{ensureMTF(mtf);const bars=mtfStore.data[mtf];state.cache[ck]=bars?mapHTF(bars,calc.rsi(bars,ind.period)):[];}
     }
-    if(key==='imp'){
+    if(key==='imp'||key==='imp2'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       if(!mtf)state.cache[ck]=calc.impmacd(d,ind.period,S('imp','sig'));
       else{
@@ -1768,7 +1792,7 @@ function getInd(key){
       if(!mtf)state.cache[ck]=calc.atr(d,ind.period);
       else{ensureMTF(mtf);const bars=mtfStore.data[mtf];state.cache[ck]=bars?mapHTF(bars,calc.atr(bars,ind.period)):[];}
     }
-    if(key==='rosc'){
+    if(key==='rosc'||key==='rosc2'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       if(!mtf)state.cache[ck]=calc.rangeOsc(d,ind.period,S('rosc','smooth'));
       else{
@@ -1777,7 +1801,7 @@ function getInd(key){
         state.cache[ck]=bars?mapHTF(bars,calc.rangeOsc(bars,ind.period,S('rosc','smooth'))):[];
       }
     }
-    if(key==='macdsr'){
+    if(key==='macdsr'||key==='macdsr2'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       if(!mtf)state.cache[ck]=calc.macdSR(d,ind.fast,ind.slow,ind.sig);
       else{
@@ -1881,12 +1905,16 @@ function subYOf(p,key,lo0,hi0,padded){
 function computePanes(){
   let subs=[];
   if(vis('rsi')) subs.push('rsi');
+  if(vis('rsi2')) subs.push('rsi2');
   if(vis('macd')) subs.push('macd');
   if(vis('imp')) subs.push('imp');
+  if(vis('imp2')) subs.push('imp2');
   if(vis('stoch')) subs.push('stoch');
   if(vis('atr')) subs.push('atr');
   if(vis('rosc')) subs.push('rosc');
+  if(vis('rosc2')) subs.push('rosc2');
   if(vis('macdsr')) subs.push('macdsr');
+  if(vis('macdsr2')) subs.push('macdsr2');
   // appliquer l'ordre personnalisé (les clés connues d'abord, dans l'ordre choisi)
   if(state.subOrder&&state.subOrder.length){
     const known=state.subOrder.filter(k=>subs.includes(k));
@@ -1969,7 +1997,7 @@ function render(){
     ctx.beginPath();ctx.rect(0,p.y,W,p.h);ctx.clip();
     if(p.key==='price') drawPrice(p,s,e,cw);
     else {
-      const DR={rsi:drawRSI,macd:drawMACD,imp:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,macdsr:drawMacdSR};
+      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR};
       let members=(p.members||[p.key]).slice();
       // membre au premier plan -> dessiné en dernier (au-dessus)
       const front=state.subFront&&state.subFront[p.key];
@@ -1982,7 +2010,7 @@ function render(){
         for(const mk of members){const r=state._lastRange[mk];if(r){lo=Math.min(lo,r.lo);hi=Math.max(hi,r.hi);}}
         if(lo<hi){p._sameScale=true;p._forceLo=lo;p._forceHi=hi;p._groupKey=p.key;}
       }
-      members.forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw); p['scale_'+mk]={lo:p.lo,hi:p.hi}; state._lastRange[mk]={lo:p.lo,hi:p.hi}; });
+      members.forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw,mk); p['scale_'+mk]={lo:p.lo,hi:p.hi}; state._lastRange[mk]={lo:p.lo,hi:p.hi}; });
       _subRow=0; _subRowKey='';
     }
     ctx.restore();
@@ -2681,13 +2709,14 @@ function subLabel(p,txt,val,color){
   if(typeof _subRowKey==='string'&&SCHEMA[_subRowKey])
     labelHits.push({x:6,y:yy-12,w:wtot+8,h:15,key:_subRowKey});
 }
-function drawRSI(p,s,e,cw){
-  const arr=getInd('rsi');
-  const yOf=subYOf(p,'rsi',0,100,true);
+function drawRSI(p,s,e,cw,K){
+  K=K||'rsi';
+  const arr=getInd(K);
+  const yOf=subYOf(p,K,0,100,true);
   p.isRsi=true;
   // zones 30/70
-  const OB=S('rsi','ob'),OS=S('rsi','os'),CR=S('rsi','cLine');
-  if(S('rsi','showZone')){
+  const OB=S(K,'ob'),OS=S(K,'os'),CR=S(K,'cLine');
+  if(S(K,'showZone')){
     ctx.fillStyle=hexA(CR,.07);
     ctx.fillRect(0,yOf(OB),W-AXIS_W,yOf(OS)-yOf(OB));
   }
@@ -2700,7 +2729,7 @@ function drawRSI(p,s,e,cw){
   }
   plotLine(arr,s,e,yOf,CR,1.4);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'RSI '+state.indicators.rsi.period+tfLabel('rsi'), arr[i]!=null?arr[i].toFixed(1):'—', CR);
+  subLabel(p,'RSI '+state.indicators[K].period+tfLabel(K), arr[i]!=null?arr[i].toFixed(1):'—', CR);
 }
 function drawMACD(p,s,e,cw){
   const m=getInd('macd');
@@ -2725,22 +2754,23 @@ function drawMACD(p,s,e,cw){
     m.line[i]!=null?m.line[i].toFixed(2):'—', S('macd','cLine'));
 }
 const IMP_COLORS=['#7CE38B','#1B8F72','#F2C14E','#F45B7D']; // lime, vert, orange, rouge
-function drawImp(p,s,e,cw){
-  const m=getInd('imp');
-  const C0=[S('imp','c0'),S('imp','c1'),S('imp','c2'),S('imp','c3')];
+function drawImp(p,s,e,cw,K){
+  K=K||'imp';
+  const m=getInd(K);
+  const C0=[S(K,'c0'),S(K,'c1'),S(K,'c2'),S(K,'c3')];
   let mx=0;
   for(let i=s;i<e;i++)for(const v of [m.md[i],m.sb[i],m.sh[i]])
     if(v!=null)mx=Math.max(mx,Math.abs(v));
   mx=mx||1;
-  const yOf=subYOf(p,'imp',-mx,mx,false);
+  const yOf=subYOf(p,K,-mx,mx,false);
   const y0=yOf(0);
-  if(S('imp','showZero')){
+  if(S(K,'showZero')){
     ctx.strokeStyle='rgba(74,88,120,.6)';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,y0+.5);ctx.lineTo(W-AXIS_W,y0+.5);ctx.stroke();
   }
   // histogramme principal, coloré selon la position du prix dans le canal
   const bw=Math.max(1,cw*0.7);
-  if(S('imp','showHist'))for(let i=s;i<e;i++){
+  if(S(K,'showHist'))for(let i=s;i<e;i++){
     if(m.md[i]==null)continue;
     const x=xOf(i), y=yOf(m.md[i]);
     ctx.fillStyle=C0[m.col[i]!=null?m.col[i]:2];
@@ -2748,15 +2778,15 @@ function drawImp(p,s,e,cw){
   }
   // histogramme de différence (md - signal)
   const bw2=Math.max(1,cw*0.28);
-  if(S('imp','showDiff'))for(let i=s;i<e;i++){
+  if(S(K,'showDiff'))for(let i=s;i<e;i++){
     if(m.sh[i]==null)continue;
     const x=xOf(i), y=yOf(m.sh[i]);
-    ctx.fillStyle=hexA(S('imp','cDiff'),.8);
+    ctx.fillStyle=hexA(S(K,'cDiff'),.8);
     ctx.fillRect(x-bw2/2,Math.min(y,y0),bw2,Math.abs(y-y0)||1);
   }
   // ligne de signal : couleur selon la direction (monte / descend)
-  if(S('imp','showSig')){
-    const cRise=S('imp','cSigUp'), cFall=S('imp','cSigDown');
+  if(S(K,'showSig')){
+    const cRise=S(K,'cSigUp'), cFall=S(K,'cSigDown');
     ctx.lineWidth=1.5;
     for(let i=Math.max(s,1);i<e;i++){
       if(m.sb[i]==null||m.sb[i-1]==null)continue;
@@ -2768,13 +2798,14 @@ function drawImp(p,s,e,cw){
   const tfl=state.indicators.imp.tf;
   const tfName=(tfl&&tfl!=='chart')?({'15':'15m','60':'1H','240':'4H'}[tfl]||''):'';
   const val=m.md[i]!=null?m.md[i].toFixed(2):'—';
-  subLabel(p,'Impulse MACD '+state.indicators.imp.period+(tfName?' · '+tfName:''),
+  subLabel(p,'Impulse MACD '+state.indicators[K].period+tfLabel(K),
     val, m.col[i]!=null?C0[m.col[i]]:css('--muted'));
 }
-function drawROsc(p,s,e,cw){
-  const arr=getInd('rosc');
-  const cUp=S('rosc','cUp'), cDown=S('rosc','cDown'), cTrans=S('rosc','cTrans');
-  const yOf=subYOf(p,'rosc',-100,100,true);
+function drawROsc(p,s,e,cw,K){
+  K=K||'rosc';
+  const arr=getInd(K);
+  const cUp=S(K,'cUp'), cDown=S(K,'cDown'), cTrans=S(K,'cTrans');
+  const yOf=subYOf(p,K,-100,100,true);
   const y0=yOf(0);
   // lignes +100 / 0 / -100
   ctx.strokeStyle='rgba(126,140,168,.25)';ctx.setLineDash([2,4]);ctx.lineWidth=1;
@@ -2796,15 +2827,16 @@ function drawROsc(p,s,e,cw){
     ctx.beginPath();ctx.moveTo(x1,yOf(v1));ctx.lineTo(x2,yOf(v2));ctx.stroke();
   }
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'Range Oscillator '+state.indicators.rosc.period+tfLabel('rosc'),
+  subLabel(p,'Range Oscillator '+state.indicators[K].period+tfLabel(K),
     arr[i]!=null?arr[i].toFixed(1):'—', arr[i]!=null?(arr[i]>=0?cUp:cDown):css('--muted'));
 }
-function drawMacdSR(p,s,e,cw){
-  const m=getInd('macdsr'); const M=m.macd, G=m.sg;
-  const cUp=S('macdsr','cUp'), cDn=S('macdsr','cDown');
+function drawMacdSR(p,s,e,cw,K){
+  K=K||'macdsr';
+  const m=getInd(K); const M=m.macd, G=m.sg;
+  const cUp=S(K,'cUp'), cDn=S(K,'cDown');
   let mx=1e-9;
   for(let i=s;i<e;i++)for(const v of [M[i],G[i]])if(v!=null)mx=Math.max(mx,Math.abs(v));
-  const yOf=subYOf(p,'macdsr',-mx,mx,true);
+  const yOf=subYOf(p,K,-mx,mx,true);
   const y0=yOf(0);
   ctx.strokeStyle='rgba(126,140,168,.3)';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(W-AXIS_W,y0);ctx.stroke();
   for(let i=Math.max(s,1);i<e;i++){
@@ -2823,7 +2855,7 @@ function drawMacdSR(p,s,e,cw){
     ctx.beginPath();ctx.arc(xOf(lv.i),yOf(M[lv.i]),3.5,0,7);ctx.fill();
   }
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'MACD S/R '+state.indicators.macdsr.fast+' '+state.indicators.macdsr.slow+tfLabel('macdsr'),
+  subLabel(p,'MACD S/R '+state.indicators[K].fast+' '+state.indicators[K].slow+tfLabel(K),
     M[i]!=null?M[i].toFixed(1):'—', M[i]!=null?(M[i]>=G[i]?cUp:cDn):css('--muted'));
 }
 function drawStoch(p,s,e,cw){
@@ -2919,6 +2951,7 @@ const IND_META={
   vwap:{label:()=>'VWAP',color:'var(--vwap)'},
   volume:{label:()=>'Volume',color:'var(--faint)'},
   rsi:{label:p=>'RSI '+p,color:'var(--ema)'},
+  rsi2:{label:p=>'RSI ② '+p,color:'#F2A65A'},
   macd:{label:()=>'MACD 12/26/9',color:'var(--accent)'},
   ema2:{label:p=>'EMA '+p,color:'#4FD1C5'},
   emacloud:{label:()=>'Nuage EMA '+state.indicators.emacloud.fast+'/'+state.indicators.emacloud.slow,color:'#3DDC97'},
@@ -2931,7 +2964,9 @@ const IND_META={
   stoch:{label:p=>'Stoch '+p,color:'#FF8FD8'},
   atr:{label:p=>'ATR '+p,color:'#C9D46B'},
   rosc:{label:p=>'Range Osc '+p+((state.indicators.rosc.tf&&state.indicators.rosc.tf!=='chart')?' '+({'15':'15m','60':'1H','240':'4H'}[state.indicators.rosc.tf]||''):''),color:'#3DDC97'},
+  rosc2:{label:p=>'Range Osc ② '+p,color:'#2FA0C0'},
   macdsr:{label:()=>'MACD S/R'+((state.indicators.macdsr.tf&&state.indicators.macdsr.tf!=='chart')?' '+({'15':'15m','60':'1H','240':'4H'}[state.indicators.macdsr.tf]||''):''),color:'#4A90FF'},
+  macdsr2:{label:()=>'MACD S/R ②',color:'#8A6BFF'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
   fvgm:{label:()=>'FVG MTF '+(state.indicators.fvgm.tf!=='auto'
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.fvgm.tf]||'')
@@ -2945,6 +2980,7 @@ const IND_META={
   bos:{label:()=>'Structure BOS/CHoCH',color:'#FFD166'},
   signal:{label:()=>'Signaux A/V',color:'#FFE24D'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
+  imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
   lrc:{label:p=>'Régression '+p,color:'#9BE6FF'},
   swp:{label:()=>'Prises de liquidité',color:'#E1424B'},
   rev:{label:()=>'Zones de renversement',color:'#F0A020'},
@@ -3813,6 +3849,23 @@ const SCHEMA={
     {k:'cSig',t:'col',lab:'Couleur signal',def:'#E7EDF8'},
     {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
   ]},
+  imp2:{title:'Impulse MACD ②',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'cSigUp',t:'col',lab:'Signal qui monte',def:'#1A1A1A'},
+    {k:'cSigDown',t:'col',lab:'Signal qui descend',def:'#F45B7D'},
+    {k:'period',t:'num',lab:'Longueur',min:5,max:200,ind:1},
+    {k:'sig',t:'num',lab:'Signal',min:2,max:50,def:9},
+    {k:'showHist',t:'bool',lab:'Histogramme principal',def:true},
+    {k:'c0',t:'col',lab:'Haussier fort',def:'#7CE38B'},
+    {k:'c1',t:'col',lab:'Haussier',def:'#1B8F72'},
+    {k:'c2',t:'col',lab:'Neutre',def:'#F2C14E'},
+    {k:'c3',t:'col',lab:'Baissier',def:'#F45B7D'},
+    {k:'showDiff',t:'bool',lab:'Histogramme écart',def:true},
+    {k:'cDiff',t:'col',lab:'Couleur écart',def:'#7AA2FF'},
+    {k:'showSig',t:'bool',lab:'Ligne de signal',def:true},
+    {k:'cSig',t:'col',lab:'Couleur signal',def:'#E7EDF8'},
+    {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
+  ]},
   macd:{title:'MACD',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'showHist',t:'bool',lab:'Histogramme',def:true},
@@ -3824,6 +3877,14 @@ const SCHEMA={
     {k:'cSig',t:'col',lab:'Couleur signal',def:'#F2C14E'},
   ]},
   rsi:{title:'RSI',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
+    {k:'cLine',t:'col',lab:'Couleur',def:'#B48BFF'},
+    {k:'showZone',t:'bool',lab:'Zone 30–70',def:true},
+    {k:'ob',t:'num',lab:'Surachat',min:50,max:99,def:70},
+    {k:'os',t:'num',lab:'Survente',min:1,max:50,def:30},
+  ]},
+  rsi2:{title:'RSI ②',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'period',t:'num',lab:'Période',min:2,max:50,ind:1},
     {k:'cLine',t:'col',lab:'Couleur',def:'#B48BFF'},
@@ -3846,7 +3907,23 @@ const SCHEMA={
     {k:'cUp',t:'col',lab:'Haussier (bleu)',def:'#4A90FF'},
     {k:'cDown',t:'col',lab:'Baissier (orange)',def:'#FF9D42'},
   ]},
+  macdsr2:{title:'MACD S/R (ChartPrime) ②',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'fast',t:'num',lab:'Longueur rapide',min:2,max:100,ind:1},
+    {k:'slow',t:'num',lab:'Longueur lente',min:5,max:200,ind:1},
+    {k:'sig',t:'num',lab:'Signal',min:2,max:50,ind:1},
+    {k:'cUp',t:'col',lab:'Haussier (bleu)',def:'#4A90FF'},
+    {k:'cDown',t:'col',lab:'Baissier (orange)',def:'#FF9D42'},
+  ]},
   rosc:{title:'Range Oscillator (Zeiierman)',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'period',t:'num',lab:'Longueur',min:5,max:300,ind:1},
+    {k:'smooth',t:'num',lab:'Lissage',min:1,max:20,def:2},
+    {k:'cUp',t:'col',lab:'Haussier (vert)',def:'#3DDC97'},
+    {k:'cDown',t:'col',lab:'Baissier (rouge)',def:'#F45B7D'},
+    {k:'cTrans',t:'col',lab:'Transition (bleu)',def:'#4A90FF'},
+  ]},
+  rosc2:{title:'Range Oscillator (Zeiierman) ②',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'period',t:'num',lab:'Longueur',min:5,max:300,ind:1},
     {k:'smooth',t:'num',lab:'Lissage',min:1,max:20,def:2},
