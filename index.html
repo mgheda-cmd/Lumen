@@ -3103,6 +3103,7 @@ canvas.addEventListener('mousedown',e=>{
   if(lh){openCfg(lh.key);state.dragging=false;state.dragMode='none';return;}
   const cc=hitPaneCtrl(x,y);
   if(cc){applyPaneCtrl(cc.key,cc.act);state.dragging=false;state.dragMode='none';return;}
+  if(state.xhairMode){ state.dragMode='xhair'; state.dragging=true; state.mouse={x,y}; render(); return; }
   state.dragMode=hitZone(x,y);
   state.dragging=true;
   state.dragX=x; state.dragY=y;
@@ -3324,6 +3325,11 @@ canvas.addEventListener('touchstart',e=>{
       const sc=pane&&pane['scale_'+key]?pane['scale_'+key]:{lo:pane?pane.lo:0,hi:pane?pane.hi:1};
       state.subScale[key]={auto:false,lo:sc.lo,hi:sc.hi};
       subLo=sc.lo; subHi=sc.hi;
+    }
+    if(state.xhairMode){
+      const r=canvas.getBoundingClientRect();
+      touch={mode:'xhair'}; state.mouse={x,y}; render();
+      return;
     }
     let subPan=null;
     if(z.startsWith('subpan:')){
