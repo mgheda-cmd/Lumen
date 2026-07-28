@@ -579,6 +579,7 @@ footer{
   <div style="display:flex;gap:6px;flex:none">
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
+    <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
   <button class="btn" id="btn-backtest" title="Backtest de stratégie" style="font-size:14px;padding:6px 11px">🧪</button>
   <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
   </div>
@@ -1279,7 +1280,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -1304,6 +1305,7 @@ function mergeConfig(c){
   if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
   if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
+  if(Array.isArray(c.zones))state.zones=c.zones.filter(z=>z&&typeof z.t0==='number');
   if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
@@ -1972,6 +1974,42 @@ try{
   applyCollapsed();
 }catch(e){}
 state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{};
+state.zones=state.zones||[]; state.zoneMode=false;
+try{
+  const zb=document.getElementById('zone-btn');
+  zb.addEventListener('click',()=>{
+    state.zoneMode=!state.zoneMode;
+    zb.style.background=state.zoneMode?'var(--accent)':'';
+    zb.style.color=state.zoneMode?'#fff':'';
+    render();
+  });
+}catch(e){}
+// créer / supprimer une zone au tap sur le graphique des prix
+function zoneTapAt(x,y){
+  const pr=(state.lastPanes||[]).find(q=>q.key==='price'); if(!pr)return false;
+  if(y<pr.y||y>pr.y+pr.h||x>W-AXIS_W)return false;
+  // suppression : tap sur une zone existante (hors mode création)
+  if(!state.zoneMode){
+    for(let z=state.zones.length-1;z>=0;z--){
+      const Z=state.zones[z];
+      const i0=idxOfTime(Z.t0); if(i0==null)continue;
+      const x0=xOf(i0), y1=pr.yOf(Z.hi), y2=pr.yOf(Z.lo);
+      if(x>=Math.min(x0,W-AXIS_W)&&x<=W-AXIS_W&&y>=Math.min(y1,y2)&&y<=Math.max(y1,y2)){
+        state.zones.splice(z,1); saveConfig(); render(); return true;
+      }
+    }
+    return false;
+  }
+  // création : trouver la bougie touchée
+  const cw=(W-AXIS_W)/state.view.count;
+  const i=Math.round(state.view.start+(x-cw/2)/cw);
+  if(i<0||i>=state.data.length)return false;
+  const c=state.data[i];
+  state.zones.push({t0:c.t,hi:c.h,lo:c.l});
+  state.zoneMode=false;
+  try{const zb=document.getElementById('zone-btn');zb.style.background='';zb.style.color='';}catch(e){}
+  saveConfig(); render(); return true;
+}
 try{
   const xb=document.getElementById('xhair-btn');
   xb.addEventListener('click',()=>{
@@ -2158,6 +2196,15 @@ function drawPrice(p,s,e,cw){
   state.pricePaneH=p.h;
   const yOf=v=>p.y + (1-(v-lo)/(hi-lo))*p.h;
   p.lo=lo;p.hi=hi;p.yOf=yOf;
+  // Zones (rectangles étirés jusqu'à maintenant)
+  for(const Z of (state.zones||[])){
+    const i0=idxOfTime(Z.t0); if(i0==null)continue;
+    const x0=xOf(i0), xr=W-AXIS_W, y1=yOf(Z.hi), y2=yOf(Z.lo);
+    ctx.fillStyle='rgba(122,162,255,.14)';
+    ctx.fillRect(Math.max(x0,0),Math.min(y1,y2),xr-Math.max(x0,0),Math.abs(y2-y1));
+    ctx.strokeStyle='rgba(122,162,255,.6)';ctx.lineWidth=1;
+    ctx.strokeRect(Math.max(x0,0)+.5,Math.min(y1,y2)+.5,xr-Math.max(x0,0),Math.abs(y2-y1));
+  }
 
   // grille + axe des prix
   ctx.font='11px "IBM Plex Mono",monospace';
@@ -3051,6 +3098,7 @@ function paneHeightOf(key){
 }
 canvas.addEventListener('mousedown',e=>{
   const x=e.offsetX,y=e.offsetY;
+  if((state.zoneMode|| false)&&zoneTapAt(x,y)){return;}
   const lh=labelHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
   if(lh){openCfg(lh.key);state.dragging=false;state.dragMode='none';return;}
   const cc=hitPaneCtrl(x,y);
@@ -3148,6 +3196,7 @@ canvas.addEventListener('touchstart',e=>{
   if(e.touches.length!==1)return;
   const r=canvas.getBoundingClientRect();
   const tx=e.touches[0].clientX-r.left, ty=e.touches[0].clientY-r.top;
+  if(state.zoneMode&&zoneTapAt(tx,ty)){ if(e.cancelable)e.preventDefault(); return; }
   const lh=labelHits.find(h=>tx>=h.x&&tx<=h.x+h.w&&ty>=h.y&&ty<=h.y+h.h);
   if(lh){ if(e.cancelable)e.preventDefault(); openCfg(lh.key); return; }
   const cc=hitPaneCtrl(tx,ty);
