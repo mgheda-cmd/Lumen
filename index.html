@@ -1297,7 +1297,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, tz:state.tz, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -1322,6 +1322,8 @@ function mergeConfig(c){
   if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
   if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
+  if(c.subLock&&typeof c.subLock==='object')state.subLock=c.subLock;
+  if(c.subScale&&typeof c.subScale==='object')state.subScale=c.subScale;
   if(Array.isArray(c.zones))state.zones=c.zones.filter(z=>z&&typeof z.t0==='number');
   if(c.tz&&['ny','london','tunis'].includes(c.tz))state.tz=c.tz;
   if(Array.isArray(c.sessZones))state.sessZones=c.sessZones.filter(z=>z&&typeof z.t0==='number');
@@ -1994,7 +1996,7 @@ try{
   // note : localStorage indispo dans certains cadres -> on ignore l'erreur
   applyCollapsed();
 }catch(e){}
-state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{};
+state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{}; state.subLock=state.subLock||{};
 state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'tunis';
 function applyTzButtons(){
   for(const id of ['tz-ny','tz-london','tz-tunis']){
@@ -2115,8 +2117,8 @@ function render(){
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
     // commandes de panneau (monter / descendre / fusionner) en haut à droite
     if(p.key!=='price'){
-      const bx=W-AXIS_W-126, by=p.y+4, bw=22, bh=16;
-      const btns=[['▲','up'],['▼','down'],['⧉','merge'],['=','same'],['⬍','front']];
+      const bx=W-AXIS_W-150, by=p.y+4, bw=22, bh=16;
+      const btns=[['▲','up'],['▼','down'],['⧉','merge'],['=','same'],['⬍','front'],['🔒','lock']];
       ctx.font='11px system-ui';ctx.textAlign='center';
       btns.forEach((b,i)=>{
         const x=bx+i*(bw+2);
@@ -2124,6 +2126,7 @@ function render(){
         if(b[1]==='merge'&&state.subMergeUp[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
         if(b[1]==='same'&&state.subSameScale[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
         if(b[1]==='front'&&state.subFront&&state.subFront[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
+        if(b[1]==='lock'){const mm=(p.members||[p.key]);if(mm.some(k=>state.subLock&&state.subLock[k]))ctx.fillStyle='rgba(255,180,60,.4)';}
         roundRect(x,by,bw,bh,4);ctx.fill();
         ctx.fillStyle='rgba(200,212,235,.9)';
         ctx.fillText(b[0],x+bw/2,by+bh-4);
@@ -3342,10 +3345,24 @@ function applyPaneCtrl(key,act){
   if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); render(); return; }
   if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); render(); return; }
   if(act==='front'){
-    // mémoriser quel membre est au premier plan pour le groupe (clé = 1er membre du groupe)
     const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
     const gk=pane?pane.key:key;
     state.subFront[gk]=(state.subFront[gk]===key)?null:key;
+    saveConfig(); render(); return;
+  }
+  if(act==='lock'){
+    // verrouiller/déverrouiller l'échelle de tous les membres du panneau, à leur échelle actuelle
+    const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
+    const mm=pane?(pane.members||[pane.key]):[key];
+    const anyLocked=mm.some(k=>state.subLock[k]);
+    for(const k of mm){
+      if(anyLocked){ state.subLock[k]=false; }
+      else{
+        const sc=(pane&&pane['scale_'+k])?pane['scale_'+k]:{lo:pane?pane.lo:0,hi:pane?pane.hi:1};
+        state.subScale[k]={auto:false,lo:sc.lo,hi:sc.hi};   // fige l'échelle actuelle
+        state.subLock[k]=true;
+      }
+    }
     saveConfig(); render(); return;
   }
   const i=cur.indexOf(key); if(i<0)return;
