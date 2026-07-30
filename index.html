@@ -4547,13 +4547,28 @@ function computeEmaHaCross(d){
   const hb=[],hc=[];
   for(const x of haArr)if(x){hb.push(x);hc.push(x.c);}
   const haC=mapHTF(hb,hc);
+  // Confluence MACD S/R 3m : calcul interne (indépendant de l'affichage).
+  // Reprend les paramètres d'une instance MACD S/R réglée sur 3m si elle existe, sinon 12/26/9.
+  const inst=['macdsr','macdsr2'].map(k=>state.indicators[k]).find(x=>x&&x.tf==='3');
+  const mf=inst?inst.fast:12, ms=inst?inst.slow:26, mg=inst?inst.sig:9;
+  let M3=null,G3=null;
+  if(+state.tf===3){const m=calc.macdSR(d,mf,ms,mg);M3=m.macd;G3=m.sg;}
+  else{ensureMTF(3);const bars=mtfStore.data[3];
+    if(bars){const m=calc.macdSR(bars,mf,ms,mg);M3=mapHTF(bars,m.macd);G3=mapHTF(bars,m.sg);}}
   const out=[];
   for(let i=1;i<d.length;i++){
     const a0=ema[i-1],a1=ema[i],b0=haC[i-1],b1=haC[i];
     if(a0==null||a1==null||b0==null||b1==null)continue;
     const prev=a0-b0, cur=a1-b1;
-    if(prev<0&&cur>0)out.push({i,t:d[i].t,dir:1,price:d[i].c});
-    else if(prev>0&&cur<0)out.push({i,t:d[i].t,dir:-1,price:d[i].c});
+    let dir=0;
+    if(prev<0&&cur>0)dir=1;
+    else if(prev>0&&cur<0)dir=-1;
+    if(!dir)continue;
+    // le MACD S/R 3m doit confirmer : M>G pour un long, M<G pour un short
+    if(!M3||M3[i]==null||G3[i]==null)continue;
+    if(dir===1 && !(M3[i]>G3[i]))continue;
+    if(dir===-1 && !(M3[i]<G3[i]))continue;
+    out.push({i,t:d[i].t,dir,price:d[i].c});
   }
   return out;
 }
