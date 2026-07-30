@@ -3349,7 +3349,17 @@ function applyPaneCtrl(key,act){
   // construire l'ordre courant des sous-panneaux visibles
   const cur=(state.lastPanes||[]).filter(p=>p.key!=='price').flatMap(p=>p.members||[p.key]);
   if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); render(); return; }
-  if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); render(); return; }
+  if(act==='same'){
+    const on=!state.subSameScale[key];
+    state.subSameScale[key]=on;
+    if(on){
+      // le verrou impose l'échelle propre de chaque indicateur : il faut le lever ici
+      const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
+      const mm=pane?(pane.members||[pane.key]):[key];
+      for(const k of mm){ state.subLock[k]=false; delete state.subScale[k]; }
+    }
+    saveConfig(); render(); return;
+  }
   if(act==='front'){
     const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
     const gk=pane?pane.key:key;
