@@ -2160,7 +2160,8 @@ function render(){
   if(state.mouse) drawCrosshair(panes,s,e);
   // Flèches de signaux de confluence
   if(vis('signal')){
-    const sig=getInd('signal');
+    const _pr=panes.find(P=>P.key==='price'), yOf=_pr&&_pr.yOf;
+    const sig=yOf?getInd('signal'):[];
     for(const g of sig){
       const i=g.i; if(i<s-1||i>e)continue;
       const x=xOf(i);
@@ -2187,7 +2188,8 @@ function render(){
   }
   // Croisement EMA9 × HA lissé 5m -> entrées Long/Short étiquetées
   if(vis('emaHaX')){
-    for(const g of computeEmaHaCross(state.data)){
+    const _pr=panes.find(P=>P.key==='price'), yOf=_pr&&_pr.yOf;
+    if(yOf)for(const g of computeEmaHaCross(state.data)){
       const i=g.i; if(i<s-1||i>e)continue;
       const x=xOf(i), long=g.dir===1, col=long?'#25D0A4':'#F45B7D';
       const py=long?yOf(state.data[i].l):yOf(state.data[i].h);
