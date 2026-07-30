@@ -1297,7 +1297,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, tz:state.tz, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subZeroAlign:state.subZeroAlign, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subZeroAlign:state.subZeroAlign, subOffset:state.subOffset, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -1324,6 +1324,7 @@ function mergeConfig(c){
   if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
   if(c.subLock&&typeof c.subLock==='object')state.subLock=c.subLock;
   if(c.subZeroAlign&&typeof c.subZeroAlign==='object')state.subZeroAlign=c.subZeroAlign;
+  if(c.subOffset&&typeof c.subOffset==='object')state.subOffset=c.subOffset;
   if(c.subScale&&typeof c.subScale==='object')state.subScale=c.subScale;
   if(Array.isArray(c.zones))state.zones=c.zones.filter(z=>z&&typeof z.t0==='number');
   if(c.tz&&['ny','london','tunis'].includes(c.tz))state.tz=c.tz;
@@ -1927,7 +1928,8 @@ function subYOf(p,key,lo0,hi0,padded){
   if(p._zeroAlign && lo<0 && hi>0){ const m=Math.max(-lo,hi); lo=-m; hi=m; }
   p.lo=lo;p.hi=hi;p.subKey=key;
   const pad=padded?8:5, span=padded?16:10;
-  const yOf=v=>p.y+pad+(1-(v-lo)/(hi-lo))*(p.h-span);
+  const off=(state.subOffset&&state.subOffset[p.key])||0;   // décalage commun (tous les membres ensemble)
+  const yOf=v=>p.y+pad+off+(1-(v-lo)/(hi-lo))*(p.h-span);
   p.yOf=yOf;
   return yOf;
 }
@@ -2000,7 +2002,7 @@ try{
   // note : localStorage indispo dans certains cadres -> on ignore l'erreur
   applyCollapsed();
 }catch(e){}
-state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{}; state.subLock=state.subLock||{}; state.subZeroAlign=state.subZeroAlign||{};
+state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{}; state.subLock=state.subLock||{}; state.subZeroAlign=state.subZeroAlign||{}; state.subOffset=state.subOffset||{};
 state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'tunis';
 function applyTzButtons(){
   for(const id of ['tz-ny','tz-london','tz-tunis']){
@@ -3242,9 +3244,7 @@ canvas.addEventListener('mousedown',e=>{
     state.dragSubLo=sc.lo; state.dragSubHi=sc.hi;
   }
   if(state.dragMode.startsWith('subpan:')){
-    const pane=(state.lastPanes||[]).find(q=>q.key===state.dragMode.slice(7));
-    state.dragSubPan={};
-    if(pane)for(const mk of (pane.members||[pane.key]))state.dragSubPan[mk]=pane['scale_'+mk]?{...pane['scale_'+mk]}:{lo:pane.lo,hi:pane.hi};
+    state.dragSubOff=state.subOffset[state.dragMode.slice(7)]||0;
   }
   canvas.style.cursor='grabbing';
 });
@@ -3282,13 +3282,8 @@ canvas.addEventListener('mousemove',e=>{
       // corps du sous-panneau : temps (horizontal) + décalage vertical de l'indicateur
       const cw=(W-AXIS_W)/state.view.count;
       state.view.start=Math.max(-state.view.count*0.5,Math.min(state.data.length-state.view.count*0.5,state.dragStart-(x-state.dragX)/cw));
-      const pane=(state.lastPanes||[]).find(q=>q.key===state.dragMode.slice(7));
-      if(pane){for(const mk of (pane.members||[pane.key])){
-        const base=state.dragSubPan&&state.dragSubPan[mk]?state.dragSubPan[mk]:(pane['scale_'+mk]||{lo:0,hi:1});
-        const dP=(y-state.dragY)*(base.hi-base.lo)/Math.max(pane.h,1);
-        if(state.subLock&&state.subLock[mk])continue;
-        state.subScale[mk]={auto:false,lo:base.lo+dP,hi:base.hi+dP};
-      }}
+      const gk=state.dragMode.slice(7);
+      state.subOffset[gk]=(state.dragSubOff||0)+(y-state.dragY);   // les indicateurs bougent ensemble
     }else if(state.xhairMode){
       state.mouse={x,y};   // mode curseur : on bouge seulement la ligne
     }else{
@@ -3414,7 +3409,10 @@ canvas.addEventListener('dblclick',e=>{
   const z=hitZone(e.offsetX,e.offsetY);
   if(z.startsWith('resize:')){delete state.paneH[z.slice(7)];saveConfig();render();}
   else if(z==='price'){state.yScale.auto=true;render();}
-  else if(z.startsWith('sub:')){const kk=z.slice(4); if(!(state.subLock&&state.subLock[kk])){delete state.subScale[kk];} render();}
+  else if(z.startsWith('sub:')){const kk=z.slice(4);
+    if(!(state.subLock&&state.subLock[kk])){delete state.subScale[kk];}
+    const pn=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(kk)); if(pn)delete state.subOffset[pn.key];
+    render();}
   else if(z==='time'){
     state.view={start:Math.max(0,state.data.length-150),count:150};
     render();
@@ -3467,7 +3465,8 @@ canvas.addEventListener('touchstart',e=>{
       lastTap={t:0,z:''}; touch=null; render(); return;
     }
     if(z.startsWith('sub:')&&lastTap.z===z&&now-lastTap.t<320){
-      {const kk=z.slice(4); if(!(state.subLock&&state.subLock[kk]))delete state.subScale[kk];}
+      {const kk=z.slice(4); if(!(state.subLock&&state.subLock[kk]))delete state.subScale[kk];
+       const pn=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(kk)); if(pn)delete state.subOffset[pn.key];}
       lastTap={t:0,z:''}; touch=null; render(); return;
     }
     lastTap={t:now,z};
@@ -3491,15 +3490,12 @@ canvas.addEventListener('touchstart',e=>{
         if(touch){ touch.mode='xhair'; state.mouse={x:touch.sx,y:touch.sy}; try{navigator.vibrate&&navigator.vibrate(8);}catch(e){} render(); }
       },260);
     }
-    let subPan=null;
-    if(z.startsWith('subpan:')){
-      const pane=(state.lastPanes||[]).find(q=>q.key===z.slice(7));
-      subPan={}; if(pane)for(const mk of (pane.members||[pane.key]))subPan[mk]=pane['scale_'+mk]?{...pane['scale_'+mk]}:{lo:pane.lo,hi:pane.hi};
-    }
+    let subPan=null, subOff=0;
+    if(z.startsWith('subpan:')) subOff=state.subOffset[z.slice(7)]||0;
     touch={mode:z,x,y,sx:x,sy:y,start:state.view.start,count:state.view.count,
       right:state.view.start+state.view.count,
       paneH:z.startsWith('resize:')?paneHeightOf(z.slice(7)):0,
-      lo:state.yScale.lo,hi:state.yScale.hi,subLo,subHi,subPan};
+      lo:state.yScale.lo,hi:state.yScale.hi,subLo,subHi,subPan,subOff};
     pinch=null;
   }else if(e.touches.length===2){
     touch=null;
@@ -3537,13 +3533,8 @@ canvas.addEventListener('touchmove',e=>{
     }else if(touch.mode&&touch.mode.startsWith('subpan:')){
       const cw=(W-AXIS_W)/state.view.count;
       state.view.start=Math.max(-state.view.count*0.5,Math.min(state.data.length-state.view.count*0.5,touch.start-(x-touch.x)/cw));
-      const pane=(state.lastPanes||[]).find(q=>q.key===touch.mode.slice(7));
-      if(pane&&touch.subPan){for(const mk of (pane.members||[pane.key])){
-        const base=touch.subPan[mk]; if(!base)continue;
-        const dP=(y-touch.y)*(base.hi-base.lo)/Math.max(pane.h,1);
-        if(state.subLock&&state.subLock[mk])continue;
-        state.subScale[mk]={auto:false,lo:base.lo+dP,hi:base.hi+dP};
-      }}
+      const gk=touch.mode.slice(7);
+      state.subOffset[gk]=(touch.subOff||0)+(y-touch.y);   // les indicateurs bougent ensemble
     }else if(state.xhairMode){
       state.mouse={x,y};   // mode curseur : bouger seulement la ligne
     }else{
