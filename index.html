@@ -1915,7 +1915,8 @@ function niceStep(range,target){
    double-clic pour revenir à auto) — même logique que le panneau prix. */
 function subYOf(p,key,lo0,hi0,padded){
   let useKey=key;
-  if(p._sameScale && isFinite(p._forceLo) && isFinite(p._forceHi) && p._forceHi>p._forceLo){ useKey=p._groupKey; lo0=p._forceLo; hi0=p._forceHi; }
+  const locked=state.subLock&&state.subLock[key]&&state.subScale[key]&&!state.subScale[key].auto;
+  if(!locked && p._sameScale && isFinite(p._forceLo) && isFinite(p._forceHi) && p._forceHi>p._forceLo){ useKey=p._groupKey; lo0=p._forceLo; hi0=p._forceHi; }
   const sc=state.subScale[useKey];
   let lo,hi;
   if(!sc||sc.auto){lo=lo0;hi=hi0;}
@@ -3355,6 +3356,7 @@ function applyPaneCtrl(key,act){
     const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
     const mm=pane?(pane.members||[pane.key]):[key];
     const anyLocked=mm.some(k=>state.subLock[k]);
+    const gk=pane?pane.key:key;
     for(const k of mm){
       if(anyLocked){ state.subLock[k]=false; }
       else{
@@ -3363,6 +3365,7 @@ function applyPaneCtrl(key,act){
         state.subLock[k]=true;
       }
     }
+    if(!anyLocked) state.subSameScale[gk]=false;   // chaque indicateur garde SON échelle
     saveConfig(); render(); return;
   }
   const i=cur.indexOf(key); if(i<0)return;
