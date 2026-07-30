@@ -2248,7 +2248,7 @@ function drawPrice(p,s,e,cw){
   let lo=Infinity,hi=-Infinity;
   for(let i=s;i<e;i++){lo=Math.min(lo,d[i].l);hi=Math.max(hi,d[i].h);}
   // inclure indicateurs superposés dans l'échelle
-  for(const k of ['sma','ema','vwap']) if(state.indicators[k].on){
+  for(const k of ['sma','ema','vwap']) if(vis(k)){
     const arr=getInd(k);
     for(let i=s;i<e;i++) if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}
   }
@@ -2262,7 +2262,7 @@ function drawPrice(p,s,e,cw){
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
   if(vis('emacloud')){const c=getInd('emacloud');
     for(const a of [c.fast,c.slow])for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
-  for(const hk of ['sha','sha2','sha3'])if(state.indicators[hk].on){
+  for(const hk of ['sha','sha2','sha3'])if(vis(hk)){
     for(const ha of getInd(hk)){if(!ha)continue;
       const i=idxOfTime(ha.t);if(i!=null&&i>=s-10&&i<e){lo=Math.min(lo,ha.l);hi=Math.max(hi,ha.h);}}}
   if(vis('ema2')){const a=getInd('ema2');
@@ -2443,7 +2443,7 @@ function drawPrice(p,s,e,cw){
   // Heikin Ashi lissé : bougies dessinées directement sur le graphe
   const HA_TFN={'chart':(TF_MAP[state.tf]||''),'3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'};
   for(const hk of ['sha','sha2','sha3']){
-   if(!state.indicators[hk].on)continue;
+   if(!vis(hk))continue;
    {
     const cU=S(hk,'cUp'), cD=S(hk,'cDown'), arr=getInd(hk);
     let midHa=null, midX=null, midY=null;   // pour l'étiquette d'UT au centre du tracé visible
