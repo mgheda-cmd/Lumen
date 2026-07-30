@@ -3277,7 +3277,7 @@ canvas.addEventListener('mousemove',e=>{
       const f=Math.exp((y-state.dragY)*0.006);
       const c=(state.dragSubLo+state.dragSubHi)/2;
       const r=Math.max((state.dragSubHi-state.dragSubLo)/2*f,1e-9);
-      state.subScale[key]={auto:false,lo:c-r,hi:c+r};
+      if(!(state.subLock&&state.subLock[key]))state.subScale[key]={auto:false,lo:c-r,hi:c+r};
     }else if(state.dragMode.startsWith('subpan:')){
       // corps du sous-panneau : temps (horizontal) + décalage vertical de l'indicateur
       const cw=(W-AXIS_W)/state.view.count;
@@ -3286,6 +3286,7 @@ canvas.addEventListener('mousemove',e=>{
       if(pane){for(const mk of (pane.members||[pane.key])){
         const base=state.dragSubPan&&state.dragSubPan[mk]?state.dragSubPan[mk]:(pane['scale_'+mk]||{lo:0,hi:1});
         const dP=(y-state.dragY)*(base.hi-base.lo)/Math.max(pane.h,1);
+        if(state.subLock&&state.subLock[mk])continue;
         state.subScale[mk]={auto:false,lo:base.lo+dP,hi:base.hi+dP};
       }}
     }else if(state.xhairMode){
@@ -3413,7 +3414,7 @@ canvas.addEventListener('dblclick',e=>{
   const z=hitZone(e.offsetX,e.offsetY);
   if(z.startsWith('resize:')){delete state.paneH[z.slice(7)];saveConfig();render();}
   else if(z==='price'){state.yScale.auto=true;render();}
-  else if(z.startsWith('sub:')){delete state.subScale[z.slice(4)];render();}
+  else if(z.startsWith('sub:')){const kk=z.slice(4); if(!(state.subLock&&state.subLock[kk])){delete state.subScale[kk];} render();}
   else if(z==='time'){
     state.view={start:Math.max(0,state.data.length-150),count:150};
     render();
@@ -3466,7 +3467,7 @@ canvas.addEventListener('touchstart',e=>{
       lastTap={t:0,z:''}; touch=null; render(); return;
     }
     if(z.startsWith('sub:')&&lastTap.z===z&&now-lastTap.t<320){
-      delete state.subScale[z.slice(4)];
+      {const kk=z.slice(4); if(!(state.subLock&&state.subLock[kk]))delete state.subScale[kk];}
       lastTap={t:0,z:''}; touch=null; render(); return;
     }
     lastTap={t:now,z};
@@ -3532,7 +3533,7 @@ canvas.addEventListener('touchmove',e=>{
       const f=Math.exp((y-touch.y)*0.007);
       const c=(touch.subLo+touch.subHi)/2;
       const r=Math.max((touch.subHi-touch.subLo)/2*f,1e-9);
-      state.subScale[key]={auto:false,lo:c-r,hi:c+r};
+      if(!(state.subLock&&state.subLock[key]))state.subScale[key]={auto:false,lo:c-r,hi:c+r};
     }else if(touch.mode&&touch.mode.startsWith('subpan:')){
       const cw=(W-AXIS_W)/state.view.count;
       state.view.start=Math.max(-state.view.count*0.5,Math.min(state.data.length-state.view.count*0.5,touch.start-(x-touch.x)/cw));
@@ -3540,6 +3541,7 @@ canvas.addEventListener('touchmove',e=>{
       if(pane&&touch.subPan){for(const mk of (pane.members||[pane.key])){
         const base=touch.subPan[mk]; if(!base)continue;
         const dP=(y-touch.y)*(base.hi-base.lo)/Math.max(pane.h,1);
+        if(state.subLock&&state.subLock[mk])continue;
         state.subScale[mk]={auto:false,lo:base.lo+dP,hi:base.hi+dP};
       }}
     }else if(state.xhairMode){
