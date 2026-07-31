@@ -1265,22 +1265,35 @@ const calc = {
       if(al<0)ph=1-ph;const w=ph/S2;cf.push(w);W+=w;}
     const s2=src.map((v,i)=>(v+(i>0?src[i-1]:v))/2),o=new Array(src.length).fill(null);
     for(let i=L1;i<src.length;i++){let E=0;for(let k=0;k<=L1;k++)E+=cf[k]*s2[i-k];o[i]=E/W;}return o;},
+  _smaA(src,len){const o=new Array(src.length).fill(null),q=[];let sum=0;
+    for(let i=0;i<src.length;i++){const v=src[i];if(v==null){continue;}q.push(v);sum+=v;if(q.length>len)sum-=q.shift();if(q.length===len)o[i]=sum/len;}return o;},
+  _demaA(src,len){const e1=this._emaA(src,len),e2=this._emaA(e1,len);return src.map((_,i)=>(e1[i]==null||e2[i]==null)?null:2*e1[i]-e2[i]);},
+  _temaA(src,len){const e1=this._emaA(src,len),e2=this._emaA(e1,len),e3=this._emaA(e2,len);return src.map((_,i)=>(e1[i]==null||e2[i]==null||e3[i]==null)?null:(e1[i]-e2[i])*3+e3[i]);},
   _filt(src,len,phase,style){if(len<=1)return src.slice();
-    if(style==='EMA')return this._emaA(src,len);if(style==='WMA')return this._wmaA(src,len);return this._phi(src,len,phase);},
+    switch(style){case'EMA':return this._emaA(src,len);case'WMA':return this._wmaA(src,len);
+      case'DEMA':return this._demaA(src,len);case'TEMA':return this._temaA(src,len);case'SMA':return this._smaA(src,len);
+      default:return this._phi(src,len,phase);}},
   twoInd(closes,opt){opt=opt||{};
-    const sp=opt.spacing||3,ph=opt.phase||3.7,style=opt.filter||'PhiSmoother',pl=opt.postLen||1,sl=opt.sigLen||20,n=closes.length;
+    const sp=opt.spacing||3,ph=opt.phase||3.7,style=opt.cfilter||'PhiSmoother';
+    const pl=opt.postLen||1,sl=opt.sigLen||20,n=closes.length,vol=opt.mode==='Volatility';
+    const trimUp=Math.max(0,opt.trimUp||0),trimLo=Math.max(0,opt.trimLo||0);
     const cl=new Array(34).fill(null);cl[0]=closes.slice();
     const mp=[1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33];
     mp.forEach((slot,idx)=>{cl[slot]=this._filt(closes,(idx+1)*sp,ph,style);});
-    const gt=(a,b)=>a!=null&&b!=null&&a>b,raw=new Array(n).fill(null),val=33;
+    const gt=(a,b)=>a!=null&&b!=null&&a>b,raw=new Array(n).fill(null);
     for(let t=0;t<n;t++){
-      const vv=cl.map(c=>c?c[t]:null),sc=new Array(34);
-      for(let i=0;i<34;i++){let sm=0;for(let j=0;j<34;j++){if(i===j)continue;const pol=i<j?1:-1;sm+=gt(vv[i],vv[j])?pol:-pol;}sc[i]=sm;}
-      const avg=sc.reduce((a,b)=>a+b,0)/34;raw[t]=((avg+val)/(val*2)-0.5)*200;}
-    const net=this._filt(raw,pl,ph,opt.postFilt||'PhiSmoother');
+      let vv=cl.map(c=>c?c[t]:null);
+      if(trimUp>0)vv=vv.slice(Math.min(trimUp,vv.length-2));
+      if(trimLo>0)vv=vv.slice(0,Math.max(2,vv.length-trimLo));
+      const L=vv.length,val=L-1,sc=new Array(L);
+      for(let i=0;i<L;i++){let sm=0;for(let j=0;j<L;j++){if(i===j)continue;const pol=i<j?1:-1;sm+=gt(vv[i],vv[j])?pol:-pol;}sc[i]=sm;}
+      const avg=sc.reduce((a,b)=>a+b,0)/L;let nv=((avg+val)/(val*2)-0.5)*200;
+      if(vol){const nn=vv.filter(x=>x!=null);if(nn.length){const mx=Math.max(...nn),mn=Math.min(...nn),av=(mx+mn)/2;nv*=av?((mx-mn)/av):0;}else nv=0;}
+      raw[t]=nv;}
+    const net=this._filt(raw,pl,ph,opt.postFilter||'PhiSmoother');
     const sm2=net.map((v,i)=>(v==null||net[i-1]==null)?(v==null?null:v):(v+net[i-1])/2);
-    const sig=sl<2?new Array(n).fill(null):this._filt(sm2,sl,ph,opt.sigFilt||'PhiSmoother');
-    return{net,signal:sig};},
+    const sig=sl<2?new Array(n).fill(null):this._filt(sm2,sl,ph,opt.sigFilter||'PhiSmoother');
+    return{net,signal:sig,volatility:vol};},
   ssWma(src,len){if(len<=2)return src.slice();
     const w2=Math.round(len/3),w1=Math.round((len-w2)/2),w3=Math.trunc((len-w2)/2);
     return this._wmaA(this._wmaA(this._wmaA(src,w1),w2),w3);}
@@ -1325,7 +1338,7 @@ const state = {
     imp2:{on:false,period:34,tf:'60'},
     stoch:{on:false,period:14,tf:'chart'},
     atr:{on:false,period:14,tf:'chart'},
-    t2:{on:false,period:3,sig:20,ssLen:15,tf:'chart'},
+    t2:{on:false,tf:'chart',src:'close',period:3,phase:3.7,mode:'Trend Strength',cfilter:'PhiSmoother',trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sig:20,lvlUp:75,lvlLo:-75,easing:50,ssLen:15,sigLoc:1},
     t2ln:{on:false,period:15,tf:'chart'},
     rosc:{on:false,period:50,smooth:2,tf:'chart'},
     rosc2:{on:false,period:50,smooth:2,tf:'60'},
@@ -1868,13 +1881,17 @@ function getInd(key){
     }
     if(key==='t2'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
-      const ssL=ind.ssLen||15;
-      if(!mtf){const r=calc.twoInd(d.map(x=>x.c),{spacing:ind.period,sigLen:ind.sig||20});
-        state.cache[ck]={net:r.net,signal:r.signal,ssWma:calc.ssWma(d.map(x=>x.c),ssL)};}
+      const ssL=ind.ssLen||15, sc=ind.src||'close';
+      const srcOf=b=>b.map(x=>sc==='hl2'?(x.h+x.l)/2:sc==='hlc3'?(x.h+x.l+x.c)/3:sc==='open'?x.o:sc==='high'?x.h:sc==='low'?x.l:x.c);
+      const OPT={spacing:ind.period,phase:ind.phase||3.7,mode:ind.mode||'Trend Strength',cfilter:ind.cfilter||'PhiSmoother',
+        trimUp:ind.trimUp||0,trimLo:ind.trimLo||0,postFilter:ind.postFilter||'PhiSmoother',postLen:ind.postLen||1,
+        sigFilter:ind.sigFilter||'PhiSmoother',sigLen:ind.sig||20};
+      if(!mtf){const r=calc.twoInd(srcOf(d),OPT);
+        state.cache[ck]={net:r.net,signal:r.signal,volatility:r.volatility,ssWma:calc.ssWma(srcOf(d),ssL)};}
       else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
         if(!bars)state.cache[ck]={net:[],signal:[],ssWma:[]};
-        else{const r=calc.twoInd(bars.map(x=>x.c),{spacing:ind.period,sigLen:ind.sig||20});
-          state.cache[ck]={net:mapHTF(bars,r.net),signal:mapHTF(bars,r.signal),ssWma:mapHTF(bars,calc.ssWma(bars.map(x=>x.c),ssL))};}}
+        else{const r=calc.twoInd(srcOf(bars),OPT);
+          state.cache[ck]={net:mapHTF(bars,r.net),signal:mapHTF(bars,r.signal),volatility:r.volatility,ssWma:mapHTF(bars,calc.ssWma(srcOf(bars),ssL))};}}
     }
     if(key==='t2ln'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
@@ -2628,7 +2645,12 @@ function drawPrice(p,s,e,cw){
   if(vis('ema3'))plotLine(getInd('ema3'),s,e,yOf,S('ema3','cLine'),1.4);
   if(vis('t2')){const a=getInd('t2').ssWma,cU=S('t2','cLineUp'),cD=S('t2','cLineDown');ctx.lineWidth=2.2;
     for(let i=Math.max(s,1);i<e;i++){if(a[i]==null||a[i-1]==null)continue;
-      ctx.strokeStyle=a[i]>=a[i-1]?cU:cD;ctx.beginPath();ctx.moveTo(xOf(i-1),yOf(a[i-1]));ctx.lineTo(xOf(i),yOf(a[i]));ctx.stroke();}}
+      ctx.strokeStyle=a[i]>=a[i-1]?cU:cD;ctx.beginPath();ctx.moveTo(xOf(i-1),yOf(a[i-1]));ctx.lineTo(xOf(i),yOf(a[i]));ctx.stroke();}
+    if(S('t2','swing')){const loc=(state.indicators.t2.sigLoc||1)/100;
+      for(let i=Math.max(s,2);i<e;i++){if(a[i]==null||a[i-1]==null||a[i-2]==null)continue;
+        const up=a[i]>a[i-1],up1=a[i-1]>a[i-2],dd=loc*a[i];
+        if(up1&&!up){const x=xOf(i),y=yOf(a[i]+dd);ctx.fillStyle=cD;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-5,y-8);ctx.lineTo(x+5,y-8);ctx.closePath();ctx.fill();}
+        if(up&&!up1){const x=xOf(i),y=yOf(a[i]-dd);ctx.fillStyle=cU;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-5,y+8);ctx.lineTo(x+5,y+8);ctx.closePath();ctx.fill();}}}}
   if(vis('st')){
     const sup=getInd('st');
     ctx.lineWidth=1.6;
@@ -3067,17 +3089,17 @@ function drawTwoInd(p,s,e,cw,K){
   const GOLD=S(K,'cUp'), PURP=S(K,'cDown'), cSig=S(K,'cSig');
   const GRN='#00C853', RED='#F23345';
   const yOf=subYOf(p,K,-100,100,false), y0=yOf(0);
-  // fonds façon TradingView : rouge sombre (+75..+100), or (0..+75),
-  // violet (-75..0), vert (-75..-100), en dégradés
-  {const RW=W-AXIS_W,yT=yOf(100),y75=yOf(75),ym75=yOf(-75),yB=yOf(-100);let g;
-   g=ctx.createLinearGradient(0,yT,0,y75);g.addColorStop(0,hexA('#800000',.85));g.addColorStop(1,hexA('#800000',0));ctx.fillStyle=g;ctx.fillRect(0,yT,RW,y75-yT);
-   g=ctx.createLinearGradient(0,y75,0,y0);g.addColorStop(0,hexA(GOLD,0));g.addColorStop(1,hexA(GOLD,.22));ctx.fillStyle=g;ctx.fillRect(0,y75,RW,y0-y75);
-   g=ctx.createLinearGradient(0,y0,0,ym75);g.addColorStop(0,hexA(PURP,.22));g.addColorStop(1,hexA(PURP,0));ctx.fillStyle=g;ctx.fillRect(0,y0,RW,ym75-y0);
-   g=ctx.createLinearGradient(0,ym75,0,yB);g.addColorStop(0,hexA('#008000',0));g.addColorStop(1,hexA('#008000',.85));ctx.fillStyle=g;ctx.fillRect(0,ym75,RW,yB-ym75);}
-  // niveaux +75 (or) / -75 (violet) pointilles + zero
+  const LU=S(K,'lvlUp'), LL=S(K,'lvlLo');
+  // fonds façon TradingView : rouge sombre extreme haut, or, violet, vert extreme bas
+  if(S(K,'fillBg')){const RW=W-AXIS_W,yT=yOf(100),yLU=yOf(LU),yLL=yOf(LL),yB=yOf(-100);let g;
+   g=ctx.createLinearGradient(0,yT,0,yLU);g.addColorStop(0,hexA('#800000',.85));g.addColorStop(1,hexA('#800000',0));ctx.fillStyle=g;ctx.fillRect(0,yT,RW,yLU-yT);
+   g=ctx.createLinearGradient(0,yLU,0,y0);g.addColorStop(0,hexA(GOLD,0));g.addColorStop(1,hexA(GOLD,.22));ctx.fillStyle=g;ctx.fillRect(0,yLU,RW,y0-yLU);
+   g=ctx.createLinearGradient(0,y0,0,yLL);g.addColorStop(0,hexA(PURP,.22));g.addColorStop(1,hexA(PURP,0));ctx.fillStyle=g;ctx.fillRect(0,y0,RW,yLL-y0);
+   g=ctx.createLinearGradient(0,yLL,0,yB);g.addColorStop(0,hexA('#008000',0));g.addColorStop(1,hexA('#008000',.85));ctx.fillStyle=g;ctx.fillRect(0,yLL,RW,yB-yLL);}
+  // niveaux reglables (or / violet) pointilles + zero
   ctx.setLineDash([2,3]);ctx.lineWidth=1;
-  ctx.strokeStyle=hexA(GOLD,.55);ctx.beginPath();ctx.moveTo(0,yOf(75));ctx.lineTo(W-AXIS_W,yOf(75));ctx.stroke();
-  ctx.strokeStyle=hexA(PURP,.55);ctx.beginPath();ctx.moveTo(0,yOf(-75));ctx.lineTo(W-AXIS_W,yOf(-75));ctx.stroke();
+  ctx.strokeStyle=hexA(GOLD,.55);ctx.beginPath();ctx.moveTo(0,yOf(LU));ctx.lineTo(W-AXIS_W,yOf(LU));ctx.stroke();
+  ctx.strokeStyle=hexA(PURP,.55);ctx.beginPath();ctx.moveTo(0,yOf(LL));ctx.lineTo(W-AXIS_W,yOf(LL));ctx.stroke();
   ctx.setLineDash([]);ctx.strokeStyle='rgba(126,140,168,.35)';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(W-AXIS_W,y0);ctx.stroke();
   // ligne de signal
   ctx.strokeStyle=hexA(cSig,.85);ctx.lineWidth=1;ctx.beginPath();let st2=false;
@@ -4268,14 +4290,30 @@ const SCHEMA={
   ]},
   t2:{title:'2 indicator',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
-    {k:'period',t:'num',lab:'Dispersion',min:1,max:10,ind:1},
-    {k:'sig',t:'num',lab:'Signal',min:1,max:50,ind:1,def:20},
-    {k:'cUp',t:'col',lab:'Oscillateur haussier (or)',def:'#FFCC00'},
-    {k:'cDown',t:'col',lab:'Oscillateur baissier (violet)',def:'#5500CC'},
-    {k:'cSig',t:'col',lab:'Ligne signal',def:'#9598A1'},
+    {k:'src',t:'choice',lab:'Source',ind:1,opts:[{v:'close',t:'Clôt'},{v:'open',t:'Ouv'},{v:'high',t:'Haut'},{v:'low',t:'Bas'},{v:'hl2',t:'HL2'},{v:'hlc3',t:'HLC3'}]},
+    {k:'mode',t:'choice',lab:'Mode',ind:1,opts:[{v:'Trend Strength',t:'Tendance'},{v:'Volatility',t:'Volatilité'}]},
+    {k:'cfilter',t:'choice',lab:'Filtre cluster',ind:1,opts:[{v:'PhiSmoother',t:'Phi'},{v:'EMA',t:'EMA'},{v:'DEMA',t:'DEMA'},{v:'TEMA',t:'TEMA'},{v:'WMA',t:'WMA'},{v:'SMA',t:'SMA'}]},
+    {k:'phase',t:'num',lab:'Phase PhiSmoother',min:0,max:10,def:3.7,ind:1},
+    {k:'period',t:'num',lab:'Dispersion du cluster',min:1,max:10,ind:1},
+    {k:'trimUp',t:'num',lab:'Trim cluster (haut)',min:0,max:31,def:0,ind:1},
+    {k:'trimLo',t:'num',lab:'Trim cluster (bas)',min:0,max:31,def:0,ind:1},
+    {k:'postFilter',t:'choice',lab:'Post-lissage — filtre',ind:1,opts:[{v:'PhiSmoother',t:'Phi'},{v:'EMA',t:'EMA'},{v:'DEMA',t:'DEMA'},{v:'TEMA',t:'TEMA'},{v:'WMA',t:'WMA'},{v:'SMA',t:'SMA'}]},
+    {k:'postLen',t:'num',lab:'Post-lissage — longueur',min:1,max:50,def:1,ind:1},
+    {k:'sigFilter',t:'choice',lab:'Signal — filtre',ind:1,opts:[{v:'PhiSmoother',t:'Phi'},{v:'EMA',t:'EMA'},{v:'DEMA',t:'DEMA'},{v:'TEMA',t:'TEMA'},{v:'WMA',t:'WMA'},{v:'SMA',t:'SMA'}]},
+    {k:'sig',t:'num',lab:'Signal — longueur',min:1,max:50,ind:1,def:20},
+    {k:'cSig',t:'col',lab:'Signal — couleur',def:'#9598A1'},
+    {k:'lvlUp',t:'num',lab:'Niveau haut',min:1,max:99,def:75,ind:1},
+    {k:'lvlLo',t:'num',lab:'Niveau bas',min:-99,max:-1,def:-75,ind:1},
+    {k:'easing',t:'num',lab:'Transition Easing',min:0,max:100,def:50,ind:1},
+    {k:'fillBg',t:'bool',lab:'Remplir le fond',def:true},
+    {k:'cUp',t:'col',lab:'Couleur haussière (or)',def:'#FFCC00'},
+    {k:'cTrans',t:'col',lab:'Couleur transition',def:'#9598A1'},
+    {k:'cDown',t:'col',lab:'Couleur baissière (violet)',def:'#5500CC'},
     {k:'ssLen',t:'num',lab:'Ligne SS_WMA — lissage',min:3,max:100,ind:1,def:15},
     {k:'cLineUp',t:'col',lab:'Ligne SS_WMA — hausse',def:'#33FF00'},
     {k:'cLineDown',t:'col',lab:'Ligne SS_WMA — baisse',def:'#FF1111'},
+    {k:'swing',t:'bool',lab:'Flèches de swing',def:false},
+    {k:'sigLoc',t:'num',lab:'Position flèche %',min:0,max:20,def:1,ind:1},
   ]},
   t2ln:{title:'2 indicator (ligne SS_WMA)',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
