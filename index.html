@@ -3066,10 +3066,14 @@ function drawTwoInd(p,s,e,cw,K){
   const r=getInd(K), net=r.net, sig=r.signal;
   const GOLD=S(K,'cUp'), PURP=S(K,'cDown'), cSig=S(K,'cSig');
   const GRN='#00C853', RED='#F23345';
-  const yOf=subYOf(p,K,-100,100,true), y0=yOf(0);
-  // fond : or au-dessus de 0, violet en dessous
-  ctx.fillStyle=hexA(GOLD,.06);ctx.fillRect(0,yOf(75),W-AXIS_W,y0-yOf(75));
-  ctx.fillStyle=hexA(PURP,.06);ctx.fillRect(0,y0,W-AXIS_W,yOf(-75)-y0);
+  const yOf=subYOf(p,K,-100,100,false), y0=yOf(0);
+  // fonds façon TradingView : rouge sombre (+75..+100), or (0..+75),
+  // violet (-75..0), vert (-75..-100), en dégradés
+  {const RW=W-AXIS_W,yT=yOf(100),y75=yOf(75),ym75=yOf(-75),yB=yOf(-100);let g;
+   g=ctx.createLinearGradient(0,yT,0,y75);g.addColorStop(0,hexA('#800000',.85));g.addColorStop(1,hexA('#800000',0));ctx.fillStyle=g;ctx.fillRect(0,yT,RW,y75-yT);
+   g=ctx.createLinearGradient(0,y75,0,y0);g.addColorStop(0,hexA(GOLD,0));g.addColorStop(1,hexA(GOLD,.22));ctx.fillStyle=g;ctx.fillRect(0,y75,RW,y0-y75);
+   g=ctx.createLinearGradient(0,y0,0,ym75);g.addColorStop(0,hexA(PURP,.22));g.addColorStop(1,hexA(PURP,0));ctx.fillStyle=g;ctx.fillRect(0,y0,RW,ym75-y0);
+   g=ctx.createLinearGradient(0,ym75,0,yB);g.addColorStop(0,hexA('#008000',0));g.addColorStop(1,hexA('#008000',.85));ctx.fillStyle=g;ctx.fillRect(0,ym75,RW,yB-ym75);}
   // niveaux +75 (or) / -75 (violet) pointilles + zero
   ctx.setLineDash([2,3]);ctx.lineWidth=1;
   ctx.strokeStyle=hexA(GOLD,.55);ctx.beginPath();ctx.moveTo(0,yOf(75));ctx.lineTo(W-AXIS_W,yOf(75));ctx.stroke();
