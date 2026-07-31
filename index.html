@@ -558,21 +558,12 @@ footer{
       </div>
       <div class="ind-item" data-ind="t2">
         <span class="dot" style="background:#FFCC00"></span>
-        <span class="name">2 indicator <span class="desc">Oscillateur (cluster PhiSmoother)</span></span>
+        <span class="name">2 indicator <span class="desc">Ligne SS_WMA + oscillateur</span></span>
         <input type="number" min="1" max="10" value="3" aria-label="Dispersion 2 indicator">
         <span class="srtf mtf on" data-ind2="t2" data-tf="chart">UT</span>
         <span class="srtf mtf" data-ind2="t2" data-tf="5">5m</span>
         <span class="srtf mtf" data-ind2="t2" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="t2" data-tf="60">1H</span>
-        <span class="state">off</span>
-      </div>
-      <div class="ind-item" data-ind="t2ln">
-        <span class="dot" style="background:#33FF00"></span>
-        <span class="name">2 indicator — ligne SS_WMA <span class="desc">Sur le prix</span></span>
-        <input type="number" min="3" max="100" value="15" aria-label="Lissage SS_WMA">
-        <span class="srtf mtf on" data-ind2="t2ln" data-tf="chart">UT</span>
-        <span class="srtf mtf" data-ind2="t2ln" data-tf="5">5m</span>
-        <span class="srtf mtf" data-ind2="t2ln" data-tf="15">15m</span>
         <span class="state">off</span>
       </div>
       <div class="ind-item" data-ind="rosc">
@@ -1334,7 +1325,7 @@ const state = {
     imp2:{on:false,period:34,tf:'60'},
     stoch:{on:false,period:14,tf:'chart'},
     atr:{on:false,period:14,tf:'chart'},
-    t2:{on:false,period:3,sig:20,tf:'chart'},
+    t2:{on:false,period:3,sig:20,ssLen:15,tf:'chart'},
     t2ln:{on:false,period:15,tf:'chart'},
     rosc:{on:false,period:50,smooth:2,tf:'chart'},
     rosc2:{on:false,period:50,smooth:2,tf:'60'},
@@ -1877,11 +1868,13 @@ function getInd(key){
     }
     if(key==='t2'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
-      if(!mtf)state.cache[ck]=calc.twoInd(d.map(x=>x.c),{spacing:ind.period,sigLen:ind.sig||20});
+      const ssL=ind.ssLen||15;
+      if(!mtf){const r=calc.twoInd(d.map(x=>x.c),{spacing:ind.period,sigLen:ind.sig||20});
+        state.cache[ck]={net:r.net,signal:r.signal,ssWma:calc.ssWma(d.map(x=>x.c),ssL)};}
       else{ensureMTF(mtf);const bars=mtfStore.data[mtf];
-        if(!bars)state.cache[ck]={net:[],signal:[]};
+        if(!bars)state.cache[ck]={net:[],signal:[],ssWma:[]};
         else{const r=calc.twoInd(bars.map(x=>x.c),{spacing:ind.period,sigLen:ind.sig||20});
-          state.cache[ck]={net:mapHTF(bars,r.net),signal:mapHTF(bars,r.signal)};}}
+          state.cache[ck]={net:mapHTF(bars,r.net),signal:mapHTF(bars,r.signal),ssWma:mapHTF(bars,calc.ssWma(bars.map(x=>x.c),ssL))};}}
     }
     if(key==='t2ln'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
@@ -2633,7 +2626,7 @@ function drawPrice(p,s,e,cw){
   }
   if(vis('ema2'))plotLine(getInd('ema2'),s,e,yOf,S('ema2','cLine'),1.4);
   if(vis('ema3'))plotLine(getInd('ema3'),s,e,yOf,S('ema3','cLine'),1.4);
-  if(vis('t2ln')){const a=getInd('t2ln'),cU=S('t2ln','cUp'),cD=S('t2ln','cDown');ctx.lineWidth=2.2;
+  if(vis('t2')){const a=getInd('t2').ssWma,cU=S('t2','cLineUp'),cD=S('t2','cLineDown');ctx.lineWidth=2.2;
     for(let i=Math.max(s,1);i<e;i++){if(a[i]==null||a[i-1]==null)continue;
       ctx.strokeStyle=a[i]>=a[i-1]?cU:cD;ctx.beginPath();ctx.moveTo(xOf(i-1),yOf(a[i-1]));ctx.lineTo(xOf(i),yOf(a[i]));ctx.stroke();}}
   if(vis('st')){
@@ -4269,13 +4262,16 @@ const SCHEMA={
     {k:'cUp',t:'col',lab:'Haussier (bleu)',def:'#4A90FF'},
     {k:'cDown',t:'col',lab:'Baissier (orange)',def:'#FF9D42'},
   ]},
-  t2:{title:'2 indicator (oscillateur)',fields:[
+  t2:{title:'2 indicator',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'period',t:'num',lab:'Dispersion',min:1,max:10,ind:1},
     {k:'sig',t:'num',lab:'Signal',min:1,max:50,ind:1,def:20},
-    {k:'cUp',t:'col',lab:'Haussier (or)',def:'#FFCC00'},
-    {k:'cDown',t:'col',lab:'Baissier (violet)',def:'#5500CC'},
+    {k:'cUp',t:'col',lab:'Oscillateur haussier (or)',def:'#FFCC00'},
+    {k:'cDown',t:'col',lab:'Oscillateur baissier (violet)',def:'#5500CC'},
     {k:'cSig',t:'col',lab:'Ligne signal',def:'#9598A1'},
+    {k:'ssLen',t:'num',lab:'Ligne SS_WMA — lissage',min:3,max:100,ind:1,def:15},
+    {k:'cLineUp',t:'col',lab:'Ligne SS_WMA — hausse',def:'#33FF00'},
+    {k:'cLineDown',t:'col',lab:'Ligne SS_WMA — baisse',def:'#FF1111'},
   ]},
   t2ln:{title:'2 indicator (ligne SS_WMA)',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
