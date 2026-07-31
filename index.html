@@ -1290,9 +1290,9 @@ const calc = {
       const avg=sc.reduce((a,b)=>a+b,0)/L;let nv=((avg+val)/(val*2)-0.5)*200;
       if(vol){const nn=vv.filter(x=>x!=null);if(nn.length){const mx=Math.max(...nn),mn=Math.min(...nn),av=(mx+mn)/2;nv*=av?((mx-mn)/av):0;}else nv=0;}
       raw[t]=nv;}
-    const net=this._filt(raw,pl,ph,opt.postFilter||'PhiSmoother');
+    const net=this._filt(raw,pl,3.7,opt.postFilter||'PhiSmoother');
     const sm2=net.map((v,i)=>(v==null||net[i-1]==null)?(v==null?null:v):(v+net[i-1])/2);
-    const sig=sl<2?new Array(n).fill(null):this._filt(sm2,sl,ph,opt.sigFilter||'PhiSmoother');
+    const sig=sl<2?new Array(n).fill(null):this._filt(sm2,sl,3.7,opt.sigFilter||'PhiSmoother');
     return{net,signal:sig,volatility:vol};},
   ssWma(src,len){if(len<=2)return src.slice();
     const w2=Math.round(len/3),w1=Math.round((len-w2)/2),w3=Math.trunc((len-w2)/2);
@@ -3088,19 +3088,29 @@ function drawTwoInd(p,s,e,cw,K){
   const r=getInd(K), net=r.net, sig=r.signal;
   const GOLD=S(K,'cUp'), PURP=S(K,'cDown'), cSig=S(K,'cSig');
   const GRN='#00C853', RED='#F23345';
-  const yOf=subYOf(p,K,-100,100,false), y0=yOf(0);
-  const LU=S(K,'lvlUp'), LL=S(K,'lvlLo');
-  // fonds façon TradingView : rouge sombre extreme haut, or, violet, vert extreme bas
-  if(S(K,'fillBg')){const RW=W-AXIS_W,yT=yOf(100),yLU=yOf(LU),yLL=yOf(LL),yB=yOf(-100);let g;
-   g=ctx.createLinearGradient(0,yT,0,yLU);g.addColorStop(0,hexA('#800000',.85));g.addColorStop(1,hexA('#800000',0));ctx.fillStyle=g;ctx.fillRect(0,yT,RW,yLU-yT);
-   g=ctx.createLinearGradient(0,yLU,0,y0);g.addColorStop(0,hexA(GOLD,0));g.addColorStop(1,hexA(GOLD,.22));ctx.fillStyle=g;ctx.fillRect(0,yLU,RW,y0-yLU);
-   g=ctx.createLinearGradient(0,y0,0,yLL);g.addColorStop(0,hexA(PURP,.22));g.addColorStop(1,hexA(PURP,0));ctx.fillStyle=g;ctx.fillRect(0,y0,RW,yLL-y0);
-   g=ctx.createLinearGradient(0,yLL,0,yB);g.addColorStop(0,hexA('#008000',0));g.addColorStop(1,hexA('#008000',.85));ctx.fillStyle=g;ctx.fillRect(0,yLL,RW,yB-yLL);}
-  // niveaux reglables (or / violet) pointilles + zero
-  ctx.setLineDash([2,3]);ctx.lineWidth=1;
-  ctx.strokeStyle=hexA(GOLD,.55);ctx.beginPath();ctx.moveTo(0,yOf(LU));ctx.lineTo(W-AXIS_W,yOf(LU));ctx.stroke();
-  ctx.strokeStyle=hexA(PURP,.55);ctx.beginPath();ctx.moveTo(0,yOf(LL));ctx.lineTo(W-AXIS_W,yOf(LL));ctx.stroke();
-  ctx.setLineDash([]);ctx.strokeStyle='rgba(126,140,168,.35)';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(W-AXIS_W,y0);ctx.stroke();
+  const vol=r.volatility; let yOf,y0,LU,LL;
+  if(vol){
+    // mode Volatilité : auto-échelle sur les données (comme TradingView qui retire les niveaux fixes)
+    let lo=Infinity,hi=-Infinity;
+    for(let i=s;i<e;i++)for(const v of [net[i],sig[i]])if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}
+    if(!isFinite(lo)){lo=-1;hi=1;} const pad=(hi-lo)*0.1||1; lo-=pad; hi+=pad;
+    yOf=subYOf(p,K,lo,hi,false); y0=yOf(0);
+    ctx.setLineDash([]);ctx.strokeStyle='rgba(126,140,168,.35)';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(W-AXIS_W,y0);ctx.stroke();
+  } else {
+    yOf=subYOf(p,K,-100,100,false); y0=yOf(0);
+    LU=S(K,'lvlUp'); LL=S(K,'lvlLo');
+    // fonds façon TradingView : rouge sombre extreme haut, or, violet, vert extreme bas
+    if(S(K,'fillBg')){const RW=W-AXIS_W,yT=yOf(100),yLU=yOf(LU),yLL=yOf(LL),yB=yOf(-100);let g;
+     g=ctx.createLinearGradient(0,yT,0,yLU);g.addColorStop(0,hexA('#800000',.85));g.addColorStop(1,hexA('#800000',0));ctx.fillStyle=g;ctx.fillRect(0,yT,RW,yLU-yT);
+     g=ctx.createLinearGradient(0,yLU,0,y0);g.addColorStop(0,hexA(GOLD,0));g.addColorStop(1,hexA(GOLD,.22));ctx.fillStyle=g;ctx.fillRect(0,yLU,RW,y0-yLU);
+     g=ctx.createLinearGradient(0,y0,0,yLL);g.addColorStop(0,hexA(PURP,.22));g.addColorStop(1,hexA(PURP,0));ctx.fillStyle=g;ctx.fillRect(0,y0,RW,yLL-y0);
+     g=ctx.createLinearGradient(0,yLL,0,yB);g.addColorStop(0,hexA('#008000',0));g.addColorStop(1,hexA('#008000',.85));ctx.fillStyle=g;ctx.fillRect(0,yLL,RW,yB-yLL);}
+    // niveaux reglables (or / violet) pointilles + zero
+    ctx.setLineDash([2,3]);ctx.lineWidth=1;
+    ctx.strokeStyle=hexA(GOLD,.55);ctx.beginPath();ctx.moveTo(0,yOf(LU));ctx.lineTo(W-AXIS_W,yOf(LU));ctx.stroke();
+    ctx.strokeStyle=hexA(PURP,.55);ctx.beginPath();ctx.moveTo(0,yOf(LL));ctx.lineTo(W-AXIS_W,yOf(LL));ctx.stroke();
+    ctx.setLineDash([]);ctx.strokeStyle='rgba(126,140,168,.35)';ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(W-AXIS_W,y0);ctx.stroke();
+  }
   // ligne de signal
   ctx.strokeStyle=hexA(cSig,.85);ctx.lineWidth=1;ctx.beginPath();let st2=false;
   for(let i=s;i<e;i++){if(sig[i]==null){st2=false;continue;}const x=xOf(i),y=yOf(sig[i]);st2?ctx.lineTo(x,y):(ctx.moveTo(x,y),st2=true);}
