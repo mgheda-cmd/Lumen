@@ -401,6 +401,11 @@ footer{
         <span class="name">Croisement EMA9 × HA 5m <span class="desc">Long/Short au croisement complet</span></span>
         <span class="state">off</span>
       </div>
+      <div class="ind-item" data-ind="sellob">
+        <span class="dot" style="background:#FF5C7A"></span>
+        <span class="name">Vente EMA↓HA5m + OB <span class="desc">Pastille sur Order Block</span></span>
+        <span class="state">off</span>
+      </div>
       <div class="ind-item" data-ind="sha">
         <span class="dot" style="background:#26C6DA"></span>
         <span class="name">Heikin Ashi lissé ① <span class="desc">Bougies HA lissées</span></span>
@@ -1314,6 +1319,7 @@ const state = {
     emacloud:{on:false,fast:30,slow:90},
     signal:{on:false,emaFast:9,emaSlow:30,window:3},
     emaHaX:{on:false},
+    sellob:{on:false,window:5},
     bb:{on:false,period:20},
     vwap:{on:false},
     sess:{on:false,hour:15,min:29},
@@ -2283,6 +2289,24 @@ function render(){
       ctx.fillStyle=col;ctx.fillRect(bx,by,tw,th);
       ctx.fillStyle='#0A111F';ctx.textAlign='center';
       ctx.fillText(txt,bx+tw/2,by+th-5);ctx.textAlign='left';
+    }
+  }
+  // Pastille VENTE : EMA sous HA 5m + Order Block
+  if(vis('sellob')){
+    const _pr=panes.find(P=>P.key==='price'), yOf=_pr&&_pr.yOf;
+    const col=S('sellob','col');
+    if(yOf)for(const g of computeSellOB(state.data)){
+      const i=g.i; if(i<s-1||i>e)continue;
+      const x=xOf(i), py=yOf(state.data[i].h), yTip=py-14;
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,yTip-8,7,0,7);ctx.fill();
+      ctx.fillStyle='#0A111F';ctx.font='bold 9px system-ui';ctx.textAlign='center';
+      ctx.fillText('V',x,yTip-5);
+      const txt='VENTE'+(g.tf?' '+g.tf:'');
+      ctx.font='bold 10px "IBM Plex Mono",monospace';
+      const tw=ctx.measureText(txt).width+10, th=15;
+      const bx=Math.max(2,Math.min(W-AXIS_W-tw-2,x-tw/2)), by=yTip+2;
+      ctx.fillStyle=col;ctx.fillRect(bx,by,tw,th);
+      ctx.fillStyle='#0A111F';ctx.fillText(txt,bx+tw/2,by+th-4);ctx.textAlign='left';
     }
   }
   // Crosshair vertical global : traverse tous les panneaux
@@ -3308,6 +3332,7 @@ const IND_META={
   bos:{label:()=>'Structure BOS/CHoCH',color:'#FFD166'},
   signal:{label:()=>'Signaux A/V',color:'#FFE24D'},
   emaHaX:{label:()=>'EMA9 × HA5m',color:'#2ED3B0'},
+  sellob:{label:()=>'Vente EMA↓HA5m + OB',color:'#FF5C7A'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
   lrc:{label:p=>'Régression '+p,color:'#9BE6FF'},
@@ -4418,6 +4443,10 @@ const SCHEMA={
     {k:'cUp',t:'col',lab:'Haussier',def:'#B48BFF'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F2C14E'},
   ]},
+  sellob:{title:'Vente : EMA sous HA 5m + Order Block',fields:[
+    {k:'window',t:'num',lab:'Fenêtre Order Block (bougies)',min:1,max:30,ind:1},
+    {k:'col',t:'col',lab:'Couleur',def:'#FF5C7A'},
+  ]},
   signal:{title:'Signaux Achat / Vente (confluence)',fields:[
     {k:'emaFast',t:'num',lab:'EMA rapide',min:2,max:100,ind:1},
     {k:'emaSlow',t:'num',lab:'EMA lente',min:5,max:200,ind:1},
@@ -4732,6 +4761,35 @@ function computeEmaHaCross(d){
     if(dir===1 && !(M3[i]>G3[i]))continue;
     if(dir===-1 && !(M3[i]<G3[i]))continue;
     out.push({i,t:d[i].t,dir,price:d[i].c});
+  }
+  return out;
+}
+
+/* ---------- Vente : EMA sous HA lissé 5m + Order Block (toute UT) ---------- */
+function computeSellOB(d){
+  const cands=['sha','sha2','sha3'].filter(k=>state.indicators[k].tf==='5');
+  const HK=cands.find(k=>state.indicators[k].on)||cands[0];
+  if(!HK)return [];
+  const ema=getInd('ema'), haArr=getInd(HK);
+  if(!Array.isArray(ema)||!Array.isArray(haArr))return [];
+  const hb=[],hc=[];
+  for(const x of haArr)if(x){hb.push(x);hc.push(x.c);}
+  const haC=mapHTF(hb,hc);
+  const obs=getInd('ob')||[];
+  const win=S('sellob','window')||5;
+  const out=[];
+  for(let i=1;i<d.length;i++){
+    const a0=ema[i-1],a1=ema[i],b0=haC[i-1],b1=haC[i];
+    if(a0==null||a1==null||b0==null||b1==null)continue;
+    if(!(a0-b0>0 && a1-b1<0))continue;    // croisement du haut vers le bas
+    let ob=null;
+    for(const z of obs){
+      if(z.type!=='bear')continue;
+      const j=idxOfTime(z.t); if(j==null)continue;
+      if(j<=i && i-j<=win){ ob=z; break; }
+    }
+    if(!ob)continue;
+    out.push({i,t:d[i].t,price:d[i].c,tf:ob.tf||''});
   }
   return out;
 }
