@@ -1319,7 +1319,7 @@ const state = {
     emacloud:{on:false,fast:30,slow:90},
     signal:{on:false,emaFast:9,emaSlow:30,window:3},
     emaHaX:{on:false},
-    sellob:{on:false,window:5},
+    sellob:{on:false,window:5,emaPeriod:9,haTf:5},
     bb:{on:false,period:20},
     vwap:{on:false},
     sess:{on:false,hour:15,min:29},
@@ -4444,6 +4444,8 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier',def:'#F2C14E'},
   ]},
   sellob:{title:'Vente : EMA sous HA 5m + Order Block',fields:[
+    {k:'emaPeriod',t:'num',lab:'Période EMA',min:2,max:200,ind:1},
+    {k:'haTf',t:'num',lab:'UT du Heikin Ashi (min)',min:1,max:240,ind:1},
     {k:'window',t:'num',lab:'Fenêtre Order Block (bougies)',min:1,max:30,ind:1},
     {k:'col',t:'col',lab:'Couleur',def:'#FF5C7A'},
   ]},
@@ -4767,10 +4769,13 @@ function computeEmaHaCross(d){
 
 /* ---------- Vente : EMA sous HA lissé 5m + Order Block (toute UT) ---------- */
 function computeSellOB(d){
-  const cands=['sha','sha2','sha3'].filter(k=>state.indicators[k].tf==='5');
-  const HK=cands.find(k=>state.indicators[k].on)||cands[0];
-  if(!HK)return [];
-  const ema=getInd('ema'), haArr=getInd(HK);
+  // autonome : calcule son EMA et son HA lissé 5m, sans dépendre des indicateurs affichés
+  const per=S('sellob','emaPeriod')||9;
+  const ema=calc.ema(d,per);
+  const haTf=+(S('sellob','haTf')||5);
+  let haArr;
+  if(+state.tf===haTf) haArr=calc.smoothHA(d,10,10);
+  else{ ensureMTF(haTf); const bars=mtfStore.data[haTf]; if(!bars)return []; haArr=calc.smoothHA(bars,10,10); }
   if(!Array.isArray(ema)||!Array.isArray(haArr))return [];
   const hb=[],hc=[];
   for(const x of haArr)if(x){hb.push(x);hc.push(x.c);}
