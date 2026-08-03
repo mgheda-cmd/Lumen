@@ -3684,6 +3684,27 @@ try{
   });
 }catch(e){}
 function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+/* --- Placement anti-chevauchement des pastilles ---------------------------
+   Chaque pastille déclare son rectangle. Si la place voulue est déjà prise,
+   elle glisse dans sa direction naturelle (vers le haut pour les signaux du
+   dessus, vers le bas pour ceux du dessous) jusqu'à trouver un trou libre.
+   Elle reste toujours dans les limites du panneau des prix.            */
+let _badgeRects=[], _priceBot=0;
+function resetBadgeLayout(bot){ _badgeRects=[]; _priceBot=bot||0; }
+function placeBadge(bx,bw,by,bh,dir){
+  const GAP=3, MAXTRY=90;
+  let y=by, n=0, r;
+  const hit=()=>_badgeRects.find(q=>
+    bx < q.x+q.w+GAP && bx+bw+GAP > q.x && y < q.y+q.h+GAP && y+bh+GAP > q.y);
+  while((r=hit()) && n<MAXTRY){ y = (dir<0) ? (r.y-bh-GAP) : (r.y+r.h+GAP); n++; }
+  if(_priceBot>0){
+    if(y+bh > _priceBot-2) y = _priceBot-bh-2;
+    if(y < 2) y = 2;
+  }
+  _badgeRects.push({x:bx,y,w:bw,h:bh});
+  return y;
+}
 function render(){
   if(!W || !H){
     resize();
@@ -3701,6 +3722,8 @@ function render(){
   ctx.clearRect(0,0,W,H);
   paneCtrls=[]; labelHits=[];
   const panes = computePanes();
+  const _pp = panes.find(q=>q.key==='price');
+  resetBadgeLayout(_pp ? (_pp.y+_pp.h) : (H-AXIS_H));
   const {s,e} = visible();
   const cw = (W-AXIS_W)/state.view.count;
   const mainBadgeStack = {};
@@ -3978,7 +4001,7 @@ function render(){
 
         const bh = isTemp ? 38 : 28;
         const bw = isTemp ? 168 : 142;
-        const by = isDirect ? (yDot + 130) : (yDot + 75);
+        const by = placeBadge(x - bw/2, bw, isDirect ? (yDot + 130) : (yDot + 75), bh, 1);
 
         // Ligne de liaison pointillée pour dégager la bougie et le croisement
         ctx.save();
@@ -4027,7 +4050,7 @@ function render(){
 
         const bh = isTemp ? 38 : 28;
         const bw = isTemp ? 168 : 142;
-        const by = isDirect ? (yDot - 130 - bh) : (yDot - 75 - bh);
+        const by = placeBadge(x - bw/2, bw, isDirect ? (yDot - 130 - bh) : (yDot - 75 - bh), bh, -1);
 
         // Ligne de liaison pointillée
         ctx.save();
@@ -4911,8 +4934,8 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
     if(g.dir===-1){
       const yHigh=yOf(g.price);
       const dotY=yHigh-55;
-      const by=dotY-75-offsetY;
       const bw=165, bh=25;
+      const by=placeBadge(x-bw/2,bw,dotY-75-offsetY,bh,-1);
 
       ctx.shadowColor='#FF6B00';
       ctx.shadowBlur=6;
@@ -4951,8 +4974,8 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
     } else {
       const yLow=yOf(g.price);
       const dotY=yLow+55;
-      const by=dotY+60+offsetY;
       const bw=165, bh=25;
+      const by=placeBadge(x-bw/2,bw,dotY+60+offsetY,bh,1);
 
       ctx.shadowColor='#10B981';
       ctx.shadowBlur=6;
@@ -5066,8 +5089,8 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
     if(g.dir===-1){
       const yHigh=yOf(g.price);
       const dotY=yHigh-65;
-      const by=dotY-80-offsetY;
       const bw=175, bh=25;
+      const by=placeBadge(x-bw/2,bw,dotY-80-offsetY,bh,-1);
 
       ctx.shadowColor='#A855F7';
       ctx.shadowBlur=8;
@@ -5106,8 +5129,8 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
     } else {
       const yLow=yOf(g.price);
       const dotY=yLow+65;
-      const by=dotY+65+offsetY;
       const bw=175, bh=25;
+      const by=placeBadge(x-bw/2,bw,dotY+65+offsetY,bh,1);
 
       ctx.shadowColor='#00E5FF';
       ctx.shadowBlur=8;
@@ -9859,8 +9882,8 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
 
     const bw = 150, bh = 28;
     const dotY = isAchatExit ? yWick + 25 : yWick - 25;
-    const by = isAchatExit ? (dotY + 40 + offsetY) : (dotY - 65 - offsetY);
     const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
+    const by = placeBadge(bx, bw, isAchatExit ? (dotY + 40 + offsetY) : (dotY - 65 - offsetY), bh, isAchatExit ? 1 : -1);
 
     ctx.save();
     // 1. Puce / Point lumineux sur la mèche de la bougie
@@ -10155,8 +10178,8 @@ function drawExitSignalsOB(exits, s, e, yOf, cw, sharedXStack) {
     const dateStr = hasObDate ? fmtOBDate(sig.obTime) : '';
     const bw = 185, bh = hasObDate ? 34 : 30;
     const dotY = isAchatExit ? yWick - 25 : yWick + 25;
-    const by = isAchatExit ? (dotY - 65 - offsetY) : (dotY + 40 + offsetY);
     const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
+    const by = placeBadge(bx, bw, isAchatExit ? (dotY - 65 - offsetY) : (dotY + 40 + offsetY), bh, isAchatExit ? -1 : 1);
 
     ctx.save();
     ctx.shadowColor = '#C084FC';
