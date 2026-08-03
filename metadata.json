@@ -1,0 +1,6 @@
+{
+  "name": "Lumen Charts",
+  "description": "Advanced crypto charting platform with Smart Money Concepts (SMC), Order Blocks, FVG, BOS/ChoCH indicators, live streaming, and demo trading.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
