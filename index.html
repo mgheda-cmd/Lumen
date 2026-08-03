@@ -698,6 +698,7 @@ footer{
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
     <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
+    <button class="btn" id="exhaust-all-btn" title="Pastilles d'épuisement : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:15px;padding:6px 11px">🪫</button>
     <span style="width:1px;height:20px;background:var(--line);margin:0 4px;display:inline-block"></span>
     <button class="btn tzb" id="tz-ny" data-tz="ny" title="Heure de New York" style="font-size:12px;padding:6px 9px">NY</button>
     <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:12px;padding:6px 9px">LDN</button>
@@ -2601,6 +2602,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
+  showAllExhaust:false,
   yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{}, subOrder:[], subMergeUp:{},
 };
 
@@ -2613,7 +2615,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, tz:state.tz, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -2635,6 +2637,7 @@ function mergeConfig(c){
     for(const k of Object.keys(SCHEMA))if(c.style[k]&&typeof c.style[k]==='object')
       state.style[k]=c.style[k];
   }
+  if(typeof c.showAllExhaust==='boolean')state.showAllExhaust=c.showAllExhaust;
   if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
   if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
@@ -3647,6 +3650,25 @@ try{
     zb.style.color=state.zoneMode?'#fff':'';
     render();
   });
+}catch(e){}
+// Bascule des pastilles d'epuisement : derniere seule / toutes
+function applyExhaustBtn(){
+  const b=document.getElementById('exhaust-all-btn'); if(!b)return;
+  const on=!!state.showAllExhaust;
+  b.style.background=on?'rgba(255,107,0,0.18)':'';
+  b.style.borderColor=on?'#FF6B00':'';
+  b.style.color=on?'#FFA000':'';
+  b.title=on
+    ? "Toutes les pastilles d'épuisement sont affichées — appuyer pour ne garder que la dernière de chaque unité de temps"
+    : "Seule la dernière pastille d'épuisement de chaque unité de temps est affichée — appuyer pour tout réafficher";
+}
+try{
+  const eb=document.getElementById('exhaust-all-btn');
+  eb.addEventListener('click',()=>{
+    state.showAllExhaust=!state.showAllExhaust;
+    applyExhaustBtn(); saveConfig(); render();
+  });
+  applyExhaustBtn();
 }catch(e){}
 // créer / supprimer une zone au tap sur le graphique des prix
 function zoneTapAt(x,y){
@@ -4908,6 +4930,14 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
 
   const overallSigDir = filterBySignal ? getActiveSigDir(null, null) : null;
   const xStack = sharedXStack || {};
+  // dernier evenement par unite de temps : seul lui garde sa capsule
+  const lastPerTf={};
+  for(const g of events){
+    const gi=(g.t!=null?idxOfTime(g.t):null)??g.i;
+    if(gi==null)continue;
+    const tk=String(g.tf??g.tfName??'x');
+    if(!(tk in lastPerTf)||gi>lastPerTf[tk])lastPerTf[tk]=gi;
+  }
   for(const g of events){
     const i=(g.t!=null?idxOfTime(g.t):null)??g.i;
     if(i==null||i<s-1||i>e+1)continue;
@@ -4926,6 +4956,7 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
 
     const tfStr=g.tfName||(g.tf?(g.tf>=60?(g.tf/60)+'H':g.tf+'m'):'')||(state.tf>=60?(state.tf/60)+'H':state.tf+'m');
     const qStr=`${g.quality||80}% (${tfStr})`;
+    const showCapsule = state.showAllExhaust || (lastPerTf[String(g.tf??g.tfName??'x')]===i);
     const stackKey = Math.round(x/45) + '_' + (g.dir === -1 ? 'top' : 'bot');
     const stackIdx = xStack[stackKey] || 0;
     xStack[stackKey] = stackIdx + 1;
@@ -4935,7 +4966,7 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       const yHigh=yOf(g.price);
       const dotY=yHigh-55;
       const bw=165, bh=25;
-      const by=placeBadge(x-bw/2,bw,dotY-75-offsetY,bh,-1);
+      const by=showCapsule?placeBadge(x-bw/2,bw,dotY-75-offsetY,bh,-1):dotY;
 
       ctx.shadowColor='#FF6B00';
       ctx.shadowBlur=6;
@@ -4945,6 +4976,7 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.fill();
       ctx.shadowBlur=0;
 
+      if(showCapsule){
       ctx.strokeStyle='rgba(255,107,0,0.65)';
       ctx.lineWidth=1;
       ctx.setLineDash([2,2]);
@@ -4970,12 +5002,13 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.font='8px "IBM Plex Mono",monospace';
       ctx.fillText(g.reason||'Épuisement Achat',x,by+20);
       ctx.textAlign='left';
+      }
 
     } else {
       const yLow=yOf(g.price);
       const dotY=yLow+55;
       const bw=165, bh=25;
-      const by=placeBadge(x-bw/2,bw,dotY+60+offsetY,bh,1);
+      const by=showCapsule?placeBadge(x-bw/2,bw,dotY+60+offsetY,bh,1):dotY;
 
       ctx.shadowColor='#10B981';
       ctx.shadowBlur=6;
@@ -4985,6 +5018,7 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.fill();
       ctx.shadowBlur=0;
 
+      if(showCapsule){
       ctx.strokeStyle='rgba(16,185,129,0.65)';
       ctx.lineWidth=1;
       ctx.setLineDash([2,2]);
@@ -5010,6 +5044,7 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.font='8px "IBM Plex Mono",monospace';
       ctx.fillText(g.reason||'Épuisement Vente',x,by+20);
       ctx.textAlign='left';
+      }
     }
   }
   ctx.restore();
@@ -5066,6 +5101,14 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
 
   const overallSigDir = filterBySignal ? getActiveSigDir(null, null) : null;
   const xStack = sharedXStack || {};
+  // dernier evenement par unite de temps : seul lui garde sa capsule
+  const lastPerTf={};
+  for(const g of events){
+    const gi=(g.t!=null?idxOfTime(g.t):null)??g.i;
+    if(gi==null)continue;
+    const tk=String(g.tf??g.tfName??'x');
+    if(!(tk in lastPerTf)||gi>lastPerTf[tk])lastPerTf[tk]=gi;
+  }
   for(const g of events){
     const i=(g.t!=null?idxOfTime(g.t):null)??g.i;
     if(i==null||i<s-1||i>e+1)continue;
@@ -5081,6 +5124,7 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
 
     const tfStr=g.tfName||(g.tf?(g.tf>=60?(g.tf/60)+'H':g.tf+'m'):'')||(state.tf>=60?(state.tf/60)+'H':state.tf+'m');
     const qStr=`${g.quality||85}% (${tfStr})`;
+    const showCapsule = state.showAllExhaust || (lastPerTf[String(g.tf??g.tfName??'x')]===i);
     const stackKey = Math.round(x/45) + '_' + (g.dir === -1 ? 'top' : 'bot');
     const stackIdx = xStack[stackKey] || 0;
     xStack[stackKey] = stackIdx + 1;
@@ -5090,7 +5134,7 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       const yHigh=yOf(g.price);
       const dotY=yHigh-65;
       const bw=175, bh=25;
-      const by=placeBadge(x-bw/2,bw,dotY-80-offsetY,bh,-1);
+      const by=showCapsule?placeBadge(x-bw/2,bw,dotY-80-offsetY,bh,-1):dotY;
 
       ctx.shadowColor='#A855F7';
       ctx.shadowBlur=8;
@@ -5100,6 +5144,7 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.fill();
       ctx.shadowBlur=0;
 
+      if(showCapsule){
       ctx.strokeStyle='rgba(168,85,247,0.75)';
       ctx.lineWidth=1.2;
       ctx.setLineDash([2,2]);
@@ -5125,12 +5170,13 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.font='8px "IBM Plex Mono",monospace';
       ctx.fillText(g.reason||'Surchauffe Achat',x,by+20);
       ctx.textAlign='left';
+      }
 
     } else {
       const yLow=yOf(g.price);
       const dotY=yLow+65;
       const bw=175, bh=25;
-      const by=placeBadge(x-bw/2,bw,dotY+65+offsetY,bh,1);
+      const by=showCapsule?placeBadge(x-bw/2,bw,dotY+65+offsetY,bh,1):dotY;
 
       ctx.shadowColor='#00E5FF';
       ctx.shadowBlur=8;
@@ -5140,6 +5186,7 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.fill();
       ctx.shadowBlur=0;
 
+      if(showCapsule){
       ctx.strokeStyle='rgba(0,229,255,0.75)';
       ctx.lineWidth=1.2;
       ctx.setLineDash([2,2]);
@@ -5165,6 +5212,7 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.font='8px "IBM Plex Mono",monospace';
       ctx.fillText(g.reason||'Surchauffe Vente',x,by+20);
       ctx.textAlign='left';
+      }
     }
   }
   ctx.restore();
