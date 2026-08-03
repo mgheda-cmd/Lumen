@@ -2960,7 +2960,7 @@ function applyTickPrice(px){
     state.cache = {};
     updateHeader();
     if(typeof updatePaper === 'function') updatePaper();
-    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
     scheduleRender();
   }
 }
@@ -2972,7 +2972,7 @@ function applyKline(k){
   else if(bar.t>last.t){d.push(bar);d.shift();}
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
-  if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+  if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
   scheduleRender();
 }
 let lastTick=0, wsRetry=0, watchdog=null;
@@ -3049,7 +3049,7 @@ function startStream(g){
       if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
     };
     ws.onerror=()=>{clearTimeout(guard);
-      if(g!==gen&&!pollTimer){setStatus('poll');startPolling(g);}};
+      if(g===gen&&!pollTimer){try{ws&&ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}};
   }catch(e){setStatus('poll');startPolling(g);}
 }
 document.addEventListener('visibilitychange',()=>{
@@ -3165,7 +3165,7 @@ async function loadData(){
     updateHeader(); render();
     startStream(g);
     ensureSR();
-    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
   }catch(e){
     if(g!==gen)return;
     // nouvelle tentative avant de basculer en démo (rate limit temporaire ?)
@@ -8433,7 +8433,7 @@ function toggleAutoTrade(){
     autoTradeLastExecutedSigId = null;
     toast('🤖 Auto-Trade ACTIVÉ — Exécution automatique sur tous les signaux de stratégie !', '#F59E0B');
     if(state.data && state.data.length){
-      checkAutoTrade();
+      try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
     }
   } else {
     toast('🤖 Auto-Trade DÉSACTIVÉ', '#94A3B8');
@@ -8783,7 +8783,7 @@ function checkAutoTrade(inputSignals){
 // Boucle périodique de vérification d'Auto-Trade
 setInterval(()=>{
   if(paperAutoTrade && state.data && state.data.length){
-    checkAutoTrade();
+    try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
   }
 }, 1500);
 
@@ -10054,7 +10054,7 @@ function checkAllAlerts(){
 
   // Exécution de l'Auto-Trade si actif (indépendant de la config des notifs téléphones)
   if(paperAutoTrade){
-    checkAutoTrade();
+    try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
   }
 
   const phoneCfg = getPhoneNotifConfig();
@@ -12128,7 +12128,7 @@ async function runBacktest(skipFetch){
       localStorage.setItem('lumen_paper_autotrade', '1');
     } catch(e){}
     if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
-    if (typeof checkAutoTrade === 'function') checkAutoTrade();
+    if (typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
 
     // 7. Rafraîchir les données et l'IU Démo
     if (typeof saveConfig === 'function') saveConfig();
