@@ -699,7 +699,7 @@ footer{
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
     <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
-    <button class="btn" id="exhaust-all-btn" title="Pastilles d'épuisement : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:15px;padding:6px 11px">🪫</button>
+    <button class="btn" id="exhaust-all-btn" title="Pastilles épuisement et sortie : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:15px;padding:6px 11px">🪫</button>
     <span style="width:1px;height:20px;background:var(--line);margin:0 4px;display:inline-block"></span>
     <button class="btn tzb" id="tz-ny" data-tz="ny" title="Heure de New York" style="font-size:12px;padding:6px 9px">NY</button>
     <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:12px;padding:6px 9px">LDN</button>
@@ -3660,8 +3660,8 @@ function applyExhaustBtn(){
   b.style.borderColor=on?'#FF6B00':'';
   b.style.color=on?'#FFA000':'';
   b.title=on
-    ? "Toutes les pastilles d'épuisement sont affichées — appuyer pour ne garder que la dernière de chaque unité de temps"
-    : "Seule la dernière pastille d'épuisement de chaque unité de temps est affichée — appuyer pour tout réafficher";
+    ? "Toutes les pastilles (épuisement et sortie) sont affichées — appuyer pour ne garder que la dernière de chaque unité de temps"
+    : "Seule la dernière pastille d'épuisement et de sortie de chaque unité de temps est affichée — appuyer pour tout réafficher";
 }
 try{
   const eb=document.getElementById('exhaust-all-btn');
@@ -9984,6 +9984,15 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
   if (!Array.isArray(exits) || !exits.length) return;
   const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
   const xStack = sharedXStack || {};
+  // Seule la dernière sortie de chaque unité de temps garde sa capsule ;
+  // les précédentes ne conservent que leur point et une mini-étiquette.
+  const lastPerTf = {};
+  for (const sg of exits) {
+    const gi = (sg.t != null ? idxOfTime(sg.t) : null) ?? sg.i;
+    if (gi == null) continue;
+    const tk = String(sg.tfTag ?? sg.tf ?? 'x') + '_' + sg.type;
+    if (!(tk in lastPerTf) || gi > lastPerTf[tk]) lastPerTf[tk] = gi;
+  }
 
   for (const sig of exits) {
     const i = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
@@ -9991,6 +10000,8 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     const x = xOf(i);
     if (x < -180 || x > W - AXIS_W + 180) continue;
 
+    const showCapsule = state.showAllExhaust ||
+      (lastPerTf[String(sig.tfTag ?? sig.tf ?? 'x') + '_' + sig.type] === i);
     const isAchatExit = (sig.type === 'SORTIE_ACHAT');
     const color = isAchatExit ? '#FF007A' : '#FFD700';
     const bgFill = isAchatExit ? 'rgba(38, 8, 22, 0.95)' : 'rgba(35, 30, 8, 0.95)';
@@ -10007,7 +10018,7 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     const bw = 150, bh = 28;
     const dotY = isAchatExit ? yWick + 25 : yWick - 25;
     const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
-    const by = placeBadge(bx, bw, isAchatExit ? (dotY + 40 + offsetY) : (dotY - 65 - offsetY), bh, isAchatExit ? 1 : -1);
+    const by = showCapsule ? placeBadge(bx, bw, isAchatExit ? (dotY + 40 + offsetY) : (dotY - 65 - offsetY), bh, isAchatExit ? 1 : -1) : dotY;
 
     ctx.save();
     // 1. Puce / Point lumineux sur la mèche de la bougie
@@ -10022,6 +10033,7 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
+    if (showCapsule) {
     // 2. Trait de liaison pointillé (tige) de la mèche jusqu'à la pastille
     ctx.strokeStyle = isAchatExit ? 'rgba(255, 0, 122, 0.75)' : 'rgba(255, 215, 0, 0.75)';
     ctx.lineWidth = 1.2;
@@ -10052,6 +10064,19 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
 
     labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_exit_kk'});
     labelHits.push({x: x - 8, y: dotY - 8, w: 16, h: 16, key: 'signal_exit_kk'});
+    } else {
+      // capsule masquée : mini-étiquette avec l'unité de temps
+      const lw = 34, lh = 11;
+      const ly = placeBadge(x - lw/2, lw, isAchatExit ? (dotY + 10) : (dotY - 14), lh, isAchatExit ? 1 : -1);
+      ctx.fillStyle = 'rgba(8,12,22,0.82)';
+      roundRect(x - lw/2, ly, lw, lh, 4); ctx.fill();
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(sig.tfTag || 'UT', x, ly + 8);
+      ctx.textAlign = 'left';
+      labelHits.push({x: x - 8, y: dotY - 8, w: 16, h: 16, key: 'signal_exit_kk'});
+    }
 
     ctx.restore();
   }
