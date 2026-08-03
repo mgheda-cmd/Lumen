@@ -2960,7 +2960,7 @@ function applyTickPrice(px){
     state.cache = {};
     updateHeader();
     if(typeof updatePaper === 'function') updatePaper();
-    if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
     scheduleRender();
   }
 }
@@ -2972,7 +2972,7 @@ function applyKline(k){
   else if(bar.t>last.t){d.push(bar);d.shift();}
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
-  if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+  if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
   scheduleRender();
 }
 let lastTick=0, wsRetry=0, watchdog=null;
@@ -3049,9 +3049,7 @@ function startStream(g){
       if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
     };
     ws.onerror=()=>{clearTimeout(guard);
-      // la condition testait g!==gen : le repli ne se declenchait donc jamais
-      // pour la connexion en cours, et le statut restait bloque sur CHARGEMENT
-      if(g===gen&&!pollTimer){try{ws&&ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}};
+      if(g!==gen&&!pollTimer){setStatus('poll');startPolling(g);}};
   }catch(e){setStatus('poll');startPolling(g);}
 }
 document.addEventListener('visibilitychange',()=>{
@@ -3167,7 +3165,7 @@ async function loadData(){
     updateHeader(); render();
     startStream(g);
     ensureSR();
-    if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
   }catch(e){
     if(g!==gen)return;
     // nouvelle tentative avant de basculer en démo (rate limit temporaire ?)
@@ -7532,6 +7530,18 @@ function updatePaper(){
   const eqEl=document.getElementById('paper-equity');
   if(!eqEl)return;
 
+  // Auto-correction des positions créées avec l'ancien bug de notionnel
+  if (Array.isArray(paper.positions)) {
+    for (const p of paper.positions) {
+      if (p.lev && p.lev >= 10 && p.margin && p.margin < 2.0 && p.notional && p.notional <= 500) {
+        const stratCap = window.activeDemoStrategy?.capital || 100;
+        p.margin = Math.min(paper.cash > 0 ? paper.cash : stratCap, stratCap);
+        p.notional = p.margin * p.lev;
+        if (p.entry && p.entry > 0) p.qty = p.notional / p.entry;
+      }
+    }
+  }
+
   // Verification SL / TP et Liquidations automatiques
   const toCloseSLTP = [];
   const toLiquidate = [];
@@ -7577,7 +7587,9 @@ function updatePaper(){
     const fee = p.qty * exitPx * getPaperFeeRate();
     paper.cash += (p.margin || (p.qty * p.entry / (p.lev || 1))) + pnl - fee;
     paper.history.unshift({
-      sym: p.sym, side: p.side, entry: p.entry, exit: exitPx, pnl: pnl - fee, qty: p.qty, t: Date.now(), t0: p.t,
+      sym: p.sym, side: p.side, entry: p.entry, exit: exitPx, pnl: pnl - fee, qty: p.qty,
+      notional: p.notional || (p.qty * p.entry), margin: p.margin || (p.qty * p.entry / (p.lev || 1)),
+      t: Date.now(), t0: p.t,
       reason: item.type === 'SL' ? '🛑 SL' : '🎯 TP',
       capitalAfter: paper.cash
     });
@@ -7600,7 +7612,9 @@ function updatePaper(){
     if (!p) continue;
     const loss = p.margin;
     paper.history.unshift({
-      sym: p.sym, side: p.side, entry: p.entry, exit: item.px, pnl: -loss, qty: p.qty, t: Date.now(), t0: p.t, isLiq: true,
+      sym: p.sym, side: p.side, entry: p.entry, exit: item.px, pnl: -loss, qty: p.qty,
+      notional: p.notional || (p.qty * p.entry), margin: loss,
+      t: Date.now(), t0: p.t, isLiq: true,
       capitalAfter: paper.cash
     });
     paper.history = paper.history.slice(0, 50);
@@ -7650,15 +7664,27 @@ function updatePaper(){
 
     const partialsTag = (p.partials && p.partials > 0) ? `<span style="background:rgba(245,158,11,0.18);color:#F59E0B;border:1px solid rgba(245,158,11,0.4);padding:1px 5px;border-radius:4px;font-size:9.5px;font-weight:bold;margin-left:5px">✂️ ${p.partials} Partiel(s)</span>` : '';
     const liqPx = (p.lev && p.lev > 1) ? (p.side === 'long' ? p.entry * (1 - 0.95 / p.lev) : p.entry * (1 + 0.95 / p.lev)) : null;
+    const isDangerLiq = (px && liqPx && (p.side === 'long' ? px <= liqPx * 1.002 : px >= liqPx * 0.998));
     const entriesTag = (p.entries && p.entries > 1) ? `<span style="background:rgba(0,229,255,0.18);color:#00E5FF;border:1px solid rgba(0,229,255,0.4);padding:1px 5px;border-radius:4px;font-size:9.5px;font-weight:bold;margin-left:5px">🔄 x${p.entries} Rerentrées</span>` : '';
-    const liqTag = liqPx ? `<span style="color:${(px && (p.side==='long'?px<=liqPx*1.002:px>=liqPx*0.998)) ? '#FF495C' : 'var(--muted)'};margin-left:6px;font-size:10px">Liq: $${fmt(liqPx, liqPx >= 100 ? 2 : 4)}</span>` : '';
+    const liqTag = liqPx
+      ? `<span style="background:${isDangerLiq ? 'rgba(255,0,0,0.3)' : 'rgba(255,73,92,0.18)'};color:#FF495C;border:1px solid rgba(255,73,92,0.45);padding:2px 7px;border-radius:4px;font-weight:bold;font-size:11px" title="Prix de Liquidation (perte de 95% de la marge)">💥 Liq: $${fmt(liqPx, liqPx >= 100 ? 2 : 4)}</span>`
+      : `<span style="color:var(--muted);font-size:10px">Liq: Sans (1x)</span>`;
+
+    const notionalVal = p.notional || (p.qty * p.entry);
+    const marginVal = p.margin || (notionalVal / (p.lev || 1));
 
     return `<div class="pos-item" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;margin-bottom:6px;font-size:11px;flex-wrap:wrap;gap:6px">
       <div>
-        <strong style="color:${p.side==='long'?'#10B981':'#F45B7D'}">${p.side==='long'?'▲ ACHAT':'▼ VENTE'} ${qStr} ${coin}</strong>
-        ${entriesTag}${partialsTag}
-        <div style="font-size:10.5px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span>Prix Moyen: <strong style="color:var(--text)">$${fmt(p.entry, p.entry >= 100 ? 2 : 4)}</strong> (${levStr}) ${liqTag}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <strong style="color:${p.side==='long'?'#10B981':'#F45B7D'}">${p.side==='long'?'▲ ACHAT':'▼ VENTE'}</strong>
+          <span style="background:rgba(0,229,255,0.12);color:#00E5FF;border:1px solid rgba(0,229,255,0.35);padding:2px 7px;border-radius:4px;font-weight:bold;font-size:11px" title="Montant engagé exact dans ce trade en $ et Crypto">
+            💰 Engagé : <strong style="color:#FFF">$${fmtUsd(notionalVal)}</strong> <span style="color:#00E5FF">(${qStr} ${coin})</span> <span style="color:var(--muted);font-size:10px">| Marge (${levStr}) : <b>$${fmtUsd(marginVal)}</b></span>
+          </span>
+          ${entriesTag}${partialsTag}
+        </div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span>Prix Moyen: <strong style="color:var(--text)">$${fmt(p.entry, p.entry >= 100 ? 2 : 4)}</strong></span>
+          ${liqTag}
           <span style="color:${p.sl?'#FF5252':'var(--muted)'};font-size:10px">
             🛑 SL: ${p.sl ? '$' + fmt(p.sl, p.sl >= 100 ? 2 : 4) : '—'}
             <button class="btn" data-set-sl="${i}" style="padding:1px 4px;font-size:9.5px;margin-left:2px;border-color:rgba(255,82,82,0.4);color:#FF5252" title="Définir / Modifier le Stop Loss">✏️</button>
@@ -7691,8 +7717,24 @@ function updatePaper(){
     const col=h.pnl>=0?'#25D0A4':'#F45B7D';
     const tag = h.isLiq ? '💥 LIQ' : (h.reason ? h.reason : (h.isPartial ? `✂️ PART ${h.partPct||''}%` : (h.side==='long'?'▲ ACHAT':'▼ VENTE')));
     const soldeVal = h.capitalAfter != null ? fmtUsd(h.capitalAfter) : '—';
-    return `<div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;font-size:10.5px;color:var(--muted);border-bottom:1px dashed rgba(255,255,255,0.06)">
-      <span style="font-weight:bold">${tag} ${baseAsset(h.sym)}</span>
+    const coin = baseAsset(h.sym);
+    const hQty = h.qty || 0;
+    const hQtyStr = hQty >= 1 ? hQty.toFixed(3) : hQty.toFixed(4);
+    const hNotional = h.notional || (hQty * (h.entry || 0));
+    const hLev = h.lev || 1;
+    const hLiqPx = (hLev > 1) ? (h.side === 'long' ? h.entry * (1 - 0.95 / hLev) : h.entry * (1 + 0.95 / hLev)) : null;
+    const hLiqStr = hLiqPx ? `$${fmt(hLiqPx, hLiqPx >= 100 ? 2 : 4)}` : 'Sans (1x)';
+
+    return `<div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;font-size:10.5px;color:var(--muted);border-bottom:1px dashed rgba(255,255,255,0.06);flex-wrap:wrap;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-weight:bold">${tag} ${coin}</span>
+        <span style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:10px;color:var(--text)" title="Montant engagé en $ et Crypto">
+          💰 Engagé: <b style="color:#00E5FF">$${fmtUsd(hNotional)}</b> (${hQtyStr} ${coin})
+        </span>
+        <span style="background:rgba(255,73,92,0.12);color:#FF495C;border:1px solid rgba(255,73,92,0.3);padding:1px 6px;border-radius:4px;font-size:10px;font-weight:bold" title="Prix de Liquidation de ce trade">
+          💥 Liq: ${hLiqStr}
+        </span>
+      </div>
       <span>$${fmt(h.entry,2)} → $${fmt(h.exit,2)}</span>
       <span style="color:${col};font-weight:700">${(h.pnl>=0?'+':'')+fmtUsd(h.pnl)}</span>
       <span style="color:#00E5FF;font-weight:800;background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:10px" title="Solde de votre compte à la clôture du trade">Solde: ${soldeVal}</span>
@@ -7734,12 +7776,28 @@ function updatePaperDemoStrategyUI(){
       const dd = activeObj.maxDDPct != null ? `-${activeObj.maxDD.toFixed(2)} $ (-${activeObj.maxDDPct.toFixed(1)}%)` : '—';
       const pf = activeObj.profitFactor != null ? (activeObj.profitFactor === Infinity ? '∞' : activeObj.profitFactor.toFixed(2)) : '—';
 
-      // Date et Heure d'activation
+      // Date et Heure d'activation avec calcul exact du temps écoulé
       const activatedAt = activeObj.activatedAt || activeObj.timestamp || Date.now();
       const actDate = new Date(activatedAt);
       const dateStr = actDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const timeStr = actDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      const activatedFormatted = `${dateStr} à ${timeStr}`;
+
+      const elapsedMs = Math.max(0, Date.now() - activatedAt);
+      const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));
+      const elapsedMins = Math.floor((elapsedMs % (1000 * 60 * 60)) / (1000 * 60));
+      let durationStr = '';
+      if (elapsedHours >= 24) {
+        const dDays = Math.floor(elapsedHours / 24);
+        const hRem = elapsedHours % 24;
+        durationStr = `(il y a ${dDays}j ${hRem}h)`;
+      } else if (elapsedHours > 0) {
+        durationStr = `(il y a ${elapsedHours}h ${elapsedMins > 0 ? elapsedMins + 'min' : ''})`;
+      } else if (elapsedMins > 0) {
+        durationStr = `(il y a ${elapsedMins} min)`;
+      } else {
+        durationStr = `(à l'instant)`;
+      }
+      const activatedFormatted = `${dateStr} à ${timeStr} <b style="color:#FFD700;margin-left:4px">${durationStr}</b>`;
 
       // Nombre de trades et PnL cumulé depuis l'activation
       const tradesSince = (typeof paper === 'object' && Array.isArray(paper.history))
@@ -7763,52 +7821,53 @@ function updatePaperDemoStrategyUI(){
       const gainNetColor = (gainNetVal || 0) >= 0 ? '#00E676' : '#FF5252';
 
       cardEl.innerHTML = `
-        <div style="background:linear-gradient(135deg, rgba(0,230,118,0.16), rgba(0,229,255,0.1));border:1.5px solid #00E676;border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 16px rgba(0,230,118,0.25)">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:28px;height:28px;border-radius:50%;background:#00E676;color:#0F172A;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;box-shadow:0 0 10px #00E676">🤖</div>
+        <div style="background:#0B1222;border:2px solid #00E676;border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 18px rgba(0,230,118,0.2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:8px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:30px;height:30px;border-radius:50%;background:#00E676;color:#0F172A;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;box-shadow:0 0 10px #00E676;flex-shrink:0">🤖</div>
               <div>
-                <div style="font-weight:900;font-size:13px;color:#00E676;display:flex;align-items:center;gap:6px">
+                <div style="font-weight:900;font-size:13px;color:#00E676;display:flex;align-items:center;gap:6px;letter-spacing:0.3px">
                   <span>STRATÉGIE ACTIVÉE EN DÉMO (AUTO-TRADE)</span>
                 </div>
-                <div style="font-size:11px;color:var(--text);font-weight:700">
-                  <span style="color:#00E5FF">${modeName}</span> · Levier : <span style="color:#FFD700">${activeObj.lev}x</span> · Capital Départ : <span>${activeObj.capital} $</span> · Frais : <span>${activeObj.feePct}%</span>
+                <div style="font-size:11px;color:#E2E8F0;font-weight:700;margin-top:2px">
+                  <span style="color:#00E5FF">${modeName}</span> · Levier : <span style="color:#FFD700">${activeObj.lev}x</span> · Capital Départ : <span style="color:#FFF">${activeObj.capital} $</span> · Frais : <span style="color:#FFF">${activeObj.feePct}%</span>
                 </div>
-                <div style="font-size:10.5px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                  <div>📅 Activée le : <span style="color:#FFF;font-weight:700;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px">${activatedFormatted}</span></div>
-                  ${(paper.bank && paper.bank > 0) ? `<div>🏛️ Banque : <span style="color:#FFD700;font-weight:800;background:rgba(255,215,0,0.15);padding:1px 6px;border-radius:4px;border:1px solid rgba(255,215,0,0.3)">$${fmtUsd(paper.bank)}</span></div>` : ''}
+                <div style="font-size:11px;color:#94A3B8;margin-top:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <div>📅 Activée le : <span style="color:#FFF;font-weight:700;background:rgba(255,255,255,0.1);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);font-size:10.5px">${activatedFormatted}</span></div>
+                  ${(paper.bank && paper.bank > 0) ? `<div>🏛️ Banque : <span style="color:#FFD700;font-weight:800;background:rgba(255,215,0,0.15);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,215,0,0.3);font-size:10.5px">$${fmtUsd(paper.bank)}</span></div>` : ''}
                 </div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
-              <span style="background:#00E676;color:#0F172A;font-size:10px;padding:3px 8px;border-radius:12px;font-weight:900;box-shadow:0 0 10px rgba(0,230,118,0.5)">AUTO-TRADE : ACTIF ●</span>
+              <span style="background:#00E676;color:#0F172A;font-size:10.5px;padding:4px 10px;border-radius:12px;font-weight:900;box-shadow:0 0 10px rgba(0,230,118,0.5)">AUTO-TRADE : ACTIF ●</span>
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
-            <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(0,230,118,0.4);padding:6px 10px;border-radius:6px">
-              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">💰 PnL Session (Réel)</div>
-              <div style="font-weight:800;color:${pnlColor}">${sessionPnlFormatted}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+            <div style="background:#1E293B;border:1px solid rgba(0,230,118,0.4);padding:8px 10px;border-radius:6px">
+              <div style="color:#94A3B8;font-size:9.5px;font-weight:bold;margin-bottom:2px">💰 PnL Session (Réel)</div>
+              <div style="font-weight:800;font-size:12px;color:${pnlColor}">${sessionPnlFormatted}</div>
             </div>
-            <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(0,230,118,0.4);padding:6px 10px;border-radius:6px">
-              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">📈 Gain Net Est. (BT)</div>
-              <div style="font-weight:800;color:${gainNetColor}">${gainNetFormatted}</div>
+            <div style="background:#1E293B;border:1px solid rgba(0,230,118,0.4);padding:8px 10px;border-radius:6px">
+              <div style="color:#94A3B8;font-size:9.5px;font-weight:bold;margin-bottom:2px">📈 Gain Net Est. (BT)</div>
+              <div style="font-weight:800;font-size:12px;color:${gainNetColor}">${gainNetFormatted}</div>
             </div>
-            <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(0,229,255,0.4);padding:6px 10px;border-radius:6px">
-              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">⚡ Trades Session</div>
-              <div style="font-weight:800;color:#00E5FF">${nbTrades} trade${nbTrades > 1 ? 's' : ''}</div>
+            <div style="background:#1E293B;border:1px solid rgba(0,229,255,0.4);padding:8px 10px;border-radius:6px">
+              <div style="color:#94A3B8;font-size:9.5px;font-weight:bold;margin-bottom:2px">⚡ Trades Session</div>
+              <div style="font-weight:800;font-size:12px;color:#00E5FF">${nbTrades} trade${nbTrades > 1 ? 's' : ''}</div>
+              ${nbTrades === 0 ? `<div style="font-size:8.5px;color:#94A3B8;margin-top:2px">Signal en attente</div>` : ''}
             </div>
-            <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(0,230,118,0.3);padding:6px 10px;border-radius:6px">
-              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">🎯 Win Rate (BT)</div>
-              <div style="font-weight:800;color:${(activeObj.winRate || 0) >= 50 ? '#00E676' : '#FF5252'}">${wr}</div>
+            <div style="background:#1E293B;border:1px solid rgba(0,230,118,0.3);padding:8px 10px;border-radius:6px">
+              <div style="color:#94A3B8;font-size:9.5px;font-weight:bold;margin-bottom:2px">🎯 Win Rate (BT)</div>
+              <div style="font-weight:800;font-size:12px;color:${(activeObj.winRate || 0) >= 50 ? '#00E676' : '#FF5252'}">${wr}</div>
             </div>
-            <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,82,82,0.3);padding:6px 10px;border-radius:6px">
-              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">🛡️ Max DD (BT)</div>
-              <div style="font-weight:800;color:${(activeObj.maxDDPct || 0) < 25 ? '#00E676' : '#FF5252'}">${dd}</div>
+            <div style="background:#1E293B;border:1px solid rgba(255,82,82,0.3);padding:8px 10px;border-radius:6px">
+              <div style="color:#94A3B8;font-size:9.5px;font-weight:bold;margin-bottom:2px">🛡️ Max DD (BT)</div>
+              <div style="font-weight:800;font-size:12px;color:${(activeObj.maxDDPct || 0) < 25 ? '#00E676' : '#FF5252'}">${dd}</div>
             </div>
-            <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,215,0,0.3);padding:6px 10px;border-radius:6px">
-              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">📊 Profit Factor (PF)</div>
-              <div style="font-weight:800;color:#FFD700">${pf}</div>
+            <div style="background:#1E293B;border:1px solid rgba(255,215,0,0.3);padding:8px 10px;border-radius:6px">
+              <div style="color:#94A3B8;font-size:9.5px;font-weight:bold;margin-bottom:2px">📊 Profit Factor (PF)</div>
+              <div style="font-weight:800;font-size:12px;color:#FFD700">${pf}</div>
             </div>
           </div>
         </div>
@@ -7886,23 +7945,25 @@ function refreshUnitUI(){
     }else if(paperUnit==='coin'){
       const notional=val*px;
       const margin=notional/lev;
-      previewEl.innerHTML=`⚡ <strong>${val} ${coin}</strong> = $${fmtUsd(notional)} <span style="color:var(--faint)">| Marge (${lev}x) : <strong>$${fmtUsd(margin)}</strong></span>`;
+      previewEl.innerHTML=`⚡ <strong>${val} ${coin}</strong> = Notionnel $${fmtUsd(notional)} <span style="color:var(--faint)">| Marge (${lev}x) : <strong>$${fmtUsd(margin)}</strong></span>`;
     }else{
-      const qty=val/px;
-      const margin=val/lev;
-      previewEl.innerHTML=`⚡ <strong>$${fmtUsd(val)}</strong> = <strong>${qty<1?qty.toFixed(4):qty.toFixed(2)} ${coin}</strong> <span style="color:var(--faint)">| Marge (${lev}x) : <strong>$${fmtUsd(margin)}</strong></span>`;
+      const margin=val;
+      const notional=margin*lev;
+      const qty=px>0?notional/px:0;
+      const qStr=qty<1?qty.toFixed(4):qty.toFixed(2);
+      previewEl.innerHTML=`⚡ Marge : <strong>$${fmtUsd(margin)}</strong> (${lev}x) = Notionnel <strong>$${fmtUsd(notional)}</strong> <span style="color:var(--faint)">| <strong>${qStr} ${coin}</strong></span>`;
     }
   }
 }
 
-function openTrade(side, targetPosIdx){
+function openTrade(side, targetPosIdx, customVal, customLev){
   const amtEl=document.getElementById('paper-amt');
-  const val=parseFloat(amtEl?.value||'0');
+  const val = (customVal != null && customVal > 0) ? customVal : parseFloat(amtEl?.value||'0');
   if(!(val>0)) return paperFlash('Quantité invalide');
   const px=livePrice(state.symbol);
   if(!px) return paperFlash('Prix indisponible');
 
-  const lev=parseInt(document.getElementById('paper-lev')?.value||'1',10);
+  const lev = (customLev != null && customLev > 0) ? customLev : parseInt(document.getElementById('paper-lev')?.value||'1',10);
   const mode=document.getElementById('paper-mode')?.value||'merge';
   const coinSym=baseAsset(state.symbol);
 
@@ -7911,20 +7972,27 @@ function openTrade(side, targetPosIdx){
   const sl = (slInp > 0 && isFinite(slInp)) ? slInp : null;
   const tp = (tpInp > 0 && isFinite(tpInp)) ? tpInp : null;
 
-  let qty=0, notional=0;
-  if(paperUnit==='coin'){
-    qty=val;
-    notional=qty*px;
-  }else{
-    notional=val;
-    qty=notional/px;
+  let qty=0, notional=0, margin=0;
+  const feeRate = getPaperFeeRate();
+
+  if(paperUnit==='coin' && (customVal == null || customVal <= 0)){
+    qty = val;
+    notional = qty * px;
+    margin = notional / lev;
+  } else {
+    // Mode USDT ou Auto-Trade (val = Marge/Capital engagé, ex: 100 $ ou 200 $)
+    margin = val;
+    if (margin * (1 + lev * feeRate) > paper.cash && paper.cash > 0) {
+      margin = paper.cash / (1 + lev * feeRate);
+    }
+    notional = margin * lev;
+    qty = px > 0 ? notional / px : 0;
   }
 
-  const margin=notional/lev;
-  const fee=notional*getPaperFeeRate();
+  const fee = notional * feeRate;
 
-  if(margin+fee>paper.cash){
-    return paperFlash(`Solde insuffisant (Requis: ${fmtUsd(margin+fee)})`);
+  if (margin <= 0 || (margin + fee) > paper.cash + 0.001) {
+    return paperFlash(`Solde insuffisant (Requis: ${fmtUsd(margin + fee)})`);
   }
 
   // Verification de rerentrée / cumul
@@ -7955,7 +8023,9 @@ function openTrade(side, targetPosIdx){
 
     saveConfig(); updatePaper();
     const qFmt = qty >= 1 ? qty.toFixed(3) : qty.toFixed(4);
-    toast(`🔄 Rerentrée #${p.entries} (${side==='long'?'ACHAT':'VENTE'}) : +${qFmt} ${coinSym} @ $${fmt(px, 2)} | Nouveau Prix Moyen: $${fmt(newAvgPrice, 2)}`, side==='long'?'#10B981':'#F45B7D');
+    const newLiqPx = (p.lev && p.lev > 1) ? (p.side === 'long' ? newAvgPrice * (1 - 0.95 / p.lev) : newAvgPrice * (1 + 0.95 / p.lev)) : null;
+    const newLiqStr = newLiqPx ? ` | 💥 Liq: $${fmt(newLiqPx, 2)}` : '';
+    toast(`🔄 Rerentrée #${p.entries} (${side==='long'?'ACHAT':'VENTE'}) : +${qFmt} ${coinSym} @ $${fmt(px, 2)} | Prix Moyen: $${fmt(newAvgPrice, 2)}${newLiqStr}`, side==='long'?'#10B981':'#F45B7D');
     sendTelegramDemoEntryNotification(p, true);
   } else {
     // NOUVELLE POSITION
@@ -7966,8 +8036,10 @@ function openTrade(side, targetPosIdx){
 
     saveConfig(); updatePaper();
     const qFmt = qty >= 1 ? qty.toFixed(3) : qty.toFixed(4);
+    const liqPx = (lev && lev > 1) ? (side === 'long' ? px * (1 - 0.95 / lev) : px * (1 + 0.95 / lev)) : null;
+    const liqStr = liqPx ? ` | 💥 Liq: $${fmt(liqPx, 2)}` : ' | Liq: Sans (1x)';
     const slTpStr = (sl ? ` | SL: $${fmt(sl, 2)}` : '') + (tp ? ` | TP: $${fmt(tp, 2)}` : '');
-    toast(`Ordre ${side==='long'?'ACHAT (LONG)':'VENTE (SHORT)'} exécuté : ${qFmt} ${coinSym} @ $${fmt(px, 2)} (${lev}x)${slTpStr}`, side==='long'?'#10B981':'#F45B7D');
+    toast(`Ordre ${side==='long'?'ACHAT (LONG)':'VENTE (SHORT)'} exécuté : ${qFmt} ${coinSym} @ $${fmt(px, 2)} (${lev}x)${liqStr}${slTpStr}`, side==='long'?'#10B981':'#F45B7D');
     sendTelegramDemoEntryNotification(newPos, false);
   }
 
@@ -7983,7 +8055,11 @@ function closePos(i){
   const fee=p.qty*px*getPaperFeeRate();
   const netPnl = pnl - fee;
   paper.cash+=p.margin+netPnl;
-  paper.history.unshift({sym:p.sym,side:p.side,entry:p.entry,exit:px,pnl:netPnl,qty:p.qty,t:Date.now(),t0:p.t,capitalAfter:paper.cash});
+  paper.history.unshift({
+    sym:p.sym, side:p.side, entry:p.entry, exit:px, pnl:netPnl, qty:p.qty,
+    notional: p.notional || (p.qty * p.entry), margin: p.margin || (p.qty * p.entry / (p.lev || 1)), lev: p.lev || 1,
+    t:Date.now(), t0:p.t, capitalAfter:paper.cash
+  });
   paper.history=paper.history.slice(0,50);
   paper.positions.splice(i,1);
   saveConfig(); updatePaper();
@@ -8357,7 +8433,7 @@ function toggleAutoTrade(){
     autoTradeLastExecutedSigId = null;
     toast('🤖 Auto-Trade ACTIVÉ — Exécution automatique sur tous les signaux de stratégie !', '#F59E0B');
     if(state.data && state.data.length){
-      try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+      checkAutoTrade();
     }
   } else {
     toast('🤖 Auto-Trade DÉSACTIVÉ', '#94A3B8');
@@ -8490,18 +8566,30 @@ function checkAutoTrade(inputSignals){
   }
   const strat = window.activeDemoStrategy;
 
-  // Si une stratégie active existe, configurer les paramètres du compte Démo
+  // Si une stratégie active existe, configurer les paramètres du compte Démo de façon stricte
   if(strat && strat.active){
+    const reqCap = strat.capital || 100;
+    const reqLev = strat.lev || 200;
     const amtEl = document.getElementById('paper-amt');
-    if(amtEl && (parseFloat(amtEl.value) <= 0 || isNaN(parseFloat(amtEl.value)))){
-      amtEl.value = String(strat.capital || 100);
+    if(amtEl){
+      amtEl.value = String(reqCap);
     }
     const levEl = document.getElementById('paper-lev');
-    if(levEl && strat.lev){
-      levEl.value = String(strat.lev);
+    if(levEl && String(levEl.value) !== String(reqLev)){
+      levEl.value = String(reqLev);
     }
     if(strat.feePct != null){
       window.paperFeePct = strat.feePct / 100;
+    }
+    // Forcer l'unité USDT pour l'Auto-Trade
+    paperUnit = 'usdt';
+    const btnUsdt = document.getElementById('paper-unit-usdt');
+    const btnCoin = document.getElementById('paper-unit-coin');
+    if (btnUsdt && btnCoin) {
+      btnUsdt.style.background = '#00E5FF';
+      btnUsdt.style.color = '#0F172A';
+      btnCoin.style.background = 'transparent';
+      btnCoin.style.color = 'var(--text)';
     }
   }
 
@@ -8636,13 +8724,16 @@ function checkAutoTrade(inputSignals){
         try { beep(); } catch(e){}
 
         // Si la sortie est due à un signal opposé, exécuter immédiatement le trade opposé
+        const stratCap = strat?.capital || 100;
+        const stratLev = strat?.lev || 200;
+
         if (sellSignal && existingPos.side === 'long') {
-          openTrade('short');
+          openTrade('short', null, stratCap, stratLev);
           const pNew = paper.positions[0];
           if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
           toast(`🤖 [Auto-Trade Stratégie] Inversion ! Entrée VENTE (SHORT) @ $${fmt(px, 2)}`, '#F45B7D');
         } else if (buySignal && existingPos.side === 'short') {
-          openTrade('long');
+          openTrade('long', null, stratCap, stratLev);
           const pNew = paper.positions[0];
           if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
           toast(`🤖 [Auto-Trade Stratégie] Inversion ! Entrée ACHAT (LONG) @ $${fmt(px, 2)}`, '#10B981');
@@ -8654,6 +8745,9 @@ function checkAutoTrade(inputSignals){
 
   // 3. Si aucune position n'est ouverte, vérifier les signaux d'entrée
   if (!existingPos) {
+    const stratCap = strat?.capital || 100;
+    const stratLev = strat?.lev || 200;
+
     if (buySignal) {
       const sigId = `${state.symbol}|${state.tf}|${d[lastIdx].t}|buy`;
       if (autoTradeLastExecutedSigId !== sigId) {
@@ -8661,11 +8755,11 @@ function checkAutoTrade(inputSignals){
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
 
-        openTrade('long');
+        openTrade('long', null, stratCap, stratLev);
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
         const modeLabel = strat?.modeLabel || 'Stratégie Achat';
-        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre ACHAT (LONG) exécuté @ $${fmt(px, 2)}`, '#10B981');
+        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre ACHAT (LONG) ($${stratCap} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#10B981');
         try { beep(); } catch(e){}
       }
     } else if (sellSignal) {
@@ -8675,11 +8769,11 @@ function checkAutoTrade(inputSignals){
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
 
-        openTrade('short');
+        openTrade('short', null, stratCap, stratLev);
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
         const modeLabel = strat?.modeLabel || 'Stratégie Vente';
-        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre VENTE (SHORT) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
+        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre VENTE (SHORT) ($${stratCap} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
         try { beep(); } catch(e){}
       }
     }
@@ -8689,7 +8783,7 @@ function checkAutoTrade(inputSignals){
 // Boucle périodique de vérification d'Auto-Trade
 setInterval(()=>{
   if(paperAutoTrade && state.data && state.data.length){
-    try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    checkAutoTrade();
   }
 }, 1500);
 
@@ -9750,6 +9844,8 @@ function sendTelegramDemoEntryNotification(p, isReentry) {
     const pxStr = typeof fmt === 'function' ? `$${fmt(p.entry, p.entry >= 100 ? 2 : 4)}` : `$${p.entry}`;
     const slStr = p.sl ? (typeof fmt === 'function' ? `$${fmt(p.sl, p.sl >= 100 ? 2 : 4)}` : `$${p.sl}`) : 'Non défini';
     const tpStr = p.tp ? (typeof fmt === 'function' ? `$${fmt(p.tp, p.tp >= 100 ? 2 : 4)}` : `$${p.tp}`) : 'Non défini';
+    const tLiqPx = (p.lev && p.lev > 1) ? (p.side === 'long' ? p.entry * (1 - 0.95 / p.lev) : p.entry * (1 + 0.95 / p.lev)) : null;
+    const liqMsgStr = tLiqPx ? (typeof fmt === 'function' ? `$${fmt(tLiqPx, tLiqPx >= 100 ? 2 : 4)}` : `$${tLiqPx}`) : 'Sans (1x)';
 
     const title = isReentry ? `${icon} <b>RERENTRÉE DÉMO (CUMUL DCA)</b>` : `${icon} <b>ENTRÉE TRADE DÉMO</b>`;
 
@@ -9759,6 +9855,7 @@ function sendTelegramDemoEntryNotification(p, isReentry) {
 <b>Type :</b> ${sideStr}
 <b>Stratégie :</b> ${escapeHtml(stratName)}
 <b>Prix d'entrée :</b> <code>${pxStr}</code>
+<b>💥 Prix de Liquidation :</b> <code>${liqMsgStr}</code>
 <b>Taille :</b> ${qStr} ${coin} (${levStr})
 <b>Marge :</b> $${typeof fmtUsd === 'function' ? fmtUsd(p.margin || 0) : p.margin}
 ──────────────────────────
@@ -9957,7 +10054,7 @@ function checkAllAlerts(){
 
   // Exécution de l'Auto-Trade si actif (indépendant de la config des notifs téléphones)
   if(paperAutoTrade){
-    try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    checkAutoTrade();
   }
 
   const phoneCfg = getPhoneNotifConfig();
@@ -11787,6 +11884,11 @@ async function runBacktest(skipFetch){
           const netReturnPct = Math.max(-0.95, grossReturnPct - feesPct);
           const pnlDollar = capital * netReturnPct;
 
+          const engagedCapital = pos.capitalAtEntry || capital;
+          const engagedNotional = engagedCapital * activeLev;
+          const engagedQty = entryP > 0 ? engagedNotional / entryP : 0;
+          const liqP = activeLev > 1 ? (dir === 1 ? entryP * (1 - 0.95 / activeLev) : entryP * (1 + 0.95 / activeLev)) : null;
+
           capital += pnlDollar;
           peak = Math.max(peak, capital);
           const dd = peak - capital;
@@ -11797,10 +11899,15 @@ async function runBacktest(skipFetch){
             dir: dir === 1 ? 'ACHAT' : 'VENTE',
             entryP,
             exitP,
+            liqP,
             pnlDollar,
             netReturnPct: netReturnPct * 100,
             reason: exitReason,
-            capitalAfter: capital
+            capitalAfter: capital,
+            engagedUsd: engagedCapital,
+            engagedNotional,
+            engagedQty,
+            lev: activeLev
           });
 
           pos = null;
@@ -11810,9 +11917,9 @@ async function runBacktest(skipFetch){
       // Ouvrir une nouvelle position s'il n'y en a pas d'active
       if (!pos) {
         if (buySignal) {
-          pos = { dir: 1, entryP: d[i].c, entryT: d[i].t, peakPrice: d[i].h, lowPrice: d[i].l };
+          pos = { dir: 1, entryP: d[i].c, entryT: d[i].t, peakPrice: d[i].h, lowPrice: d[i].l, capitalAtEntry: capital };
         } else if (sellSignal) {
-          pos = { dir: -1, entryP: d[i].c, entryT: d[i].t, peakPrice: d[i].h, lowPrice: d[i].l };
+          pos = { dir: -1, entryP: d[i].c, entryT: d[i].t, peakPrice: d[i].h, lowPrice: d[i].l, capitalAtEntry: capital };
         }
       }
     }
@@ -11828,6 +11935,11 @@ async function runBacktest(skipFetch){
       const netReturnPct = Math.max(-0.95, grossReturnPct - feesPct);
       const pnlDollar = capital * netReturnPct;
 
+      const engagedCapital = pos.capitalAtEntry || capital;
+      const engagedNotional = engagedCapital * activeLev;
+      const engagedQty = entryP > 0 ? engagedNotional / entryP : 0;
+      const liqP = activeLev > 1 ? (dir === 1 ? entryP * (1 - 0.95 / activeLev) : entryP * (1 + 0.95 / activeLev)) : null;
+
       capital += pnlDollar;
       peak = Math.max(peak, capital);
       const dd = peak - capital;
@@ -11838,10 +11950,15 @@ async function runBacktest(skipFetch){
         dir: dir === 1 ? 'ACHAT' : 'VENTE',
         entryP,
         exitP,
+        liqP,
         pnlDollar,
         netReturnPct: netReturnPct * 100,
         reason: 'Fin de période',
-        capitalAfter: capital
+        capitalAfter: capital,
+        engagedUsd: engagedCapital,
+        engagedNotional,
+        engagedQty,
+        lev: activeLev
       });
     }
 
@@ -12011,7 +12128,7 @@ async function runBacktest(skipFetch){
       localStorage.setItem('lumen_paper_autotrade', '1');
     } catch(e){}
     if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
-    if (typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    if (typeof checkAutoTrade === 'function') checkAutoTrade();
 
     // 7. Rafraîchir les données et l'IU Démo
     if (typeof saveConfig === 'function') saveConfig();
@@ -12131,12 +12248,53 @@ async function runBacktest(skipFetch){
   } catch(e){}
 
   const isDemoActiveOverall = paperAutoTrade && activeDemoStratObj;
-  const isCurrentActiveInDemo = isDemoActiveOverall && (activeDemoStratObj.mode === resSel.mode) && (activeDemoStratObj.lev === btLev);
+  const isCurrentActiveInDemo = isDemoActiveOverall && (activeDemoStratObj.mode === resSel.mode) && (Number(activeDemoStratObj.lev) === Number(btLev));
+
+  let activeDemoRankInfo = null;
+  let activeDemoFormatted = '';
+  if (isDemoActiveOverall && activeDemoStratObj) {
+    const activeLevNum = Number(activeDemoStratObj.lev) || 100;
+    const rankIndex = allCombos.findIndex(c => c.mode === activeDemoStratObj.mode && Number(c.lev) === activeLevNum);
+    const isInTop5 = top5Combos.some(tc => tc.mode === activeDemoStratObj.mode && Number(tc.lev) === activeLevNum);
+    if (rankIndex !== -1) {
+      activeDemoRankInfo = {
+        rank: rankIndex + 1,
+        combo: allCombos[rankIndex],
+        isInTop5: isInTop5
+      };
+    } else {
+      const simRes = simMode(activeDemoStratObj.mode, activeLevNum);
+      activeDemoRankInfo = {
+        rank: '—',
+        combo: { mode: activeDemoStratObj.mode, lev: activeLevNum, res: simRes },
+        isInTop5: false
+      };
+    }
+
+    const actAt = activeDemoStratObj.activatedAt || activeDemoStratObj.timestamp || Date.now();
+    const actD = new Date(actAt);
+    const dStr = actD.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const tStr = actD.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const eMs = Math.max(0, Date.now() - actAt);
+    const eH = Math.floor(eMs / (1000 * 60 * 60));
+    const eM = Math.floor((eMs % (1000 * 60 * 60)) / (1000 * 60));
+    let durStr = '';
+    if (eH >= 24) {
+      durStr = `(il y a ${Math.floor(eH / 24)}j ${eH % 24}h)`;
+    } else if (eH > 0) {
+      durStr = `(il y a ${eH}h ${eM > 0 ? eM + 'min' : ''})`;
+    } else if (eM > 0) {
+      durStr = `(il y a ${eM} min)`;
+    } else {
+      durStr = `(à l'instant)`;
+    }
+    activeDemoFormatted = `${dStr} à ${tStr} ${durStr}`;
+  }
 
   let html=`
     ${isDemoActiveOverall ? `
     <!-- BANNIÈRE STRATÉGIE DÉMO ACTIVÉE EN DIRECT -->
-    <div style="background:linear-gradient(135deg, rgba(0,230,118,0.22), rgba(0,229,255,0.15));border:2px solid #00E676;border-radius:10px;padding:12px 16px;margin-bottom:14px;box-shadow:0 0 20px rgba(0,230,118,0.25);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div style="background:#0B1222;border:2px solid #00E676;border-radius:10px;padding:12px 16px;margin-bottom:14px;box-shadow:0 0 20px rgba(0,230,118,0.25);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
       <div style="display:flex;align-items:center;gap:12px">
         <div style="width:38px;height:38px;border-radius:50%;background:#00E676;color:#0F172A;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;box-shadow:0 0 12px #00E676;flex-shrink:0">
           🤖
@@ -12146,16 +12304,19 @@ async function runBacktest(skipFetch){
             <span>⚡ STRATÉGIE ACTIVÉE ET EN COURS SUR VOTRE COMPTE DÉMO</span>
             <span style="background:#00E676;color:#0F172A;font-size:9.5px;padding:2px 7px;border-radius:10px;font-weight:900">AUTO-TRADE : ACTIF ●</span>
           </div>
-          <div style="font-size:11.5px;color:var(--text);margin-top:3px;font-family:'IBM Plex Mono',monospace">
+          <div style="font-size:11.5px;color:#E2E8F0;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-weight:700">
             Stratégie : <b style="color:#00E5FF">${modeLabels[activeDemoStratObj.mode] || activeDemoStratObj.mode}</b>
             · Levier : <b style="color:#FFD700">${activeDemoStratObj.lev}x</b>
-            · Capital : <b>${activeDemoStratObj.capital} $</b>
-            · Frais : <b>${activeDemoStratObj.feePct}%</b>
+            · Capital : <b style="color:#FFF">${activeDemoStratObj.capital} $</b>
+            · Frais : <b style="color:#FFF">${activeDemoStratObj.feePct}%</b>
+          </div>
+          <div style="font-size:10.5px;color:#94A3B8;margin-top:3px">
+            📅 Activée le : <span style="color:#FFF;font-weight:bold;background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:4px">${activeDemoFormatted}</span>
           </div>
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="applyStrategyToDemo()" style="background:rgba(0,230,118,0.25);border:1px solid #00E676;color:#00E676;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer">
+        <button onclick="applyStrategyToDemo()" style="background:rgba(0,230,118,0.2);border:1px solid #00E676;color:#00E676;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer">
           🔄 Ré-appliquer cette stratégie
         </button>
       </div>
@@ -12220,8 +12381,8 @@ async function runBacktest(skipFetch){
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px">
         ${top5Combos.map((c, idx) => {
-          const isSelected = (c.mode === selExitMode && c.lev === btLev);
-          const isCardDemoActive = isDemoActiveOverall && (activeDemoStratObj.mode === c.mode && activeDemoStratObj.lev === c.lev);
+          const isSelected = (c.mode === selExitMode && Number(c.lev) === Number(btLev));
+          const isCardDemoActive = isDemoActiveOverall && (activeDemoStratObj.mode === c.mode && Number(activeDemoStratObj.lev) === Number(c.lev));
           const cardBorder = isCardDemoActive ? '2.5px solid #00E676' : (isSelected ? '2px solid #FFD700' : '1px solid rgba(255,215,0,0.3)');
           const cardBg = isCardDemoActive ? 'rgba(0,230,118,0.2)' : (isSelected ? 'rgba(255,215,0,0.15)' : 'var(--panel-2)');
           const shortModeName = modeLabels[c.mode].split(' ')[0] + ' ' + (modeLabels[c.mode].split(' ')[1] || '');
@@ -12252,6 +12413,33 @@ async function runBacktest(skipFetch){
           `;
         }).join('')}
       </div>
+
+      ${(isDemoActiveOverall && activeDemoRankInfo && !activeDemoRankInfo.isInTop5) ? `
+        <div style="margin-top:12px;background:linear-gradient(135deg, rgba(0,230,118,0.18), rgba(0,229,255,0.12));border:2px solid #00E676;border-radius:10px;padding:12px 14px;box-shadow:0 0 16px rgba(0,230,118,0.3)">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="background:#00E676;color:#0F172A;font-size:10px;font-weight:900;padding:3px 8px;border-radius:6px;box-shadow:0 0 8px #00E676">
+                🤖 STRATÉGIE ACTIVES SUR VOTRE COMPTE DÉMO
+              </span>
+              <span style="font-size:12.5px;font-weight:900;color:var(--text)">
+                ${modeLabels[activeDemoStratObj.mode] || activeDemoStratObj.mode} <span style="color:#00E5FF;font-family:'IBM Plex Mono',monospace">(${activeDemoStratObj.lev}x)</span>
+              </span>
+            </div>
+            <span style="background:rgba(255,215,0,0.2);color:#FFD700;border:1px solid rgba(255,215,0,0.5);font-size:10.5px;font-weight:bold;padding:3px 10px;border-radius:6px">
+              📊 Classement sur ${depthDays}j : Rang #${activeDemoRankInfo.rank} / ${allCombos.length}
+            </span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+            <span>Gain Net: <b style="color:${colVal(activeDemoRankInfo.combo.res.netPnlTotal)}">${fmtDollar(activeDemoRankInfo.combo.res.netPnlTotal)} (${fmtPct(activeDemoRankInfo.combo.res.netPnlTotalPct)})</b></span>
+            <span>Win Rate: <b style="color:${activeDemoRankInfo.combo.res.winRate>=60?'#00E676':'var(--text)'}">${activeDemoRankInfo.combo.res.winRate.toFixed(1)}%</b></span>
+            <span>Drawdown Max: <b style="color:#FF5252">-${activeDemoRankInfo.combo.res.maxDD.toFixed(2)} $ (-${activeDemoRankInfo.combo.res.maxDDPct.toFixed(1)}%)</b></span>
+            <span>Profit Factor: <b>${activeDemoRankInfo.combo.res.profitFactor===Infinity?'∞':activeDemoRankInfo.combo.res.profitFactor.toFixed(2)}</b></span>
+          </div>
+          <div style="font-size:10.5px;color:#FFD700;margin-top:8px;background:rgba(255,215,0,0.08);padding:6px 10px;border-radius:6px;border:1px dashed rgba(255,215,0,0.3)">
+            💡 <b>Pourquoi elle ne figure pas dans le Top 5 ?</b> Sur cette durée de <b>${depthDays} jours</b> (${d.length} bougies), votre stratégie active est classée <b>#${activeDemoRankInfo.rank}</b> parmi 48 combinaisons. Les 5 cartes ci-dessus (ex: <b>${modeLabels[top5Combos[0].mode].split(' ')[0]} ${top5Combos[0].lev}x</b> qui fait ${fmtDollar(top5Combos[0].res.netPnlTotal)}) ont un rendement supérieur sur cette période spécifique. Vous pouvez basculer en 1 clic sur une stratégie du Top 5 !
+          </div>
+        </div>
+      ` : ''}
     </div>
 
     <!-- Comparatif des 6 Stratégies de Sortie (Cliquables pour choisir sa stratégie) -->
@@ -12264,16 +12452,18 @@ async function runBacktest(skipFetch){
         ${modesList.map(m=>{
           const isBest=m.mode===bestMode.mode;
           const isSelected=m.mode===selExitMode;
-          const cardBorder=isSelected?'2px solid #00E5FF':(isBest?'1px dashed rgba(0,229,255,0.6)':'1px solid var(--line)');
-          const cardBg=isSelected?'rgba(0,229,255,0.12)':'var(--panel-2)';
-          const cardShadow=isSelected?'0 0 12px rgba(0,229,255,0.3)':'';
+          const isDemoActiveMode=isDemoActiveOverall && activeDemoStratObj && activeDemoStratObj.mode===m.mode;
+          const cardBorder=isDemoActiveMode?'2px solid #00E676':(isSelected?'2px solid #00E5FF':(isBest?'1px dashed rgba(0,229,255,0.6)':'1px solid var(--line)'));
+          const cardBg=isDemoActiveMode?'rgba(0,230,118,0.12)':(isSelected?'rgba(0,229,255,0.12)':'var(--panel-2)');
+          const cardShadow=isDemoActiveMode?'0 0 12px rgba(0,230,118,0.3)':(isSelected?'0 0 12px rgba(0,229,255,0.3)':'');
           return `
             <div onclick="selectBtExitMode('${m.mode}')" style="background:${cardBg};border:${cardBorder};border-radius:8px;padding:10px;box-shadow:${cardShadow};cursor:pointer;transition:all 0.2s ease" title="Cliquer pour afficher l'historique et les trades de cette stratégie">
               <div style="font-size:11px;font-weight:bold;color:${isSelected?'#00E5FF':'var(--text)'};margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">
                 <span>${modeLabels[m.mode].split(' ')[0]} ${modeLabels[m.mode].split(' ')[1]||''}</span>
-                <div style="display:flex;gap:3px">
-                  ${isSelected?'<span style="background:#00E5FF;color:#0F172A;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:bold">✓ ACTIF</span>':''}
-                  ${isBest?'<span style="background:#FFD700;color:#0F172A;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:bold">★ MEILLEUR</span>':''}
+                <div style="display:flex;gap:3px;flex-wrap:wrap">
+                  ${isDemoActiveMode ? `<span style="background:#00E676;color:#0F172A;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:900;box-shadow:0 0 6px #00E676">🤖 EN DÉMO (${activeDemoStratObj.lev}x)</span>` : ''}
+                  ${isSelected ? '<span style="background:#00E5FF;color:#0F172A;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:bold">🔍 INSPECTÉ</span>' : ''}
+                  ${isBest ? '<span style="background:#FFD700;color:#0F172A;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:bold">★ MEILLEUR</span>' : ''}
                 </div>
               </div>
               <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6">
@@ -12354,6 +12544,8 @@ async function runBacktest(skipFetch){
               <th style="padding:6px 8px">Type</th>
               <th style="padding:6px 8px">Entrée</th>
               <th style="padding:6px 8px">Sortie</th>
+              <th style="padding:6px 8px;color:#FF495C">💥 Prix Liquidation</th>
+              <th style="padding:6px 8px;color:#00E5FF">💰 Engagé ($ & BTC)</th>
               <th style="padding:6px 8px">Motif de Sortie</th>
               <th style="padding:6px 8px;text-align:right">PnL Net</th>
               <th style="padding:6px 8px;text-align:right">Solde (Capital)</th>
@@ -12366,6 +12558,14 @@ async function runBacktest(skipFetch){
               const isWin=t.pnlDollar>0;
               const dirColor=t.dir==='ACHAT'?'#00E5FF':'#FF007A';
               const bgRow=isWin?'rgba(0,230,118,0.05)':'rgba(255,82,82,0.05)';
+              const coin = baseAsset(state.symbol);
+              const notional = t.engagedNotional || (t.engagedUsd ? t.engagedUsd * (t.lev||1) : (initialCapital * (t.lev||1)));
+              const qty = t.engagedQty || (notional / (t.entryP || 1));
+              const qtyFmt = qty >= 1 ? qty.toFixed(3) : qty.toFixed(4);
+              const marginFmt = t.engagedUsd ? fmtDollar(t.engagedUsd) : fmtDollar(initialCapital);
+              const levVal = t.lev || 1;
+              const calcLiqP = t.liqP || (levVal > 1 ? (t.dir === 'ACHAT' ? t.entryP * (1 - 0.95 / levVal) : t.entryP * (1 + 0.95 / levVal)) : null);
+              const liqCell = calcLiqP ? `$${calcLiqP.toFixed(2)}` : '<span style="color:var(--muted)">Sans (1x)</span>';
               return `
                 <tr style="background:${bgRow};border-bottom:1px solid var(--line)">
                   <td style="padding:6px 8px;color:var(--muted)">${resSel.trades.length-idx}</td>
@@ -12373,6 +12573,12 @@ async function runBacktest(skipFetch){
                   <td style="padding:6px 8px;font-weight:bold;color:${dirColor}">${t.dir}</td>
                   <td style="padding:6px 8px">${t.entryP.toFixed(2)} $</td>
                   <td style="padding:6px 8px">${t.exitP.toFixed(2)} $</td>
+                  <td style="padding:6px 8px;font-weight:bold;color:${calcLiqP?'#FF495C':'var(--muted)'};white-space:nowrap">${liqCell}</td>
+                  <td style="padding:6px 8px;white-space:nowrap">
+                    <strong style="color:#FFF">$${fmtDollar(notional)}</strong>
+                    <span style="font-weight:bold;color:#00E5FF;font-size:10.5px"> (${qtyFmt} ${coin})</span>
+                    <div style="font-size:9.5px;color:var(--muted)">Marge: ${marginFmt} (${levVal}x)</div>
+                  </td>
                   <td style="padding:6px 8px"><span style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;font-size:10px">🏁 ${t.reason}</span></td>
                   <td style="padding:6px 8px;text-align:right;font-weight:bold;color:${colVal(t.pnlDollar)}">
                     ${fmtDollar(t.pnlDollar)} (${fmtPct(t.netReturnPct)})
