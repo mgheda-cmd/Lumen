@@ -736,9 +736,9 @@ footer{
     <div style="margin:10px 0;display:flex;gap:6px;flex-wrap:wrap"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button><button id="mbt-ob" class="cfg-tfm" style="font-size:11px">🟪 Sortie sur Order Block opposé</button><button id="mbt-cloud" class="cfg-tfm on" style="font-size:11px">☁️ Nuage porteur = on ne sort pas</button><button id="mbt-cloudin" class="cfg-tfm on" style="font-size:11px">🧭 Pas d'entrée à contresens du nuage</button></div>
     <label style="font-size:11px;color:#94A3B8;display:block;margin-bottom:8px">Épuisements pris en compte à partir de
       <select id="mbt-exhtf" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
-        <option value="1">1 minute (tout)</option>
+        <option value="1" selected>UT du graphique</option>
         <option value="3">3 minutes</option>
-        <option value="5" selected>5 minutes</option>
+        <option value="5">5 minutes</option>
         <option value="15">15 minutes</option>
         <option value="60">1 heure</option>
       </select></label>
@@ -2643,7 +2643,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme',exhMinTf:5,cloudVeto:true,cloudEntry:true,cloudTf:0},
+    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme',exhMinTf:1,cloudVeto:true,cloudEntry:true,cloudTf:0},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
@@ -8654,7 +8654,7 @@ const SCHEMA={
     {k:'trailAfter',t:'num',lab:'Armer le stop suiveur après (× le risque)',min:0,max:5,def:1,ind:1},
     {k:'minHold',t:'num',lab:'Bougies minimum avant sortie douce',min:0,max:30,def:4,ind:1},
     {k:'timeStop',t:'num',lab:'Stop temporel si le trade stagne (bougies, 0 = off)',min:0,max:500,def:60,ind:1},
-    {k:'exhMinTf',t:'num',lab:'Unité de temps minimale des épuisements (minutes)',min:1,max:240,def:5,ind:1},
+    {k:'exhMinTf',t:'num',lab:'UT minimale des épuisements en minutes (1 = celle du graphique)',min:1,max:240,def:1,ind:1},
     {k:'cloudVeto',t:'bool',lab:'Ne pas sortir sur épuisement tant que le nuage EMA reste porteur',def:true,ind:1},
     {k:'cloudEntry',t:'bool',lab:'Interdire les entrées à contresens du nuage EMA',def:true,ind:1},
     {k:'cloudTf',t:'num',lab:'UT du nuage en minutes (0 = celle de l\'indicateur affiché)',min:0,max:240,def:0,ind:1},
@@ -11353,7 +11353,7 @@ function computeMasterStrategy(d, opt){
   const minHold   = opt.minHold   != null ? +opt.minHold   : 4;     // bougies avant sortie douce
   const timeStop  = opt.timeStop  != null ? +opt.timeStop  : 60;    // 0 = désactivé
   const exhMode   = opt.exhMode   || 'confirme';                    // off | confirme | immediat
-  const exhMinTf  = opt.exhMinTf  != null ? +opt.exhMinTf  : 5;     // unité de temps minimale des épuisements
+  const exhMinTf  = opt.exhMinTf  != null ? +opt.exhMinTf  : 1;     // 1 = tout sur l'UT du graphique
   const EXH_TFS   = [1, 3, 5, 15, 60, 240];
   const cloudVeto = opt.cloudVeto !== false;   // le nuage EMA bloque la sortie sur épuisement
   const cloudEntry= opt.cloudEntry !== false;   // pas d'entrée à contresens du nuage
