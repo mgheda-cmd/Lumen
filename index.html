@@ -148,8 +148,9 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 }
   .cfg-choice,.cfg-tf{background:var(--panel);border:1px solid var(--line);color:var(--muted);
     border-radius:7px;padding:6px 14px;cursor:pointer;font-size:13px;font-family:inherit}
-  .cfg-choice.on,.cfg-tf.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
-  .cfg-tf{padding:5px 11px}
+  .cfg-choice.on,.cfg-tf.on,.cfg-tfm.on{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.12)}
+  .cfg-tf,.cfg-tfm{padding:5px 11px}
+  .cfg-tfm{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:6px;cursor:pointer}
   .cfg-sw{
   width:40px;height:22px;border-radius:11px;background:var(--line);position:relative;
   cursor:pointer;flex:none;transition:background .15s;
@@ -8621,6 +8622,18 @@ function openCfg(ind){
         f.opts.map(o=>`<button class="cfg-choice ${v===o.v?'on':''}" data-f="${f.k}" data-v="${o.v}">${o.t}</button>`).join('')+
         `</div></div>`;
     if(f.t==='tf'){
+      const tfsObj=state.indicators[ind].tfs;
+      // Indicateur piloté par plusieurs unités de temps : le panneau doit
+      // agir sur le même objet tfs que les puces du menu Indicateurs,
+      // sinon le réglage n'a aucun effet sur le calcul.
+      if(tfsObj && typeof tfsObj==='object'){
+        const LAB={chart:'UT','1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H','1440':'1J'};
+        const keys=Object.keys(tfsObj);
+        return `<div class="cfg-row"><label>Unités de temps (plusieurs possibles)</label>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">`+
+          keys.map(k=>`<button class="cfg-tfm ${tfsObj[k]?'on':''}" data-tf="${k}">${LAB[k]||(k+'m')}</button>`).join('')+
+          `</div></div>`;
+      }
       const cur=state.indicators[ind].tf||'chart';
       const opts=[['chart','UT'],['3','3m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
       return `<div class="cfg-row"><label>Unité de temps</label>
@@ -8655,6 +8668,17 @@ function openCfg(ind){
     body.querySelectorAll('.cfg-tf').forEach(x=>x.classList.remove('on'));
     el.classList.add('on');
     state.indicators[ind].tf=el.dataset.tf;
+    state.cache={}; saveConfig(); render();
+  }));
+  body.querySelectorAll('.cfg-tfm').forEach(el=>el.addEventListener('click',()=>{
+    const tfsObj=state.indicators[ind].tfs; if(!tfsObj)return;
+    const k=el.dataset.tf;
+    tfsObj[k]=!tfsObj[k];
+    // au moins une unité de temps doit rester active
+    if(!Object.keys(tfsObj).some(x=>tfsObj[x])){ tfsObj[k]=true; return; }
+    el.classList.toggle('on',!!tfsObj[k]);
+    if(tfsObj[k] && k!=='chart' && +k!==state.tf) ensureMTF(+k);
+    if(typeof syncMenu==='function') syncMenu();
     state.cache={}; saveConfig(); render();
   }));
   body.querySelectorAll('input[type=number]').forEach(el=>
