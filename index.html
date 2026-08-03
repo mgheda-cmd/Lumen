@@ -693,6 +693,15 @@ footer{
         <span class="srtf on" data-indzero="rangeDet2" title="Afficher/Masquer la Ligne Zéro">Axe 0</span>
         <span class="state">on</span>
       </div>
+      <h4 style="color:#A78BFA;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🌓 Médiaire</h4>
+      <div class="ind-item" data-ind="strat_mediaire" id="item-strat_mediaire" style="background:linear-gradient(135deg,rgba(167,139,250,0.14),rgba(99,102,241,0.10));border:1.5px solid #A78BFA;border-radius:8px;padding:9px 10px;margin-top:4px;margin-bottom:6px;box-shadow:0 2px 10px rgba(167,139,250,0.20)">
+        <span class="dot" style="background:#A78BFA;box-shadow:0 0 7px #A78BFA;flex:none"></span>
+        <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Médiaire<br><span class="desc" style="color:#DDD6FE;font-size:11px">Croisement EMA 9, bougies Heikin Ashi et filtre MACD. Achat, vente et sortie.</span></span>
+        <div style="display:flex;align-items:center;gap:5px;flex:none;margin-left:auto">
+          <button id="btn-bt-strat-mediaire" data-bt-strat="strat_mediaire" style="background:linear-gradient(135deg,#A78BFA,#6366F1);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 0 8px rgba(167,139,250,0.35)" title="Lancer le backtest de Médiaire">🚀 Backtest</button>
+          <span class="state">off</span>
+        </div>
+      </div>
       <h4 style="color:#FBBF24;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🏆 Stratégie complète</h4>
       <div class="ind-item" data-ind="strat_master" id="item-strat_master" style="background:linear-gradient(135deg,rgba(251,191,36,0.14),rgba(249,115,22,0.10));border:1.5px solid #FBBF24;border-radius:8px;padding:9px 10px;margin-top:4px;margin-bottom:10px;box-shadow:0 2px 10px rgba(251,191,36,0.20)">
         <span class="dot" style="background:#FBBF24;box-shadow:0 0 7px #FBBF24;flex:none"></span>
@@ -717,7 +726,30 @@ footer{
   <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
   </div>
 
-  <div id="mbt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:14px">
+  <div id="dbt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:14px">
+  <div style="background:var(--panel,#0A111F);border:1.5px solid #A78BFA;border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:800;color:#A78BFA;font-size:14px">🌓 Backtest — Médiaire</div>
+      <button class="btn" id="dbt-close" style="padding:3px 9px;font-size:14px">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:11px;color:#94A3B8">
+      <label>Historique (jours)<select id="dbt-days" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="3">3 jours</option><option value="7" selected>7 jours</option><option value="14">14 jours</option><option value="30">30 jours</option></select></label>
+      <label>Capital ($)<input type="number" id="dbt-capital" value="100" min="10" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Frais par côté (%)<input type="number" id="dbt-fee" value="0.04" step="0.01" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Levier<select id="dbt-lev" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="1">1x</option><option value="2">2x</option><option value="5" selected>5x</option><option value="10">10x</option><option value="20">20x</option><option value="50">50x</option><option value="100">100x</option></select></label>
+    </div>
+    <label style="font-size:11px;color:#94A3B8;display:block;margin:8px 0 10px">Mode de sortie
+      <select id="dbt-exit" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
+        <option value="macd" selected>Inversion MACD</option>
+        <option value="color">Changement de couleur Heikin Ashi</option>
+        <option value="ema_cross">Croisement EMA inverse</option>
+      </select></label>
+    <button id="dbt-run" style="width:100%;background:linear-gradient(135deg,#A78BFA,#6366F1);color:#0F172A;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:12px">▶ Lancer le Backtest</button>
+    <div id="dbt-res"></div>
+  </div>
+</div>
+
+<div id="mbt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:14px">
   <div style="background:var(--panel,#0A111F);border:1.5px solid #FBBF24;border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div style="font-weight:800;color:#FBBF24;font-size:14px">🏆 Backtest — Stratégie Confluence Totale</div>
@@ -2643,6 +2675,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
+    strat_mediaire:{on:false,emaPeriod:9,exitMode:'macd'},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:0,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,useStop:false,exhMode:'confirme',exhMinTf:1,cloudVeto:true,cloudEntry:true,cloudTf:0},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -3366,6 +3399,7 @@ function getInd(key){
     if(key==='signal_inv')state.cache[ck]=computeInvertedConfluenceSignals(d);
     if(key==='signal_ema_ha')state.cache[ck]=computeEmaHaCrossSignals(d,ind);
     if(key==='strat_master')state.cache[ck]=computeMasterStrategy(d,ind);
+    if(key==='strat_mediaire')state.cache[ck]=computeMediaireSignals(d,ind);
     if(key==='signal_exit_kk'){
       const activeTfsStr = Object.keys(ind.tfs || {}).filter(k => ind.tfs[k]).sort().join('_');
       const uL = S('signal_exit_kk','upper') ?? S('two_ind','upper') ?? 64;
@@ -4237,6 +4271,10 @@ function render(){
   // Stratégie Confluence Totale
   if(vis('strat_master')){
     drawMasterStrategy(getInd('strat_master'), s, e, yOf);
+  }
+  // Stratégie Médiaire
+  if(vis('strat_mediaire')){
+    drawMediaire(getInd('strat_mediaire'), s, e, yOf);
   }
   ctx.restore();   // fin du clip « panneau des prix »
   // Crosshair vertical global : traverse tous les panneaux
@@ -6252,6 +6290,7 @@ const IND_META={
   signal_inv:{label:()=>'Confluence INVERSÉE 🏆',color:'#25D0A4'},
   signal_ema_ha:{label:()=>'Stratégie EMA 9 / HA 5m 🎯',color:'#00E5FF'},
   strat_master:{label:()=>'Stratégie Confluence Totale 🏆',color:'#FBBF24'},
+  strat_mediaire:{label:()=>'Médiaire 🌓',color:'#A78BFA'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
   lrc:{label:()=>{
@@ -8641,6 +8680,10 @@ const SCHEMA={
     {k:'lower',t:'num',lab:'Niveau Pointillés Bas (Sortie Vente)',min:-95,max:-40,def:-64,ind:1},
     {k:'lookback',t:'num',lab:'Fenêtre Épuisement (Bougies)',min:2,max:50,def:20,ind:1},
     {k:'minExhaustion',t:'num',lab:'Épuisements Minimum Requis (0 = Aucun)',min:0,max:10,def:1,ind:1},
+  ]},
+  strat_mediaire:{title:'🌓 Médiaire',fields:[
+    {k:'emaPeriod',t:'num',lab:'Période de l\'EMA',min:2,max:50,def:9,ind:1},
+    {k:'exitMode',t:'choice',lab:'Mode de sortie',opts:[['macd','MACD'],['color','Couleur HA'],['ema_cross','Croisement EMA']],def:'macd',ind:1},
   ]},
   strat_master:{title:'🏆 Stratégie Confluence Totale',fields:[
     {k:'minScore',t:'num',lab:'Score de confluence minimum pour entrer',min:2,max:10,def:5,ind:1},
@@ -12138,6 +12181,158 @@ function processAutoTrade(currentCandles, currentSymbol, currentPrice) {
   window.processAutoTrade = processAutoTrade;
   try{ DemoAccount.init(); }catch(e){}
 })();
+
+
+/* =======================================================================
+   STRATÉGIE MÉDIAIRE
+   Indicateur autonome qui affiche les signaux du module Compte Démo
+   (croisement EMA 9, Heikin Ashi, filtre MACD) et propose son propre
+   backtest via le moteur runBacktestEngine du module.
+   ===================================================================== */
+function computeMediaireSignals(d, ind){
+  const M = window.LumenDemoModule;
+  if(!M || !Array.isArray(d) || d.length < 60) return [];
+  try{
+    return M.computeEmaHaCrossSignals(d, {
+      emaPeriod: (ind && ind.emaPeriod) || 9,
+      exitMode: (ind && ind.exitMode) || 'macd'
+    });
+  }catch(e){ return []; }
+}
+
+function drawMediaire(evts, s, e, yOf){
+  if(!Array.isArray(evts) || !evts.length) return;
+  const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+  for(const g of evts){
+    const i = (g.t != null ? idxOfTime(g.t) : null) ?? g.i;
+    if(i == null || i < s - 1 || i > e + 1) continue;
+    const x = xOf(i);
+    if(x < -200 || x > W - AXIS_W + 200) continue;
+
+    const isExit = (g.dir === 0);
+    const up = g.dir === 1;
+    const color = isExit ? '#A78BFA' : (up ? '#34D399' : '#FB7185');
+    const bg = isExit ? 'rgba(24,16,42,0.95)' : (up ? 'rgba(6,32,24,0.95)' : 'rgba(38,10,20,0.95)');
+    const down = isExit ? false : up;
+
+    const yDot = down ? yOf(g.price) + 26 : yOf(g.price) - 26;
+    const bw = 158, bh = 30;
+    const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
+    const by = placeBadge(bx, bw, down ? (yDot + 40) : (yDot - 46 - bh), bh, down ? 1 : -1);
+
+    ctx.save();
+    ctx.shadowColor = color; ctx.shadowBlur = 9;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x, yDot, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = color; ctx.lineWidth = 1.1; ctx.setLineDash([3, 2]);
+    ctx.beginPath(); ctx.moveTo(x, yDot); ctx.lineTo(x, down ? by : by + bh); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = bg; ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+    roundRect(bx, by, bw, bh, 8); ctx.fill(); ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = color;
+    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+    const titre = isExit ? '🌓 MÉDIAIRE · SORTIE'
+                         : (up ? '🌓 MÉDIAIRE · ACHAT' : '🌓 MÉDIAIRE · VENTE');
+    ctx.fillText(titre, bx + bw / 2, by + 12);
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '8px "IBM Plex Mono",monospace';
+    ctx.fillText('Prix: ' + fmtP(g.price) + ' $', bx + bw / 2, by + 23);
+    ctx.textAlign = 'left';
+    labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'strat_mediaire'});
+    ctx.restore();
+  }
+}
+
+function openMediaireBacktestModal(){
+  const m = document.getElementById('dbt-modal');
+  if(!m) return;
+  m.style.display = 'flex';
+  document.getElementById('dbt-res').innerHTML =
+    '<div style="color:#94A3B8;padding:12px;font-size:12px">Choisis tes paramètres puis lance le backtest.</div>';
+}
+
+async function runMediaireBacktest(){
+  const M = window.LumenDemoModule;
+  const btn = document.getElementById('dbt-run');
+  const res = document.getElementById('dbt-res');
+  if(!M){ res.innerHTML = '<div style="color:#EF4444;padding:12px">Module Médiaire introuvable.</div>'; return; }
+
+  const days = +(document.getElementById('dbt-days').value || 7);
+  const capital = +(document.getElementById('dbt-capital').value || 100);
+  const lev = +(document.getElementById('dbt-lev').value || 100);
+  const fee = +(document.getElementById('dbt-fee').value || 0.04);
+  const exitMode = document.getElementById('dbt-exit').value;
+
+  btn.textContent = '⏳ Chargement de ' + days + ' jour(s)…';
+  btn.style.pointerEvents = 'none';
+  let d;
+  try{ d = await fetchBigHistory(days); }catch(e){ d = state.data; }
+  btn.textContent = '▶ Lancer le Backtest';
+  btn.style.pointerEvents = 'auto';
+  if(!d || d.length < 60){
+    res.innerHTML = '<div style="color:#EF4444;padding:12px">Historique insuffisant.</div>';
+    return;
+  }
+
+  const r = M.runBacktestEngine(d, {capital, leverage: lev, feePct: fee, exitMode});
+  const f = v => (v >= 0 ? '+' : '') + v.toFixed(2);
+  const box = (lab, val, col) =>
+    '<div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px">' +
+    '<div style="color:#94A3B8;font-size:9.5px">' + lab + '</div>' +
+    '<div style="color:' + col + ';font-weight:800;font-size:14px;margin-top:2px">' + val + '</div></div>';
+
+  const ruine = r.finalCapital <= 0.02;
+  let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">' +
+    box('PnL net', f(r.netPnlTotalPct) + ' %', r.netPnlTotal >= 0 ? '#22C55E' : '#EF4444') +
+    box('Capital final', r.finalCapital.toFixed(2) + ' $', r.netPnlTotal >= 0 ? '#22C55E' : '#EF4444') +
+    box('Trades', String(r.totalTrades), '#E2E8F0') +
+    box('Taux de réussite', r.winRate.toFixed(1) + ' %', r.winRate >= 50 ? '#22C55E' : '#F59E0B') +
+    box('Facteur de profit', r.profitFactor.toFixed(2), r.profitFactor >= 1.5 ? '#22C55E' : (r.profitFactor >= 1 ? '#F59E0B' : '#EF4444')) +
+    box('Perte max (DD)', r.maxDrawdownPct.toFixed(1) + ' %', '#EF4444') +
+    '</div>';
+
+  if(ruine) html += '<div style="background:rgba(239,68,68,0.12);border:1px solid #EF4444;border-radius:8px;padding:9px;margin-bottom:10px;color:#FCA5A5;font-size:11px">' +
+    'Compte liquidé. Ce moteur engage la totalité du capital comme marge à chaque trade, avec le levier choisi. Baisse le levier pour voir le comportement réel de la stratégie.</div>';
+
+  const tr = (r.tradesHistory || []).slice(-120).reverse();
+  if(tr.length){
+    html += '<div style="max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr style="position:sticky;top:0;background:var(--panel-2,#0F172A)">' +
+      ['Date','Sens','Entrée','Sortie','Résultat','Capital'].map(h =>
+        '<th style="padding:5px;text-align:left;color:#94A3B8;font-weight:700">' + h + '</th>').join('') +
+      '</tr></thead><tbody>';
+    for(const t of tr){
+      const dt = new Date(t.exitTime);
+      html += '<tr style="border-top:1px solid var(--line)">' +
+        '<td style="padding:4px 5px;color:#94A3B8">' + dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' +
+        dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + '</td>' +
+        '<td style="padding:4px 5px;color:' + (t.side === 'LONG' ? '#34D399' : '#FB7185') + ';font-weight:700">' + t.side + '</td>' +
+        '<td style="padding:4px 5px;color:#CBD5E1">' + t.entryPrice.toFixed(1) + '</td>' +
+        '<td style="padding:4px 5px;color:#CBD5E1">' + t.exitPrice.toFixed(1) + '</td>' +
+        '<td style="padding:4px 5px;color:' + (t.netPnl >= 0 ? '#22C55E' : '#EF4444') + ';font-weight:700">' + f(t.netPnl) + ' $</td>' +
+        '<td style="padding:4px 5px;color:#94A3B8">' + t.capitalAfter.toFixed(2) + '</td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+  res.innerHTML = html;
+}
+
+try{
+  const bd = document.getElementById('btn-bt-strat-mediaire');
+  if(bd) bd.addEventListener('click', e => { e.stopPropagation(); openMediaireBacktestModal(); });
+  document.getElementById('dbt-close').addEventListener('click', () => {
+    document.getElementById('dbt-modal').style.display = 'none';
+  });
+  document.getElementById('dbt-modal').addEventListener('click', ev => {
+    if(ev.target.id === 'dbt-modal') ev.currentTarget.style.display = 'none';
+  });
+  document.getElementById('dbt-run').addEventListener('click', runMediaireBacktest);
+}catch(e){}
 
 </script>
 </body>
