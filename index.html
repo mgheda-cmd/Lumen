@@ -733,7 +733,7 @@ footer{
       <label>Stop de protection (× ATR)<input type="number" id="mbt-sl" value="5" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Objectif (× le risque)<input type="number" id="mbt-rr" value="2.5" step="0.1" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
     </div>
-    <div style="margin:10px 0;display:flex;gap:6px;flex-wrap:wrap"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button><button id="mbt-ob" class="cfg-tfm" style="font-size:11px">🟪 Sortie sur Order Block opposé</button><button id="mbt-cloud" class="cfg-tfm on" style="font-size:11px">☁️ Nuage porteur = on ne sort pas</button></div>
+    <div style="margin:10px 0;display:flex;gap:6px;flex-wrap:wrap"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button><button id="mbt-ob" class="cfg-tfm" style="font-size:11px">🟪 Sortie sur Order Block opposé</button><button id="mbt-cloud" class="cfg-tfm on" style="font-size:11px">☁️ Nuage porteur = on ne sort pas</button><button id="mbt-cloudin" class="cfg-tfm on" style="font-size:11px">🧭 Pas d'entrée à contresens du nuage</button></div>
     <label style="font-size:11px;color:#94A3B8;display:block;margin-bottom:8px">Épuisements pris en compte à partir de
       <select id="mbt-exhtf" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
         <option value="1">1 minute (tout)</option>
@@ -2643,7 +2643,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme',exhMinTf:5,cloudVeto:true},
+    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme',exhMinTf:5,cloudVeto:true,cloudEntry:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
@@ -8656,6 +8656,7 @@ const SCHEMA={
     {k:'timeStop',t:'num',lab:'Stop temporel si le trade stagne (bougies, 0 = off)',min:0,max:500,def:60,ind:1},
     {k:'exhMinTf',t:'num',lab:'Unité de temps minimale des épuisements (minutes)',min:1,max:240,def:5,ind:1},
     {k:'cloudVeto',t:'bool',lab:'Ne pas sortir sur épuisement tant que le nuage EMA reste porteur',def:true,ind:1},
+    {k:'cloudEntry',t:'bool',lab:'Interdire les entrées à contresens du nuage EMA',def:true,ind:1},
   ]},
   signal_exit_ob:{title:'Signal Sortie Position sur Order Block (Pastille Violette)',fields:[
     {k:'distThreshold',t:'num',lab:'Tolérance d\'approche / toucher Order Block ($)',min:0,max:1000,def:100,ind:1},
@@ -11354,6 +11355,7 @@ function computeMasterStrategy(d, opt){
   const exhMinTf  = opt.exhMinTf  != null ? +opt.exhMinTf  : 5;     // unité de temps minimale des épuisements
   const EXH_TFS   = [1, 3, 5, 15, 60, 240];
   const cloudVeto = opt.cloudVeto !== false;   // le nuage EMA bloque la sortie sur épuisement
+  const cloudEntry= opt.cloudEntry !== false;   // pas d'entrée à contresens du nuage
   const kkUp = opt.kkUp != null ? +opt.kkUp : 64;
   const kkLo = opt.kkLo != null ? +opt.kkLo : -64;
   const cooldown = opt.cooldown != null ? +opt.cooldown : 3;
@@ -11625,6 +11627,10 @@ function computeMasterStrategy(d, opt){
     if(sc >= minScore) dir = 1;
     else if(allowShort && sc <= -minScore) dir = -1;
     if(!dir) continue;
+    // Filtre directionnel du nuage : pas d'achat quand le nuage est rouge,
+    // pas de vente quand il est vert. On ne rame jamais à contre-courant.
+    if(cloudEntry && cloudDir[i] !== 0 && cloudDir[i] !== dir) continue;
+    if(cloudEntry && cloudDir[i] === dir) why.unshift(dir > 0 ? 'Nuage vert' : 'Nuage rouge');
 
     const risk = slMult * atr[i];
     pos = {
@@ -11732,6 +11738,7 @@ async function runMasterBacktest(){
   const exhMode = document.getElementById('mbt-exh').value;
   const exhMinTf = +document.getElementById('mbt-exhtf').value;
   const cloudVeto = document.getElementById('mbt-cloud').classList.contains('on');
+  const cloudEntry = document.getElementById('mbt-cloudin').classList.contains('on');
 
   btn.textContent = '⏳ Chargement de ' + days + ' jour(s)…';
   btn.style.pointerEvents = 'none';
@@ -11745,7 +11752,7 @@ async function runMasterBacktest(){
     return;
   }
 
-  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort, useObExit, exhMode, exhMinTf, cloudVeto});
+  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort, useObExit, exhMode, exhMinTf, cloudVeto, cloudEntry});
   let cap = capital0, peak = capital0, maxDD = 0;
   const trades = [];
   for(const g of evts){
@@ -11836,6 +11843,9 @@ try{
     this.classList.toggle('on');
   });
   document.getElementById('mbt-cloud').addEventListener('click',function(){
+    this.classList.toggle('on');
+  });
+  document.getElementById('mbt-cloudin').addEventListener('click',function(){
     this.classList.toggle('on');
   });
 }catch(e){}
