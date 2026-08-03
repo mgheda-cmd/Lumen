@@ -2643,7 +2643,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme',exhMinTf:5,cloudVeto:true,cloudEntry:true},
+    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme',exhMinTf:5,cloudVeto:true,cloudEntry:true,cloudTf:0},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
@@ -8657,6 +8657,7 @@ const SCHEMA={
     {k:'exhMinTf',t:'num',lab:'Unité de temps minimale des épuisements (minutes)',min:1,max:240,def:5,ind:1},
     {k:'cloudVeto',t:'bool',lab:'Ne pas sortir sur épuisement tant que le nuage EMA reste porteur',def:true,ind:1},
     {k:'cloudEntry',t:'bool',lab:'Interdire les entrées à contresens du nuage EMA',def:true,ind:1},
+    {k:'cloudTf',t:'num',lab:'UT du nuage en minutes (0 = celle de l\'indicateur affiché)',min:0,max:240,def:0,ind:1},
   ]},
   signal_exit_ob:{title:'Signal Sortie Position sur Order Block (Pastille Violette)',fields:[
     {k:'distThreshold',t:'num',lab:'Tolérance d\'approche / toucher Order Block ($)',min:0,max:1000,def:100,ind:1},
@@ -11356,6 +11357,7 @@ function computeMasterStrategy(d, opt){
   const EXH_TFS   = [1, 3, 5, 15, 60, 240];
   const cloudVeto = opt.cloudVeto !== false;   // le nuage EMA bloque la sortie sur épuisement
   const cloudEntry= opt.cloudEntry !== false;   // pas d'entrée à contresens du nuage
+  const cloudTf   = opt.cloudTf   != null ? +opt.cloudTf   : 0;   // 0 = suivre l'indicateur affiché
   const kkUp = opt.kkUp != null ? +opt.kkUp : 64;
   const kkLo = opt.kkLo != null ? +opt.kkLo : -64;
   const cooldown = opt.cooldown != null ? +opt.cooldown : 3;
@@ -11424,26 +11426,31 @@ function computeMasterStrategy(d, opt){
     try{ addExh(calc.exhaustionPro(bars, null, null, state.indicators.exhaustion_pro || {}), map, poids); }catch(e){}
   }
 
-  /* Nuage EMA 30/90 calculé sur l'unité de temps des épuisements.
-     Tant qu'il reste orienté dans le sens de la position (vert en achat,
-     rouge en vente), un signal d'épuisement ne suffit pas à faire sortir :
-     la tendance de fond n'est pas cassée. */
+  /* Nuage EMA : on reprend exactement les réglages de l'indicateur affiché
+     (Nuage EMA 30/90), y compris son unité de temps, pour que la stratégie
+     voie la même couleur que celle dessinée à l'écran.
+     La valeur d'une bougie agrégée n'est appliquée qu'APRÈS sa clôture :
+     sans cette précaution la stratégie lirait le futur. */
   const cloudDir = new Array(N).fill(0);
   try{
-    const cf = (state.indicators.emacloud && state.indicators.emacloud.fast) || 30;
-    const cs = (state.indicators.emacloud && state.indicators.emacloud.slow) || 90;
-    const ag = aggregate(Math.max(exhMinTf, tfBase));
-    const fa = calc.ema(ag.bars, cf), sl = calc.ema(ag.bars, cs);
-    let last = 0;
-    for(let k = 0; k < ag.bars.length; k++){
-      const cur = (fa[k] != null && sl[k] != null) ? (fa[k] > sl[k] ? 1 : -1) : 0;
-      const from = k === 0 ? 0 : ag.map[k-1] + 1;
-      const to = ag.map[k];
-      for(let j = from; j <= to && j < N; j++) cloudDir[j] = cur;
-      last = cur;
+    const ec = state.indicators.emacloud || {};
+    const cf = ec.fast || 30, cs = ec.slow || 90;
+    const ctf = cloudTf > 0 ? cloudTf
+              : ((ec.tf && ec.tf !== 'chart') ? +ec.tf : tfBase);
+    if(!(ctf > tfBase)){
+      const fa = calc.ema(d, cf), sl = calc.ema(d, cs);
+      for(let k = 0; k < N; k++)
+        cloudDir[k] = (fa[k] != null && sl[k] != null) ? (fa[k] > sl[k] ? 1 : -1) : 0;
+    } else {
+      const ag = aggregate(ctf);
+      const fa = calc.ema(ag.bars, cf), sl = calc.ema(ag.bars, cs);
+      for(let k = 0; k < ag.bars.length; k++){
+        const val = (fa[k] != null && sl[k] != null) ? (fa[k] > sl[k] ? 1 : -1) : 0;
+        const from = ag.map[k] + 1;
+        const to = (k + 1 < ag.bars.length) ? ag.map[k+1] : (N - 1);
+        for(let j = from; j <= to && j < N; j++) cloudDir[j] = val;
+      }
     }
-    const tail = ag.map[ag.bars.length - 1];
-    for(let j = tail + 1; j < N; j++) cloudDir[j] = last;
   }catch(e){}
 
   const exhWindow = (i, dir, back) => {
@@ -11630,7 +11637,7 @@ function computeMasterStrategy(d, opt){
     // Filtre directionnel du nuage : pas d'achat quand le nuage est rouge,
     // pas de vente quand il est vert. On ne rame jamais à contre-courant.
     if(cloudEntry && cloudDir[i] !== 0 && cloudDir[i] !== dir) continue;
-    if(cloudEntry && cloudDir[i] === dir) why.unshift(dir > 0 ? 'Nuage vert' : 'Nuage rouge');
+    if(cloudDir[i] !== 0) why.unshift(cloudDir[i] > 0 ? 'Nuage vert' : 'Nuage rouge');
 
     const risk = slMult * atr[i];
     pos = {
