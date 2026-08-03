@@ -3779,6 +3779,11 @@ function render(){
   if(state.mouse) drawCrosshair(panes,s,e);
   const pricePane = panes.find(q => q.key === 'price');
   const yOf = (pricePane && pricePane.yOf) ? pricePane.yOf : (v => 0);
+  // Les pastilles/badges du graphique principal sont bornées au panneau des prix :
+  // elles ne peuvent plus déborder sur les sous-panneaux d'indicateurs du bas.
+  const priceClipBot = pricePane ? (pricePane.y + pricePane.h) : (H - AXIS_H);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, W, priceClipBot); ctx.clip();
   // Flèches de signaux de confluence
   if(vis('signal')){
     const sig=getInd('signal');
@@ -4123,6 +4128,7 @@ function render(){
   if(vis('signal_exit_ob')){
     drawExitSignalsOB(getInd('signal_exit_ob'), s, e, yOf, cw, mainBadgeStack);
   }
+  ctx.restore();   // fin du clip « panneau des prix »
   // Crosshair vertical global : traverse tous les panneaux
   if(state.mouse && state.mouse.x < W-AXIS_W && !state.dragging){
     const mx=state.mouse.x;
