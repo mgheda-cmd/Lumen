@@ -693,6 +693,15 @@ footer{
         <span class="srtf on" data-indzero="rangeDet2" title="Afficher/Masquer la Ligne Zéro">Axe 0</span>
         <span class="state">on</span>
       </div>
+      <h4 style="color:#FBBF24;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🏆 Stratégie complète</h4>
+      <div class="ind-item" data-ind="strat_master" id="item-strat_master" style="background:linear-gradient(135deg,rgba(251,191,36,0.14),rgba(249,115,22,0.10));border:1.5px solid #FBBF24;border-radius:8px;padding:9px 10px;margin-top:4px;margin-bottom:10px;box-shadow:0 2px 10px rgba(251,191,36,0.20)">
+        <span class="dot" style="background:#FBBF24;box-shadow:0 0 7px #FBBF24;flex:none"></span>
+        <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Stratégie Confluence Totale <span style="background:#FBBF24;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🏆 AUTONOME</span><br><span class="desc" style="color:#FDE68A;font-size:11px">Agrège toutes les pastilles : EMA/HA, oscillateur KK, épuisements simples et Pro, Order Blocks, range et ATR. Entrées scorées, sorties multiples, stop suiveur.</span></span>
+        <div style="display:flex;align-items:center;gap:5px;flex:none;margin-left:auto">
+          <button data-bt-strat="strat_master" style="background:linear-gradient(135deg,#FBBF24,#F97316);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 0 8px rgba(251,191,36,0.35)" title="Lancer le backtest de cette stratégie">🚀 Backtest</button>
+          <span class="state">off</span>
+        </div>
+      </div>
     </div>
   </div>
   <div style="display:flex;gap:6px;flex:none">
@@ -707,6 +716,28 @@ footer{
   <button class="btn" id="btn-backtest" title="Backtest de stratégie" style="font-size:14px;padding:6px 11px">🧪</button>
   <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
   </div>
+
+  <div id="mbt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:14px">
+  <div style="background:var(--panel,#0A111F);border:1.5px solid #FBBF24;border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:800;color:#FBBF24;font-size:14px">🏆 Backtest — Stratégie Confluence Totale</div>
+      <button class="btn" id="mbt-close" style="padding:3px 9px;font-size:14px">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:11px;color:#94A3B8">
+      <label>Historique (jours)<select id="mbt-days" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="3">3 jours</option><option value="7" selected>7 jours</option><option value="14">14 jours</option><option value="30">30 jours</option></select></label>
+      <label>Capital ($)<input type="number" id="mbt-capital" value="10000" min="100" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Frais par trade (%)<input type="number" id="mbt-fee" value="0.06" step="0.01" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Levier<select id="mbt-lev" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="1" selected>1x (Spot)</option><option value="2">2x</option><option value="5">5x</option><option value="10">10x</option><option value="20">20x</option><option value="50">50x</option></select></label>
+      <label>Score minimum<input type="number" id="mbt-score" value="5" min="2" max="10" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Stop suiveur (× ATR)<input type="number" id="mbt-trail" value="2" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Stop de protection (× ATR)<input type="number" id="mbt-sl" value="1.5" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Objectif (× le risque)<input type="number" id="mbt-rr" value="2.5" step="0.1" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+    </div>
+    <div style="margin:10px 0"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button></div>
+    <button id="mbt-run" style="width:100%;background:linear-gradient(135deg,#FBBF24,#F97316);color:#0F172A;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:12px">▶ Lancer le Backtest</button>
+    <div id="mbt-res"></div>
+  </div>
+</div>
 
   <div class="ind-wrap">
     <button class="btn" id="gmail-import-btn" title="Importer un indicateur depuis Gmail" style="border-color:#EA4335;color:#EA4335;background:rgba(234,67,53,0.08);display:inline-flex;align-items:center;gap:4px;font-weight:700">📧 Gmail Import</button>
@@ -2598,6 +2629,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
+    strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
@@ -3319,6 +3351,7 @@ function getInd(key){
     if(key==='signal')state.cache[ck]=computeSignals(d,ind);
     if(key==='signal_inv')state.cache[ck]=computeInvertedConfluenceSignals(d);
     if(key==='signal_ema_ha')state.cache[ck]=computeEmaHaCrossSignals(d,ind);
+    if(key==='strat_master')state.cache[ck]=computeMasterStrategy(d,ind);
     if(key==='signal_exit_kk'){
       const activeTfsStr = Object.keys(ind.tfs || {}).filter(k => ind.tfs[k]).sort().join('_');
       const uL = S('signal_exit_kk','upper') ?? S('two_ind','upper') ?? 64;
@@ -4186,6 +4219,10 @@ function render(){
   // Badges pastille Sortie OB (Order Block - Pastille Violette)
   if(vis('signal_exit_ob')){
     drawExitSignalsOB(getInd('signal_exit_ob'), s, e, yOf, cw, mainBadgeStack);
+  }
+  // Stratégie Confluence Totale
+  if(vis('strat_master')){
+    drawMasterStrategy(getInd('strat_master'), s, e, yOf);
   }
   ctx.restore();   // fin du clip « panneau des prix »
   // Crosshair vertical global : traverse tous les panneaux
@@ -6200,6 +6237,7 @@ const IND_META={
   signal:{label:()=>'Signaux A/V',color:'#FFE24D'},
   signal_inv:{label:()=>'Confluence INVERSÉE 🏆',color:'#25D0A4'},
   signal_ema_ha:{label:()=>'Stratégie EMA 9 / HA 5m 🎯',color:'#00E5FF'},
+  strat_master:{label:()=>'Stratégie Confluence Totale 🏆',color:'#FBBF24'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
   lrc:{label:()=>{
@@ -6326,6 +6364,10 @@ chips.addEventListener('click',e=>{
   const btk = e.target.dataset.btStrat || e.target.closest('[data-bt-strat]')?.dataset.btStrat;
   if(btk === 'signal_ema_ha'){
     openEmaHaBacktestModal();
+    return;
+  }
+  if(btk === 'strat_master'){
+    openMasterBacktestModal();
     return;
   }
   const ek=e.target.dataset.eye || e.target.closest('[data-eye]')?.dataset.eye;
@@ -8585,6 +8627,13 @@ const SCHEMA={
     {k:'lower',t:'num',lab:'Niveau Pointillés Bas (Sortie Vente)',min:-95,max:-40,def:-64,ind:1},
     {k:'lookback',t:'num',lab:'Fenêtre Épuisement (Bougies)',min:2,max:50,def:20,ind:1},
     {k:'minExhaustion',t:'num',lab:'Épuisements Minimum Requis (0 = Aucun)',min:0,max:10,def:1,ind:1},
+  ]},
+  strat_master:{title:'🏆 Stratégie Confluence Totale',fields:[
+    {k:'minScore',t:'num',lab:'Score de confluence minimum pour entrer',min:2,max:10,def:5,ind:1},
+    {k:'slMult',t:'num',lab:'Stop de protection (× ATR)',min:0.5,max:5,def:1.5,ind:1},
+    {k:'tpRR',t:'num',lab:'Objectif (multiple du risque)',min:1,max:8,def:2.5,ind:1},
+    {k:'trailMult',t:'num',lab:'Stop suiveur (× ATR)',min:0.5,max:6,def:2,ind:1},
+    {k:'allowShort',t:'bool',lab:'Autoriser les positions vendeuses (short)',def:true,ind:1},
   ]},
   signal_exit_ob:{title:'Signal Sortie Position sur Order Block (Pastille Violette)',fields:[
     {k:'distThreshold',t:'num',lab:'Tolérance d\'approche / toucher Order Block ($)',min:0,max:1000,def:100,ind:1},
@@ -11254,6 +11303,380 @@ setTimeout(resize,500);
     loadData();
   }
 })();
+
+/* =======================================================================
+   STRATÉGIE CONFLUENCE TOTALE  (clé : strat_master)
+   Stratégie autonome qui agrège toutes les familles de pastilles :
+   tendance, croisement EMA/HA, oscillateur KK, épuisements simples et Pro,
+   Order Blocks, position dans le range et ATR.
+   Toutes les briques sont calculées sur le tableau `d` fourni, ce qui rend
+   la fonction utilisable aussi bien en direct qu'en backtest historique.
+   ===================================================================== */
+function computeMasterStrategy(d, opt){
+  opt = opt || {};
+  if(!Array.isArray(d) || d.length < 120) return [];
+
+  const minScore = opt.minScore != null ? +opt.minScore : 5;
+  const allowShort = opt.allowShort !== false;
+  const trailMult = opt.trailMult != null ? +opt.trailMult : 2.0;
+  const slMult    = opt.slMult    != null ? +opt.slMult    : 1.5;
+  const tpRR      = opt.tpRR      != null ? +opt.tpRR      : 2.5;
+  const rangeMax  = opt.rangeMax  != null ? +opt.rangeMax  : 88;
+  const kkUp = opt.kkUp != null ? +opt.kkUp : 64;
+  const kkLo = opt.kkLo != null ? +opt.kkLo : -64;
+  const cooldown = opt.cooldown != null ? +opt.cooldown : 3;
+
+  const N = d.length;
+  const ema9  = calc.ema(d, opt.emaFast || 9);
+  const ema30 = calc.ema(d, opt.emaSlow || 30);
+  const ema200= calc.ema(d, 200);
+  const st    = calc.supertrend(d);
+  const atr   = calc.atr(d, 14);
+  const rsi   = calc.rsi(d, 14);
+  const rosc  = calc.rangeOsc(d, 50, 2);
+
+  let net = [], kksig = [];
+  try{
+    const kk = calc.twoIndicator(d, Object.assign({}, state.indicators.two_ind || {}, {tf:'chart'}));
+    net = (kk && kk.net) || []; kksig = (kk && kk.signal) || [];
+  }catch(e){}
+
+  // Épuisements : agrégés par bougie. dir -1 = sommet, dir +1 = creux.
+  const exhAt = new Array(N).fill(0);
+  const addExh = list => {
+    if(!Array.isArray(list)) return;
+    for(const ev of list){
+      if(!ev || ev.i == null || ev.i < 0 || ev.i >= N) continue;
+      exhAt[ev.i] += (ev.dir === -1 ? -1 : 1) * (ev.quality >= 88 ? 2 : 1);
+    }
+  };
+  try{ addExh(calc.exhaustion(d, null, null, state.indicators.exhaustion || {})); }catch(e){}
+  try{ addExh(calc.exhaustionPro(d, null, null, state.indicators.exhaustion_pro || {})); }catch(e){}
+
+  const exhWindow = (i, dir, back) => {
+    let n = 0;
+    for(let j = Math.max(0, i - (back || 5)); j <= i; j++){
+      if(dir > 0 && exhAt[j] > 0) n += exhAt[j];
+      if(dir < 0 && exhAt[j] < 0) n += -exhAt[j];
+    }
+    return n;
+  };
+
+  // Order Blocks : bornes utiles pour viser une sortie sur zone opposée.
+  let obs = [];
+  try{ obs = calc.obZones(d) || []; }catch(e){ obs = []; }
+  const obNear = (i, price, dir) => {
+    const tol = (atr[i] || 0) * 0.6;
+    for(const z of obs){
+      if(z.iDraw == null || z.iDraw > i) continue;
+      if(dir > 0 && z.type === 'bear' && price >= z.bot - tol) return true;
+      if(dir < 0 && z.type === 'bull' && price <= z.top + tol) return true;
+    }
+    return false;
+  };
+
+  /* ---- Score de confluence, positif = achat, négatif = vente ---- */
+  function scoreAt(i){
+    const b = d[i];
+    let sc = 0; const why = [];
+    if(ema9[i] == null || ema30[i] == null || atr[i] == null) return {sc:0, why};
+
+    // 1. Croisement EMA rapide / lente
+    if(ema9[i] > ema30[i]){
+      sc += (ema9[i-1] != null && ema9[i-1] <= ema30[i-1]) ? 2 : 1;
+      why.push('EMA 9 > 30');
+    } else {
+      sc -= (ema9[i-1] != null && ema9[i-1] >= ema30[i-1]) ? 2 : 1;
+      why.push('EMA 9 < 30');
+    }
+    // 2. SuperTrend
+    if(st.dir && st.dir[i] === 1){ sc += 1; why.push('SuperTrend ↑'); }
+    else if(st.dir && st.dir[i] === -1){ sc -= 1; why.push('SuperTrend ↓'); }
+    // 3. Tendance de fond
+    if(ema200[i] != null){
+      if(b.c > ema200[i]){ sc += 1; why.push('> EMA 200'); }
+      else { sc -= 1; why.push('< EMA 200'); }
+    }
+    // 4. Oscillateur KK : sortie de zone extrême
+    const nv = net[i], np = i > 0 ? net[i-1] : null;
+    if(nv != null && np != null){
+      if(np <= kkLo && nv > kkLo){ sc += 2; why.push('KK sort de survente'); }
+      if(np >= kkUp && nv < kkUp){ sc -= 2; why.push('KK sort de surachat'); }
+      const sv = kksig ? kksig[i] : null;
+      if(sv != null){ if(nv > sv) sc += 1; else sc -= 1; }
+    }
+    // 5. Épuisements récents : un creux d'épuisement favorise l'achat
+    const eUp = exhWindow(i, 1, 5), eDn = exhWindow(i, -1, 5);
+    if(eUp){ sc += Math.min(2, eUp); why.push('Épuisement baissier ×' + eUp); }
+    if(eDn){ sc -= Math.min(2, eDn); why.push('Épuisement haussier ×' + eDn); }
+    // 6. RSI : on évite les extrêmes déjà tendus
+    if(rsi[i] != null){
+      if(rsi[i] > 78) sc -= 1;
+      if(rsi[i] < 22) sc += 1;
+    }
+    // 7. Bord de range : on n'entre pas au sommet d'une consolidation
+    if(rosc[i] != null && Math.abs(rosc[i]) > rangeMax){
+      sc = sc > 0 ? sc - 2 : sc + 2;
+      why.push('Bord de range');
+    }
+    return {sc, why};
+  }
+
+  /* ---- Parcours et simulation ---- */
+  const out = [];
+  let pos = null, lastExit = -999;
+
+  for(let i = 210; i < N; i++){
+    const b = d[i];
+    if(atr[i] == null) continue;
+
+    if(pos){
+      const dir = pos.dir;
+      const px = b.c;
+      pos.best = dir > 0 ? Math.max(pos.best, b.h) : Math.min(pos.best, b.l);
+      const trail = dir > 0 ? pos.best - trailMult * atr[i] : pos.best + trailMult * atr[i];
+
+      let reason = null;
+      if(dir > 0 && b.l <= pos.sl) reason = 'Stop de protection';
+      else if(dir < 0 && b.h >= pos.sl) reason = 'Stop de protection';
+      else if(dir > 0 && b.h >= pos.tp) reason = 'Objectif atteint';
+      else if(dir < 0 && b.l <= pos.tp) reason = 'Objectif atteint';
+      else if(dir > 0 && px < trail) reason = 'Stop suiveur ATR';
+      else if(dir < 0 && px > trail) reason = 'Stop suiveur ATR';
+      else if(net[i] != null && net[i-1] != null){
+        if(dir > 0 && net[i-1] >= kkUp && net[i] < kkUp) reason = 'Sortie KK (surachat)';
+        if(dir < 0 && net[i-1] <= kkLo && net[i] > kkLo) reason = 'Sortie KK (survente)';
+      }
+      if(!reason && exhWindow(i, dir > 0 ? -1 : 1, 1) >= 2) reason = 'Épuisement contraire';
+      if(!reason && obNear(i, px, dir)) reason = 'Order Block opposé';
+      if(!reason){
+        const s2 = scoreAt(i).sc;
+        if(dir > 0 && s2 <= -minScore) reason = 'Retournement du signal';
+        if(dir < 0 && s2 >= minScore) reason = 'Retournement du signal';
+      }
+      if(!reason && i === N - 1) reason = 'Clôture de la période';
+
+      if(reason){
+        let exitP = px;
+        if(reason === 'Stop de protection') exitP = pos.sl;
+        if(reason === 'Objectif atteint') exitP = pos.tp;
+        out.push({
+          i, t: b.t, price: exitP, type: 'SORTIE', dir: -pos.dir, originDir: pos.dir,
+          entryPrice: pos.entry, entryT: pos.t, reason,
+          pnlPct: ((exitP - pos.entry) / pos.entry) * pos.dir * 100
+        });
+        pos = null; lastExit = i;
+        continue;
+      }
+      continue;
+    }
+
+    if(i - lastExit < cooldown) continue;
+    const {sc, why} = scoreAt(i);
+    let dir = 0;
+    if(sc >= minScore) dir = 1;
+    else if(allowShort && sc <= -minScore) dir = -1;
+    if(!dir) continue;
+
+    const risk = slMult * atr[i];
+    pos = {
+      dir, entry: b.c, t: b.t, i,
+      sl: dir > 0 ? b.c - risk : b.c + risk,
+      tp: dir > 0 ? b.c + risk * tpRR : b.c - risk * tpRR,
+      best: b.c
+    };
+    out.push({
+      i, t: b.t, price: b.c, type: 'ENTREE', dir, score: sc,
+      reasons: why.slice(0, 3),
+      sl: pos.sl, tp: pos.tp
+    });
+  }
+  return out;
+}
+
+/* ---- Dessin des pastilles de la Stratégie Confluence Totale ---- */
+function drawMasterStrategy(evts, s, e, yOf){
+  if(!Array.isArray(evts) || !evts.length) return;
+  const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+  for(const g of evts){
+    const i = (g.t != null ? idxOfTime(g.t) : null) ?? g.i;
+    if(i == null || i < s - 1 || i > e + 1) continue;
+    const x = xOf(i);
+    if(x < -200 || x > W - AXIS_W + 200) continue;
+
+    const isEntry = g.type === 'ENTREE';
+    const up = g.originDir ? g.originDir === 1 : g.dir === 1;
+    const color = isEntry ? (g.dir === 1 ? '#22D3EE' : '#F472B6') : (g.pnlPct >= 0 ? '#22C55E' : '#EF4444');
+    const bg = isEntry ? 'rgba(6,26,34,0.95)' : 'rgba(10,22,16,0.95)';
+
+    const yDot = isEntry
+      ? (g.dir === 1 ? yOf(g.price) + 30 : yOf(g.price) - 30)
+      : (up ? yOf(g.price) - 30 : yOf(g.price) + 30);
+    const down = isEntry ? (g.dir === 1) : !up;
+
+    const bw = 168, bh = isEntry ? 40 : 34;
+    const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
+    const by = placeBadge(bx, bw, down ? (yDot + 46) : (yDot - 52 - bh), bh, down ? 1 : -1);
+
+    ctx.save();
+    ctx.shadowColor = color; ctx.shadowBlur = 10;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x, yDot, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.3; ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash([3, 2]);
+    ctx.beginPath(); ctx.moveTo(x, yDot); ctx.lineTo(x, down ? by : by + bh); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = bg; ctx.strokeStyle = color; ctx.lineWidth = 2;
+    roundRect(bx, by, bw, bh, 9); ctx.fill(); ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = color;
+    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+    const title = isEntry
+      ? (g.dir === 1 ? '🏆 ENTRÉE ACHAT · score ' + g.score : '🏆 ENTRÉE VENTE · score ' + g.score)
+      : '🏁 SORTIE · ' + (g.pnlPct >= 0 ? '+' : '') + (g.pnlPct || 0).toFixed(2) + '%';
+    ctx.fillText(title, bx + bw / 2, by + 12);
+
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '8px "IBM Plex Mono",monospace';
+    ctx.fillText('Prix: ' + fmtP(g.price) + ' $', bx + bw / 2, by + 22);
+
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '7.5px "IBM Plex Mono",monospace';
+    if(isEntry){
+      ctx.fillText((g.reasons || []).join(' · ').slice(0, 34), bx + bw / 2, by + 31);
+      ctx.fillStyle = '#64748B';
+      ctx.fillText('SL ' + fmtP(g.sl) + '  TP ' + fmtP(g.tp), bx + bw / 2, by + 38);
+    } else {
+      ctx.fillText((g.reason || '').slice(0, 34), bx + bw / 2, by + 31);
+    }
+    ctx.textAlign = 'left';
+    labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'strat_master'});
+    ctx.restore();
+  }
+}
+
+/* ---- Backtest dédié de la Stratégie Confluence Totale ---- */
+function openMasterBacktestModal(){
+  const m = document.getElementById('mbt-modal');
+  if(!m) return;
+  m.style.display = 'flex';
+  document.getElementById('mbt-res').innerHTML =
+    '<div style="color:#94A3B8;padding:12px;font-size:12px">Choisis tes paramètres puis lance le backtest.</div>';
+}
+async function runMasterBacktest(){
+  const btn = document.getElementById('mbt-run');
+  const res = document.getElementById('mbt-res');
+  const days = +(document.getElementById('mbt-days').value || 7);
+  const capital0 = +(document.getElementById('mbt-capital').value || 10000);
+  const feePct = (+(document.getElementById('mbt-fee').value || 0.06)) / 100;
+  const lev = +(document.getElementById('mbt-lev').value || 1);
+  const minScore = +(document.getElementById('mbt-score').value || 5);
+  const trailMult = +(document.getElementById('mbt-trail').value || 2);
+  const slMult = +(document.getElementById('mbt-sl').value || 1.5);
+  const tpRR = +(document.getElementById('mbt-rr').value || 2.5);
+  const allowShort = document.getElementById('mbt-short').classList.contains('on');
+
+  btn.textContent = '⏳ Chargement de ' + days + ' jour(s)…';
+  btn.style.pointerEvents = 'none';
+  let d;
+  try{ d = await fetchBigHistory(days); }catch(e){ d = state.data; }
+  btn.textContent = '▶ Lancer le Backtest';
+  btn.style.pointerEvents = 'auto';
+
+  if(!d || d.length < 220){
+    res.innerHTML = '<div style="color:#EF4444;padding:12px">Historique insuffisant pour cette stratégie (220 bougies minimum).</div>';
+    return;
+  }
+
+  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort});
+  let cap = capital0, peak = capital0, maxDD = 0;
+  const trades = [];
+  for(const g of evts){
+    if(g.type !== 'SORTIE') continue;
+    const gross = ((g.price - g.entryPrice) / g.entryPrice) * g.originDir * lev;
+    const net = Math.max(-0.95, gross - 2 * feePct * lev);
+    const pnl = cap * net;
+    cap += pnl;
+    peak = Math.max(peak, cap);
+    maxDD = Math.max(maxDD, peak - cap);
+    trades.push({t: g.t, dir: g.originDir === 1 ? 'ACHAT' : 'VENTE', entry: g.entryPrice,
+      exit: g.price, pnl, pct: net * 100, reason: g.reason, cap});
+  }
+
+  const n = trades.length;
+  const wins = trades.filter(t => t.pnl > 0);
+  const losses = trades.filter(t => t.pnl <= 0);
+  const wr = n ? (wins.length / n * 100) : 0;
+  const gGain = wins.reduce((a, t) => a + t.pnl, 0);
+  const gLoss = Math.abs(losses.reduce((a, t) => a + t.pnl, 0));
+  const pf = gLoss > 0 ? gGain / gLoss : (gGain > 0 ? Infinity : 0);
+  const netTot = cap - capital0;
+  const netPct = netTot / capital0 * 100;
+  const bestT = trades.reduce((a, t) => (!a || t.pnl > a.pnl) ? t : a, null);
+  const worstT = trades.reduce((a, t) => (!a || t.pnl < a.pnl) ? t : a, null);
+  const f = v => (v >= 0 ? '+' : '') + v.toFixed(2);
+  const box = (lab, val, col) =>
+    '<div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px">' +
+    '<div style="color:#94A3B8;font-size:9.5px">' + lab + '</div>' +
+    '<div style="color:' + col + ';font-weight:800;font-size:14px;margin-top:2px">' + val + '</div></div>';
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">' +
+    box('PnL net', f(netPct) + ' %', netTot >= 0 ? '#22C55E' : '#EF4444') +
+    box('Capital final', cap.toFixed(0) + ' $', netTot >= 0 ? '#22C55E' : '#EF4444') +
+    box('Trades', String(n), '#E2E8F0') +
+    box('Taux de réussite', wr.toFixed(1) + ' %', wr >= 50 ? '#22C55E' : '#F59E0B') +
+    box('Facteur de profit', pf === Infinity ? '∞' : pf.toFixed(2), pf >= 1.5 ? '#22C55E' : (pf >= 1 ? '#F59E0B' : '#EF4444')) +
+    box('Perte max (DD)', '-' + maxDD.toFixed(0) + ' $', '#EF4444') +
+    '</div>';
+
+  if(bestT) html += '<div style="font-size:10.5px;color:#94A3B8;margin-bottom:8px">' +
+    'Meilleur trade : <b style="color:#22C55E">' + f(bestT.pct) + ' %</b> · ' +
+    'Pire trade : <b style="color:#EF4444">' + f(worstT.pct) + ' %</b> · ' +
+    'Analyse sur ' + d.length + ' bougies (' + (TF_MAP[state.tf] || state.tf) + ')</div>';
+
+  if(!n){
+    html += '<div style="color:#F59E0B;padding:10px;font-size:11.5px">Aucun trade déclenché. Le score minimum est peut-être trop élevé — essaie de le baisser d\'un cran.</div>';
+  } else {
+    html += '<div style="max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:10px">' +
+      '<thead><tr style="position:sticky;top:0;background:var(--panel-2,#0F172A)">' +
+      ['Date','Sens','Entrée','Sortie','Résultat','Motif'].map(h =>
+        '<th style="padding:5px;text-align:left;color:#94A3B8;font-weight:700">' + h + '</th>').join('') +
+      '</tr></thead><tbody>';
+    for(const t of trades.slice().reverse()){
+      const dt = new Date(t.t);
+      html += '<tr style="border-top:1px solid var(--line)">' +
+        '<td style="padding:4px 5px;color:#94A3B8">' + dt.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) + ' ' +
+        dt.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + '</td>' +
+        '<td style="padding:4px 5px;color:' + (t.dir === 'ACHAT' ? '#22D3EE' : '#F472B6') + ';font-weight:700">' + t.dir + '</td>' +
+        '<td style="padding:4px 5px;color:#CBD5E1">' + t.entry.toFixed(1) + '</td>' +
+        '<td style="padding:4px 5px;color:#CBD5E1">' + t.exit.toFixed(1) + '</td>' +
+        '<td style="padding:4px 5px;color:' + (t.pnl >= 0 ? '#22C55E' : '#EF4444') + ';font-weight:700">' + f(t.pct) + ' %</td>' +
+        '<td style="padding:4px 5px;color:#94A3B8">' + (t.reason || '') + '</td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+  res.innerHTML = html;
+}
+
+/* ---- Câblage de la fenêtre de backtest de la stratégie ---- */
+try{
+  document.getElementById('mbt-close').addEventListener('click',()=>{
+    document.getElementById('mbt-modal').style.display='none';
+  });
+  document.getElementById('mbt-modal').addEventListener('click',ev=>{
+    if(ev.target.id==='mbt-modal') ev.currentTarget.style.display='none';
+  });
+  document.getElementById('mbt-run').addEventListener('click',runMasterBacktest);
+  document.getElementById('mbt-short').addEventListener('click',function(){
+    this.classList.toggle('on');
+  });
+}catch(e){}
+
 </script>
 </body>
 </html>
