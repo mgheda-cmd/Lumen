@@ -734,6 +734,14 @@ footer{
       <label>Objectif (× le risque)<input type="number" id="mbt-rr" value="2.5" step="0.1" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
     </div>
     <div style="margin:10px 0;display:flex;gap:6px;flex-wrap:wrap"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button><button id="mbt-ob" class="cfg-tfm" style="font-size:11px">🟪 Sortie sur Order Block opposé</button></div>
+    <label style="font-size:11px;color:#94A3B8;display:block;margin-bottom:8px">Épuisements pris en compte à partir de
+      <select id="mbt-exhtf" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
+        <option value="1">1 minute (tout)</option>
+        <option value="3">3 minutes</option>
+        <option value="5" selected>5 minutes</option>
+        <option value="15">15 minutes</option>
+        <option value="60">1 heure</option>
+      </select></label>
     <label style="font-size:11px;color:#94A3B8;display:block;margin-bottom:10px">Sortie sur épuisement contraire
       <select id="mbt-exh" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
         <option value="confirme" selected>Confirmée (trade en profit + bougie contraire)</option>
@@ -2635,7 +2643,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme'},
+    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme',exhMinTf:5},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
@@ -8646,6 +8654,7 @@ const SCHEMA={
     {k:'trailAfter',t:'num',lab:'Armer le stop suiveur après (× le risque)',min:0,max:5,def:1,ind:1},
     {k:'minHold',t:'num',lab:'Bougies minimum avant sortie douce',min:0,max:30,def:4,ind:1},
     {k:'timeStop',t:'num',lab:'Stop temporel si le trade stagne (bougies, 0 = off)',min:0,max:500,def:60,ind:1},
+    {k:'exhMinTf',t:'num',lab:'Unité de temps minimale des épuisements (minutes)',min:1,max:240,def:5,ind:1},
   ]},
   signal_exit_ob:{title:'Signal Sortie Position sur Order Block (Pastille Violette)',fields:[
     {k:'distThreshold',t:'num',lab:'Tolérance d\'approche / toucher Order Block ($)',min:0,max:1000,def:100,ind:1},
@@ -11341,6 +11350,8 @@ function computeMasterStrategy(d, opt){
   const minHold   = opt.minHold   != null ? +opt.minHold   : 4;     // bougies avant sortie douce
   const timeStop  = opt.timeStop  != null ? +opt.timeStop  : 60;    // 0 = désactivé
   const exhMode   = opt.exhMode   || 'confirme';                    // off | confirme | immediat
+  const exhMinTf  = opt.exhMinTf  != null ? +opt.exhMinTf  : 5;     // unité de temps minimale des épuisements
+  const EXH_TFS   = [1, 3, 5, 15, 60, 240];
   const kkUp = opt.kkUp != null ? +opt.kkUp : 64;
   const kkLo = opt.kkLo != null ? +opt.kkLo : -64;
   const cooldown = opt.cooldown != null ? +opt.cooldown : 3;
@@ -11360,17 +11371,54 @@ function computeMasterStrategy(d, opt){
     net = (kk && kk.net) || []; kksig = (kk && kk.signal) || [];
   }catch(e){}
 
-  // Épuisements : agrégés par bougie. dir -1 = sommet, dir +1 = creux.
+  /* Épuisements. Les signaux de l'unité de temps du graphique sont trop
+     bruités en scalping : on ne retient que les unités supérieures ou égales
+     à exhMinTf, calculées sur des bougies ré-agrégées à partir de d.
+     dir -1 = sommet, dir +1 = creux. Une unité plus haute pèse plus lourd. */
   const exhAt = new Array(N).fill(0);
-  const addExh = list => {
+  const tfBase = state.tf || 1;
+
+  // Ré-agrégation de d vers une unité de temps supérieure, avec la
+  // correspondance bougie agrégée -> index du graphique.
+  function aggregate(mins){
+    if(mins <= tfBase) return {bars: d, map: d.map((_, k) => k)};
+    const ms = mins * 60000;
+    const bars = [], map = [];
+    let cur = null, chunk = [], startIdx = 0;
+    const flush = () => {
+      if(!chunk.length) return;
+      let hi = chunk[0].h, lo = chunk[0].l, vol = 0;
+      for(const c of chunk){ if(c.h > hi) hi = c.h; if(c.l < lo) lo = c.l; vol += (c.v || 0); }
+      bars.push({t: chunk[0].t, o: chunk[0].o, h: hi, l: lo, c: chunk[chunk.length-1].c, v: vol});
+      map.push(startIdx + chunk.length - 1);   // l'événement se matérialise à la clôture
+    };
+    for(let k = 0; k < N; k++){
+      const bk = Math.floor(d[k].t / ms);
+      if(cur !== bk){ flush(); cur = bk; chunk = [d[k]]; startIdx = k; }
+      else chunk.push(d[k]);
+    }
+    flush();
+    return {bars, map};
+  }
+
+  const addExh = (list, map, poids) => {
     if(!Array.isArray(list)) return;
     for(const ev of list){
-      if(!ev || ev.i == null || ev.i < 0 || ev.i >= N) continue;
-      exhAt[ev.i] += (ev.dir === -1 ? -1 : 1) * (ev.quality >= 88 ? 2 : 1);
+      if(!ev || ev.i == null || ev.i < 0 || ev.i >= map.length) continue;
+      const ci = map[ev.i];
+      if(ci == null || ci < 0 || ci >= N) continue;
+      exhAt[ci] += (ev.dir === -1 ? -1 : 1) * poids * (ev.quality >= 88 ? 2 : 1);
     }
   };
-  try{ addExh(calc.exhaustion(d, null, null, state.indicators.exhaustion || {})); }catch(e){}
-  try{ addExh(calc.exhaustionPro(d, null, null, state.indicators.exhaustion_pro || {})); }catch(e){}
+
+  for(const mins of EXH_TFS){
+    if(mins < exhMinTf) continue;
+    const {bars, map} = aggregate(mins);
+    if(bars.length < 60) continue;
+    const poids = mins >= 60 ? 3 : (mins >= 15 ? 2 : 1);
+    try{ addExh(calc.exhaustion(bars, null, null, state.indicators.exhaustion || {}), map, poids); }catch(e){}
+    try{ addExh(calc.exhaustionPro(bars, null, null, state.indicators.exhaustion_pro || {}), map, poids); }catch(e){}
+  }
 
   const exhWindow = (i, dir, back) => {
     let n = 0;
@@ -11657,6 +11705,7 @@ async function runMasterBacktest(){
   const allowShort = document.getElementById('mbt-short').classList.contains('on');
   const useObExit = document.getElementById('mbt-ob').classList.contains('on');
   const exhMode = document.getElementById('mbt-exh').value;
+  const exhMinTf = +document.getElementById('mbt-exhtf').value;
 
   btn.textContent = '⏳ Chargement de ' + days + ' jour(s)…';
   btn.style.pointerEvents = 'none';
@@ -11670,7 +11719,7 @@ async function runMasterBacktest(){
     return;
   }
 
-  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort, useObExit, exhMode});
+  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort, useObExit, exhMode, exhMinTf});
   let cap = capital0, peak = capital0, maxDD = 0;
   const trades = [];
   for(const g of evts){
