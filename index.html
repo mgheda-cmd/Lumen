@@ -698,7 +698,7 @@ footer{
         <span class="dot" style="background:#FBBF24;box-shadow:0 0 7px #FBBF24;flex:none"></span>
         <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Stratégie Confluence Totale <span style="background:#FBBF24;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🏆 AUTONOME</span><br><span class="desc" style="color:#FDE68A;font-size:11px">Agrège toutes les pastilles : EMA/HA, oscillateur KK, épuisements simples et Pro, Order Blocks, range et ATR. Entrées scorées, sorties multiples, stop suiveur.</span></span>
         <div style="display:flex;align-items:center;gap:5px;flex:none;margin-left:auto">
-          <button data-bt-strat="strat_master" style="background:linear-gradient(135deg,#FBBF24,#F97316);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 0 8px rgba(251,191,36,0.35)" title="Lancer le backtest de cette stratégie">🚀 Backtest</button>
+          <button id="btn-bt-strat-master" data-bt-strat="strat_master" style="background:linear-gradient(135deg,#FBBF24,#F97316);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 0 8px rgba(251,191,36,0.35)" title="Lancer le backtest de cette stratégie">🚀 Backtest</button>
           <span class="state">off</span>
         </div>
       </div>
@@ -11664,6 +11664,10 @@ async function runMasterBacktest(){
 }
 
 /* ---- Câblage de la fenêtre de backtest de la stratégie ---- */
+try{
+  const bm=document.getElementById('btn-bt-strat-master');
+  if(bm) bm.addEventListener('click',e=>{ e.stopPropagation(); openMasterBacktestModal(); });
+}catch(e){}
 try{
   document.getElementById('mbt-close').addEventListener('click',()=>{
     document.getElementById('mbt-modal').style.display='none';
