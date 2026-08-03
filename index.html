@@ -733,7 +733,7 @@ footer{
       <label>Stop de protection (× ATR)<input type="number" id="mbt-sl" value="1.5" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Objectif (× le risque)<input type="number" id="mbt-rr" value="2.5" step="0.1" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
     </div>
-    <div style="margin:10px 0"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button></div>
+    <div style="margin:10px 0;display:flex;gap:6px;flex-wrap:wrap"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button><button id="mbt-ob" class="cfg-tfm" style="font-size:11px">🟪 Sortie sur Order Block opposé</button></div>
     <button id="mbt-run" style="width:100%;background:linear-gradient(135deg,#FBBF24,#F97316);color:#0F172A;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:12px">▶ Lancer le Backtest</button>
     <div id="mbt-res"></div>
   </div>
@@ -2629,7 +2629,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
+    strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true,useObExit:false},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
@@ -8634,6 +8634,7 @@ const SCHEMA={
     {k:'tpRR',t:'num',lab:'Objectif (multiple du risque)',min:1,max:8,def:2.5,ind:1},
     {k:'trailMult',t:'num',lab:'Stop suiveur (× ATR)',min:0.5,max:6,def:2,ind:1},
     {k:'allowShort',t:'bool',lab:'Autoriser les positions vendeuses (short)',def:true,ind:1},
+    {k:'useObExit',t:'bool',lab:'Sortir sur Order Block opposé (coupe les trades tôt)',def:false,ind:1},
   ]},
   signal_exit_ob:{title:'Signal Sortie Position sur Order Block (Pastille Violette)',fields:[
     {k:'distThreshold',t:'num',lab:'Tolérance d\'approche / toucher Order Block ($)',min:0,max:1000,def:100,ind:1},
@@ -11322,6 +11323,7 @@ function computeMasterStrategy(d, opt){
   const slMult    = opt.slMult    != null ? +opt.slMult    : 1.5;
   const tpRR      = opt.tpRR      != null ? +opt.tpRR      : 2.5;
   const rangeMax  = opt.rangeMax  != null ? +opt.rangeMax  : 88;
+  const useObExit = opt.useObExit === true;   // sortie sur Order Block opposé : désactivée par défaut
   const kkUp = opt.kkUp != null ? +opt.kkUp : 64;
   const kkLo = opt.kkLo != null ? +opt.kkLo : -64;
   const cooldown = opt.cooldown != null ? +opt.cooldown : 3;
@@ -11448,7 +11450,7 @@ function computeMasterStrategy(d, opt){
         if(dir < 0 && net[i-1] <= kkLo && net[i] > kkLo) reason = 'Sortie KK (survente)';
       }
       if(!reason && exhWindow(i, dir > 0 ? -1 : 1, 1) >= 2) reason = 'Épuisement contraire';
-      if(!reason && obNear(i, px, dir)) reason = 'Order Block opposé';
+      if(!reason && useObExit && obNear(i, px, dir)) reason = 'Order Block opposé';
       if(!reason){
         const s2 = scoreAt(i).sc;
         if(dir > 0 && s2 <= -minScore) reason = 'Retournement du signal';
@@ -11579,6 +11581,7 @@ async function runMasterBacktest(){
   const slMult = +(document.getElementById('mbt-sl').value || 1.5);
   const tpRR = +(document.getElementById('mbt-rr').value || 2.5);
   const allowShort = document.getElementById('mbt-short').classList.contains('on');
+  const useObExit = document.getElementById('mbt-ob').classList.contains('on');
 
   btn.textContent = '⏳ Chargement de ' + days + ' jour(s)…';
   btn.style.pointerEvents = 'none';
@@ -11592,7 +11595,7 @@ async function runMasterBacktest(){
     return;
   }
 
-  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort});
+  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort, useObExit});
   let cap = capital0, peak = capital0, maxDD = 0;
   const trades = [];
   for(const g of evts){
@@ -11677,6 +11680,9 @@ try{
   });
   document.getElementById('mbt-run').addEventListener('click',runMasterBacktest);
   document.getElementById('mbt-short').addEventListener('click',function(){
+    this.classList.toggle('on');
+  });
+  document.getElementById('mbt-ob').addEventListener('click',function(){
     this.classList.toggle('on');
   });
 }catch(e){}
