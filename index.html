@@ -3714,6 +3714,18 @@ function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,
    dessus, vers le bas pour ceux du dessous) jusqu'à trouver un trou libre.
    Elle reste toujours dans les limites du panneau des prix.            */
 let _badgeRects=[], _priceBot=0;
+/* Clignotement des pastilles en confluence multi-UT.
+   _blinkAny est remis à faux à chaque frame ; s'il repasse à vrai,
+   un minuteur léger redessine deux fois par seconde. */
+let _blinkAny=false, _blinkOn=false, _blinkTimer=null;
+function ensureBlinkTimer(){
+  if(_blinkTimer)return;
+  _blinkTimer=setInterval(()=>{
+    if(!_blinkAny)return;
+    _blinkOn=!_blinkOn;
+    try{render();}catch(e){}
+  },480);
+}
 function resetBadgeLayout(bot){ _badgeRects=[]; _priceBot=bot||0; }
 function placeBadge(bx,bw,by,bh,dir){
   const GAP=3, MAXTRY=90;
@@ -3747,6 +3759,7 @@ function render(){
   const panes = computePanes();
   const _pp = panes.find(q=>q.key==='price');
   resetBadgeLayout(_pp ? (_pp.y+_pp.h) : (H-AXIS_H));
+  _blinkAny=false; ensureBlinkTimer();
   const {s,e} = visible();
   const cw = (W-AXIS_W)/state.view.count;
   const mainBadgeStack = {};
@@ -9993,6 +10006,27 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     const tk = String(sg.tfTag ?? sg.tf ?? 'x') + '_' + sg.type;
     if (!(tk in lastPerTf) || gi > lastPerTf[tk]) lastPerTf[tk] = gi;
   }
+  // Confluence : liste des unités de temps INFÉRIEURES du même type
+  // déjà déclenchées juste avant ce signal.
+  const TFMIN = {'1m':1,'3m':3,'5m':5,'15m':15,'30m':30,'1H':60,'4H':240,'1D':1440};
+  const tfMin = tag => TFMIN[tag] || (state.tf || 1);
+  const confluenceOf = (sig) => {
+    if (sig.t == null) return [];
+    const mine = tfMin(sig.tfTag);
+    const win = Math.max(mine * 2 * 60000, 10 * 60000);
+    const tags = [];
+    for (const o of exits) {
+      if (o === sig || o.type !== sig.type || o.t == null) continue;
+      const om = tfMin(o.tfTag);
+      if (om >= mine) continue;
+      const age = sig.t - o.t;
+      if (age < 0 || age > win) continue;
+      if (!tags.includes(o.tfTag)) tags.push(o.tfTag);
+    }
+    return tags.sort((a, b) => tfMin(a) - tfMin(b));
+  };
+  const listeUT = tags => tags.length <= 1 ? tags.join('')
+    : tags.slice(0, -1).join(', ') + ' et ' + tags[tags.length - 1];
 
   for (const sig of exits) {
     const i = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
@@ -10015,7 +10049,10 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     xStack[stackKey] = stackIdx + 1;
     const offsetY = stackIdx * 38;
 
-    const bw = 150, bh = 28;
+    const confl = showCapsule ? confluenceOf(sig) : [];
+    const isConfl = confl.length > 0;
+    if (isConfl) _blinkAny = true;
+    const bw = 150, bh = isConfl ? 40 : 28;
     const dotY = isAchatExit ? yWick + 25 : yWick - 25;
     const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
     const by = showCapsule ? placeBadge(bx, bw, isAchatExit ? (dotY + 40 + offsetY) : (dotY - 65 - offsetY), bh, isAchatExit ? 1 : -1) : dotY;
@@ -10044,13 +10081,20 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 3. Pastille / Capsule néon
+    // 3. Pastille / Capsule néon (clignotante si confluence multi-UT)
     ctx.fillStyle = bgFill;
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.8;
+    if (isConfl && _blinkOn) {
+      ctx.lineWidth = 3;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14;
+    } else {
+      ctx.lineWidth = isConfl ? 2.2 : 1.8;
+    }
     roundRect(bx, by, bw, bh, 8);
     ctx.fill();
     ctx.stroke();
+    ctx.shadowBlur = 0;
 
     // 4. Libellé et Prix
     ctx.fillStyle = textColor;
@@ -10061,6 +10105,12 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     ctx.fillStyle = '#E2E8F0';
     ctx.font = '8.5px "IBM Plex Mono",monospace';
     ctx.fillText('Prix: ' + fmtP(sig.price) + ' $', bx + bw / 2, by + 21);
+
+    if (isConfl) {
+      ctx.fillStyle = _blinkOn ? '#FFFFFF' : color;
+      ctx.font = 'bold 8px "IBM Plex Mono",monospace';
+      ctx.fillText('\u26A1 ' + listeUT(confl) + ' déclenchées', bx + bw / 2, by + 33);
+    }
 
     labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_exit_kk'});
     labelHits.push({x: x - 8, y: dotY - 8, w: 16, h: 16, key: 'signal_exit_kk'});
