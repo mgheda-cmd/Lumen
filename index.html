@@ -730,10 +730,16 @@ footer{
       <label>Levier<select id="mbt-lev" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="1" selected>1x (Spot)</option><option value="2">2x</option><option value="5">5x</option><option value="10">10x</option><option value="20">20x</option><option value="50">50x</option></select></label>
       <label>Score minimum<input type="number" id="mbt-score" value="5" min="2" max="10" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Stop suiveur (× ATR)<input type="number" id="mbt-trail" value="2" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
-      <label>Stop de protection (× ATR)<input type="number" id="mbt-sl" value="1.5" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Stop de protection (× ATR)<input type="number" id="mbt-sl" value="5" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Objectif (× le risque)<input type="number" id="mbt-rr" value="2.5" step="0.1" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
     </div>
     <div style="margin:10px 0;display:flex;gap:6px;flex-wrap:wrap"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button><button id="mbt-ob" class="cfg-tfm" style="font-size:11px">🟪 Sortie sur Order Block opposé</button></div>
+    <label style="font-size:11px;color:#94A3B8;display:block;margin-bottom:10px">Sortie sur épuisement contraire
+      <select id="mbt-exh" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
+        <option value="confirme" selected>Confirmée (trade en profit + bougie contraire)</option>
+        <option value="immediat">Immédiate (au premier signal)</option>
+        <option value="off">Désactivée</option>
+      </select></label>
     <button id="mbt-run" style="width:100%;background:linear-gradient(135deg,#FBBF24,#F97316);color:#0F172A;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:12px">▶ Lancer le Backtest</button>
     <div id="mbt-res"></div>
   </div>
@@ -2629,7 +2635,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true,useObExit:false},
+    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:1,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,exhMode:'confirme'},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
@@ -8635,6 +8641,11 @@ const SCHEMA={
     {k:'trailMult',t:'num',lab:'Stop suiveur (× ATR)',min:0.5,max:6,def:2,ind:1},
     {k:'allowShort',t:'bool',lab:'Autoriser les positions vendeuses (short)',def:true,ind:1},
     {k:'useObExit',t:'bool',lab:'Sortir sur Order Block opposé (coupe les trades tôt)',def:false,ind:1},
+    {k:'beMove',t:'num',lab:'Passer au point mort après (× le risque, 0 = jamais)',min:0,max:5,def:1,ind:1},
+    {k:'partialAt',t:'num',lab:'Prise partielle de moitié à (× le risque, 0 = aucune)',min:0,max:6,def:1.5,ind:1},
+    {k:'trailAfter',t:'num',lab:'Armer le stop suiveur après (× le risque)',min:0,max:5,def:1,ind:1},
+    {k:'minHold',t:'num',lab:'Bougies minimum avant sortie douce',min:0,max:30,def:4,ind:1},
+    {k:'timeStop',t:'num',lab:'Stop temporel si le trade stagne (bougies, 0 = off)',min:0,max:500,def:60,ind:1},
   ]},
   signal_exit_ob:{title:'Signal Sortie Position sur Order Block (Pastille Violette)',fields:[
     {k:'distThreshold',t:'num',lab:'Tolérance d\'approche / toucher Order Block ($)',min:0,max:1000,def:100,ind:1},
@@ -11324,6 +11335,12 @@ function computeMasterStrategy(d, opt){
   const tpRR      = opt.tpRR      != null ? +opt.tpRR      : 2.5;
   const rangeMax  = opt.rangeMax  != null ? +opt.rangeMax  : 88;
   const useObExit = opt.useObExit === true;   // sortie sur Order Block opposé : désactivée par défaut
+  const beMove    = opt.beMove    != null ? +opt.beMove    : 1.0;   // point mort à 1 R
+  const partialAt = opt.partialAt != null ? +opt.partialAt : 1.5;   // prise partielle à 1,5 R
+  const trailAfter= opt.trailAfter!= null ? +opt.trailAfter: 1.0;   // armement du stop suiveur
+  const minHold   = opt.minHold   != null ? +opt.minHold   : 4;     // bougies avant sortie douce
+  const timeStop  = opt.timeStop  != null ? +opt.timeStop  : 60;    // 0 = désactivé
+  const exhMode   = opt.exhMode   || 'confirme';                    // off | confirme | immediat
   const kkUp = opt.kkUp != null ? +opt.kkUp : 64;
   const kkLo = opt.kkLo != null ? +opt.kkLo : -64;
   const cooldown = opt.cooldown != null ? +opt.cooldown : 3;
@@ -11435,37 +11452,93 @@ function computeMasterStrategy(d, opt){
     if(pos){
       const dir = pos.dir;
       const px = b.c;
+      const R = pos.risk;                       // 1 R = distance entrée -> stop initial
+      const gain = (px - pos.entry) / pos.entry * dir;
+      const rMult = R > 0 ? ((px - pos.entry) * dir) / R : 0;
+      pos.bars++;
+      pos.bestR = Math.max(pos.bestR, rMult);
       pos.best = dir > 0 ? Math.max(pos.best, b.h) : Math.min(pos.best, b.l);
-      const trail = dir > 0 ? pos.best - trailMult * atr[i] : pos.best + trailMult * atr[i];
+
+      // 1. Passage au point mort : le stop remonte à l'entrée dès que le trade
+      //    a pris beMove fois le risque. Une position gagnante ne redevient
+      //    plus perdante.
+      if(beMove > 0 && pos.bestR >= beMove && !pos.beDone){
+        pos.sl = dir > 0 ? Math.max(pos.sl, pos.entry) : Math.min(pos.sl, pos.entry);
+        pos.beDone = true;
+      }
+
+      // 2. Prise partielle : la moitié de la position est encaissée à partialAt,
+      //    le reste continue de courir avec le stop suiveur.
+      if(partialAt > 0 && !pos.partDone){
+        const pTgt = dir > 0 ? pos.entry + partialAt * R : pos.entry - partialAt * R;
+        if((dir > 0 && b.h >= pTgt) || (dir < 0 && b.l <= pTgt)){
+          pos.partDone = true;
+          pos.partPrice = pTgt;
+        }
+      }
+
+      // 3. Le stop suiveur ne s'arme qu'une fois trailAfter atteint : on laisse
+      //    respirer le début du trade au lieu de le couper au premier repli.
+      let trail = null;
+      if(pos.bestR >= trailAfter){
+        trail = dir > 0 ? pos.best - trailMult * atr[i] : pos.best + trailMult * atr[i];
+      }
 
       let reason = null;
-      if(dir > 0 && b.l <= pos.sl) reason = 'Stop de protection';
-      else if(dir < 0 && b.h >= pos.sl) reason = 'Stop de protection';
+      if(dir > 0 && b.l <= pos.sl) reason = pos.beDone ? 'Point mort' : 'Stop de protection';
+      else if(dir < 0 && b.h >= pos.sl) reason = pos.beDone ? 'Point mort' : 'Stop de protection';
       else if(dir > 0 && b.h >= pos.tp) reason = 'Objectif atteint';
       else if(dir < 0 && b.l <= pos.tp) reason = 'Objectif atteint';
-      else if(dir > 0 && px < trail) reason = 'Stop suiveur ATR';
-      else if(dir < 0 && px > trail) reason = 'Stop suiveur ATR';
-      else if(net[i] != null && net[i-1] != null){
-        if(dir > 0 && net[i-1] >= kkUp && net[i] < kkUp) reason = 'Sortie KK (surachat)';
-        if(dir < 0 && net[i-1] <= kkLo && net[i] > kkLo) reason = 'Sortie KK (survente)';
+      else if(pos.bars >= minHold){
+        if(trail != null && dir > 0 && px < trail) reason = 'Stop suiveur ATR';
+        else if(trail != null && dir < 0 && px > trail) reason = 'Stop suiveur ATR';
+        else if(net[i] != null && net[i-1] != null && rMult > 0.3){
+          // Sortie KK seulement si le trade est déjà en profit
+          if(dir > 0 && net[i-1] >= kkUp && net[i] < kkUp) reason = 'Sortie KK (surachat)';
+          if(dir < 0 && net[i-1] <= kkLo && net[i] > kkLo) reason = 'Sortie KK (survente)';
+        }
       }
-      if(!reason && exhWindow(i, dir > 0 ? -1 : 1, 1) >= 2) reason = 'Épuisement contraire';
+
+      // 4. Épuisement contraire : ne coupe plus au premier signal. Il faut un
+      //    épuisement marqué, un trade déjà en profit, et une bougie qui ferme
+      //    contre la position. Sinon la tendance se poursuit sans nous.
+      if(!reason && exhMode !== 'off' && pos.bars >= minHold){
+        const force = exhWindow(i, dir > 0 ? -1 : 1, 2);
+        const contre = dir > 0 ? (b.c < b.o) : (b.c > b.o);
+        if(exhMode === 'immediat' ? force >= 2
+                                  : (force >= 2 && rMult >= 0.5 && contre)){
+          reason = 'Épuisement contraire';
+        }
+      }
       if(!reason && useObExit && obNear(i, px, dir)) reason = 'Order Block opposé';
-      if(!reason){
+
+      // 5. Retournement complet du score : on ne reste pas à contre-courant.
+      if(!reason && pos.bars >= minHold){
         const s2 = scoreAt(i).sc;
         if(dir > 0 && s2 <= -minScore) reason = 'Retournement du signal';
         if(dir < 0 && s2 >= minScore) reason = 'Retournement du signal';
+      }
+
+      // 6. Stop temporel : un trade qui n'a rien donné après timeStop bougies
+      //    immobilise du capital pour rien.
+      if(!reason && timeStop > 0 && pos.bars >= timeStop && pos.bestR < 0.5){
+        reason = 'Stop temporel';
       }
       if(!reason && i === N - 1) reason = 'Clôture de la période';
 
       if(reason){
         let exitP = px;
         if(reason === 'Stop de protection') exitP = pos.sl;
+        if(reason === 'Point mort') exitP = pos.entry;
         if(reason === 'Objectif atteint') exitP = pos.tp;
+        // Si la prise partielle a eu lieu, le prix de sortie effectif est la
+        // moyenne des deux moitiés.
+        const effP = pos.partDone ? (pos.partPrice + exitP) / 2 : exitP;
         out.push({
-          i, t: b.t, price: exitP, type: 'SORTIE', dir: -pos.dir, originDir: pos.dir,
+          i, t: b.t, price: effP, type: 'SORTIE', dir: -pos.dir, originDir: pos.dir,
           entryPrice: pos.entry, entryT: pos.t, reason,
-          pnlPct: ((exitP - pos.entry) / pos.entry) * pos.dir * 100
+          partial: pos.partDone, bars: pos.bars,
+          pnlPct: ((effP - pos.entry) / pos.entry) * pos.dir * 100
         });
         pos = null; lastExit = i;
         continue;
@@ -11482,10 +11555,11 @@ function computeMasterStrategy(d, opt){
 
     const risk = slMult * atr[i];
     pos = {
-      dir, entry: b.c, t: b.t, i,
+      dir, entry: b.c, t: b.t, i, risk,
       sl: dir > 0 ? b.c - risk : b.c + risk,
       tp: dir > 0 ? b.c + risk * tpRR : b.c - risk * tpRR,
-      best: b.c
+      best: b.c, bestR: 0, bars: 0,
+      beDone: false, partDone: false, partPrice: 0
     };
     out.push({
       i, t: b.t, price: b.c, type: 'ENTREE', dir, score: sc,
@@ -11582,6 +11656,7 @@ async function runMasterBacktest(){
   const tpRR = +(document.getElementById('mbt-rr').value || 2.5);
   const allowShort = document.getElementById('mbt-short').classList.contains('on');
   const useObExit = document.getElementById('mbt-ob').classList.contains('on');
+  const exhMode = document.getElementById('mbt-exh').value;
 
   btn.textContent = '⏳ Chargement de ' + days + ' jour(s)…';
   btn.style.pointerEvents = 'none';
@@ -11595,7 +11670,7 @@ async function runMasterBacktest(){
     return;
   }
 
-  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort, useObExit});
+  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort, useObExit, exhMode});
   let cap = capital0, peak = capital0, maxDD = 0;
   const trades = [];
   for(const g of evts){
