@@ -693,15 +693,6 @@ footer{
         <span class="srtf on" data-indzero="rangeDet2" title="Afficher/Masquer la Ligne Zéro">Axe 0</span>
         <span class="state">on</span>
       </div>
-      <h4 style="color:#A78BFA;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🌓 Médiaire</h4>
-      <div class="ind-item" data-ind="strat_mediaire" id="item-strat_mediaire" style="background:linear-gradient(135deg,rgba(167,139,250,0.14),rgba(99,102,241,0.10));border:1.5px solid #A78BFA;border-radius:8px;padding:9px 10px;margin-top:4px;margin-bottom:6px;box-shadow:0 2px 10px rgba(167,139,250,0.20)">
-        <span class="dot" style="background:#A78BFA;box-shadow:0 0 7px #A78BFA;flex:none"></span>
-        <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Médiaire<br><span class="desc" style="color:#DDD6FE;font-size:11px">Croisement EMA 9, bougies Heikin Ashi et filtre MACD. Achat, vente et sortie.</span></span>
-        <div style="display:flex;align-items:center;gap:5px;flex:none;margin-left:auto">
-          <button id="btn-bt-strat-mediaire" data-bt-strat="strat_mediaire" style="background:linear-gradient(135deg,#A78BFA,#6366F1);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 0 8px rgba(167,139,250,0.35)" title="Lancer le backtest de Médiaire">🚀 Backtest</button>
-          <span class="state">off</span>
-        </div>
-      </div>
       <h4 style="color:#FBBF24;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🏆 Stratégie complète</h4>
       <div class="ind-item" data-ind="strat_master" id="item-strat_master" style="background:linear-gradient(135deg,rgba(251,191,36,0.14),rgba(249,115,22,0.10));border:1.5px solid #FBBF24;border-radius:8px;padding:9px 10px;margin-top:4px;margin-bottom:10px;box-shadow:0 2px 10px rgba(251,191,36,0.20)">
         <span class="dot" style="background:#FBBF24;box-shadow:0 0 7px #FBBF24;flex:none"></span>
@@ -726,30 +717,7 @@ footer{
   <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
   </div>
 
-  <div id="dbt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:14px">
-  <div style="background:var(--panel,#0A111F);border:1.5px solid #A78BFA;border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-weight:800;color:#A78BFA;font-size:14px">🌓 Backtest — Médiaire</div>
-      <button class="btn" id="dbt-close" style="padding:3px 9px;font-size:14px">✕</button>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:11px;color:#94A3B8">
-      <label>Historique (jours)<select id="dbt-days" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="3">3 jours</option><option value="7" selected>7 jours</option><option value="14">14 jours</option><option value="30">30 jours</option></select></label>
-      <label>Capital ($)<input type="number" id="dbt-capital" value="100" min="10" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
-      <label>Frais par côté (%)<input type="number" id="dbt-fee" value="0.04" step="0.01" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
-      <label>Levier<select id="dbt-lev" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="1">1x</option><option value="2">2x</option><option value="5" selected>5x</option><option value="10">10x</option><option value="20">20x</option><option value="50">50x</option><option value="100">100x</option></select></label>
-    </div>
-    <label style="font-size:11px;color:#94A3B8;display:block;margin:8px 0 10px">Mode de sortie
-      <select id="dbt-exit" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
-        <option value="macd" selected>Inversion MACD</option>
-        <option value="color">Changement de couleur Heikin Ashi</option>
-        <option value="ema_cross">Croisement EMA inverse</option>
-      </select></label>
-    <button id="dbt-run" style="width:100%;background:linear-gradient(135deg,#A78BFA,#6366F1);color:#0F172A;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:12px">▶ Lancer le Backtest</button>
-    <div id="dbt-res"></div>
-  </div>
-</div>
-
-<div id="mbt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:14px">
+  <div id="mbt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:14px">
   <div style="background:var(--panel,#0A111F);border:1.5px solid #FBBF24;border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div style="font-weight:800;color:#FBBF24;font-size:14px">🏆 Backtest — Stratégie Confluence Totale</div>
@@ -757,29 +725,15 @@ footer{
     </div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:11px;color:#94A3B8">
       <label>Historique (jours)<select id="mbt-days" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="3">3 jours</option><option value="7" selected>7 jours</option><option value="14">14 jours</option><option value="30">30 jours</option></select></label>
-      <label>Capital ($)<input type="number" id="mbt-capital" value="10000" min="100" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
-      <label>Frais par trade (%)<input type="number" id="mbt-fee" value="0.06" step="0.01" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Capital ($)<input type="number" id="mbt-capital" value="100" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Frais par trade (%) <span style="color:#00E5FF;font-size:10px">(MEXC Taker: 0.04%)</span><input type="number" id="mbt-fee" value="0.04" step="0.001" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Levier<select id="mbt-lev" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="1" selected>1x (Spot)</option><option value="2">2x</option><option value="5">5x</option><option value="10">10x</option><option value="20">20x</option><option value="50">50x</option></select></label>
       <label>Score minimum<input type="number" id="mbt-score" value="5" min="2" max="10" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Stop suiveur (× ATR)<input type="number" id="mbt-trail" value="2" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
-      <label>Stop de protection (× ATR)<input type="number" id="mbt-sl" value="5" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Stop de protection (× ATR)<input type="number" id="mbt-sl" value="1.5" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Objectif (× le risque)<input type="number" id="mbt-rr" value="2.5" step="0.1" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
     </div>
-    <div style="margin:10px 0;display:flex;gap:6px;flex-wrap:wrap"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button><button id="mbt-ob" class="cfg-tfm" style="font-size:11px">🟪 Sortie sur Order Block opposé</button><button id="mbt-cloud" class="cfg-tfm on" style="font-size:11px">☁️ Nuage porteur = on ne sort pas</button><button id="mbt-cloudin" class="cfg-tfm on" style="font-size:11px">🧭 Pas d'entrée à contresens du nuage</button><button id="mbt-stop" class="cfg-tfm" style="font-size:11px">🛑 Stop de protection + point mort</button></div>
-    <label style="font-size:11px;color:#94A3B8;display:block;margin-bottom:8px">Épuisements pris en compte à partir de
-      <select id="mbt-exhtf" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
-        <option value="1" selected>UT du graphique</option>
-        <option value="3">3 minutes</option>
-        <option value="5">5 minutes</option>
-        <option value="15">15 minutes</option>
-        <option value="60">1 heure</option>
-      </select></label>
-    <label style="font-size:11px;color:#94A3B8;display:block;margin-bottom:10px">Sortie sur épuisement contraire
-      <select id="mbt-exh" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px">
-        <option value="confirme" selected>Confirmée (trade en profit + bougie contraire)</option>
-        <option value="immediat">Immédiate (au premier signal)</option>
-        <option value="off">Désactivée</option>
-      </select></label>
+    <div style="margin:10px 0"><button id="mbt-short" class="cfg-tfm on" style="font-size:11px">📉 Positions vendeuses autorisées</button></div>
     <button id="mbt-run" style="width:100%;background:linear-gradient(135deg,#FBBF24,#F97316);color:#0F172A;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:12px">▶ Lancer le Backtest</button>
     <div id="mbt-res"></div>
   </div>
@@ -1020,6 +974,43 @@ footer{
 
 <div id="toast"></div>
 
+<!-- Modal Banque & Historique des Retraits -->
+<div id="bank-modal-back" style="position:fixed;inset:0;background:rgba(6,10,20,.85);z-index:9999;display:none;align-items:center;justify-content:center;padding:14px">
+  <div style="background:var(--panel,#0A111F);border:1px solid #FFD700;border-radius:14px;width:min(620px,96vw);max-height:90vh;overflow:auto;box-shadow:0 8px 32px rgba(255,215,0,0.25)">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel,#0A111F);z-index:10">
+      <h3 style="flex:1;font-size:15px;font-weight:700;color:#FFD700;display:flex;align-items:center;gap:8px">
+        <span>🏛️ Banque & Historique des Retraits</span>
+      </h3>
+      <button class="btn" id="bank-modal-close" style="padding:4px 10px">✕</button>
+    </div>
+    <div style="padding:16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px">
+        <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);padding:10px;border-radius:8px">
+          <div style="font-size:10px;color:var(--muted)">🏛️ Total Sécurisé en Banque</div>
+          <div id="bank-modal-total-secured" style="font-size:18px;font-weight:800;color:#FFD700">$0.00</div>
+        </div>
+        <div style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.3);padding:10px;border-radius:8px">
+          <div style="font-size:10px;color:var(--muted)">💼 Capital Trading Disponible</div>
+          <div id="bank-modal-cash-avail" style="font-size:18px;font-weight:800;color:#00E5FF">$0.00</div>
+        </div>
+        <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.3);padding:10px;border-radius:8px">
+          <div style="font-size:10px;color:var(--muted)">🌐 Valeur Totale Portefeuille</div>
+          <div id="bank-modal-total-all" style="font-size:18px;font-weight:800;color:#00E676">$0.00</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">📋 Liste des Retraits Effectués</div>
+        <button class="btn" id="btn-bank-restore-all" style="padding:4px 10px;font-size:11px;border-color:#FFD700;color:#FFD700;font-weight:bold" title="Remettre tous les fonds de la banque dans le capital de trading">↩️ Reverser Tout au Capital</button>
+      </div>
+
+      <div id="bank-withdrawals-list" style="max-height:300px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--panel-2,#0F172A);margin-bottom:14px">
+        <!-- Liste générée dynamiquement -->
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Gmail Import -->
 <div id="gmail-modal-back" style="position:fixed;inset:0;background:rgba(6,10,20,.85);z-index:400;display:none;align-items:center;justify-content:center;padding:14px">
   <div style="background:var(--panel);border:1px solid #EA4335;border-radius:14px;width:min(680px,98vw);max-height:92vh;overflow:auto;box-shadow:0 8px 32px rgba(234,67,53,0.2)">
@@ -1118,11 +1109,16 @@ footer{
         </label>
         <label style="display:flex;flex-direction:column;gap:4px">
           <span style="color:var(--muted)">Capital ($)</span>
-          <input type="number" id="bt-capital" value="10000" min="100" onchange="runBacktest(true)" style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-weight:bold">
+          <input type="number" id="bt-capital" value="100" min="1" onchange="runBacktest(true)" style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-weight:bold">
         </label>
         <label style="display:flex;flex-direction:column;gap:4px">
-          <span style="color:var(--muted)">Frais / Trade (%)</span>
-          <input type="number" id="bt-fee" value="0.06" step="0.01" min="0" onchange="runBacktest(true)" style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-weight:bold">
+          <span style="color:var(--muted)">Frais / Trade (%) <span style="font-size:10px;color:#00E5FF">(MEXC Taker: 0.04%)</span></span>
+          <input type="number" id="bt-fee" value="0.04" step="0.001" min="0" onchange="runBacktest(true)" style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-weight:bold">
+          <div style="display:flex;gap:4px;margin-top:2px;flex-wrap:wrap">
+            <button type="button" onclick="document.getElementById('bt-fee').value=0.04;runBacktest(true)" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="MEXC Futures Taker Standard (0.04%)">MEXC Taker 0.04%</button>
+            <button type="button" onclick="document.getElementById('bt-fee').value=0;runBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="MEXC Maker (0.00% - Ordres Limite)">Maker 0.00%</button>
+            <button type="button" onclick="document.getElementById('bt-fee').value=0.06;runBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="Frais Crypto Standard (0.06%)">Standard 0.06%</button>
+          </div>
         </label>
         <label style="display:flex;flex-direction:column;gap:4px">
           <span style="color:var(--muted)">Levier Backtest</span>
@@ -1141,7 +1137,9 @@ footer{
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:14px;line-height:1.4">
         📊 Analyse sur <span id="bt-n" style="color:#00E5FF;font-weight:bold">—</span> bougies (<span id="bt-tf" style="color:#00E5FF;font-weight:bold">—</span>). Le backtest simule l'exécution exacte des règles d'entrée EMA 9 × Heikin Ashi 5m (avec confluence MACD S/R 3m) et applique le mode de sortie sélectionné.
       </div>
-      <button class="btn" id="bt-run" style="background:#00E5FF;color:#0F172A;border:none;font-weight:bold;width:100%;padding:10px;border-radius:8px;font-size:13px;cursor:pointer;margin-bottom:16px;box-shadow:0 4px 12px rgba(0,229,255,0.3)">▶ Lancer le Backtest de cette Stratégie</button>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn" id="bt-run" style="flex:1;min-width:200px;background:#00E5FF;color:#0F172A;border:none;font-weight:bold;padding:10px;border-radius:8px;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(0,229,255,0.25)">▶ Lancer / Rafraîchir le Backtest</button>
+      </div>
       <div id="bt-results"></div>
     </div>
   </div>
@@ -1152,9 +1150,11 @@ footer{
     <span style="color:var(--sma);font-weight:600">💼 DÉMO</span>
     <span id="paper-equity">—</span>
     <span id="paper-pnl">—</span>
+    <span id="paper-strat-badge" style="margin-left:8px;font-size:10.5px;font-family:'IBM Plex Mono',monospace"></span>
     <span id="paper-caret" style="margin-left:auto;color:var(--faint)">▴</span>
   </div>
   <div id="paper-panel">
+    <div id="paper-strat-card" style="margin-top:2px;margin-bottom:10px"></div>
     <div class="paper-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <!-- Selector Unit Mode -->
       <div style="display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel-2,#0F172A)">
@@ -1218,6 +1218,48 @@ footer{
         ⚡ Aperçu en temps réel
       </div>
       <div id="paper-presets" style="display:flex;gap:4px"></div>
+    </div>
+
+    <!-- Section Banque & Retrait -->
+    <div id="paper-bank-bar" style="margin-top:8px;margin-bottom:10px;padding:8px 12px;background:linear-gradient(135deg, rgba(255,215,0,0.08), rgba(0,229,255,0.05));border:1px solid rgba(255,215,0,0.3);border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">🏦</span>
+        <div>
+          <div style="font-size:11px;font-weight:800;color:#FFD700">BANQUE & RETRAITS DE GAINS</div>
+          <div style="font-size:10px;color:var(--muted)">Sécurisez vos profits en les retirant du capital de trading</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:11px;font-weight:700;color:var(--text)">Montant ($):</span>
+          <input id="paper-withdraw-amt" type="number" min="1" step="any" placeholder="ex: 500" aria-label="Montant du retrait" style="width:90px;padding:4px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:700;background:var(--panel);border:1px solid rgba(255,215,0,0.4);border-radius:6px;color:#FFD700">
+          <button class="btn" id="btn-paper-withdraw" style="padding:4px 10px;font-size:11px;font-weight:800;background:rgba(255,215,0,0.15);border-color:#FFD700;color:#FFD700" title="Effectuer un retrait vers la banque">💸 Retirer</button>
+        </div>
+
+        <button class="btn" id="btn-paper-history-withdraw" style="padding:4px 10px;font-size:11px;font-weight:800;background:rgba(0,229,255,0.12);border-color:#00E5FF;color:#00E5FF" title="Voir l'historique de vos retraits et gérer la banque">
+          🏛️ Banque : <span id="paper-bank-total">$0.00</span> (<span id="paper-bank-count">0</span>)
+        </button>
+      </div>
+    </div>
+
+    <!-- Section Exportation Stratégie & Compte Démo -->
+    <div id="paper-export-bar" style="margin-top:6px;margin-bottom:12px;padding:8px 12px;background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.3);border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">💾</span>
+        <div>
+          <div style="font-size:11px;font-weight:800;color:#00E5FF">EXPORTATION STRATÉGIE & COMPTE DÉMO</div>
+          <div style="font-size:10px;color:var(--muted)">Téléchargez la stratégie et toutes ses règles pour l'importer sur un autre support</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <button class="btn" id="btn-export-strat-json" style="padding:4px 10px;font-size:11px;font-weight:800;background:rgba(0,229,255,0.15);border-color:#00E5FF;color:#00E5FF" title="Exporter la configuration de la stratégie, le solde démo et l'historique en JSON">
+          📥 Exporter Config (.json)
+        </button>
+        <button class="btn" id="btn-download-strat-js" style="padding:4px 10px;font-size:11px;font-weight:800;background:rgba(255,215,0,0.15);border-color:#FFD700;color:#FFD700" title="Télécharger le module JavaScript autonome prêt à être exécuté ailleurs">
+          📦 Code JS Standalone (.js)
+        </button>
+      </div>
     </div>
 
     <div id="paper-pos"></div>
@@ -2675,8 +2717,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_mediaire:{on:false,emaPeriod:9,exitMode:'macd'},
-    strat_master:{on:false,minScore:5,trailMult:2,slMult:5,tpRR:2.5,allowShort:true,useObExit:false,beMove:0,partialAt:1.5,trailAfter:1,minHold:4,timeStop:60,useStop:false,exhMode:'confirme',exhMinTf:1,cloudVeto:true,cloudEntry:true,cloudTf:0},
+    strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
@@ -2687,7 +2728,7 @@ const state = {
 };
 
 /* ---------- Portefeuille de trading démo ---------- */
-const paper={cash:100000,positions:[],history:[]};
+const paper={cash:100000,bank:0,withdrawals:[],positions:[],history:[]};
 let paperUnit='coin';
 
 /* ---------- Mémorisation de la configuration ---------- */
@@ -2696,7 +2737,7 @@ let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
     ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
-    paper:{cash:paper.cash,positions:paper.positions,history:paper.history.slice(0,50)}};
+    paper:{cash:paper.cash,bank:paper.bank||0,withdrawals:Array.isArray(paper.withdrawals)?paper.withdrawals.slice(0,100):[],positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
   if(!c)return;
@@ -2707,6 +2748,8 @@ function mergeConfig(c){
   if(c.paperUnit==='usdt'||c.paperUnit==='coin')paperUnit=c.paperUnit;
   if(c.paper&&typeof c.paper.cash==='number'&&isFinite(c.paper.cash)){
     paper.cash=c.paper.cash;
+    paper.bank=typeof c.paper.bank==='number'&&isFinite(c.paper.bank)?c.paper.bank:0;
+    paper.withdrawals=Array.isArray(c.paper.withdrawals)?c.paper.withdrawals:[];
     paper.positions=Array.isArray(c.paper.positions)?c.paper.positions.filter(x=>
       x&&typeof x.entry==='number'&&typeof x.qty==='number'&&typeof x.margin==='number'
       &&(x.side==='long'||x.side==='short')&&/^[A-Z0-9]{5,20}$/.test(x.sym||'')):[];
@@ -2917,6 +2960,7 @@ function applyTickPrice(px){
     state.cache = {};
     updateHeader();
     if(typeof updatePaper === 'function') updatePaper();
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
     scheduleRender();
   }
 }
@@ -2928,6 +2972,7 @@ function applyKline(k){
   else if(bar.t>last.t){d.push(bar);d.shift();}
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
+  if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
   scheduleRender();
 }
 let lastTick=0, wsRetry=0, watchdog=null;
@@ -3120,6 +3165,7 @@ async function loadData(){
     updateHeader(); render();
     startStream(g);
     ensureSR();
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
   }catch(e){
     if(g!==gen)return;
     // nouvelle tentative avant de basculer en démo (rate limit temporaire ?)
@@ -3399,7 +3445,6 @@ function getInd(key){
     if(key==='signal_inv')state.cache[ck]=computeInvertedConfluenceSignals(d);
     if(key==='signal_ema_ha')state.cache[ck]=computeEmaHaCrossSignals(d,ind);
     if(key==='strat_master')state.cache[ck]=computeMasterStrategy(d,ind);
-    if(key==='strat_mediaire')state.cache[ck]=computeMediaireSignals(d,ind);
     if(key==='signal_exit_kk'){
       const activeTfsStr = Object.keys(ind.tfs || {}).filter(k => ind.tfs[k]).sort().join('_');
       const uL = S('signal_exit_kk','upper') ?? S('two_ind','upper') ?? 64;
@@ -3733,25 +3778,6 @@ try{
     render();
   });
 }catch(e){}
-// Bascule des pastilles d'epuisement : derniere seule / toutes
-function applyExhaustBtn(){
-  const b=document.getElementById('exhaust-all-btn'); if(!b)return;
-  const on=!!state.showAllExhaust;
-  b.style.background=on?'rgba(255,107,0,0.18)':'';
-  b.style.borderColor=on?'#FF6B00':'';
-  b.style.color=on?'#FFA000':'';
-  b.title=on
-    ? "Toutes les pastilles (épuisement et sortie) sont affichées — appuyer pour ne garder que la dernière de chaque unité de temps"
-    : "Seule la dernière pastille d'épuisement et de sortie de chaque unité de temps est affichée — appuyer pour tout réafficher";
-}
-try{
-  const eb=document.getElementById('exhaust-all-btn');
-  eb.addEventListener('click',()=>{
-    state.showAllExhaust=!state.showAllExhaust;
-    applyExhaustBtn(); saveConfig(); render();
-  });
-  applyExhaustBtn();
-}catch(e){}
 // créer / supprimer une zone au tap sur le graphique des prix
 function zoneTapAt(x,y){
   const pr=(state.lastPanes||[]).find(q=>q.key==='price'); if(!pr)return false;
@@ -3786,6 +3812,25 @@ try{
     xb.style.color=state.xhairMode?'#fff':'';
     render();
   });
+}catch(e){}
+// Bascule des pastilles d'epuisement : derniere seule / toutes
+function applyExhaustBtn(){
+  const b=document.getElementById('exhaust-all-btn'); if(!b)return;
+  const on=!!state.showAllExhaust;
+  b.style.background=on?'rgba(255,107,0,0.18)':'';
+  b.style.borderColor=on?'#FF6B00':'';
+  b.style.color=on?'#FFA000':'';
+  b.title=on
+    ? "Toutes les pastilles (épuisement et sortie) sont affichées — appuyer pour ne garder que la dernière de chaque unité de temps"
+    : "Seule la dernière pastille d'épuisement et de sortie de chaque unité de temps est affichée — appuyer pour tout réafficher";
+}
+try{
+  const eb=document.getElementById('exhaust-all-btn');
+  eb.addEventListener('click',()=>{
+    state.showAllExhaust=!state.showAllExhaust;
+    applyExhaustBtn(); saveConfig(); render();
+  });
+  applyExhaustBtn();
 }catch(e){}
 function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 
@@ -3919,8 +3964,6 @@ function render(){
   if(state.mouse) drawCrosshair(panes,s,e);
   const pricePane = panes.find(q => q.key === 'price');
   const yOf = (pricePane && pricePane.yOf) ? pricePane.yOf : (v => 0);
-  // Les pastilles/badges du graphique principal sont bornées au panneau des prix :
-  // elles ne peuvent plus déborder sur les sous-panneaux d'indicateurs du bas.
   const priceClipBot = pricePane ? (pricePane.y + pricePane.h) : (H - AXIS_H);
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, W, priceClipBot); ctx.clip();
@@ -4118,7 +4161,7 @@ function render(){
 
         const bh = isTemp ? 38 : 28;
         const bw = isTemp ? 168 : 142;
-        const by = placeBadge(x - bw/2, bw, isDirect ? (yDot + 130) : (yDot + 75), bh, 1);
+        const by = placeBadge(x - bw / 2, bw, isDirect ? (yDot + 130) : (yDot + 75), bh, 1);
 
         // Ligne de liaison pointillée pour dégager la bougie et le croisement
         ctx.save();
@@ -4167,7 +4210,7 @@ function render(){
 
         const bh = isTemp ? 38 : 28;
         const bw = isTemp ? 168 : 142;
-        const by = placeBadge(x - bw/2, bw, isDirect ? (yDot - 130 - bh) : (yDot - 75 - bh), bh, -1);
+        const by = placeBadge(x - bw / 2, bw, isDirect ? (yDot - 130 - bh) : (yDot - 75 - bh), bh, -1);
 
         // Ligne de liaison pointillée
         ctx.save();
@@ -4272,11 +4315,7 @@ function render(){
   if(vis('strat_master')){
     drawMasterStrategy(getInd('strat_master'), s, e, yOf);
   }
-  // Stratégie Médiaire
-  if(vis('strat_mediaire')){
-    drawMediaire(getInd('strat_mediaire'), s, e, yOf);
-  }
-  ctx.restore();   // fin du clip « panneau des prix »
+  ctx.restore();
   // Crosshair vertical global : traverse tous les panneaux
   if(state.mouse && state.mouse.x < W-AXIS_W && !state.dragging){
     const mx=state.mouse.x;
@@ -5031,23 +5070,20 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
     return lastDir;
   };
 
+  const lastPerTf = {};
+  for (const sg of events) {
+    const gi = (sg.t != null ? idxOfTime(sg.t) : null) ?? sg.i;
+    if (gi == null) continue;
+    const tk = String(sg.tfName ?? sg.tf ?? 'x') + '_' + sg.dir;
+    if (!(tk in lastPerTf) || gi > lastPerTf[tk]) lastPerTf[tk] = gi;
+  }
   const overallSigDir = filterBySignal ? getActiveSigDir(null, null) : null;
   const xStack = sharedXStack || {};
-  // dernier evenement par unite de temps : seul lui garde sa capsule
-  const lastPerTf={};
-  for(const g of events){
-    const gi=(g.t!=null?idxOfTime(g.t):null)??g.i;
-    if(gi==null)continue;
-    const tk=String(g.tf??g.tfName??'x');
-    if(!(tk in lastPerTf)||gi>lastPerTf[tk])lastPerTf[tk]=gi;
-  }
   for(const g of events){
     const i=(g.t!=null?idxOfTime(g.t):null)??g.i;
     if(i==null||i<s-1||i>e+1)continue;
 
     // Règle optionnelle (si Filtre Signal est activé):
-    // Quand la dernière pastille est ACHAT (1), afficher essoufflement ORANGE (-1) seulement.
-    // Quand la dernière pastille est VENTE (-1), afficher essoufflement VERT (1) seulement.
     if(filterBySignal){
       const sigDir = getActiveSigDir(i, g.t) ?? overallSigDir;
       if(sigDir === 1 && g.dir !== -1) continue;
@@ -5059,17 +5095,19 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
 
     const tfStr=g.tfName||(g.tf?(g.tf>=60?(g.tf/60)+'H':g.tf+'m'):'')||(state.tf>=60?(state.tf/60)+'H':state.tf+'m');
     const qStr=`${g.quality||80}% (${tfStr})`;
-    const showCapsule = state.showAllExhaust || (lastPerTf[String(g.tf??g.tfName??'x')]===i);
     const stackKey = Math.round(x/45) + '_' + (g.dir === -1 ? 'top' : 'bot');
     const stackIdx = xStack[stackKey] || 0;
     xStack[stackKey] = stackIdx + 1;
     const offsetY = stackIdx * 35;
 
+    const showCapsule = state.showAllExhaust ||
+      (lastPerTf[String(g.tfName ?? g.tf ?? 'x') + '_' + g.dir] === i);
+
     if(g.dir===-1){
       const yHigh=yOf(g.price);
       const dotY=yHigh-55;
       const bw=165, bh=25;
-      const by=showCapsule?placeBadge(x-bw/2,bw,dotY-75-offsetY,bh,-1):dotY;
+      const by=showCapsule ? placeBadge(x-bw/2, bw, dotY-75-offsetY, bh, -1) : dotY;
 
       ctx.shadowColor='#FF6B00';
       ctx.shadowBlur=6;
@@ -5079,7 +5117,19 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.fill();
       ctx.shadowBlur=0;
 
-      if(showCapsule){
+      if(!showCapsule){
+        ctx.fillStyle='rgba(30,16,10,0.85)';
+        ctx.strokeStyle='#FF6B00';
+        ctx.lineWidth=1;
+        const tw=28, th=14;
+        roundRect(x-tw/2, dotY-18, tw, th, 3);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#FFA000'; ctx.font='bold 8px "IBM Plex Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText(tfStr||'UT', x, dotY-8);
+        ctx.textAlign='left';
+        continue;
+      }
+
       ctx.strokeStyle='rgba(255,107,0,0.65)';
       ctx.lineWidth=1;
       ctx.setLineDash([2,2]);
@@ -5105,26 +5155,12 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.font='8px "IBM Plex Mono",monospace';
       ctx.fillText(g.reason||'Épuisement Achat',x,by+20);
       ctx.textAlign='left';
-      } else {
-        // capsule masquee : mini-etiquette UT + qualite, collee au point
-        const lw=38, lh=11;
-        const ly=placeBadge(x-lw/2,lw,dotY-14,lh,-1);
-        ctx.save();
-        ctx.fillStyle='rgba(8,12,22,0.82)';
-        roundRect(x-lw/2,ly,lw,lh,4); ctx.fill();
-        ctx.fillStyle='#FFA000';
-        ctx.font='bold 7.5px "IBM Plex Mono",monospace';
-        ctx.textAlign='center';
-        ctx.fillText(`${tfStr} ${g.quality||80}%`,x,ly+8);
-        ctx.textAlign='left';
-        ctx.restore();
-      }
 
     } else {
       const yLow=yOf(g.price);
       const dotY=yLow+55;
       const bw=165, bh=25;
-      const by=showCapsule?placeBadge(x-bw/2,bw,dotY+60+offsetY,bh,1):dotY;
+      const by=showCapsule ? placeBadge(x-bw/2, bw, dotY+60+offsetY, bh, 1) : dotY;
 
       ctx.shadowColor='#10B981';
       ctx.shadowBlur=6;
@@ -5134,7 +5170,19 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.fill();
       ctx.shadowBlur=0;
 
-      if(showCapsule){
+      if(!showCapsule){
+        ctx.fillStyle='rgba(10,30,24,0.85)';
+        ctx.strokeStyle='#10B981';
+        ctx.lineWidth=1;
+        const tw=28, th=14;
+        roundRect(x-tw/2, dotY+5, tw, th, 3);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#34D399'; ctx.font='bold 8px "IBM Plex Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText(tfStr||'UT', x, dotY+15);
+        ctx.textAlign='left';
+        continue;
+      }
+
       ctx.strokeStyle='rgba(16,185,129,0.65)';
       ctx.lineWidth=1;
       ctx.setLineDash([2,2]);
@@ -5160,20 +5208,6 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.font='8px "IBM Plex Mono",monospace';
       ctx.fillText(g.reason||'Épuisement Vente',x,by+20);
       ctx.textAlign='left';
-      } else {
-        // capsule masquee : mini-etiquette UT + qualite, collee au point
-        const lw=38, lh=11;
-        const ly=placeBadge(x-lw/2,lw,dotY+10,lh,1);
-        ctx.save();
-        ctx.fillStyle='rgba(8,12,22,0.82)';
-        roundRect(x-lw/2,ly,lw,lh,4); ctx.fill();
-        ctx.fillStyle='#34D399';
-        ctx.font='bold 7.5px "IBM Plex Mono",monospace';
-        ctx.textAlign='center';
-        ctx.fillText(`${tfStr} ${g.quality||80}%`,x,ly+8);
-        ctx.textAlign='left';
-        ctx.restore();
-      }
     }
   }
   ctx.restore();
@@ -5228,16 +5262,15 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
     return lastDir;
   };
 
+  const lastPerTf = {};
+  for (const sg of events) {
+    const gi = (sg.t != null ? idxOfTime(sg.t) : null) ?? sg.i;
+    if (gi == null) continue;
+    const tk = String(sg.tfName ?? sg.tf ?? 'x') + '_' + sg.dir;
+    if (!(tk in lastPerTf) || gi > lastPerTf[tk]) lastPerTf[tk] = gi;
+  }
   const overallSigDir = filterBySignal ? getActiveSigDir(null, null) : null;
   const xStack = sharedXStack || {};
-  // dernier evenement par unite de temps : seul lui garde sa capsule
-  const lastPerTf={};
-  for(const g of events){
-    const gi=(g.t!=null?idxOfTime(g.t):null)??g.i;
-    if(gi==null)continue;
-    const tk=String(g.tf??g.tfName??'x');
-    if(!(tk in lastPerTf)||gi>lastPerTf[tk])lastPerTf[tk]=gi;
-  }
   for(const g of events){
     const i=(g.t!=null?idxOfTime(g.t):null)??g.i;
     if(i==null||i<s-1||i>e+1)continue;
@@ -5253,17 +5286,19 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
 
     const tfStr=g.tfName||(g.tf?(g.tf>=60?(g.tf/60)+'H':g.tf+'m'):'')||(state.tf>=60?(state.tf/60)+'H':state.tf+'m');
     const qStr=`${g.quality||85}% (${tfStr})`;
-    const showCapsule = state.showAllExhaust || (lastPerTf[String(g.tf??g.tfName??'x')]===i);
     const stackKey = Math.round(x/45) + '_' + (g.dir === -1 ? 'top' : 'bot');
     const stackIdx = xStack[stackKey] || 0;
     xStack[stackKey] = stackIdx + 1;
     const offsetY = stackIdx * 35;
 
+    const showCapsule = state.showAllExhaust ||
+      (lastPerTf[String(g.tfName ?? g.tf ?? 'x') + '_' + g.dir] === i);
+
     if(g.dir===-1){
       const yHigh=yOf(g.price);
       const dotY=yHigh-65;
       const bw=175, bh=25;
-      const by=showCapsule?placeBadge(x-bw/2,bw,dotY-80-offsetY,bh,-1):dotY;
+      const by=showCapsule ? placeBadge(x-bw/2, bw, dotY-80-offsetY, bh, -1) : dotY;
 
       ctx.shadowColor='#A855F7';
       ctx.shadowBlur=8;
@@ -5273,7 +5308,19 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.fill();
       ctx.shadowBlur=0;
 
-      if(showCapsule){
+      if(!showCapsule){
+        ctx.fillStyle='rgba(22,12,38,0.85)';
+        ctx.strokeStyle='#A855F7';
+        ctx.lineWidth=1;
+        const tw=28, th=14;
+        roundRect(x-tw/2, dotY-18, tw, th, 3);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#E040FB'; ctx.font='bold 8px "IBM Plex Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText(tfStr||'UT', x, dotY-8);
+        ctx.textAlign='left';
+        continue;
+      }
+
       ctx.strokeStyle='rgba(168,85,247,0.75)';
       ctx.lineWidth=1.2;
       ctx.setLineDash([2,2]);
@@ -5299,26 +5346,12 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.font='8px "IBM Plex Mono",monospace';
       ctx.fillText(g.reason||'Surchauffe Achat',x,by+20);
       ctx.textAlign='left';
-      } else {
-        // capsule masquee : mini-etiquette UT + qualite, collee au point
-        const lw=38, lh=11;
-        const ly=placeBadge(x-lw/2,lw,dotY-14,lh,-1);
-        ctx.save();
-        ctx.fillStyle='rgba(8,12,22,0.82)';
-        roundRect(x-lw/2,ly,lw,lh,4); ctx.fill();
-        ctx.fillStyle='#E040FB';
-        ctx.font='bold 7.5px "IBM Plex Mono",monospace';
-        ctx.textAlign='center';
-        ctx.fillText(`${tfStr} ${g.quality||85}%`,x,ly+8);
-        ctx.textAlign='left';
-        ctx.restore();
-      }
 
     } else {
       const yLow=yOf(g.price);
       const dotY=yLow+65;
       const bw=175, bh=25;
-      const by=showCapsule?placeBadge(x-bw/2,bw,dotY+65+offsetY,bh,1):dotY;
+      const by=showCapsule ? placeBadge(x-bw/2, bw, dotY+65+offsetY, bh, 1) : dotY;
 
       ctx.shadowColor='#00E5FF';
       ctx.shadowBlur=8;
@@ -5328,7 +5361,19 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.fill();
       ctx.shadowBlur=0;
 
-      if(showCapsule){
+      if(!showCapsule){
+        ctx.fillStyle='rgba(8,24,36,0.85)';
+        ctx.strokeStyle='#00E5FF';
+        ctx.lineWidth=1;
+        const tw=28, th=14;
+        roundRect(x-tw/2, dotY+5, tw, th, 3);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#00E5FF'; ctx.font='bold 8px "IBM Plex Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText(tfStr||'UT', x, dotY+15);
+        ctx.textAlign='left';
+        continue;
+      }
+
       ctx.strokeStyle='rgba(0,229,255,0.75)';
       ctx.lineWidth=1.2;
       ctx.setLineDash([2,2]);
@@ -5354,20 +5399,6 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.font='8px "IBM Plex Mono",monospace';
       ctx.fillText(g.reason||'Surchauffe Vente',x,by+20);
       ctx.textAlign='left';
-      } else {
-        // capsule masquee : mini-etiquette UT + qualite, collee au point
-        const lw=38, lh=11;
-        const ly=placeBadge(x-lw/2,lw,dotY+10,lh,1);
-        ctx.save();
-        ctx.fillStyle='rgba(8,12,22,0.82)';
-        roundRect(x-lw/2,ly,lw,lh,4); ctx.fill();
-        ctx.fillStyle='#00E5FF';
-        ctx.font='bold 7.5px "IBM Plex Mono",monospace';
-        ctx.textAlign='center';
-        ctx.fillText(`${tfStr} ${g.quality||85}%`,x,ly+8);
-        ctx.textAlign='left';
-        ctx.restore();
-      }
     }
   }
   ctx.restore();
@@ -6289,8 +6320,6 @@ const IND_META={
   signal:{label:()=>'Signaux A/V',color:'#FFE24D'},
   signal_inv:{label:()=>'Confluence INVERSÉE 🏆',color:'#25D0A4'},
   signal_ema_ha:{label:()=>'Stratégie EMA 9 / HA 5m 🎯',color:'#00E5FF'},
-  strat_master:{label:()=>'Stratégie Confluence Totale 🏆',color:'#FBBF24'},
-  strat_mediaire:{label:()=>'Médiaire 🌓',color:'#A78BFA'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
   lrc:{label:()=>{
@@ -6417,10 +6446,6 @@ chips.addEventListener('click',e=>{
   const btk = e.target.dataset.btStrat || e.target.closest('[data-bt-strat]')?.dataset.btStrat;
   if(btk === 'signal_ema_ha'){
     openEmaHaBacktestModal();
-    return;
-  }
-  if(btk === 'strat_master'){
-    openMasterBacktestModal();
     return;
   }
   const ek=e.target.dataset.eye || e.target.closest('[data-eye]')?.dataset.eye;
@@ -6598,22 +6623,6 @@ canvas.addEventListener('touchend',e=>{
 function applyPaneCtrl(key,act){
   // construire l'ordre courant des sous-panneaux visibles
   const cur=(state.lastPanes||[]).filter(p=>p.key!=='price').flatMap(p=>p.members||[p.key]);
-  if(act==='close'){
-    // fermer directement le sous-panneau : désactive tous ses indicateurs
-    const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
-    const mm=pane?(pane.members||[pane.key]):[key];
-    for(const k of mm){
-      if(state.indicators[k]) state.indicators[k].on=false;
-      if(state.subMergeUp) delete state.subMergeUp[k];
-      if(state.subLock) delete state.subLock[k];
-      if(state.subScale) delete state.subScale[k];
-      if(state.subSameScale) delete state.subSameScale[k];
-      if(state.paneH) delete state.paneH[k];
-      if(state.subFront) delete state.subFront[k];
-    }
-    if(typeof syncMenu==='function') syncMenu();
-    saveConfig(); render(); return;
-  }
   if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); render(); return; }
   if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); render(); return; }
   if(act==='front'){
@@ -7505,6 +7514,18 @@ function posPnl(p){
   return (p.side==='long'?(px-p.entry):(p.entry-px))*p.qty;
 }
 function fmtUsd(v){return v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' $';}
+function getPaperFeeRate(){
+  if(typeof window.paperFeePct === 'number' && isFinite(window.paperFeePct) && window.paperFeePct >= 0){
+    return window.paperFeePct;
+  }
+  const btFeeInp = document.getElementById('bt-fee');
+  if(btFeeInp && btFeeInp.value){
+    const val = parseFloat(btFeeInp.value);
+    if(!isNaN(val) && val >= 0) return val / 100;
+  }
+  return 0.0004;
+}
+
 function updatePaper(){
   const eqEl=document.getElementById('paper-equity');
   if(!eqEl)return;
@@ -7551,11 +7572,12 @@ function updatePaper(){
     if (!p) continue;
     const exitPx = item.triggerPx;
     const pnl = (p.side === 'long' ? (exitPx - p.entry) : (p.entry - exitPx)) * p.qty;
-    const fee = p.qty * exitPx * 0.001;
+    const fee = p.qty * exitPx * getPaperFeeRate();
     paper.cash += (p.margin || (p.qty * p.entry / (p.lev || 1))) + pnl - fee;
     paper.history.unshift({
       sym: p.sym, side: p.side, entry: p.entry, exit: exitPx, pnl: pnl - fee, qty: p.qty, t: Date.now(), t0: p.t,
-      reason: item.type === 'SL' ? '🛑 SL' : '🎯 TP'
+      reason: item.type === 'SL' ? '🛑 SL' : '🎯 TP',
+      capitalAfter: paper.cash
     });
     paper.history = paper.history.slice(0, 50);
     paper.positions.splice(item.index, 1);
@@ -7564,6 +7586,7 @@ function updatePaper(){
     } else {
       toast(`🎯 TAKE PROFIT déclenché sur ${baseAsset(p.sym)} à $${fmt(exitPx, 2)} ! PnL: +${fmtUsd(pnl-fee)}`, '#10B981');
     }
+    sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: exitPx, pnl: pnl - fee, qty: p.qty, reason: item.type === 'SL' ? '🛑 Stop Loss' : '🎯 Take Profit', capitalAfter: paper.cash });
     beep();
     saveConfig();
   }
@@ -7575,11 +7598,13 @@ function updatePaper(){
     if (!p) continue;
     const loss = p.margin;
     paper.history.unshift({
-      sym: p.sym, side: p.side, entry: p.entry, exit: item.px, pnl: -loss, qty: p.qty, t: Date.now(), t0: p.t, isLiq: true
+      sym: p.sym, side: p.side, entry: p.entry, exit: item.px, pnl: -loss, qty: p.qty, t: Date.now(), t0: p.t, isLiq: true,
+      capitalAfter: paper.cash
     });
     paper.history = paper.history.slice(0, 50);
     paper.positions.splice(item.index, 1);
     toast(`💥 LIQUIDATION (${p.lev}x) sur ${baseAsset(p.sym)} à $${fmt(item.px, 2)} ! Perte totale de marge (-$${fmt(loss, 2)})`, '#FF495C');
+    sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: item.px, pnl: -loss, qty: p.qty, reason: '💥 Liquidation (Marge Épuisée)', isLiq: true, capitalAfter: paper.cash });
     saveConfig();
   }
 
@@ -7590,12 +7615,25 @@ function updatePaper(){
     if(g==null)unknown=true; else unrealPnl+=g;
   }
   const equity=paper.cash+openMargin+unrealPnl;
-  eqEl.textContent='Équité '+fmtUsd(equity);
+  paper.bank = paper.bank || 0;
+  paper.withdrawals = paper.withdrawals || [];
+  const totalPortfolio = equity + paper.bank;
+
+  if (paper.bank > 0) {
+    eqEl.innerHTML = `Dispo: <strong style="color:${equity>=100000?'#25D0A4':'#F45B7D'}">$${fmtUsd(equity)}</strong> | 🏛️ Banque: <strong style="color:#FFD700">$${fmtUsd(paper.bank)}</strong> <span style="color:var(--muted);font-size:10px">(Total: $${fmtUsd(totalPortfolio)})</span>`;
+  } else {
+    eqEl.textContent='Équité '+fmtUsd(equity);
+    eqEl.style.color=equity>=100000?'#25D0A4':'#F45B7D';
+  }
+
+  const bankTotEl = document.getElementById('paper-bank-total');
+  if (bankTotEl) bankTotEl.textContent = '$' + fmtUsd(paper.bank);
+  const bankCntEl = document.getElementById('paper-bank-count');
+  if (bankCntEl) bankCntEl.textContent = paper.withdrawals.length;
 
   const pnlEl=document.getElementById('paper-pnl');
   pnlEl.textContent='PnL '+(unrealPnl>=0?'+':'')+fmtUsd(unrealPnl)+(unknown?' (~)':'');
   pnlEl.style.color=unrealPnl>=0?'#25D0A4':'#F45B7D';
-  eqEl.style.color=equity>=100000?'#25D0A4':'#F45B7D';
 
   // positions ouvertes
   const posEl=document.getElementById('paper-pos');
@@ -7650,12 +7688,140 @@ function updatePaper(){
   hEl.innerHTML=paper.history.slice(0,5).map(h=>{
     const col=h.pnl>=0?'#25D0A4':'#F45B7D';
     const tag = h.isLiq ? '💥 LIQ' : (h.reason ? h.reason : (h.isPartial ? `✂️ PART ${h.partPct||''}%` : (h.side==='long'?'▲ ACHAT':'▼ VENTE')));
-    return `<div class="hist-item" style="display:flex;justify-content:space-between;padding:4px 8px;font-size:10.5px;color:var(--muted)">
-      <span>${tag} ${baseAsset(h.sym)}</span>
+    const soldeVal = h.capitalAfter != null ? fmtUsd(h.capitalAfter) : '—';
+    return `<div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;font-size:10.5px;color:var(--muted);border-bottom:1px dashed rgba(255,255,255,0.06)">
+      <span style="font-weight:bold">${tag} ${baseAsset(h.sym)}</span>
       <span>$${fmt(h.entry,2)} → $${fmt(h.exit,2)}</span>
       <span style="color:${col};font-weight:700">${(h.pnl>=0?'+':'')+fmtUsd(h.pnl)}</span>
+      <span style="color:#00E5FF;font-weight:800;background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:10px" title="Solde de votre compte à la clôture du trade">Solde: ${soldeVal}</span>
     </div>`;
   }).join('');
+
+  updatePaperDemoStrategyUI();
+}
+
+function updatePaperDemoStrategyUI(){
+  const cardEl = document.getElementById('paper-strat-card');
+  const badgeEl = document.getElementById('paper-strat-badge');
+
+  let activeObj = null;
+  try {
+    if (!window.activeDemoStrategy) {
+      const raw = localStorage.getItem('lumen_active_demo_strategy');
+      if (raw) window.activeDemoStrategy = JSON.parse(raw);
+    }
+    activeObj = window.activeDemoStrategy;
+  } catch(e){}
+
+  const isAuto = typeof paperAutoTrade !== 'undefined' && paperAutoTrade;
+
+  if (badgeEl) {
+    if (isAuto && activeObj) {
+      const wrStr = activeObj.winRate != null ? ` | WR: ${activeObj.winRate.toFixed(1)}%` : '';
+      const ddStr = activeObj.maxDDPct != null ? ` | DD: -${activeObj.maxDDPct.toFixed(1)}%` : '';
+      badgeEl.innerHTML = `<span style="background:rgba(0,230,118,0.18);color:#00E676;border:1px solid #00E676;padding:2px 8px;border-radius:12px;font-weight:800;box-shadow:0 0 8px rgba(0,230,118,0.3)">🤖 ${activeObj.modeLabel || activeObj.mode} (${activeObj.lev}x)${wrStr}${ddStr}</span>`;
+    } else {
+      badgeEl.innerHTML = ``;
+    }
+  }
+
+  if (cardEl) {
+    if (isAuto && activeObj) {
+      const modeName = activeObj.modeLabel || activeObj.mode;
+      const wr = activeObj.winRate != null ? activeObj.winRate.toFixed(1) + '%' : '—';
+      const dd = activeObj.maxDDPct != null ? `-${activeObj.maxDD.toFixed(2)} $ (-${activeObj.maxDDPct.toFixed(1)}%)` : '—';
+      const pf = activeObj.profitFactor != null ? (activeObj.profitFactor === Infinity ? '∞' : activeObj.profitFactor.toFixed(2)) : '—';
+
+      // Date et Heure d'activation
+      const activatedAt = activeObj.activatedAt || activeObj.timestamp || Date.now();
+      const actDate = new Date(activatedAt);
+      const dateStr = actDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = actDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const activatedFormatted = `${dateStr} à ${timeStr}`;
+
+      // Nombre de trades et PnL cumulé depuis l'activation
+      const tradesSince = (typeof paper === 'object' && Array.isArray(paper.history))
+        ? paper.history.filter(h => (h.t || h.t0 || 0) >= (activatedAt - 2000))
+        : [];
+      const nbTrades = tradesSince.length;
+
+      const sessionPnlDollar = tradesSince.reduce((acc, h) => acc + (parseFloat(h.pnl) || 0), 0);
+      const initCap = activeObj.capital || 100;
+      const sessionPnlPct = (sessionPnlDollar / initCap) * 100;
+      const pnlSign = sessionPnlDollar >= 0 ? '+' : '';
+      const pnlColor = sessionPnlDollar >= 0 ? '#00E676' : '#FF5252';
+      const sessionPnlFormatted = `${pnlSign}${sessionPnlDollar.toFixed(2)} $ (${pnlSign}${sessionPnlPct.toFixed(1)}%)`;
+
+      const gainNetVal = activeObj.netPnlTotal != null ? activeObj.netPnlTotal : null;
+      let gainNetFormatted = '—';
+      if (gainNetVal != null) {
+        const gnSign = gainNetVal >= 0 ? '+' : '';
+        gainNetFormatted = `${gnSign}${gainNetVal.toFixed(2)} $`;
+      }
+      const gainNetColor = (gainNetVal || 0) >= 0 ? '#00E676' : '#FF5252';
+
+      cardEl.innerHTML = `
+        <div style="background:linear-gradient(135deg, rgba(0,230,118,0.16), rgba(0,229,255,0.1));border:1.5px solid #00E676;border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 16px rgba(0,230,118,0.25)">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:28px;height:28px;border-radius:50%;background:#00E676;color:#0F172A;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;box-shadow:0 0 10px #00E676">🤖</div>
+              <div>
+                <div style="font-weight:900;font-size:13px;color:#00E676;display:flex;align-items:center;gap:6px">
+                  <span>STRATÉGIE ACTIVÉE EN DÉMO (AUTO-TRADE)</span>
+                </div>
+                <div style="font-size:11px;color:var(--text);font-weight:700">
+                  <span style="color:#00E5FF">${modeName}</span> · Levier : <span style="color:#FFD700">${activeObj.lev}x</span> · Capital Départ : <span>${activeObj.capital} $</span> · Frais : <span>${activeObj.feePct}%</span>
+                </div>
+                <div style="font-size:10.5px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <div>📅 Activée le : <span style="color:#FFF;font-weight:700;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px">${activatedFormatted}</span></div>
+                  ${(paper.bank && paper.bank > 0) ? `<div>🏛️ Banque : <span style="color:#FFD700;font-weight:800;background:rgba(255,215,0,0.15);padding:1px 6px;border-radius:4px;border:1px solid rgba(255,215,0,0.3)">$${fmtUsd(paper.bank)}</span></div>` : ''}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="background:#00E676;color:#0F172A;font-size:10px;padding:3px 8px;border-radius:12px;font-weight:900;box-shadow:0 0 10px rgba(0,230,118,0.5)">AUTO-TRADE : ACTIF ●</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+            <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(0,230,118,0.4);padding:6px 10px;border-radius:6px">
+              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">💰 PnL Session (Réel)</div>
+              <div style="font-weight:800;color:${pnlColor}">${sessionPnlFormatted}</div>
+            </div>
+            <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(0,230,118,0.4);padding:6px 10px;border-radius:6px">
+              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">📈 Gain Net Est. (BT)</div>
+              <div style="font-weight:800;color:${gainNetColor}">${gainNetFormatted}</div>
+            </div>
+            <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(0,229,255,0.4);padding:6px 10px;border-radius:6px">
+              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">⚡ Trades Session</div>
+              <div style="font-weight:800;color:#00E5FF">${nbTrades} trade${nbTrades > 1 ? 's' : ''}</div>
+            </div>
+            <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(0,230,118,0.3);padding:6px 10px;border-radius:6px">
+              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">🎯 Win Rate (BT)</div>
+              <div style="font-weight:800;color:${(activeObj.winRate || 0) >= 50 ? '#00E676' : '#FF5252'}">${wr}</div>
+            </div>
+            <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,82,82,0.3);padding:6px 10px;border-radius:6px">
+              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">🛡️ Max DD (BT)</div>
+              <div style="font-weight:800;color:${(activeObj.maxDDPct || 0) < 25 ? '#00E676' : '#FF5252'}">${dd}</div>
+            </div>
+            <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,215,0,0.3);padding:6px 10px;border-radius:6px">
+              <div style="color:var(--muted);font-size:9.5px;margin-bottom:2px">📊 Profit Factor (PF)</div>
+              <div style="font-weight:800;color:#FFD700">${pf}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      cardEl.innerHTML = `
+        <div style="background:var(--panel-2);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+          <span>⚠️ Aucune stratégie automatisée n'est actuellement activée sur ce compte Démo.</span>
+          <button onclick="document.getElementById('bt-results')?.scrollIntoView({behavior:'smooth'})" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:bold;cursor:pointer">
+            🔍 Choisir une stratégie dans le Backtest
+          </button>
+        </div>
+      `;
+    }
+  }
 }
 
 function paperFlash(msg){
@@ -7753,7 +7919,7 @@ function openTrade(side, targetPosIdx){
   }
 
   const margin=notional/lev;
-  const fee=notional*0.001;
+  const fee=notional*getPaperFeeRate();
 
   if(margin+fee>paper.cash){
     return paperFlash(`Solde insuffisant (Requis: ${fmtUsd(margin+fee)})`);
@@ -7788,16 +7954,19 @@ function openTrade(side, targetPosIdx){
     saveConfig(); updatePaper();
     const qFmt = qty >= 1 ? qty.toFixed(3) : qty.toFixed(4);
     toast(`🔄 Rerentrée #${p.entries} (${side==='long'?'ACHAT':'VENTE'}) : +${qFmt} ${coinSym} @ $${fmt(px, 2)} | Nouveau Prix Moyen: $${fmt(newAvgPrice, 2)}`, side==='long'?'#10B981':'#F45B7D');
+    sendTelegramDemoEntryNotification(p, true);
   } else {
     // NOUVELLE POSITION
-    paper.positions.push({
+    const newPos = {
       sym: state.symbol, side, qty, entry: px, margin, lev, notional, entries: 1, sl, tp, t: Date.now()
-    });
+    };
+    paper.positions.push(newPos);
 
     saveConfig(); updatePaper();
     const qFmt = qty >= 1 ? qty.toFixed(3) : qty.toFixed(4);
     const slTpStr = (sl ? ` | SL: $${fmt(sl, 2)}` : '') + (tp ? ` | TP: $${fmt(tp, 2)}` : '');
     toast(`Ordre ${side==='long'?'ACHAT (LONG)':'VENTE (SHORT)'} exécuté : ${qFmt} ${coinSym} @ $${fmt(px, 2)} (${lev}x)${slTpStr}`, side==='long'?'#10B981':'#F45B7D');
+    sendTelegramDemoEntryNotification(newPos, false);
   }
 
   beep();
@@ -7809,13 +7978,15 @@ function closePos(i){
   const px=livePrice(p.sym);
   if(px==null)return paperFlash('Prix indisponible');
   const pnl=(p.side==='long'?(px-p.entry):(p.entry-px))*p.qty;
-  const fee=p.qty*px*0.001;
-  paper.cash+=p.margin+pnl-fee;
-  paper.history.unshift({sym:p.sym,side:p.side,entry:p.entry,exit:px,pnl:pnl-fee,qty:p.qty,t:Date.now(),t0:p.t});
+  const fee=p.qty*px*getPaperFeeRate();
+  const netPnl = pnl - fee;
+  paper.cash+=p.margin+netPnl;
+  paper.history.unshift({sym:p.sym,side:p.side,entry:p.entry,exit:px,pnl:netPnl,qty:p.qty,t:Date.now(),t0:p.t,capitalAfter:paper.cash});
   paper.history=paper.history.slice(0,50);
   paper.positions.splice(i,1);
   saveConfig(); updatePaper();
-  toast(`Position fermée : PnL ${(pnl-fee)>=0?'+':''}${fmtUsd(pnl-fee)}`, (pnl-fee)>=0?'#10B981':'#F45B7D');
+  toast(`Position fermée : PnL ${netPnl>=0?'+':''}${fmtUsd(netPnl)}`, netPnl>=0?'#10B981':'#F45B7D');
+  sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: p.qty, reason: 'Clôture de position', capitalAfter: paper.cash });
 }
 
 function closePartial(i, pctOrVal, unitMode){
@@ -7861,9 +8032,10 @@ function closePartial(i, pctOrVal, unitMode){
   const closedNotional = (p.notional || (p.qty * p.entry)) * fraction;
 
   const pnl = (p.side === 'long' ? (px - p.entry) : (p.entry - px)) * closeQty;
-  const fee = closeQty * px * 0.001;
+  const fee = closeQty * px * getPaperFeeRate();
+  const netPnl = pnl - fee;
 
-  paper.cash += (closedMargin + pnl - fee);
+  paper.cash += (closedMargin + netPnl);
 
   const coin = baseAsset(p.sym);
   paper.history.unshift({
@@ -7871,12 +8043,13 @@ function closePartial(i, pctOrVal, unitMode){
     side: p.side,
     entry: p.entry,
     exit: px,
-    pnl: pnl - fee,
+    pnl: netPnl,
     qty: closeQty,
     t: Date.now(),
     t0: p.t,
     isPartial: true,
-    partPct: Math.round(fraction * 100)
+    partPct: Math.round(fraction * 100),
+    capitalAfter: paper.cash
   });
   paper.history = paper.history.slice(0, 50);
 
@@ -7888,8 +8061,9 @@ function closePartial(i, pctOrVal, unitMode){
   saveConfig(); updatePaper();
 
   const qFmt = closeQty >= 1 ? closeQty.toFixed(3) : closeQty.toFixed(4);
-  const pnlStr = (pnl - fee) >= 0 ? '+' + fmtUsd(pnl - fee) : fmtUsd(pnl - fee);
-  toast(`✂️ Sortie partielle (${Math.round(fraction * 100)}%) sur ${coin} : -${qFmt} ${coin} @ $${fmt(px, 2)} | PnL ${pnlStr}`, (pnl - fee) >= 0 ? '#10B981' : '#F45B7D');
+  const pnlStr = netPnl >= 0 ? '+' + fmtUsd(netPnl) : fmtUsd(netPnl);
+  toast(`✂️ Sortie partielle (${Math.round(fraction * 100)}%) sur ${coin} : -${qFmt} ${coin} @ $${fmt(px, 2)} | PnL ${pnlStr}`, netPnl >= 0 ? '#10B981' : '#F45B7D');
+  sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: closeQty, reason: `Fermeture Partielle (${Math.round(fraction * 100)}%)`, isPartial: true, partPct: Math.round(fraction * 100), capitalAfter: paper.cash });
   beep();
 }
 
@@ -8166,7 +8340,10 @@ function updateAutoTradeUI(){
     btn.style.boxShadow = 'none';
     btn.innerHTML = '🤖 Auto-Trade Direct : OFF';
   }
+  if (typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
 }
+
+let autoTradeLastExecutedSigId = null;
 
 function toggleAutoTrade(){
   paperAutoTrade = !paperAutoTrade;
@@ -8174,62 +8351,345 @@ function toggleAutoTrade(){
     localStorage.setItem('lumen_paper_autotrade', paperAutoTrade ? '1' : '0');
   } catch(e){}
 
-  if(paperAutoTrade && state.data && state.data.length){
-    // Marquer les signaux actuels comme déjà vus pour ne pas exécuter l'historique passé
-    const d = state.data;
-    const sigs = (typeof getInd === 'function' ? getInd('signal_ema_ha') : []) || [];
-    for(const sig of sigs){
-      if(sig.tag === 'DIRECT'){
-        const sigIdx = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
-        const sigTime = sig.t || (sigIdx != null && d[sigIdx] ? d[sigIdx].t : 0);
-        const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
-        const id = `${state.symbol}|${state.tf}|${sig.source || 'sig'}|${sigTime || sigIdx}|${sigType}|${sig.dir}`;
-        autoTradeSeenSet.add(id);
-      }
+  if(paperAutoTrade){
+    autoTradeLastExecutedSigId = null;
+    toast('🤖 Auto-Trade ACTIVÉ — Exécution automatique sur tous les signaux de stratégie !', '#F59E0B');
+    if(state.data && state.data.length){
+      checkAutoTrade();
     }
-    saveAutoTradeSeen();
-    toast('🤖 Auto-Trade ACTIVÉ — Exécution automatique sur pastilles Achat/Vente Direct !', '#F59E0B');
   } else {
     toast('🤖 Auto-Trade DÉSACTIVÉ', '#94A3B8');
   }
   updateAutoTradeUI();
 }
 
-function checkAutoTrade(allSignals){
-  if(!paperAutoTrade || !allSignals || !allSignals.length) return;
+function collectAllActiveSignals() {
+  if (!state.data || !state.data.length) return [];
   const d = state.data;
-  if(!d || !d.length) return;
+  const allSignals = [];
 
-  const now = Date.now();
-  const maxAge = Math.max((state.tf || 1) * 60 * 1000 * 3, 15 * 60 * 1000);
+  // Forcer l'activation de l'indicateur de stratégie de base
+  if (state.indicators && state.indicators.signal_ema_ha) {
+    state.indicators.signal_ema_ha.on = true;
+  }
 
-  for(const sig of allSignals){
-    if(sig.tag !== 'DIRECT') continue;
+  // 1. Signal EMA 9 / HA 5m (Stratégie Principale / MACD S/R)
+  const sigEmaHa = typeof getInd === 'function' ? getInd('signal_ema_ha') : [];
+  if (Array.isArray(sigEmaHa)) {
+    sigEmaHa.forEach(s => {
+      allSignals.push({
+        ...s,
+        source: 'signal_ema_ha',
+        sourceName: 'Stratégie MACD / EMA-HA'
+      });
+    });
+  }
 
-    const sigIdx = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
-    if(sigIdx == null || sigIdx < 0) continue;
+  // 2. Confluence Multi-Indicateurs
+  const sigStd = typeof getInd === 'function' ? getInd('signal') : [];
+  if (Array.isArray(sigStd)) {
+    sigStd.forEach(s => {
+      allSignals.push({
+        ...s,
+        source: 'signal',
+        sourceName: 'Confluence Multi-Indicateurs'
+      });
+    });
+  }
 
-    const sigTime = sig.t || (sigIdx != null && d[sigIdx] ? d[sigIdx].t : 0);
-    if(sigTime && (now - sigTime > maxAge)) continue;
+  // 3. Confluence Inversée
+  const sigInv = typeof getInd === 'function' ? getInd('signal_inv') : [];
+  if (Array.isArray(sigInv)) {
+    sigInv.forEach(s => {
+      allSignals.push({
+        ...s,
+        source: 'signal_inv',
+        sourceName: 'Confluence Inversée'
+      });
+    });
+  }
 
-    const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
-    const id = `${state.symbol}|${state.tf}|${sig.source || 'sig'}|${sigTime || sigIdx}|${sigType}|${sig.dir}`;
+  // 4. Épuisement & Épuisement Pro
+  const ex = typeof getInd === 'function' ? getInd('exhaustion') : [];
+  if (Array.isArray(ex)) {
+    ex.forEach(ev => {
+      const isBullExhaust = ev.dir === -1 || ev.type === 'bull_exhaust';
+      allSignals.push({
+        i: (ev.t != null ? idxOfTime(ev.t) : null) ?? ev.i,
+        t: ev.t,
+        price: ev.price,
+        dir: isBullExhaust ? -1 : 1,
+        type: isBullExhaust ? 'VENTE' : 'ACHAT',
+        source: 'exhaustion',
+        sourceName: 'Épuisement'
+      });
+    });
+  }
 
-    if(!autoTradeSeenSet.has(id)){
-      autoTradeSeenSet.add(id);
-      saveAutoTradeSeen();
+  const exPro = typeof getInd === 'function' ? getInd('exhaustion_pro') : [];
+  if (Array.isArray(exPro)) {
+    exPro.forEach(ev => {
+      const isBullExhaust = ev.dir === -1 || ev.type === 'bull_exhaust_pro';
+      allSignals.push({
+        i: (ev.t != null ? idxOfTime(ev.t) : null) ?? ev.i,
+        t: ev.t,
+        price: ev.price,
+        dir: isBullExhaust ? -1 : 1,
+        type: isBullExhaust ? 'VENTE' : 'ACHAT',
+        source: 'exhaustion_pro',
+        sourceName: 'Épuisement Pro'
+      });
+    });
+  }
 
-      const side = (sig.dir === 1 || sigType.includes('ACHAT')) ? 'long' : 'short';
-      const coin = baseAsset(state.symbol);
-      const px = livePrice(state.symbol) || sig.price || d[d.length - 1].c;
+  // 5. Sortie KK & Order Block
+  const exitKK = typeof getInd === 'function' ? getInd('signal_exit_kk') : [];
+  if (Array.isArray(exitKK)) {
+    exitKK.forEach(s => {
+      allSignals.push({
+        ...s,
+        type: 'SORTIE',
+        source: 'signal_exit_kk',
+        sourceName: 'Sortie KK'
+      });
+    });
+  }
 
-      openTrade(side);
+  const exitOB = typeof getInd === 'function' ? getInd('signal_exit_ob') : [];
+  if (Array.isArray(exitOB)) {
+    exitOB.forEach(s => {
+      allSignals.push({
+        ...s,
+        type: 'SORTIE',
+        source: 'signal_exit_ob',
+        sourceName: 'Sortie Order Block'
+      });
+    });
+  }
 
-      const labelTxt = sigType === 'ACHAT' ? '⚡ ACHAT DIRECT' : '⚡ VENTE DIRECTE';
-      toast(`🤖 [Auto-Trade] Pastille ${labelTxt} sur ${coin} ! Ordre ${side==='long'?'ACHAT (LONG)':'VENTE (SHORT)'} exécuté @ $${fmt(px, 2)}`, side==='long'?'#10B981':'#F45B7D');
+  return allSignals;
+}
+
+function checkAutoTrade(inputSignals){
+  if(!paperAutoTrade) return;
+  const d = state.data;
+  if(!d || !d.length || d.length < 5) return;
+
+  const coin = baseAsset(state.symbol);
+  const px = livePrice(state.symbol) || d[d.length - 1].c;
+  const existingPos = paper.positions && paper.positions[0];
+
+  // Restaurer la stratégie démo active si non en mémoire
+  if(!window.activeDemoStrategy){
+    try {
+      const raw = localStorage.getItem('lumen_active_demo_strategy');
+      if (raw) window.activeDemoStrategy = JSON.parse(raw);
+    } catch(e){}
+  }
+  const strat = window.activeDemoStrategy;
+
+  // Si une stratégie active existe, configurer les paramètres du compte Démo
+  if(strat && strat.active){
+    const amtEl = document.getElementById('paper-amt');
+    if(amtEl && (parseFloat(amtEl.value) <= 0 || isNaN(parseFloat(amtEl.value)))){
+      amtEl.value = String(strat.capital || 100);
+    }
+    const levEl = document.getElementById('paper-lev');
+    if(levEl && strat.lev){
+      levEl.value = String(strat.lev);
+    }
+    if(strat.feePct != null){
+      window.paperFeePct = strat.feePct / 100;
+    }
+  }
+
+  const eMode = strat?.mode || state.indicators?.signal_ema_ha?.exitMode || 'macd';
+
+  // 1. Évaluation en direct de la stratégie active sur la bougie courante (identique à simMode)
+  const currInd = state.indicators?.signal_ema_ha || {};
+  const emaPeriod = currInd.emaPeriod || 9;
+  const haTf = currInd.haTf || 5;
+  const haPeriod = currInd.haPeriod || 10;
+  const haMode = currInd.haMode || 'lisse';
+
+  const ema1m = calc.ema(d, emaPeriod);
+  const atr1m = calc.atr(d, 14);
+
+  const bars5 = (state.tf === haTf) ? d : aggregateData(d, haTf);
+  const plainHA5 = (bars5 && bars5.length) ? calc.plainHA(bars5) : [];
+  const smoothHA5 = (haMode === 'lisse' && bars5 && bars5.length) ? calc.smoothHA(bars5, haPeriod, haPeriod) : plainHA5;
+  const haSeries5 = (bars5 && bars5.length) ? bars5.map((b, idx) => (smoothHA5 && smoothHA5[idx]) ? smoothHA5[idx] : plainHA5[idx]) : [];
+  const haMapped = (state.tf === haTf) ? haSeries5 : (bars5 && bars5.length ? mapHTF(bars5, haSeries5, d) : []);
+
+  const bars3 = (state.tf === 3) ? d : aggregateData(d, 3);
+  let macd3_line = null, macd3_sg = null;
+  if (currInd.useMacdSR !== false && bars3 && bars3.length >= 2) {
+    const msr3 = calc.macdSR(bars3, 12, 26, 9);
+    if (msr3 && msr3.macd && msr3.sg) {
+      macd3_line = (state.tf === 3) ? msr3.macd : mapHTF(bars3, msr3.macd, d);
+      macd3_sg   = (state.tf === 3) ? msr3.sg   : mapHTF(bars3, msr3.sg, d);
+    }
+  }
+
+  let roscMapped = null;
+  if (currInd.useRangeOsc !== false && bars5 && bars5.length >= 2) {
+    const rosc5 = calc.rangeOsc(bars5, currInd.roscPeriod || 50, 2);
+    if (rosc5 && rosc5.length) {
+      roscMapped = (state.tf === haTf) ? rosc5 : mapHTF(bars5, rosc5, d);
+    }
+  }
+
+  let imp5_col = null;
+  if (currInd.useImpMacd !== false && bars5 && bars5.length >= 2) {
+    const imp5 = calc.impmacd(bars5, currInd.impPeriod || 34, 9);
+    if (imp5 && imp5.col) {
+      imp5_col = (state.tf === haTf) ? imp5.col : mapHTF(bars5, imp5.col, d);
+    }
+  }
+
+  const lastIdx = d.length - 1;
+  const emaPrev = ema1m[lastIdx - 1], emaCurr = ema1m[lastIdx], emaPrev2 = ema1m[lastIdx - 2];
+  const haObjPrev = haMapped[lastIdx - 1], haObjCurr = haMapped[lastIdx], haObjPrev2 = haMapped[lastIdx - 2];
+
+  let buySignal = false, sellSignal = false;
+  let crossedUp = false, crossedDown = false;
+  let haTopCurr = 0, haBotCurr = 0;
+  let mLineCurr = null, mSgCurr = null;
+
+  if (emaPrev != null && emaCurr != null && haObjPrev && haObjCurr) {
+    haTopCurr = Math.max(haObjCurr.o, haObjCurr.c);
+    haBotCurr = Math.min(haObjCurr.o, haObjCurr.c);
+    const haTopPrev = Math.max(haObjPrev.o, haObjPrev.c);
+    const haBotPrev = Math.min(haObjPrev.o, haObjPrev.c);
+    const haTopPrev2 = haObjPrev2 ? Math.max(haObjPrev2.o, haObjPrev2.c) : null;
+    const haBotPrev2 = haObjPrev2 ? Math.min(haObjPrev2.o, haObjPrev2.c) : null;
+
+    crossedUp = (emaPrev < haTopPrev) && (emaCurr > haTopCurr) && (emaPrev2 == null || haTopPrev2 == null || emaPrev2 <= haTopPrev2);
+    crossedDown = (emaPrev > haBotPrev) && (emaCurr < haBotCurr) && (emaPrev2 == null || haBotPrev2 == null || emaPrev2 >= haBotPrev2);
+
+    mLineCurr = macd3_line ? macd3_line[lastIdx] : null;
+    mSgCurr   = macd3_sg   ? macd3_sg[lastIdx]   : null;
+    const passMacdBuy  = (currInd.useMacdSR === false) || (mLineCurr != null && mSgCurr != null && mLineCurr > mSgCurr);
+    const passMacdSell = (currInd.useMacdSR === false) || (mLineCurr != null && mSgCurr != null && mLineCurr < mSgCurr);
+
+    const rCurr = roscMapped ? roscMapped[lastIdx] : null;
+    const isRoscGreen = (rCurr != null && rCurr >= 0);
+    const isRoscRed   = (rCurr != null && rCurr < 0);
+
+    const cImp = imp5_col ? imp5_col[lastIdx] : null;
+    const isImpGreen = (cImp === 0 || cImp === 1);
+    const isImpRed   = (cImp === 2 || cImp === 3);
+
+    let passOscBuy = true, passOscSell = true;
+    if (currInd.useRangeOsc !== false && currInd.useImpMacd !== false) {
+      passOscBuy = isRoscGreen || isImpGreen;
+      passOscSell = isRoscRed || isImpRed;
+    } else if (currInd.useRangeOsc !== false) {
+      passOscBuy = isRoscGreen; passOscSell = isRoscRed;
+    } else if (currInd.useImpMacd !== false) {
+      passOscBuy = isImpGreen; passOscSell = isImpRed;
+    }
+
+    buySignal  = crossedUp && passMacdBuy && passOscBuy;
+    sellSignal = crossedDown && passMacdSell && passOscSell;
+  }
+
+  // 2. Si une position est ouverte dans le compte démo, appliquer strictement la règle de sortie choisie
+  if (existingPos) {
+    existingPos.peakPrice = Math.max(existingPos.peakPrice || existingPos.entry, d[lastIdx].h);
+    existingPos.lowPrice  = Math.min(existingPos.lowPrice || existingPos.entry, d[lastIdx].l);
+
+    let exitTriggered = false;
+    let exitReason = '';
+
+    const isHaRed   = haObjCurr ? (haObjCurr.c < haObjCurr.o) : false;
+    const isHaGreen = haObjCurr ? (haObjCurr.c > haObjCurr.o) : false;
+    const atrVal    = (atr1m && atr1m[lastIdx]) ? atr1m[lastIdx] : (px * 0.005);
+
+    if (existingPos.side === 'long') {
+      if (sellSignal) { exitTriggered = true; exitReason = 'Signal opposé (Vente)'; }
+      else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaRed) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Rouge)'; }
+      else if ((eMode === 'atr_trail' || eMode === 'combined') && d[lastIdx].l <= (existingPos.peakPrice - 1.5 * atrVal)) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
+      else if ((eMode === 'ema_cross' || eMode === 'combined') && px < emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
+      else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr < mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
+      else if ((eMode === 'cross' || eMode === 'combined') && emaCurr < haBotCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
+    } else if (existingPos.side === 'short') {
+      if (buySignal) { exitTriggered = true; exitReason = 'Signal opposé (Achat)'; }
+      else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaGreen) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Verte)'; }
+      else if ((eMode === 'atr_trail' || eMode === 'combined') && d[lastIdx].h >= (existingPos.lowPrice + 1.5 * atrVal)) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
+      else if ((eMode === 'ema_cross' || eMode === 'combined') && px > emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
+      else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr > mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
+      else if ((eMode === 'cross' || eMode === 'combined') && emaCurr > haTopCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
+    }
+
+    if (exitTriggered) {
+      const sigId = `${state.symbol}|${state.tf}|${d[lastIdx].t}|exit|${exitReason}`;
+      if (autoTradeLastExecutedSigId !== sigId) {
+        autoTradeLastExecutedSigId = sigId;
+        autoTradeSeenSet.add(sigId);
+        saveAutoTradeSeen();
+
+        closePos(0);
+        toast(`🤖 [Auto-Trade Stratégie] Clôture ${existingPos.side === 'long' ? 'LONG' : 'SHORT'} (${exitReason}) @ $${fmt(px, 2)}`, '#00E5FF');
+        try { beep(); } catch(e){}
+
+        // Si la sortie est due à un signal opposé, exécuter immédiatement le trade opposé
+        if (sellSignal && existingPos.side === 'long') {
+          openTrade('short');
+          const pNew = paper.positions[0];
+          if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
+          toast(`🤖 [Auto-Trade Stratégie] Inversion ! Entrée VENTE (SHORT) @ $${fmt(px, 2)}`, '#F45B7D');
+        } else if (buySignal && existingPos.side === 'short') {
+          openTrade('long');
+          const pNew = paper.positions[0];
+          if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
+          toast(`🤖 [Auto-Trade Stratégie] Inversion ! Entrée ACHAT (LONG) @ $${fmt(px, 2)}`, '#10B981');
+        }
+      }
+      return;
+    }
+  }
+
+  // 3. Si aucune position n'est ouverte, vérifier les signaux d'entrée
+  if (!existingPos) {
+    if (buySignal) {
+      const sigId = `${state.symbol}|${state.tf}|${d[lastIdx].t}|buy`;
+      if (autoTradeLastExecutedSigId !== sigId) {
+        autoTradeLastExecutedSigId = sigId;
+        autoTradeSeenSet.add(sigId);
+        saveAutoTradeSeen();
+
+        openTrade('long');
+        const pNew = paper.positions[0];
+        if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
+        const modeLabel = strat?.modeLabel || 'Stratégie Achat';
+        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre ACHAT (LONG) exécuté @ $${fmt(px, 2)}`, '#10B981');
+        try { beep(); } catch(e){}
+      }
+    } else if (sellSignal) {
+      const sigId = `${state.symbol}|${state.tf}|${d[lastIdx].t}|sell`;
+      if (autoTradeLastExecutedSigId !== sigId) {
+        autoTradeLastExecutedSigId = sigId;
+        autoTradeSeenSet.add(sigId);
+        saveAutoTradeSeen();
+
+        openTrade('short');
+        const pNew = paper.positions[0];
+        if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
+        const modeLabel = strat?.modeLabel || 'Stratégie Vente';
+        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre VENTE (SHORT) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
+        try { beep(); } catch(e){}
+      }
     }
   }
 }
+
+// Boucle périodique de vérification d'Auto-Trade
+setInterval(()=>{
+  if(paperAutoTrade && state.data && state.data.length){
+    checkAutoTrade();
+  }
+}, 1500);
 
 document.addEventListener('DOMContentLoaded', ()=>{
   updateAutoTradeUI();
@@ -8290,10 +8750,242 @@ document.getElementById('paper-pos').addEventListener('click',e=>{
 });
 
 document.getElementById('paper-reset').addEventListener('click',()=>{
-  if(!confirm('Remettre le compte démo à 100 000 $ ? Positions et historique seront effacés.'))return;
-  paper.cash=100000; paper.positions=[]; paper.history=[];
+  if(!confirm('Remettre le compte démo à 100 000 $ ? Positions, historique et banque seront effacés.'))return;
+  paper.cash=100000; paper.bank=0; paper.withdrawals=[]; paper.positions=[]; paper.history=[];
   saveConfig(); updatePaper();
 });
+
+/* ---------- Gestion de la Banque et des Retraits ---------- */
+function performPaperWithdrawal() {
+  const input = document.getElementById('paper-withdraw-amt');
+  if (!input) return;
+  const amt = parseFloat(input.value);
+  if (isNaN(amt) || amt <= 0) {
+    toast('Veuillez entrer un montant de retrait valide', '#F45B7D');
+    return;
+  }
+  if (amt > paper.cash) {
+    toast(`Fonds insuffisants ! Solde disponible : $${fmtUsd(paper.cash)}`, '#F45B7D');
+    return;
+  }
+
+  paper.cash -= amt;
+  paper.bank = (paper.bank || 0) + amt;
+  paper.withdrawals = paper.withdrawals || [];
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' à ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  const wRecord = {
+    id: 'w_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
+    amount: amt,
+    t: Date.now(),
+    dateStr: dateStr
+  };
+
+  paper.withdrawals.unshift(wRecord);
+  input.value = '';
+
+  saveConfig();
+  updatePaper();
+  updatePaperDemoStrategyUI();
+
+  toast(`💸 Retrait de $${fmtUsd(amt)} effectué avec succès ! Mis de côté en Banque. Solde disponible : $${fmtUsd(paper.cash)}`, '#FFD700');
+  beep();
+}
+
+function restoreWithdrawal(wId) {
+  if (!paper.withdrawals) return;
+  const idx = paper.withdrawals.findIndex(w => w.id === wId);
+  if (idx === -1) return;
+
+  const w = paper.withdrawals[idx];
+  paper.cash += w.amount;
+  paper.bank = Math.max(0, (paper.bank || 0) - w.amount);
+  paper.withdrawals.splice(idx, 1);
+
+  saveConfig();
+  updatePaper();
+  updatePaperDemoStrategyUI();
+  renderBankModalList();
+
+  toast(`↩️ Retrait de $${fmtUsd(w.amount)} restitué au Capital de Trading !`, '#00E5FF');
+  beep();
+}
+
+function restoreAllBankWithdrawals() {
+  if (!paper.bank || paper.bank <= 0) {
+    toast('La banque est déjà vide !', '#F59E0B');
+    return;
+  }
+  const restoredAmt = paper.bank;
+  paper.cash += restoredAmt;
+  paper.bank = 0;
+  paper.withdrawals = [];
+
+  saveConfig();
+  updatePaper();
+  updatePaperDemoStrategyUI();
+  renderBankModalList();
+
+  toast(`↩️ Intégralité de la Banque ($${fmtUsd(restoredAmt)}) restituée au Capital !`, '#00E676');
+  beep();
+}
+
+function openBankModal() {
+  renderBankModalList();
+  const m = document.getElementById('bank-modal-back');
+  if (m) m.style.display = 'flex';
+}
+
+function closeBankModal() {
+  const m = document.getElementById('bank-modal-back');
+  if (m) m.style.display = 'none';
+}
+
+function renderBankModalList() {
+  paper.bank = paper.bank || 0;
+  paper.withdrawals = paper.withdrawals || [];
+
+  const totSec = document.getElementById('bank-modal-total-secured');
+  if (totSec) totSec.textContent = '$' + fmtUsd(paper.bank);
+
+  const cashAvail = document.getElementById('bank-modal-cash-avail');
+  if (cashAvail) cashAvail.textContent = '$' + fmtUsd(paper.cash);
+
+  let openMargin = 0, unrealPnl = 0;
+  if (Array.isArray(paper.positions)) {
+    for (const p of paper.positions) {
+      openMargin += (p.margin || (p.qty * (p.entry || 0)));
+      const g = posPnl(p);
+      if (g != null) unrealPnl += g;
+    }
+  }
+  const totalAll = paper.cash + openMargin + unrealPnl + paper.bank;
+
+  const totAll = document.getElementById('bank-modal-total-all');
+  if (totAll) totAll.textContent = '$' + fmtUsd(totalAll);
+
+  const listEl = document.getElementById('bank-withdrawals-list');
+  if (!listEl) return;
+
+  if (paper.withdrawals.length === 0) {
+    listEl.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:11.5px;padding:20px">Aucun retrait effectué pour le moment.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = paper.withdrawals.map(w => {
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--panel,#0A111F);border:1px solid var(--line);border-radius:6px;margin-bottom:6px;font-size:11.5px;flex-wrap:wrap;gap:6px">
+      <div>
+        <strong style="color:#FFD700">💸 -$${fmtUsd(w.amount)}</strong>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">📅 ${w.dateStr || new Date(w.t).toLocaleString('fr-FR')}</div>
+      </div>
+      <button class="btn" data-restore-w="${w.id}" style="padding:3px 8px;font-size:10.5px;border-color:#00E5FF;color:#00E5FF;font-weight:bold" title="Remettre ce montant dans le capital de trading">↩️ Restituer au Capital</button>
+    </div>`;
+  }).join('');
+}
+
+// Event Listeners Banque
+document.getElementById('btn-paper-withdraw')?.addEventListener('click', performPaperWithdrawal);
+document.getElementById('paper-withdraw-amt')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') performPaperWithdrawal();
+});
+document.getElementById('btn-paper-history-withdraw')?.addEventListener('click', openBankModal);
+document.getElementById('bank-modal-close')?.addEventListener('click', closeBankModal);
+document.getElementById('bank-modal-back')?.addEventListener('click', (e) => {
+  if (e.target.id === 'bank-modal-back') closeBankModal();
+});
+document.getElementById('btn-bank-restore-all')?.addEventListener('click', restoreAllBankWithdrawals);
+document.getElementById('bank-withdrawals-list')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-restore-w]');
+  if (btn && btn.dataset.restoreW) {
+    restoreWithdrawal(btn.dataset.restoreW);
+  }
+});
+
+/* ---------- Exportation Stratégie & Compte Démo ---------- */
+function exportStrategyConfigJson() {
+  const exportData = {
+    appName: "Lumen Charts - Master Strategy & Demo Account Suite",
+    exportVersion: "2.0",
+    exportDate: new Date().toISOString(),
+    symbol: state.symbol || 'BTCUSDT',
+    timeframe: state.tf || 1,
+
+    activeStrategy: {
+      mode: window.activeDemoStrategy?.mode || 'combined',
+      modeLabel: window.activeDemoStrategy?.modeLabel || 'Stratégie MACD 3m Revers. (EMA 9 x HA 5m)',
+      leverage: window.activeDemoStrategy?.lev || 100,
+      capital: window.activeDemoStrategy?.capital || 100,
+      feePct: window.activeDemoStrategy?.feePct || 0.04,
+      winRate: window.activeDemoStrategy?.winRate || null,
+      maxDD: window.activeDemoStrategy?.maxDD || null,
+      maxDDPct: window.activeDemoStrategy?.maxDDPct || null,
+      profitFactor: window.activeDemoStrategy?.profitFactor || null,
+      netPnlTotal: window.activeDemoStrategy?.netPnlTotal || null,
+      activatedAt: window.activeDemoStrategy?.activatedAt || null,
+      active: !!window.activeDemoStrategy?.active,
+      exitMode: state.indicators?.signal_ema_ha?.exitMode || 'macd',
+      autoTradeStatus: !!paperAutoTrade
+    },
+
+    demoAccountState: {
+      cash: paper.cash,
+      bank: paper.bank || 0,
+      withdrawals: paper.withdrawals || [],
+      positions: paper.positions || [],
+      history: paper.history || [],
+      paperUnit: paperUnit || 'coin',
+      autoTradeEnabled: !!paperAutoTrade
+    },
+
+    indicatorsConfig: {
+      signal_ema_ha: state.indicators?.signal_ema_ha || {},
+      signal: state.indicators?.signal || {},
+      signal_inv: state.indicators?.signal_inv || {},
+      exhaustion: state.indicators?.exhaustion || {},
+      exhaustion_pro: state.indicators?.exhaustion_pro || {}
+    },
+
+    notifications: (typeof getPhoneNotifConfig === 'function') ? getPhoneNotifConfig() : null,
+
+    standaloneModuleFile: "STRATEGY_AND_DEMO_MODULE.js"
+  };
+
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+  const a = document.createElement('a');
+  a.setAttribute("href", dataStr);
+  a.setAttribute("download", `Lumen_Strategie_et_Compte_Demo_${state.symbol || 'BTC'}_${Date.now()}.json`);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  toast('📥 Fichier de stratégie et compte démo exporté (.json) !', '#00E5FF');
+  try { beep(); } catch(e){}
+}
+
+async function downloadStandaloneModuleJS() {
+  try {
+    const response = await fetch('/STRATEGY_AND_DEMO_MODULE.js');
+    if (!response.ok) throw new Error('Module non trouvé sur le serveur');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'STRATEGY_AND_DEMO_MODULE.js';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('📦 Code JS Standalone téléchargé avec succès (.js) !', '#FFD700');
+    try { beep(); } catch(e){}
+  } catch(e) {
+    toast('Erreur de téléchargement du module JS', '#FF5252');
+  }
+}
+
+document.getElementById('btn-export-strat-json')?.addEventListener('click', exportStrategyConfigJson);
+document.getElementById('btn-download-strat-js')?.addEventListener('click', downloadStandaloneModuleJS);
 // prix des positions sur d'autres paires que celle affichée
 setInterval(async()=>{
   const syms=[...new Set(paper.positions.map(p=>p.sym))].filter(s=>s!==state.symbol);
@@ -8681,28 +9373,6 @@ const SCHEMA={
     {k:'lookback',t:'num',lab:'Fenêtre Épuisement (Bougies)',min:2,max:50,def:20,ind:1},
     {k:'minExhaustion',t:'num',lab:'Épuisements Minimum Requis (0 = Aucun)',min:0,max:10,def:1,ind:1},
   ]},
-  strat_mediaire:{title:'🌓 Médiaire',fields:[
-    {k:'emaPeriod',t:'num',lab:'Période de l\'EMA',min:2,max:50,def:9,ind:1},
-    {k:'exitMode',t:'choice',lab:'Mode de sortie',opts:[['macd','MACD'],['color','Couleur HA'],['ema_cross','Croisement EMA']],def:'macd',ind:1},
-  ]},
-  strat_master:{title:'🏆 Stratégie Confluence Totale',fields:[
-    {k:'minScore',t:'num',lab:'Score de confluence minimum pour entrer',min:2,max:10,def:5,ind:1},
-    {k:'slMult',t:'num',lab:'Stop de protection (× ATR)',min:0.5,max:5,def:1.5,ind:1},
-    {k:'tpRR',t:'num',lab:'Objectif (multiple du risque)',min:1,max:8,def:2.5,ind:1},
-    {k:'trailMult',t:'num',lab:'Stop suiveur (× ATR)',min:0.5,max:6,def:2,ind:1},
-    {k:'allowShort',t:'bool',lab:'Autoriser les positions vendeuses (short)',def:true,ind:1},
-    {k:'useObExit',t:'bool',lab:'Sortir sur Order Block opposé (coupe les trades tôt)',def:false,ind:1},
-    {k:'useStop',t:'bool',lab:'Stop de protection fixe (sinon seul le stop suiveur protège)',def:false,ind:1},
-    {k:'beMove',t:'num',lab:'Passer au point mort après (× le risque, 0 = jamais)',min:0,max:5,def:0,ind:1},
-    {k:'partialAt',t:'num',lab:'Prise partielle de moitié à (× le risque, 0 = aucune)',min:0,max:6,def:1.5,ind:1},
-    {k:'trailAfter',t:'num',lab:'Armer le stop suiveur après (× le risque)',min:0,max:5,def:1,ind:1},
-    {k:'minHold',t:'num',lab:'Bougies minimum avant sortie douce',min:0,max:30,def:4,ind:1},
-    {k:'timeStop',t:'num',lab:'Stop temporel si le trade stagne (bougies, 0 = off)',min:0,max:500,def:60,ind:1},
-    {k:'exhMinTf',t:'num',lab:'UT minimale des épuisements en minutes (1 = celle du graphique)',min:1,max:240,def:1,ind:1},
-    {k:'cloudVeto',t:'bool',lab:'Ne pas sortir sur épuisement tant que le nuage EMA reste porteur',def:true,ind:1},
-    {k:'cloudEntry',t:'bool',lab:'Interdire les entrées à contresens du nuage EMA',def:true,ind:1},
-    {k:'cloudTf',t:'num',lab:'UT du nuage en minutes (0 = celle de l\'indicateur affiché)',min:0,max:240,def:0,ind:1},
-  ]},
   signal_exit_ob:{title:'Signal Sortie Position sur Order Block (Pastille Violette)',fields:[
     {k:'distThreshold',t:'num',lab:'Tolérance d\'approche / toucher Order Block ($)',min:0,max:1000,def:100,ind:1},
     {k:'showAchat',t:'bool',lab:'Afficher sorties Achat (Long)',def:true,ind:1},
@@ -8752,18 +9422,6 @@ function openCfg(ind){
         f.opts.map(o=>`<button class="cfg-choice ${v===o.v?'on':''}" data-f="${f.k}" data-v="${o.v}">${o.t}</button>`).join('')+
         `</div></div>`;
     if(f.t==='tf'){
-      const tfsObj=state.indicators[ind].tfs;
-      // Indicateur piloté par plusieurs unités de temps : le panneau doit
-      // agir sur le même objet tfs que les puces du menu Indicateurs,
-      // sinon le réglage n'a aucun effet sur le calcul.
-      if(tfsObj && typeof tfsObj==='object'){
-        const LAB={chart:'UT','1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H','1440':'1J'};
-        const keys=Object.keys(tfsObj);
-        return `<div class="cfg-row"><label>Unités de temps (plusieurs possibles)</label>
-          <div style="display:flex;gap:4px;flex-wrap:wrap">`+
-          keys.map(k=>`<button class="cfg-tfm ${tfsObj[k]?'on':''}" data-tf="${k}">${LAB[k]||(k+'m')}</button>`).join('')+
-          `</div></div>`;
-      }
       const cur=state.indicators[ind].tf||'chart';
       const opts=[['chart','UT'],['3','3m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
       return `<div class="cfg-row"><label>Unité de temps</label>
@@ -8798,17 +9456,6 @@ function openCfg(ind){
     body.querySelectorAll('.cfg-tf').forEach(x=>x.classList.remove('on'));
     el.classList.add('on');
     state.indicators[ind].tf=el.dataset.tf;
-    state.cache={}; saveConfig(); render();
-  }));
-  body.querySelectorAll('.cfg-tfm').forEach(el=>el.addEventListener('click',()=>{
-    const tfsObj=state.indicators[ind].tfs; if(!tfsObj)return;
-    const k=el.dataset.tf;
-    tfsObj[k]=!tfsObj[k];
-    // au moins une unité de temps doit rester active
-    if(!Object.keys(tfsObj).some(x=>tfsObj[x])){ tfsObj[k]=true; return; }
-    el.classList.toggle('on',!!tfsObj[k]);
-    if(tfsObj[k] && k!=='chart' && +k!==state.tf) ensureMTF(+k);
-    if(typeof syncMenu==='function') syncMenu();
     state.cache={}; saveConfig(); render();
   }));
   body.querySelectorAll('input[type=number]').forEach(el=>
@@ -9072,6 +9719,110 @@ function sendTelegramNotification(text){
   .catch(err => ({ ok: false, description: err.message || 'Erreur réseau' }));
 }
 
+function sendTelegramDemoEntryNotification(p, isReentry) {
+  try {
+    const cfg = getPhoneNotifConfig();
+    if (!cfg || !cfg.telegramToken || !cfg.telegramChatId) return;
+
+    let activeObj = null;
+    try {
+      const raw = localStorage.getItem('lumen_active_demo_strategy');
+      if (raw) activeObj = JSON.parse(raw);
+    } catch(e){}
+
+    const modeLabelsMap = {
+      combined: 'Multi-Signal (SL/TP/HA/MACD)',
+      ha_flip: 'HA Flip (Retournement HA)',
+      atr_trail: 'ATR Trailing Stop',
+      ema_cross: 'Cassure Revers. EMA9',
+      macd: 'MACD 3m Revers.',
+      cross: 'Croisement EMA/HA'
+    };
+
+    const stratName = (activeObj && activeObj.modeLabel) ? activeObj.modeLabel : (activeObj ? (modeLabelsMap[activeObj.mode] || activeObj.mode) : 'Stratégie Démo');
+    const coin = typeof baseAsset === 'function' ? baseAsset(p.sym || (typeof state !== 'undefined' ? state.symbol : 'BTCUSDT')) : (p.sym || 'BTC');
+    const sideStr = p.side === 'long' ? '🟢 ACHAT (LONG)' : '🔴 VENTE (SHORT)';
+    const icon = p.side === 'long' ? '🚀' : '📉';
+    const qStr = p.qty >= 1 ? p.qty.toFixed(3) : p.qty.toFixed(4);
+    const levStr = p.lev ? `${p.lev}x` : '1x';
+    const pxStr = typeof fmt === 'function' ? `$${fmt(p.entry, p.entry >= 100 ? 2 : 4)}` : `$${p.entry}`;
+    const slStr = p.sl ? (typeof fmt === 'function' ? `$${fmt(p.sl, p.sl >= 100 ? 2 : 4)}` : `$${p.sl}`) : 'Non défini';
+    const tpStr = p.tp ? (typeof fmt === 'function' ? `$${fmt(p.tp, p.tp >= 100 ? 2 : 4)}` : `$${p.tp}`) : 'Non défini';
+
+    const title = isReentry ? `${icon} <b>RERENTRÉE DÉMO (CUMUL DCA)</b>` : `${icon} <b>ENTRÉE TRADE DÉMO</b>`;
+
+    const msg = `${title}
+──────────────────────────
+<b>Paire :</b> #${escapeHtml(coin)}/USDT
+<b>Type :</b> ${sideStr}
+<b>Stratégie :</b> ${escapeHtml(stratName)}
+<b>Prix d'entrée :</b> <code>${pxStr}</code>
+<b>Taille :</b> ${qStr} ${coin} (${levStr})
+<b>Marge :</b> $${typeof fmtUsd === 'function' ? fmtUsd(p.margin || 0) : p.margin}
+──────────────────────────
+<b>Stop Loss :</b> ${slStr}
+<b>Take Profit :</b> ${tpStr}
+──────────────────────────
+💼 <b>Solde Démo disponible :</b> <code>$${typeof fmtUsd === 'function' ? fmtUsd(paper.cash) : paper.cash}</code>`;
+
+    sendTelegramNotification(msg);
+  } catch(e) {
+    console.warn('[Telegram Demo Entry Notif Error]', e);
+  }
+}
+
+function sendTelegramDemoExitNotification(data) {
+  try {
+    const cfg = getPhoneNotifConfig();
+    if (!cfg || !cfg.telegramToken || !cfg.telegramChatId) return;
+
+    let activeObj = null;
+    try {
+      const raw = localStorage.getItem('lumen_active_demo_strategy');
+      if (raw) activeObj = JSON.parse(raw);
+    } catch(e){}
+
+    const modeLabelsMap = {
+      combined: 'Multi-Signal (SL/TP/HA/MACD)',
+      ha_flip: 'HA Flip (Retournement HA)',
+      atr_trail: 'ATR Trailing Stop',
+      ema_cross: 'Cassure Revers. EMA9',
+      macd: 'MACD 3m Revers.',
+      cross: 'Croisement EMA/HA'
+    };
+
+    const stratName = (activeObj && activeObj.modeLabel) ? activeObj.modeLabel : (activeObj ? (modeLabelsMap[activeObj.mode] || activeObj.mode) : 'Stratégie Démo');
+    const coin = typeof baseAsset === 'function' ? baseAsset(data.sym || (typeof state !== 'undefined' ? state.symbol : 'BTCUSDT')) : (data.sym || 'BTC');
+    const sideStr = data.side === 'long' ? '🟢 LONG' : '🔴 SHORT';
+    const isWin = data.pnl >= 0;
+    const pnlIcon = data.isLiq ? '💥' : (isWin ? '✅' : '🛑');
+    const pnlSign = isWin ? '+' : '';
+    const pnlFormatted = `${pnlSign}$${typeof fmt === 'function' ? fmt(data.pnl, 2) : data.pnl.toFixed(2)}`;
+
+    const entryPxStr = typeof fmt === 'function' ? `$${fmt(data.entryPx, data.entryPx >= 100 ? 2 : 4)}` : `$${data.entryPx}`;
+    const exitPxStr = typeof fmt === 'function' ? `$${fmt(data.exitPx, data.exitPx >= 100 ? 2 : 4)}` : `$${data.exitPx}`;
+    const reasonStr = data.reason ? escapeHtml(data.reason) : (data.isLiq ? 'Liquidation' : (data.isPartial ? `Fermeture Partielle (${data.partPct}%)` : 'Clôture de position'));
+
+    const titleHeader = data.isPartial ? `✂️ <b>SORTIE PARTIELLE DÉMO</b>` : (data.isLiq ? `💥 <b>LIQUIDATION COMPTE DÉMO</b>` : (isWin ? `🎉 <b>SORTIE TRADE DÉMO (GAIN)</b>` : `🛑 <b>SORTIE TRADE DÉMO (PERTE)</b>`));
+
+    const msg = `${titleHeader}
+──────────────────────────
+<b>Paire :</b> #${escapeHtml(coin)}/USDT (${sideStr})
+<b>Stratégie :</b> ${escapeHtml(stratName)}
+<b>Motif :</b> ${reasonStr}
+──────────────────────────
+<b>Prix d'entrée :</b> <code>${entryPxStr}</code>
+<b>Prix de sortie :</b> <code>${exitPxStr}</code>
+──────────────────────────
+<b>PnL Net :</b> <b>${pnlIcon} ${pnlFormatted}</b>
+💼 <b>Nouveau Solde Démo :</b> <code>$${typeof fmtUsd === 'function' ? fmtUsd(data.capitalAfter ?? paper.cash) : (data.capitalAfter ?? paper.cash)}</code>`;
+
+    sendTelegramNotification(msg);
+  } catch(e) {
+    console.warn('[Telegram Demo Exit Notif Error]', e);
+  }
+}
+
 function sendWebhookNotification(payload){
   const cfg = getPhoneNotifConfig();
   if(!cfg.webhookUrl) return Promise.resolve(false);
@@ -9201,6 +9952,12 @@ function alertNewPhoneSignals(sigs, d){
 
 function checkAllAlerts(){
   if(!state.data || !state.data.length) return;
+
+  // Exécution de l'Auto-Trade si actif (indépendant de la config des notifs téléphones)
+  if(paperAutoTrade){
+    checkAutoTrade();
+  }
+
   const phoneCfg = getPhoneNotifConfig();
   if(!phoneCfg.enabled) return;
 
@@ -10114,6 +10871,7 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
   if (!Array.isArray(exits) || !exits.length) return;
   const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
   const xStack = sharedXStack || {};
+
   // Seule la dernière sortie de chaque unité de temps garde sa capsule ;
   // les précédentes ne conservent que leur point et une mini-étiquette.
   const lastPerTf = {};
@@ -10123,6 +10881,7 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     const tk = String(sg.tfTag ?? sg.tf ?? 'x') + '_' + sg.type;
     if (!(tk in lastPerTf) || gi > lastPerTf[tk]) lastPerTf[tk] = gi;
   }
+
   // Confluence : liste des unités de temps INFÉRIEURES du même type
   // déjà déclenchées juste avant ce signal.
   const TFMIN = {'1m':1,'3m':3,'5m':5,'15m':15,'30m':30,'1H':60,'4H':240,'1D':1440};
@@ -10158,10 +10917,12 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     const bgFill = isAchatExit ? 'rgba(38, 8, 22, 0.95)' : 'rgba(35, 30, 8, 0.95)';
     const textColor = isAchatExit ? '#FF8FD8' : '#FFD700';
 
-    const candleP = isAchatExit ? (sig.low ?? sig.price) : (sig.high ?? sig.price);
+    // Sortie Achat = Prise de profit Long au sommet (haut de bougie, pastille au-dessus)
+    // Sortie Vente = Prise de profit Short au creux (bas de bougie, pastille en-dessous)
+    const candleP = isAchatExit ? (sig.high ?? sig.price) : (sig.low ?? sig.price);
     const yWick = yOf(candleP);
 
-    const stackKey = Math.round(x / 45) + '_' + (isAchatExit ? 'bot' : 'top');
+    const stackKey = Math.round(x / 45) + '_' + (isAchatExit ? 'top' : 'bot');
     const stackIdx = xStack[stackKey] || 0;
     xStack[stackKey] = stackIdx + 1;
     const offsetY = stackIdx * 38;
@@ -10170,9 +10931,9 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     const isConfl = confl.length > 0;
     if (isConfl) _blinkAny = true;
     const bw = 150, bh = isConfl ? 40 : 28;
-    const dotY = isAchatExit ? yWick + 25 : yWick - 25;
+    const dotY = isAchatExit ? yWick - 25 : yWick + 25;
     const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
-    const by = showCapsule ? placeBadge(bx, bw, isAchatExit ? (dotY + 40 + offsetY) : (dotY - 65 - offsetY), bh, isAchatExit ? 1 : -1) : dotY;
+    const by = showCapsule ? placeBadge(bx, bw, isAchatExit ? (dotY - 65 - offsetY) : (dotY + 40 + offsetY), bh, isAchatExit ? -1 : 1) : dotY;
 
     ctx.save();
     // 1. Puce / Point lumineux sur la mèche de la bougie
@@ -10188,53 +10949,53 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     ctx.shadowBlur = 0;
 
     if (showCapsule) {
-    // 2. Trait de liaison pointillé (tige) de la mèche jusqu'à la pastille
-    ctx.strokeStyle = isAchatExit ? 'rgba(255, 0, 122, 0.75)' : 'rgba(255, 215, 0, 0.75)';
-    ctx.lineWidth = 1.2;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(x, dotY);
-    ctx.lineTo(x, isAchatExit ? by : (by + bh));
-    ctx.stroke();
-    ctx.setLineDash([]);
+      // 2. Trait de liaison pointillé (tige) de la mèche jusqu'à la pastille
+      ctx.strokeStyle = isAchatExit ? 'rgba(255, 0, 122, 0.75)' : 'rgba(255, 215, 0, 0.75)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, dotY);
+      ctx.lineTo(x, isAchatExit ? (by + bh) : by);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
-    // 3. Pastille / Capsule néon (clignotante si confluence multi-UT)
-    ctx.fillStyle = bgFill;
-    ctx.strokeStyle = color;
-    if (isConfl && _blinkOn) {
-      ctx.lineWidth = 3;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 14;
-    } else {
-      ctx.lineWidth = isConfl ? 2.2 : 1.8;
-    }
-    roundRect(bx, by, bw, bh, 8);
-    ctx.fill();
-    ctx.stroke();
-    ctx.shadowBlur = 0;
+      // 3. Pastille / Capsule néon (clignotante si confluence multi-UT)
+      ctx.fillStyle = bgFill;
+      ctx.strokeStyle = color;
+      if (isConfl && _blinkOn) {
+        ctx.lineWidth = 3;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 14;
+      } else {
+        ctx.lineWidth = isConfl ? 2.2 : 1.8;
+      }
+      roundRect(bx, by, bw, bh, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
 
-    // 4. Libellé et Prix
-    ctx.fillStyle = textColor;
-    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(sig.label, bx + bw / 2, by + 11);
+      // 4. Libellé et Prix
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(sig.label, bx + bw / 2, by + 11);
 
-    ctx.fillStyle = '#E2E8F0';
-    ctx.font = '8.5px "IBM Plex Mono",monospace';
-    ctx.fillText('Prix: ' + fmtP(sig.price) + ' $', bx + bw / 2, by + 21);
+      ctx.fillStyle = '#E2E8F0';
+      ctx.font = '8.5px "IBM Plex Mono",monospace';
+      ctx.fillText('Prix: ' + fmtP(sig.price) + ' $', bx + bw / 2, by + 21);
 
-    if (isConfl) {
-      ctx.fillStyle = _blinkOn ? '#FFFFFF' : color;
-      ctx.font = 'bold 8px "IBM Plex Mono",monospace';
-      ctx.fillText('\u26A1 ' + listeUT(confl) + ' déclenchées', bx + bw / 2, by + 33);
-    }
+      if (isConfl) {
+        ctx.fillStyle = _blinkOn ? '#FFFFFF' : color;
+        ctx.font = 'bold 8px "IBM Plex Mono",monospace';
+        ctx.fillText('⚡ ' + listeUT(confl) + ' déclenchées', bx + bw / 2, by + 33);
+      }
 
-    labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_exit_kk'});
-    labelHits.push({x: x - 8, y: dotY - 8, w: 16, h: 16, key: 'signal_exit_kk'});
+      labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_exit_kk'});
+      labelHits.push({x: x - 8, y: dotY - 8, w: 16, h: 16, key: 'signal_exit_kk'});
     } else {
       // capsule masquée : mini-étiquette avec l'unité de temps
       const lw = 34, lh = 11;
-      const ly = placeBadge(x - lw/2, lw, isAchatExit ? (dotY + 10) : (dotY - 14), lh, isAchatExit ? 1 : -1);
+      const ly = placeBadge(x - lw/2, lw, isAchatExit ? (dotY - 14) : (dotY + 10), lh, isAchatExit ? -1 : 1);
       ctx.fillStyle = 'rgba(8,12,22,0.82)';
       roundRect(x - lw/2, ly, lw, lh, 4); ctx.fill();
       ctx.fillStyle = textColor;
@@ -10468,11 +11229,43 @@ function drawExitSignalsOB(exits, s, e, yOf, cw, sharedXStack) {
   const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
   const xStack = sharedXStack || {};
 
+  const lastPerTf = {};
+  for (const sg of exits) {
+    const gi = (sg.t != null ? idxOfTime(sg.t) : null) ?? sg.i;
+    if (gi == null) continue;
+    const tk = String(sg.obTf ?? sg.tfTag ?? 'x') + '_' + sg.type;
+    if (!(tk in lastPerTf) || gi > lastPerTf[tk]) lastPerTf[tk] = gi;
+  }
+
+  const TFMIN = {'1m':1,'3m':3,'5m':5,'15m':15,'30m':30,'1H':60,'4H':240,'1D':1440};
+  const tfMin = tag => TFMIN[tag] || (state.tf || 1);
+  const confluenceOf = (sig) => {
+    if (sig.t == null) return [];
+    const mine = tfMin(sig.obTf || sig.tfTag);
+    const win = Math.max(mine * 2 * 60000, 10 * 60000);
+    const tags = [];
+    for (const o of exits) {
+      if (o === sig || o.type !== sig.type || o.t == null) continue;
+      const om = tfMin(o.obTf || o.tfTag);
+      if (om >= mine) continue;
+      const age = sig.t - o.t;
+      if (age < 0 || age > win) continue;
+      const tag = o.obTf || o.tfTag;
+      if (tag && !tags.includes(tag)) tags.push(tag);
+    }
+    return tags.sort((a, b) => tfMin(a) - tfMin(b));
+  };
+  const listeUT = tags => tags.length <= 1 ? tags.join('')
+    : tags.slice(0, -1).join(', ') + ' et ' + tags[tags.length - 1];
+
   for (const sig of exits) {
     const i = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
     if (i == null || i < s - 1 || i > e + 1) continue;
     const x = xOf(i);
     if (x < -180 || x > W - AXIS_W + 180) continue;
+
+    const showCapsule = state.showAllExhaust ||
+      (lastPerTf[String(sig.obTf ?? sig.tfTag ?? 'x') + '_' + sig.type] === i);
 
     const isAchatExit = (sig.type === 'SORTIE_ACHAT_OB');
     const color = '#C084FC';
@@ -10490,12 +11283,18 @@ function drawExitSignalsOB(exits, s, e, yOf, cw, sharedXStack) {
     xStack[stackKey] = stackIdx + 1;
     const offsetY = stackIdx * 45;
 
+    const confl = showCapsule ? confluenceOf(sig) : [];
+    const isConfl = confl.length > 0;
+    if (isConfl) _blinkAny = true;
+
     const hasObDate = !!sig.obTime;
     const dateStr = hasObDate ? fmtOBDate(sig.obTime) : '';
-    const bw = 185, bh = hasObDate ? 34 : 30;
+    const bw = 185;
+    let bh = (hasObDate ? 34 : 30) + (isConfl ? 12 : 0);
+
     const dotY = isAchatExit ? yWick - 25 : yWick + 25;
     const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
-    const by = placeBadge(bx, bw, isAchatExit ? (dotY - 65 - offsetY) : (dotY + 40 + offsetY), bh, isAchatExit ? -1 : 1);
+    const by = showCapsule ? placeBadge(bx, bw, isAchatExit ? (dotY - 65 - offsetY) : (dotY + 40 + offsetY), bh, isAchatExit ? -1 : 1) : dotY;
 
     ctx.save();
     ctx.shadowColor = '#C084FC';
@@ -10509,39 +11308,59 @@ function drawExitSignalsOB(exits, s, e, yOf, cw, sharedXStack) {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    ctx.strokeStyle = 'rgba(192, 132, 252, 0.85)';
-    ctx.lineWidth = 1.4;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(x, dotY);
-    ctx.lineTo(x, isAchatExit ? by : (by + bh));
-    ctx.stroke();
-    ctx.setLineDash([]);
+    if (showCapsule) {
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.85)';
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, dotY);
+      ctx.lineTo(x, isAchatExit ? (by + bh) : by);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
-    ctx.fillStyle = bgFill;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.8;
-    roundRect(bx, by, bw, bh, 8);
-    ctx.fill();
-    ctx.stroke();
+      ctx.fillStyle = bgFill;
+      ctx.strokeStyle = color;
+      if (isConfl && _blinkOn) {
+        ctx.lineWidth = 3;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 14;
+      } else {
+        ctx.lineWidth = isConfl ? 2.2 : 1.8;
+      }
+      roundRect(bx, by, bw, bh, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
 
-    ctx.fillStyle = textColor;
-    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(sig.label, bx + bw / 2, by + 11);
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(sig.label, bx + bw / 2, by + 11);
 
-    ctx.fillStyle = subTextColor;
-    ctx.font = '8.5px "IBM Plex Mono",monospace';
-    ctx.fillText('Prix: ' + fmtP(sig.price) + ' $ · OB: ' + fmtP(sig.obPrice) + ' $' + (hasObDate ? (' (' + dateStr + ')') : ''), bx + bw / 2, by + 22);
+      ctx.fillStyle = subTextColor;
+      ctx.font = '8.5px "IBM Plex Mono",monospace';
+      ctx.fillText('Prix: ' + fmtP(sig.price) + ' $ · OB: ' + fmtP(sig.obPrice) + ' $' + (hasObDate ? (' (' + dateStr + ')') : ''), bx + bw / 2, by + 22);
 
-    if (hasObDate && dateStr) {
-      ctx.fillStyle = 'rgba(216, 180, 254, 0.75)';
-      ctx.font = '8px "IBM Plex Mono",monospace';
-      ctx.fillText('📅 OB apparu le ' + dateStr, bx + bw / 2, by + 30);
+      if (isConfl) {
+        ctx.fillStyle = _blinkOn ? '#FFFFFF' : '#D8B4FE';
+        ctx.font = 'bold 8px "IBM Plex Mono",monospace';
+        ctx.fillText('⚡ ' + listeUT(confl) + ' déclenchées', bx + bw / 2, by + 32);
+      }
+
+      labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_exit_ob'});
+      labelHits.push({x: x - 8, y: dotY - 8, w: 16, h: 16, key: 'signal_exit_ob'});
+    } else {
+      const lw = 38, lh = 11;
+      const ly = placeBadge(x - lw/2, lw, isAchatExit ? (dotY - 14) : (dotY + 10), lh, isAchatExit ? -1 : 1);
+      ctx.fillStyle = 'rgba(32, 14, 52, 0.9)';
+      roundRect(x - lw/2, ly, lw, lh, 4); ctx.fill();
+      ctx.fillStyle = textColor;
+      ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(sig.obTf || 'OB', x, ly + 8);
+      ctx.textAlign = 'left';
+      labelHits.push({x: x - 8, y: dotY - 8, w: 16, h: 16, key: 'signal_exit_ob'});
     }
-
-    labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_exit_ob'});
-    labelHits.push({x: x - 8, y: dotY - 8, w: 16, h: 16, key: 'signal_exit_ob'});
 
     ctx.restore();
   }
@@ -10835,76 +11654,211 @@ async function runBacktest(skipFetch){
   const haPeriod=+document.getElementById('bt-haperiod').value||10;
   const haMode=document.getElementById('bt-hamode')?.value||'lisse';
   const selExitMode=document.getElementById('bt-exitmode').value||'combined';
-  const initialCapital=+document.getElementById('bt-capital').value||10000;
-  const feePct=(+document.getElementById('bt-fee').value||0.06)/100;
+  const initialCapital=+document.getElementById('bt-capital').value||100;
+  const feePct=(+document.getElementById('bt-fee').value ?? 0.04)/100;
   const btLev=+(document.getElementById('bt-lev')?.value||1);
 
-  function simMode(eMode){
+  function simMode(eMode, levOverride){
+    const activeLev = (levOverride != null) ? levOverride : btLev;
     const currInd = state.indicators.signal_ema_ha || {};
-    const indParams={
-      emaPeriod,
-      haTf,
-      haPeriod,
-      mode:haMode,
-      useMacdSR: currInd.useMacdSR !== false,
-      useRangeOsc: currInd.useRangeOsc !== false,
-      roscPeriod: currInd.roscPeriod || 50,
-      useImpMacd: currInd.useImpMacd !== false,
-      impPeriod: currInd.impPeriod || 34,
-      exitMode:eMode
-    };
-
-    const sigs=computeEmaHaCrossSignals(d, indParams);
     
-    let capital=initialCapital;
-    let peak=initialCapital;
-    let maxDD=0;
-    const trades=[];
+    // Pre-calculate indicators on candles array d
+    const ema1m = calc.ema(d, emaPeriod);
+    const atr1m = calc.atr(d, 14);
 
-    for(const sig of sigs){
-      if(sig.type==='SORTIE'){
-        const entryP=sig.entryPrice||sig.price;
-        const exitP=sig.price;
-        const dir=sig.originDir||1;
-        const grossReturnPct=(((exitP-entryP)/entryP)*dir)*btLev;
-        const feesPct=2*feePct;
-        const netReturnPct=Math.max(-0.95, grossReturnPct-feesPct);
-        const pnlDollar=capital*netReturnPct;
+    const bars5 = (state.tf === haTf) ? d : aggregateData(d, haTf);
+    const plainHA5 = (bars5 && bars5.length) ? calc.plainHA(bars5) : [];
+    const smoothHA5 = (haMode === 'lisse' && bars5 && bars5.length) ? calc.smoothHA(bars5, haPeriod, haPeriod) : plainHA5;
+    const haSeries5 = (bars5 && bars5.length) ? bars5.map((b, idx) => (smoothHA5 && smoothHA5[idx]) ? smoothHA5[idx] : plainHA5[idx]) : [];
+    const haMapped = (state.tf === haTf) ? haSeries5 : (bars5 && bars5.length ? mapHTF(bars5, haSeries5, d) : []);
 
-        capital+=pnlDollar;
-        peak=Math.max(peak,capital);
-        const dd=peak-capital;
-        if(dd>maxDD) maxDD=dd;
-
-        trades.push({
-          time:sig.t,
-          dir:dir===1?'ACHAT':'VENTE',
-          entryP,
-          exitP,
-          pnlDollar,
-          netReturnPct:netReturnPct*100,
-          reason:sig.reason||'Sortie Stratégie',
-          capitalAfter:capital
-        });
+    const bars3 = (state.tf === 3) ? d : aggregateData(d, 3);
+    let macd3_line = null, macd3_sg = null;
+    if (currInd.useMacdSR !== false && bars3 && bars3.length >= 2) {
+      const msr3 = calc.macdSR(bars3, 12, 26, 9);
+      if (msr3 && msr3.macd && msr3.sg) {
+        macd3_line = (state.tf === 3) ? msr3.macd : mapHTF(bars3, msr3.macd, d);
+        macd3_sg   = (state.tf === 3) ? msr3.sg   : mapHTF(bars3, msr3.sg, d);
       }
     }
 
-    const totalTrades=trades.length;
-    const wins=trades.filter(t=>t.pnlDollar>0);
-    const losses=trades.filter(t=>t.pnlDollar<=0);
-    const winRate=totalTrades?(wins.length/totalTrades)*100:0;
-    const grossGains=wins.reduce((a,t)=>a+t.pnlDollar,0);
-    const grossLosses=Math.abs(losses.reduce((a,t)=>a+t.pnlDollar,0));
-    const profitFactor=grossLosses>0?(grossGains/grossLosses):(grossGains>0?Infinity:0);
-    const netPnlTotal=capital-initialCapital;
-    const netPnlTotalPct=(netPnlTotal/initialCapital)*100;
+    let roscMapped = null;
+    if (currInd.useRangeOsc !== false && bars5 && bars5.length >= 2) {
+      const rosc5 = calc.rangeOsc(bars5, currInd.roscPeriod || 50, 2);
+      if (rosc5 && rosc5.length) {
+        roscMapped = (state.tf === haTf) ? rosc5 : mapHTF(bars5, rosc5, d);
+      }
+    }
+
+    let imp5_col = null;
+    if (currInd.useImpMacd !== false && bars5 && bars5.length >= 2) {
+      const imp5 = calc.impmacd(bars5, currInd.impPeriod || 34, 9);
+      if (imp5 && imp5.col) {
+        imp5_col = (state.tf === haTf) ? imp5.col : mapHTF(bars5, imp5.col, d);
+      }
+    }
+
+    let capital = initialCapital;
+    let peak = initialCapital;
+    let maxDD = 0;
+    const trades = [];
+    let pos = null; // { dir: 1 or -1, entryP, entryT, peakPrice, lowPrice }
+
+    for (let i = 2; i < d.length; i++) {
+      const emaPrev = ema1m[i - 1], emaCurr = ema1m[i], emaPrev2 = ema1m[i - 2];
+      const haObjPrev = haMapped[i - 1], haObjCurr = haMapped[i], haObjPrev2 = haMapped[i - 2];
+
+      if (emaPrev == null || emaCurr == null || !haObjPrev || !haObjCurr) continue;
+
+      const haTopPrev = Math.max(haObjPrev.o, haObjPrev.c);
+      const haTopCurr = Math.max(haObjCurr.o, haObjCurr.c);
+      const haBotPrev = Math.min(haObjPrev.o, haObjPrev.c);
+      const haBotCurr = Math.min(haObjCurr.o, haObjCurr.c);
+      const haTopPrev2 = haObjPrev2 ? Math.max(haObjPrev2.o, haObjPrev2.c) : null;
+      const haBotPrev2 = haObjPrev2 ? Math.min(haObjPrev2.o, haObjPrev2.c) : null;
+
+      // Croisement EMA 9 vs Corps HA 5m
+      const crossedUp = (emaPrev < haTopPrev) && (emaCurr > haTopCurr) && (emaPrev2 == null || haTopPrev2 == null || emaPrev2 <= haTopPrev2);
+      const crossedDown = (emaPrev > haBotPrev) && (emaCurr < haBotCurr) && (emaPrev2 == null || haBotPrev2 == null || emaPrev2 >= haBotPrev2);
+
+      // Validation Confluences (MACD S/R 3m & Oscillateurs)
+      const mLineCurr = macd3_line ? macd3_line[i] : null;
+      const mSgCurr   = macd3_sg   ? macd3_sg[i]   : null;
+      const passMacdBuy  = (currInd.useMacdSR === false) || (mLineCurr != null && mSgCurr != null && mLineCurr > mSgCurr);
+      const passMacdSell = (currInd.useMacdSR === false) || (mLineCurr != null && mSgCurr != null && mLineCurr < mSgCurr);
+
+      const rCurr = roscMapped ? roscMapped[i] : null;
+      const isRoscGreen = (rCurr != null && rCurr >= 0);
+      const isRoscRed   = (rCurr != null && rCurr < 0);
+
+      const cImp = imp5_col ? imp5_col[i] : null;
+      const isImpGreen = (cImp === 0 || cImp === 1);
+      const isImpRed   = (cImp === 2 || cImp === 3);
+
+      let passOscBuy = true, passOscSell = true;
+      if (currInd.useRangeOsc !== false && currInd.useImpMacd !== false) {
+        passOscBuy = isRoscGreen || isImpGreen;
+        passOscSell = isRoscRed || isImpRed;
+      } else if (currInd.useRangeOsc !== false) {
+        passOscBuy = isRoscGreen; passOscSell = isRoscRed;
+      } else if (currInd.useImpMacd !== false) {
+        passOscBuy = isImpGreen; passOscSell = isImpRed;
+      }
+
+      const buySignal  = crossedUp && passMacdBuy && passOscBuy;
+      const sellSignal = crossedDown && passMacdSell && passOscSell;
+
+      // Si une position est ouverte, vérifier les règles de sortie selon eMode
+      if (pos) {
+        pos.peakPrice = Math.max(pos.peakPrice, d[i].h);
+        pos.lowPrice  = Math.min(pos.lowPrice, d[i].l);
+
+        let exitTriggered = false;
+        let exitReason = '';
+
+        const isHaRed   = haObjCurr.c < haObjCurr.o;
+        const isHaGreen = haObjCurr.c > haObjCurr.o;
+        const atrVal    = atr1m[i] || (d[i].c * 0.005);
+
+        if (pos.dir === 1) { // LONG
+          if (sellSignal) { exitTriggered = true; exitReason = 'Signal opposé (Vente)'; }
+          else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaRed) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Rouge)'; }
+          else if ((eMode === 'atr_trail' || eMode === 'combined') && d[i].l <= pos.peakPrice - 1.5 * atrVal) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
+          else if ((eMode === 'ema_cross' || eMode === 'combined') && d[i].c < emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
+          else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr < mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
+          else if ((eMode === 'cross' || eMode === 'combined') && emaCurr < haBotCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
+        } else { // SHORT
+          if (buySignal) { exitTriggered = true; exitReason = 'Signal opposé (Achat)'; }
+          else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaGreen) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Verte)'; }
+          else if ((eMode === 'atr_trail' || eMode === 'combined') && d[i].h >= pos.lowPrice + 1.5 * atrVal) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
+          else if ((eMode === 'ema_cross' || eMode === 'combined') && d[i].c > emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
+          else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr > mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
+          else if ((eMode === 'cross' || eMode === 'combined') && emaCurr > haTopCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
+        }
+
+        if (exitTriggered) {
+          const entryP = pos.entryP;
+          const exitP = d[i].c;
+          const dir = pos.dir;
+          const grossReturnPct = (((exitP - entryP) / entryP) * dir) * activeLev;
+          const feesPct = 2 * feePct;
+          const netReturnPct = Math.max(-0.95, grossReturnPct - feesPct);
+          const pnlDollar = capital * netReturnPct;
+
+          capital += pnlDollar;
+          peak = Math.max(peak, capital);
+          const dd = peak - capital;
+          if (dd > maxDD) maxDD = dd;
+
+          trades.push({
+            time: d[i].t,
+            dir: dir === 1 ? 'ACHAT' : 'VENTE',
+            entryP,
+            exitP,
+            pnlDollar,
+            netReturnPct: netReturnPct * 100,
+            reason: exitReason,
+            capitalAfter: capital
+          });
+
+          pos = null;
+        }
+      }
+
+      // Ouvrir une nouvelle position s'il n'y en a pas d'active
+      if (!pos) {
+        if (buySignal) {
+          pos = { dir: 1, entryP: d[i].c, entryT: d[i].t, peakPrice: d[i].h, lowPrice: d[i].l };
+        } else if (sellSignal) {
+          pos = { dir: -1, entryP: d[i].c, entryT: d[i].t, peakPrice: d[i].h, lowPrice: d[i].l };
+        }
+      }
+    }
+
+    // Clôture automatique en fin de période
+    if (pos && d.length) {
+      const lastBar = d[d.length - 1];
+      const entryP = pos.entryP;
+      const exitP = lastBar.c;
+      const dir = pos.dir;
+      const grossReturnPct = (((exitP - entryP) / entryP) * dir) * activeLev;
+      const feesPct = 2 * feePct;
+      const netReturnPct = Math.max(-0.95, grossReturnPct - feesPct);
+      const pnlDollar = capital * netReturnPct;
+
+      capital += pnlDollar;
+      peak = Math.max(peak, capital);
+      const dd = peak - capital;
+      if (dd > maxDD) maxDD = dd;
+
+      trades.push({
+        time: lastBar.t,
+        dir: dir === 1 ? 'ACHAT' : 'VENTE',
+        entryP,
+        exitP,
+        pnlDollar,
+        netReturnPct: netReturnPct * 100,
+        reason: 'Fin de période',
+        capitalAfter: capital
+      });
+    }
+
+    const totalTrades = trades.length;
+    const wins = trades.filter(t => t.pnlDollar > 0);
+    const losses = trades.filter(t => t.pnlDollar <= 0);
+    const winRate = totalTrades ? (wins.length / totalTrades) * 100 : 0;
+    const grossGains = wins.reduce((a, t) => a + t.pnlDollar, 0);
+    const grossLosses = Math.abs(losses.reduce((a, t) => a + t.pnlDollar, 0));
+    const profitFactor = grossLosses > 0 ? (grossGains / grossLosses) : (grossGains > 0 ? Infinity : 0);
+    const netPnlTotal = capital - initialCapital;
+    const netPnlTotalPct = (netPnlTotal / initialCapital) * 100;
 
     return {
-      mode:eMode,
+      mode: eMode,
       trades,
       totalTrades,
-      winCount:wins.length,
-      lossCount:losses.length,
+      winCount: wins.length,
+      lossCount: losses.length,
       winRate,
       capital,
       netPnlTotal,
@@ -10913,7 +11867,7 @@ async function runBacktest(skipFetch){
       grossLosses,
       profitFactor,
       maxDD,
-      maxDDPct:peak>0?(maxDD/peak)*100:0
+      maxDDPct: peak > 0 ? (maxDD / peak) * 100 : 0
     };
   }
 
@@ -10925,11 +11879,222 @@ async function runBacktest(skipFetch){
   const resMacd     = simMode('macd');
   const resCross    = simMode('cross');
 
+  const levList = [1, 2, 5, 10, 20, 50, 100, 200];
+  const levResults = levList.map(l => ({ lev: l, res: simMode(selExitMode, l) }));
+  const sortedLevs = [...levResults].sort((a,b) => b.res.netPnlTotal - a.res.netPnlTotal);
+  const bestLevItem = sortedLevs[0];
+
   window.selectBtExitMode = function(m){
     const el = document.getElementById('bt-exitmode');
     if(el) el.value = m;
     runBacktest(true);
   };
+
+  window.selectBtLev = function(l){
+    const el = document.getElementById('bt-lev');
+    if(el) el.value = l;
+    runBacktest(true);
+  };
+
+  window.applyCombo = function(m, l){
+    const elMode = document.getElementById('bt-exitmode');
+    const elLev = document.getElementById('bt-lev');
+    if(elMode) elMode.value = m;
+    if(elLev) elLev.value = l;
+    runBacktest(true);
+  };
+
+  window.applyStrategyToDemo = function(modeOverride, levOverride){
+    const exitMode = modeOverride || document.getElementById('bt-exitmode')?.value || 'combined';
+    const lev = levOverride || +(document.getElementById('bt-lev')?.value || 1);
+    const capital = +(document.getElementById('bt-capital')?.value || 100);
+    const feePct = +(document.getElementById('bt-fee')?.value || 0.04);
+
+    const modeLabelsMap = {
+      combined: 'Multi-Signal (SL/TP/HA/MACD)',
+      ha_flip: 'HA Flip (Retournement HA)',
+      atr_trail: 'ATR Trailing Stop',
+      ema_cross: 'Cassure Revers. EMA9',
+      macd: 'MACD 3m Revers.',
+      cross: 'Croisement EMA/HA'
+    };
+
+    let stratWinRate = null;
+    let stratMaxDD = null;
+    let stratMaxDDPct = null;
+    let stratPF = null;
+    let stratNetPnl = null;
+
+    // Calculer le résultat EXACT pour le mode ET le levier demandés
+    const exactRes = (typeof simMode === 'function') ? simMode(exitMode, lev) : null;
+    if (exactRes) {
+      stratWinRate = exactRes.winRate;
+      stratMaxDD = exactRes.maxDD;
+      stratMaxDDPct = exactRes.maxDDPct;
+      stratPF = exactRes.profitFactor;
+      stratNetPnl = exactRes.netPnlTotal;
+    }
+
+    // Enregistrer la stratégie active avec toutes ses métriques
+    window.activeDemoStrategy = {
+      mode: exitMode,
+      modeLabel: modeLabelsMap[exitMode] || exitMode,
+      lev: lev,
+      capital: capital,
+      feePct: feePct,
+      winRate: stratWinRate,
+      maxDD: stratMaxDD,
+      maxDDPct: stratMaxDDPct,
+      profitFactor: stratPF,
+      netPnlTotal: stratNetPnl,
+      active: true,
+      activatedAt: Date.now(),
+      timestamp: Date.now()
+    };
+    try {
+      localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy));
+    } catch(e){}
+
+    // 1. Définir le taux de frais démo
+    window.paperFeePct = feePct / 100;
+
+    // 2. Ajuster le capital / solde Démo au budget
+    if (typeof paper === 'object' && paper) {
+      paper.cash = capital;
+    }
+
+    // 3. Configurer le levier du module Démo
+    const levEl = document.getElementById('paper-lev');
+    if (levEl) {
+      levEl.value = String(lev);
+      if (levEl.value !== String(lev)) {
+        const opt = document.createElement('option');
+        opt.value = String(lev);
+        opt.textContent = `${lev}x`;
+        opt.selected = true;
+        levEl.appendChild(opt);
+      }
+    }
+
+    // 4. Configurer le montant du trade Démo ($ capital)
+    const amtEl = document.getElementById('paper-amt');
+    if (amtEl) amtEl.value = String(capital);
+
+    // Passer en unité USDT sur Démo
+    paperUnit = 'usdt';
+    const btnUsdt = document.getElementById('paper-unit-usdt');
+    const btnCoin = document.getElementById('paper-unit-coin');
+    if (btnUsdt && btnCoin) {
+      btnUsdt.style.background = '#00E5FF';
+      btnUsdt.style.color = '#0F172A';
+      btnCoin.style.background = 'transparent';
+      btnCoin.style.color = 'var(--text)';
+    }
+
+    // 5. Synchroniser la stratégie dans state.indicators et dans le modal
+    const btExitEl = document.getElementById('bt-exitmode');
+    if (btExitEl) btExitEl.value = exitMode;
+    const btLevEl = document.getElementById('bt-lev');
+    if (btLevEl) btLevEl.value = String(lev);
+
+    if (state && state.indicators && state.indicators.signal_ema_ha) {
+      state.indicators.signal_ema_ha.exitMode = exitMode;
+      state.indicators.signal_ema_ha.on = true;
+    }
+
+    // 6. Activer l'Auto-Trade sur le Compte Démo
+    paperAutoTrade = true;
+    autoTradeLastExecutedSigId = null;
+    try {
+      localStorage.setItem('lumen_paper_autotrade', '1');
+    } catch(e){}
+    if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
+    if (typeof checkAutoTrade === 'function') checkAutoTrade();
+
+    // 7. Rafraîchir les données et l'IU Démo
+    if (typeof saveConfig === 'function') saveConfig();
+    if (typeof updatePaper === 'function') updatePaper();
+    if (typeof refreshUnitUI === 'function') refreshUnitUI();
+
+    // 8. Déplier le panneau Démo
+    const paperPanel = document.getElementById('paper-panel');
+    if (paperPanel) {
+      paperPanel.style.display = 'block';
+      const caret = document.getElementById('paper-caret');
+      if (caret) caret.textContent = '▴';
+    }
+
+    const shortMode = modeLabelsMap[exitMode] || exitMode;
+
+    toast(`🚀 STRATÉGIE CONFIGURÉE SUR VOTRE COMPTE DÉMO !\n• Solde Démo : ${capital} $\n• Levier : ${lev}x | Frais : ${feePct}%\n• Stratégie : ${shortMode}\n• Auto-Trade : ACTIVÉ 🤖`, '#00E676');
+
+    runBacktest(true);
+  };
+
+  const allModes = ['combined', 'ha_flip', 'atr_trail', 'ema_cross', 'macd', 'cross'];
+  const allLevs = [1, 2, 5, 10, 20, 50, 100, 200];
+  const allCombos = [];
+
+  for (const m of allModes) {
+    for (const l of allLevs) {
+      const res = simMode(m, l);
+      if (!res || res.totalTrades === 0) continue;
+
+      let ddPenalty = res.maxDDPct;
+      if (res.maxDDPct >= 90) ddPenalty = 1000;
+      
+      let score = res.netPnlTotalPct / (1 + (ddPenalty / 12));
+      if (res.netPnlTotal <= 0) score = -10000 + res.netPnlTotal;
+
+      allCombos.push({
+        mode: m,
+        lev: l,
+        res: res,
+        score: score
+      });
+    }
+  }
+
+  allCombos.sort((a, b) => b.score - a.score);
+  
+  const c1 = allCombos[0];
+  const c2 = allCombos[1] || allCombos[0];
+  const c3 = allCombos[2] || allCombos[0];
+
+  const pickedKeys = new Set([
+    `${c1?.mode}_${c1?.lev}`,
+    `${c2?.mode}_${c2?.lev}`,
+    `${c3?.mode}_${c3?.lev}`
+  ]);
+
+  // 4: Meilleur Win Rate (parmi les stratégies avec trades et gain positif de préférence)
+  const validForWr = allCombos.filter(c => c.res.totalTrades >= 2 && c.res.netPnlTotal > 0);
+  const sortedWr = [...(validForWr.length ? validForWr : allCombos)].sort((a, b) => {
+    if (Math.abs(b.res.winRate - a.res.winRate) > 0.1) {
+      return b.res.winRate - a.res.winRate;
+    }
+    return b.score - a.score;
+  });
+  let c4 = sortedWr.find(c => !pickedKeys.has(`${c.mode}_${c.lev}`)) || sortedWr[0] || c1;
+  pickedKeys.add(`${c4?.mode}_${c4?.lev}`);
+
+  // 5: Moins de Drawdown % (parmi les stratégies profitables)
+  const validForDd = allCombos.filter(c => c.res.totalTrades >= 2 && c.res.netPnlTotal > 0);
+  const sortedDd = [...(validForDd.length ? validForDd : allCombos)].sort((a, b) => {
+    if (Math.abs(a.res.maxDDPct - b.res.maxDDPct) > 0.1) {
+      return a.res.maxDDPct - b.res.maxDDPct;
+    }
+    return b.score - a.score;
+  });
+  let c5 = sortedDd.find(c => !pickedKeys.has(`${c.mode}_${c.lev}`)) || sortedDd[0] || c1;
+
+  const top5Combos = [
+    { ...c1, medal: '🥇 #1 OPTIMAL', medalBg: 'linear-gradient(135deg,#FFD700,#FFA000)', desc: 'Meilleur équilibre Gain/Risque' },
+    { ...c2, medal: '🥈 #2 EXCELLENT', medalBg: 'linear-gradient(135deg,#E0E0E0,#9E9E9E)', desc: 'Très forte rentabilité globale' },
+    { ...c3, medal: '🥉 #3 ROBUSTE', medalBg: 'linear-gradient(135deg,#CD7F32,#8B4513)', desc: 'Rendement solide et régulier' },
+    { ...c4, medal: '🎯 #4 MEILLEUR WIN RATE', medalBg: 'linear-gradient(135deg,#00E676,#00B0FF)', desc: 'Taux de succès le plus élevé' },
+    { ...c5, medal: '🛡️ #5 MOINS DE DRAWDOWN', medalBg: 'linear-gradient(135deg,#C084FC,#A855F7)', desc: 'Risque & perte max minimisés' }
+  ];
 
   const modesList=[resCombined, resHaFlip, resAtrTrail, resEmaCross, resMacd, resCross];
   modesList.sort((a,b)=>b.netPnlTotal-a.netPnlTotal);
@@ -10954,7 +12119,47 @@ async function runBacktest(skipFetch){
   const startDateStr = d.length ? new Date(d[0].t).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
   const endDateStr = d.length ? new Date(d[d.length-1].t).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
 
+  let activeDemoStratObj = null;
+  try {
+    if(!window.activeDemoStrategy) {
+      const raw = localStorage.getItem('lumen_active_demo_strategy');
+      if(raw) window.activeDemoStrategy = JSON.parse(raw);
+    }
+    activeDemoStratObj = window.activeDemoStrategy;
+  } catch(e){}
+
+  const isDemoActiveOverall = paperAutoTrade && activeDemoStratObj;
+  const isCurrentActiveInDemo = isDemoActiveOverall && (activeDemoStratObj.mode === resSel.mode) && (activeDemoStratObj.lev === btLev);
+
   let html=`
+    ${isDemoActiveOverall ? `
+    <!-- BANNIÈRE STRATÉGIE DÉMO ACTIVÉE EN DIRECT -->
+    <div style="background:linear-gradient(135deg, rgba(0,230,118,0.22), rgba(0,229,255,0.15));border:2px solid #00E676;border-radius:10px;padding:12px 16px;margin-bottom:14px;box-shadow:0 0 20px rgba(0,230,118,0.25);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:38px;height:38px;border-radius:50%;background:#00E676;color:#0F172A;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;box-shadow:0 0 12px #00E676;flex-shrink:0">
+          🤖
+        </div>
+        <div>
+          <div style="font-weight:900;font-size:13.5px;color:#00E676;display:flex;align-items:center;gap:8px;letter-spacing:0.3px">
+            <span>⚡ STRATÉGIE ACTIVÉE ET EN COURS SUR VOTRE COMPTE DÉMO</span>
+            <span style="background:#00E676;color:#0F172A;font-size:9.5px;padding:2px 7px;border-radius:10px;font-weight:900">AUTO-TRADE : ACTIF ●</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text);margin-top:3px;font-family:'IBM Plex Mono',monospace">
+            Stratégie : <b style="color:#00E5FF">${modeLabels[activeDemoStratObj.mode] || activeDemoStratObj.mode}</b>
+            · Levier : <b style="color:#FFD700">${activeDemoStratObj.lev}x</b>
+            · Capital : <b>${activeDemoStratObj.capital} $</b>
+            · Frais : <b>${activeDemoStratObj.feePct}%</b>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="applyStrategyToDemo()" style="background:rgba(0,230,118,0.25);border:1px solid #00E676;color:#00E676;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer">
+          🔄 Ré-appliquer cette stratégie
+        </button>
+      </div>
+    </div>
+    ` : ''}
+
     <!-- Bandeau Période Historique -->
     <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px;background:rgba(0,229,255,0.06);padding:8px 12px;border-radius:6px;border:1px solid rgba(0,229,255,0.2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
       <span>📅 Période analysée : <b style="color:#00E5FF">du ${startDateStr} au ${endDateStr}</b> (${depthDays} jour${depthDays>1?'s':''})</span>
@@ -10962,7 +12167,7 @@ async function runBacktest(skipFetch){
     </div>
 
     <!-- Cartes KPI Principales de la Stratégie Sélectionnée -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">
       <div style="background:var(--panel-2);border:1px solid ${colVal(resSel.netPnlTotal)};border-radius:10px;padding:12px;text-align:center">
         <div style="font-size:10.5px;color:var(--muted);margin-bottom:4px">Gain Net Total (${modeLabels[resSel.mode].split(' ')[0]})</div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:bold;color:${colVal(resSel.netPnlTotal)}">${fmtDollar(resSel.netPnlTotal)}</div>
@@ -10982,6 +12187,68 @@ async function runBacktest(skipFetch){
         <div style="font-size:10.5px;color:var(--muted);margin-bottom:4px">Drawdown Max</div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:bold;color:#FF5252">-${resSel.maxDD.toFixed(2)} $</div>
         <div style="font-size:10.5px;color:#FF5252">-${resSel.maxDDPct.toFixed(1)}%</div>
+      </div>
+    </div>
+
+    <!-- Bannière CTA D'Activation Directe sur le Compte Démo -->
+    <div style="background:${isCurrentActiveInDemo ? 'linear-gradient(135deg, rgba(0,230,118,0.22), rgba(0,229,255,0.15))' : 'linear-gradient(135deg, rgba(0,230,118,0.16), rgba(0,229,255,0.1))'};border:${isCurrentActiveInDemo ? '2px solid #00E676' : '1.5px solid #00E676'};border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:${isCurrentActiveInDemo ? '0 0 20px rgba(0,230,118,0.35)' : '0 4px 16px rgba(0,230,118,0.2)'}">
+      <div>
+        <div style="font-weight:800;font-size:13.5px;color:#00E676;display:flex;align-items:center;gap:6px">
+          <span>${isCurrentActiveInDemo ? '✅ CETTE STRATÉGIE EST ACTUELLEMENT ACTIVÉE SUR VOTRE COMPTE DÉMO' : '🚀 APPLIQUER CETTE STRATÉGIE SUR MON COMPTE DÉMO'}</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--text);margin-top:3px;line-height:1.4">
+          ${isCurrentActiveInDemo ? `Elle s'exécute en temps réel avec l'<b>Auto-Trade ACTIVÉ 🤖</b> (Solde Démo : <b>${initialCapital} $</b> | Levier : <b>${btLev}x</b> | Frais : <b>${(feePct*100).toFixed(3)}%</b>).` : `Ajuste votre Solde Démo à <b>${initialCapital} $</b>, le Levier à <b>${btLev}x</b>, les Frais à <b>${(feePct*100).toFixed(3)}%</b> et active l'<b>Auto-Trade Direct</b> sur la stratégie <b>${modeLabels[resSel.mode].split(' ')[0]}</b>.`}
+        </div>
+      </div>
+      <button onclick="applyStrategyToDemo()" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#0F172A;border:none;border-radius:8px;padding:9px 18px;font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,230,118,0.4);transition:all 0.2s ease" title="Transférer et exécuter automatiquement cette stratégie sur le compte Démo">
+        ${isCurrentActiveInDemo ? '🔄 Ré-appliquer / Mettre à jour' : '🤖 Configurer mon Compte DÉMO Maintenant'}
+      </button>
+    </div>
+
+    <!-- Top 5 Meilleurs Combinaisons (Stratégie + Levier) -->
+    <div style="background:linear-gradient(135deg, rgba(255,215,0,0.1), rgba(0,229,255,0.08));border:1.5px solid rgba(255,215,0,0.5);border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 20px rgba(0,0,0,0.35)">
+      <div style="margin-bottom:10px">
+        <div style="font-weight:900;font-size:13px;color:#FFD700;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+          <span>🏆 TOP 5 DES STRATÉGIES — SÉLECTIONNEZ ET ACTIVEZ SUR VOTRE COMPTE DÉMO 🤖</span>
+          <span style="font-size:10px;color:var(--muted);font-weight:normal">Calculé sur ${d.length} bougies</span>
+        </div>
+        <div style="font-size:11px;color:var(--text);margin-top:2px;line-height:1.4">
+          👇 <b>Appuyez sur "🚀 Activer en Démo" sur l'une des 5 cartes ci-dessous</b> pour lancer automatiquement cette stratégie avec son levier optimal sur votre compte Démo.
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px">
+        ${top5Combos.map((c, idx) => {
+          const isSelected = (c.mode === selExitMode && c.lev === btLev);
+          const isCardDemoActive = isDemoActiveOverall && (activeDemoStratObj.mode === c.mode && activeDemoStratObj.lev === c.lev);
+          const cardBorder = isCardDemoActive ? '2.5px solid #00E676' : (isSelected ? '2px solid #FFD700' : '1px solid rgba(255,215,0,0.3)');
+          const cardBg = isCardDemoActive ? 'rgba(0,230,118,0.2)' : (isSelected ? 'rgba(255,215,0,0.15)' : 'var(--panel-2)');
+          const shortModeName = modeLabels[c.mode].split(' ')[0] + ' ' + (modeLabels[c.mode].split(' ')[1] || '');
+
+          return `
+            <div style="background:${cardBg};border:${cardBorder};border-radius:10px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:${isCardDemoActive?'0 0 16px rgba(0,230,118,0.5)':(isSelected?'0 0 12px rgba(255,215,0,0.3)':'')};transition:all 0.2s ease">
+              <div onclick="applyCombo('${c.mode}', ${c.lev})" style="cursor:pointer">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <span style="background:${c.medalBg};color:#0F172A;font-size:9px;font-weight:900;padding:2px 6px;border-radius:4px" title="${c.desc}">${c.medal}</span>
+                  ${isCardDemoActive ? '<span style="background:#00E676;color:#0F172A;font-size:8.5px;font-weight:900;padding:2px 6px;border-radius:4px;box-shadow:0 0 8px #00E676">🤖 EN DÉMO (ACTIF)</span>' : (isSelected ? '<span style="background:#FFD700;color:#0F172A;font-size:8.5px;font-weight:800;padding:2px 5px;border-radius:4px">🔍 INSPECTÉ</span>' : '')}
+                </div>
+                <div style="font-size:12px;font-weight:900;color:var(--text);margin-bottom:6px">
+                  ${shortModeName} <span style="color:#00E5FF;font-family:'IBM Plex Mono',monospace">(${c.lev}x)</span>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;margin-bottom:10px">
+                  Gain Net: <b style="color:${colVal(c.res.netPnlTotal)}">${fmtDollar(c.res.netPnlTotal)} (${fmtPct(c.res.netPnlTotalPct)})</b><br>
+                  Drawdown Max: <b style="color:${c.res.maxDDPct < 25 ? '#00E676' : '#FF5252'}">-${c.res.maxDD.toFixed(2)} $ (-${c.res.maxDDPct.toFixed(1)}%)</b><br>
+                  Win Rate: <b style="color:${c.res.winRate >= 60 ? '#00E676' : 'var(--text)'}">${c.res.winRate.toFixed(1)}%</b> · PF: <b>${c.res.profitFactor===Infinity?'∞':c.res.profitFactor.toFixed(2)}</b>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+                <button onclick="applyStrategyToDemo('${c.mode}', ${c.lev})" style="width:100%;background:${isCardDemoActive ? '#00E676' : 'linear-gradient(135deg,#00E676,#00B0FF)'};color:#0F172A;border:none;border-radius:7px;padding:8px 6px;font-size:11px;font-weight:900;cursor:pointer;box-shadow:${isCardDemoActive ? '0 0 12px #00E676' : '0 3px 10px rgba(0,230,118,0.3)'};transition:all 0.2s ease" title="Transférer et exécuter cette stratégie sur le compte Démo">
+                  ${isCardDemoActive ? '✅ STRATÉGIE ACTIVÉE EN DÉMO' : `🚀 ACTIVATION COMPTE DÉMO (${c.lev}x)`}
+                </button>
+                ${!isSelected ? `<button onclick="applyCombo('${c.mode}', ${c.lev})" style="width:100%;background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:4px;font-size:9.5px;cursor:pointer">🔍 Inspecter les détails du Backtest</button>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
       </div>
     </div>
 
@@ -11011,6 +12278,40 @@ async function runBacktest(skipFetch){
                 Net: <b style="color:${colVal(m.netPnlTotal)}">${fmtDollar(m.netPnlTotal)}</b><br>
                 Win Rate: <b>${m.winRate.toFixed(1)}%</b> (${m.totalTrades} trades)<br>
                 PF: <b>${m.profitFactor===Infinity?'∞':m.profitFactor.toFixed(2)}</b>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Comparatif & Optimiseur de Levier -->
+    <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.32);border-radius:10px;padding:12px;margin-bottom:16px">
+      <div style="font-weight:bold;font-size:12px;color:#FFD700;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <span>⚖️ Comparatif des Leviers (1x à 200x) — Stratégie : <b style="color:#FFF">${modeLabels[resSel.mode].split(' ')[0]}</b></span>
+        <button onclick="selectBtLev(${bestLevItem.lev})" style="background:linear-gradient(135deg,#FFD700,#FFA000);color:#0F172A;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(255,215,0,0.3)">
+          ★ Appliquer le Levier Gagnant (${bestLevItem.lev}x)
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px">
+        ${levList.map(l => {
+          const item = levResults.find(r => r.lev === l);
+          const isSelected = l === btLev;
+          const isBest = l === bestLevItem.lev;
+          const cardBorder = isSelected ? '2px solid #FFD700' : (isBest ? '1px dashed #FFD700' : '1px solid var(--line)');
+          const cardBg = isSelected ? 'rgba(255,215,0,0.14)' : 'var(--panel-2)';
+          const cardShadow = isSelected ? '0 0 10px rgba(255,215,0,0.3)' : '';
+          return `
+            <div onclick="selectBtLev(${l})" style="background:${cardBg};border:${cardBorder};border-radius:8px;padding:8px 6px;text-align:center;box-shadow:${cardShadow};cursor:pointer;transition:all 0.2s ease" title="Cliquer pour appliquer le levier ${l}x">
+              <div style="font-size:11px;font-weight:bold;color:${isSelected?'#FFD700':'var(--text)'};margin-bottom:3px;display:flex;justify-content:center;align-items:center;gap:3px">
+                <span>${l}x</span>
+                ${isSelected ? '<span style="background:#FFD700;color:#0F172A;font-size:7.5px;padding:0 3px;border-radius:2px;font-weight:bold">ACTIF</span>' : ''}
+                ${isBest ? '<span style="background:#00E676;color:#0F172A;font-size:7.5px;padding:0 3px;border-radius:2px;font-weight:bold">TOP</span>' : ''}
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5">
+                <span style="color:${colVal(item.res.netPnlTotal)};font-weight:bold">${fmtDollar(item.res.netPnlTotal)}</span><br>
+                <span style="font-size:9px;color:var(--muted)">${fmtPct(item.res.netPnlTotalPct)}</span><br>
+                <span style="font-size:8.5px;color:${item.res.maxDDPct > 50 ? '#FF5252' : 'var(--muted)'}">DD: -${item.res.maxDDPct.toFixed(1)}%</span>
               </div>
             </div>
           `;
@@ -11053,6 +12354,7 @@ async function runBacktest(skipFetch){
               <th style="padding:6px 8px">Sortie</th>
               <th style="padding:6px 8px">Motif de Sortie</th>
               <th style="padding:6px 8px;text-align:right">PnL Net</th>
+              <th style="padding:6px 8px;text-align:right">Solde (Capital)</th>
             </tr>
           </thead>
           <tbody>
@@ -11073,6 +12375,9 @@ async function runBacktest(skipFetch){
                   <td style="padding:6px 8px;text-align:right;font-weight:bold;color:${colVal(t.pnlDollar)}">
                     ${fmtDollar(t.pnlDollar)} (${fmtPct(t.netReturnPct)})
                   </td>
+                  <td style="padding:6px 8px;text-align:right;font-weight:bold;color:#00E5FF">
+                    ${fmtDollar(t.capitalAfter != null ? t.capitalAfter : initialCapital)}
+                  </td>
                 </tr>
               `;
             }).join('')}
@@ -11084,6 +12389,22 @@ async function runBacktest(skipFetch){
 
   html+=`</div>`;
   document.getElementById('bt-results').innerHTML=html;
+
+  // Synchroniser automatiquement la stratégie démo active avec le backtest recalculé
+  if (window.activeDemoStrategy && window.activeDemoStrategy.active && window.activeDemoStrategy.mode) {
+    const curActiveRes = simMode(window.activeDemoStrategy.mode, window.activeDemoStrategy.lev || 1);
+    if (curActiveRes) {
+      window.activeDemoStrategy.winRate = curActiveRes.winRate;
+      window.activeDemoStrategy.maxDD = curActiveRes.maxDD;
+      window.activeDemoStrategy.maxDDPct = curActiveRes.maxDDPct;
+      window.activeDemoStrategy.profitFactor = curActiveRes.profitFactor;
+      window.activeDemoStrategy.netPnlTotal = curActiveRes.netPnlTotal;
+      try {
+        localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy));
+      } catch(e){}
+      if (typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
+    }
+  }
 }
 
 const btnToggleExitsMenu = document.getElementById('btn-toggle-exits-menu');
@@ -11371,969 +12692,6 @@ setTimeout(resize,500);
     loadData();
   }
 })();
-
-/* =======================================================================
-   STRATÉGIE CONFLUENCE TOTALE  (clé : strat_master)
-   Stratégie autonome qui agrège toutes les familles de pastilles :
-   tendance, croisement EMA/HA, oscillateur KK, épuisements simples et Pro,
-   Order Blocks, position dans le range et ATR.
-   Toutes les briques sont calculées sur le tableau `d` fourni, ce qui rend
-   la fonction utilisable aussi bien en direct qu'en backtest historique.
-   ===================================================================== */
-function computeMasterStrategy(d, opt){
-  opt = opt || {};
-  if(!Array.isArray(d) || d.length < 120) return [];
-
-  const minScore = opt.minScore != null ? +opt.minScore : 5;
-  const allowShort = opt.allowShort !== false;
-  const trailMult = opt.trailMult != null ? +opt.trailMult : 2.0;
-  const slMult    = opt.slMult    != null ? +opt.slMult    : 1.5;
-  const tpRR      = opt.tpRR      != null ? +opt.tpRR      : 2.5;
-  const rangeMax  = opt.rangeMax  != null ? +opt.rangeMax  : 88;
-  const useObExit = opt.useObExit === true;   // sortie sur Order Block opposé : désactivée par défaut
-  const beMove    = opt.beMove    != null ? +opt.beMove    : 1.0;   // point mort à 1 R
-  const partialAt = opt.partialAt != null ? +opt.partialAt : 1.5;   // prise partielle à 1,5 R
-  const trailAfter= opt.trailAfter!= null ? +opt.trailAfter: 1.0;   // armement du stop suiveur
-  const minHold   = opt.minHold   != null ? +opt.minHold   : 4;     // bougies avant sortie douce
-  const timeStop  = opt.timeStop  != null ? +opt.timeStop  : 60;    // 0 = désactivé
-  const exhMode   = opt.exhMode   || 'confirme';                    // off | confirme | immediat
-  const exhMinTf  = opt.exhMinTf  != null ? +opt.exhMinTf  : 1;     // 1 = tout sur l'UT du graphique
-  const EXH_TFS   = [1, 3, 5, 15, 60, 240];
-  const cloudVeto = opt.cloudVeto !== false;   // le nuage EMA bloque la sortie sur épuisement
-  const cloudEntry= opt.cloudEntry !== false;   // pas d'entrée à contresens du nuage
-  const cloudTf   = opt.cloudTf   != null ? +opt.cloudTf   : 0;   // 0 = suivre l'indicateur affiché
-  const useStop   = opt.useStop === true;    // stop de protection : désactivé par défaut
-  const kkUp = opt.kkUp != null ? +opt.kkUp : 64;
-  const kkLo = opt.kkLo != null ? +opt.kkLo : -64;
-  const cooldown = opt.cooldown != null ? +opt.cooldown : 3;
-
-  const N = d.length;
-  const ema9  = calc.ema(d, opt.emaFast || 9);
-  const ema30 = calc.ema(d, opt.emaSlow || 30);
-  const ema200= calc.ema(d, 200);
-  const st    = calc.supertrend(d);
-  const atr   = calc.atr(d, 14);
-  const rsi   = calc.rsi(d, 14);
-  const rosc  = calc.rangeOsc(d, 50, 2);
-
-  let net = [], kksig = [];
-  try{
-    const kk = calc.twoIndicator(d, Object.assign({}, state.indicators.two_ind || {}, {tf:'chart'}));
-    net = (kk && kk.net) || []; kksig = (kk && kk.signal) || [];
-  }catch(e){}
-
-  /* Épuisements. Les signaux de l'unité de temps du graphique sont trop
-     bruités en scalping : on ne retient que les unités supérieures ou égales
-     à exhMinTf, calculées sur des bougies ré-agrégées à partir de d.
-     dir -1 = sommet, dir +1 = creux. Une unité plus haute pèse plus lourd. */
-  const exhAt = new Array(N).fill(0);
-  const tfBase = state.tf || 1;
-
-  // Ré-agrégation de d vers une unité de temps supérieure, avec la
-  // correspondance bougie agrégée -> index du graphique.
-  function aggregate(mins){
-    if(mins <= tfBase) return {bars: d, map: d.map((_, k) => k)};
-    const ms = mins * 60000;
-    const bars = [], map = [];
-    let cur = null, chunk = [], startIdx = 0;
-    const flush = () => {
-      if(!chunk.length) return;
-      let hi = chunk[0].h, lo = chunk[0].l, vol = 0;
-      for(const c of chunk){ if(c.h > hi) hi = c.h; if(c.l < lo) lo = c.l; vol += (c.v || 0); }
-      bars.push({t: chunk[0].t, o: chunk[0].o, h: hi, l: lo, c: chunk[chunk.length-1].c, v: vol});
-      map.push(startIdx + chunk.length - 1);   // l'événement se matérialise à la clôture
-    };
-    for(let k = 0; k < N; k++){
-      const bk = Math.floor(d[k].t / ms);
-      if(cur !== bk){ flush(); cur = bk; chunk = [d[k]]; startIdx = k; }
-      else chunk.push(d[k]);
-    }
-    flush();
-    return {bars, map};
-  }
-
-  const addExh = (list, map, poids) => {
-    if(!Array.isArray(list)) return;
-    for(const ev of list){
-      if(!ev || ev.i == null || ev.i < 0 || ev.i >= map.length) continue;
-      const ci = map[ev.i];
-      if(ci == null || ci < 0 || ci >= N) continue;
-      exhAt[ci] += (ev.dir === -1 ? -1 : 1) * poids * (ev.quality >= 88 ? 2 : 1);
-    }
-  };
-
-  for(const mins of EXH_TFS){
-    if(mins < exhMinTf) continue;
-    const {bars, map} = aggregate(mins);
-    if(bars.length < 60) continue;
-    const poids = mins >= 60 ? 3 : (mins >= 15 ? 2 : 1);
-    try{ addExh(calc.exhaustion(bars, null, null, state.indicators.exhaustion || {}), map, poids); }catch(e){}
-    try{ addExh(calc.exhaustionPro(bars, null, null, state.indicators.exhaustion_pro || {}), map, poids); }catch(e){}
-  }
-
-  /* Nuage EMA : on reprend exactement les réglages de l'indicateur affiché
-     (Nuage EMA 30/90), y compris son unité de temps, pour que la stratégie
-     voie la même couleur que celle dessinée à l'écran.
-     La valeur d'une bougie agrégée n'est appliquée qu'APRÈS sa clôture :
-     sans cette précaution la stratégie lirait le futur. */
-  const cloudDir = new Array(N).fill(0);
-  try{
-    const ec = state.indicators.emacloud || {};
-    const cf = ec.fast || 30, cs = ec.slow || 90;
-    const ctf = cloudTf > 0 ? cloudTf
-              : ((ec.tf && ec.tf !== 'chart') ? +ec.tf : tfBase);
-    if(!(ctf > tfBase)){
-      const fa = calc.ema(d, cf), sl = calc.ema(d, cs);
-      for(let k = 0; k < N; k++)
-        cloudDir[k] = (fa[k] != null && sl[k] != null) ? (fa[k] > sl[k] ? 1 : -1) : 0;
-    } else {
-      const ag = aggregate(ctf);
-      const fa = calc.ema(ag.bars, cf), sl = calc.ema(ag.bars, cs);
-      for(let k = 0; k < ag.bars.length; k++){
-        const val = (fa[k] != null && sl[k] != null) ? (fa[k] > sl[k] ? 1 : -1) : 0;
-        const from = ag.map[k] + 1;
-        const to = (k + 1 < ag.bars.length) ? ag.map[k+1] : (N - 1);
-        for(let j = from; j <= to && j < N; j++) cloudDir[j] = val;
-      }
-    }
-  }catch(e){}
-
-  const exhWindow = (i, dir, back) => {
-    let n = 0;
-    for(let j = Math.max(0, i - (back || 5)); j <= i; j++){
-      if(dir > 0 && exhAt[j] > 0) n += exhAt[j];
-      if(dir < 0 && exhAt[j] < 0) n += -exhAt[j];
-    }
-    return n;
-  };
-
-  // Order Blocks : bornes utiles pour viser une sortie sur zone opposée.
-  let obs = [];
-  try{ obs = calc.obZones(d) || []; }catch(e){ obs = []; }
-  const obNear = (i, price, dir) => {
-    const tol = (atr[i] || 0) * 0.6;
-    for(const z of obs){
-      if(z.iDraw == null || z.iDraw > i) continue;
-      if(dir > 0 && z.type === 'bear' && price >= z.bot - tol) return true;
-      if(dir < 0 && z.type === 'bull' && price <= z.top + tol) return true;
-    }
-    return false;
-  };
-
-  /* ---- Score de confluence, positif = achat, négatif = vente ---- */
-  function scoreAt(i){
-    const b = d[i];
-    let sc = 0; const why = [];
-    if(ema9[i] == null || ema30[i] == null || atr[i] == null) return {sc:0, why};
-
-    // 1. Croisement EMA rapide / lente
-    if(ema9[i] > ema30[i]){
-      sc += (ema9[i-1] != null && ema9[i-1] <= ema30[i-1]) ? 2 : 1;
-      why.push('EMA 9 > 30');
-    } else {
-      sc -= (ema9[i-1] != null && ema9[i-1] >= ema30[i-1]) ? 2 : 1;
-      why.push('EMA 9 < 30');
-    }
-    // 2. SuperTrend
-    if(st.dir && st.dir[i] === 1){ sc += 1; why.push('SuperTrend ↑'); }
-    else if(st.dir && st.dir[i] === -1){ sc -= 1; why.push('SuperTrend ↓'); }
-    // 3. Tendance de fond
-    if(ema200[i] != null){
-      if(b.c > ema200[i]){ sc += 1; why.push('> EMA 200'); }
-      else { sc -= 1; why.push('< EMA 200'); }
-    }
-    // 4. Oscillateur KK : sortie de zone extrême
-    const nv = net[i], np = i > 0 ? net[i-1] : null;
-    if(nv != null && np != null){
-      if(np <= kkLo && nv > kkLo){ sc += 2; why.push('KK sort de survente'); }
-      if(np >= kkUp && nv < kkUp){ sc -= 2; why.push('KK sort de surachat'); }
-      const sv = kksig ? kksig[i] : null;
-      if(sv != null){ if(nv > sv) sc += 1; else sc -= 1; }
-    }
-    // 5. Épuisements récents : un creux d'épuisement favorise l'achat
-    const eUp = exhWindow(i, 1, 5), eDn = exhWindow(i, -1, 5);
-    if(eUp){ sc += Math.min(2, eUp); why.push('Épuisement baissier ×' + eUp); }
-    if(eDn){ sc -= Math.min(2, eDn); why.push('Épuisement haussier ×' + eDn); }
-    // 6. RSI : on évite les extrêmes déjà tendus
-    if(rsi[i] != null){
-      if(rsi[i] > 78) sc -= 1;
-      if(rsi[i] < 22) sc += 1;
-    }
-    // 7. Bord de range : on n'entre pas au sommet d'une consolidation
-    if(rosc[i] != null && Math.abs(rosc[i]) > rangeMax){
-      sc = sc > 0 ? sc - 2 : sc + 2;
-      why.push('Bord de range');
-    }
-    return {sc, why};
-  }
-
-  /* ---- Parcours et simulation ---- */
-  const out = [];
-  let pos = null, lastExit = -999;
-
-  for(let i = 210; i < N; i++){
-    const b = d[i];
-    if(atr[i] == null) continue;
-
-    if(pos){
-      const dir = pos.dir;
-      const px = b.c;
-      const R = pos.risk;                       // 1 R = distance entrée -> stop initial
-      const gain = (px - pos.entry) / pos.entry * dir;
-      const rMult = R > 0 ? ((px - pos.entry) * dir) / R : 0;
-      pos.bars++;
-      pos.bestR = Math.max(pos.bestR, rMult);
-      pos.best = dir > 0 ? Math.max(pos.best, b.h) : Math.min(pos.best, b.l);
-
-      // 1. Passage au point mort : le stop remonte à l'entrée dès que le trade
-      //    a pris beMove fois le risque. Une position gagnante ne redevient
-      //    plus perdante.
-      if(useStop && beMove > 0 && pos.bestR >= beMove && !pos.beDone){
-        pos.sl = dir > 0 ? Math.max(pos.sl, pos.entry) : Math.min(pos.sl, pos.entry);
-        pos.beDone = true;
-      }
-
-      // 2. Prise partielle : la moitié de la position est encaissée à partialAt,
-      //    le reste continue de courir avec le stop suiveur.
-      if(partialAt > 0 && !pos.partDone){
-        const pTgt = dir > 0 ? pos.entry + partialAt * R : pos.entry - partialAt * R;
-        if((dir > 0 && b.h >= pTgt) || (dir < 0 && b.l <= pTgt)){
-          pos.partDone = true;
-          pos.partPrice = pTgt;
-        }
-      }
-
-      // 3. Le stop suiveur ne s'arme qu'une fois trailAfter atteint : on laisse
-      //    respirer le début du trade au lieu de le couper au premier repli.
-      let trail = null;
-      if(pos.bestR >= trailAfter){
-        trail = dir > 0 ? pos.best - trailMult * atr[i] : pos.best + trailMult * atr[i];
-      }
-
-      let reason = null;
-      if(useStop && dir > 0 && b.l <= pos.sl) reason = pos.beDone ? 'Point mort' : 'Stop de protection';
-      else if(useStop && dir < 0 && b.h >= pos.sl) reason = pos.beDone ? 'Point mort' : 'Stop de protection';
-      else if(dir > 0 && b.h >= pos.tp) reason = 'Objectif atteint';
-      else if(dir < 0 && b.l <= pos.tp) reason = 'Objectif atteint';
-      else if(pos.bars >= minHold){
-        if(trail != null && dir > 0 && px < trail) reason = 'Stop suiveur ATR';
-        else if(trail != null && dir < 0 && px > trail) reason = 'Stop suiveur ATR';
-        else if(net[i] != null && net[i-1] != null && rMult > 0.3){
-          // Sortie KK seulement si le trade est déjà en profit
-          if(dir > 0 && net[i-1] >= kkUp && net[i] < kkUp) reason = 'Sortie KK (surachat)';
-          if(dir < 0 && net[i-1] <= kkLo && net[i] > kkLo) reason = 'Sortie KK (survente)';
-        }
-      }
-
-      // 4. Épuisement contraire : ne coupe plus au premier signal. Il faut un
-      //    épuisement marqué, un trade déjà en profit, et une bougie qui ferme
-      //    contre la position. Sinon la tendance se poursuit sans nous.
-      if(!reason && exhMode !== 'off' && pos.bars >= minHold){
-        const force = exhWindow(i, dir > 0 ? -1 : 1, 2);
-        const contre = dir > 0 ? (b.c < b.o) : (b.c > b.o);
-        const nuagePorteur = cloudVeto && cloudDir[i] === dir;
-        if(!nuagePorteur && (exhMode === 'immediat' ? force >= 2
-                                                    : (force >= 2 && rMult >= 0.5 && contre))){
-          reason = 'Épuisement contraire';
-        }
-      }
-      if(!reason && useObExit && obNear(i, px, dir)) reason = 'Order Block opposé';
-
-      // 5. Retournement complet du score : on ne reste pas à contre-courant.
-      if(!reason && pos.bars >= minHold){
-        const s2 = scoreAt(i).sc;
-        if(dir > 0 && s2 <= -minScore) reason = 'Retournement du signal';
-        if(dir < 0 && s2 >= minScore) reason = 'Retournement du signal';
-      }
-
-      // 6. Stop temporel : un trade qui n'a rien donné après timeStop bougies
-      //    immobilise du capital pour rien.
-      if(!reason && timeStop > 0 && pos.bars >= timeStop && pos.bestR < 0.5){
-        reason = 'Stop temporel';
-      }
-      if(!reason && i === N - 1) reason = 'Clôture de la période';
-
-      if(reason){
-        let exitP = px;
-        if(reason === 'Stop de protection') exitP = pos.sl;
-        if(reason === 'Point mort') exitP = pos.entry;
-        if(reason === 'Objectif atteint') exitP = pos.tp;
-        // Si la prise partielle a eu lieu, le prix de sortie effectif est la
-        // moyenne des deux moitiés.
-        const effP = pos.partDone ? (pos.partPrice + exitP) / 2 : exitP;
-        out.push({
-          i, t: b.t, price: effP, type: 'SORTIE', dir: -pos.dir, originDir: pos.dir,
-          entryPrice: pos.entry, entryT: pos.t, reason,
-          partial: pos.partDone, bars: pos.bars,
-          pnlPct: ((effP - pos.entry) / pos.entry) * pos.dir * 100
-        });
-        pos = null; lastExit = i;
-        continue;
-      }
-      continue;
-    }
-
-    if(i - lastExit < cooldown) continue;
-    const {sc, why} = scoreAt(i);
-    let dir = 0;
-    if(sc >= minScore) dir = 1;
-    else if(allowShort && sc <= -minScore) dir = -1;
-    if(!dir) continue;
-    // Filtre directionnel du nuage : pas d'achat quand le nuage est rouge,
-    // pas de vente quand il est vert. On ne rame jamais à contre-courant.
-    if(cloudEntry && cloudDir[i] !== 0 && cloudDir[i] !== dir) continue;
-    if(cloudDir[i] !== 0) why.unshift(cloudDir[i] > 0 ? 'Nuage vert' : 'Nuage rouge');
-
-    const risk = slMult * atr[i];
-    pos = {
-      dir, entry: b.c, t: b.t, i, risk,
-      sl: dir > 0 ? b.c - risk : b.c + risk,
-      tp: dir > 0 ? b.c + risk * tpRR : b.c - risk * tpRR,
-      best: b.c, bestR: 0, bars: 0,
-      beDone: false, partDone: false, partPrice: 0
-    };
-    out.push({
-      i, t: b.t, price: b.c, type: 'ENTREE', dir, score: sc,
-      reasons: why.slice(0, 3),
-      sl: pos.sl, tp: pos.tp
-    });
-  }
-  return out;
-}
-
-/* ---- Dessin des pastilles de la Stratégie Confluence Totale ---- */
-function drawMasterStrategy(evts, s, e, yOf){
-  if(!Array.isArray(evts) || !evts.length) return;
-  const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
-  for(const g of evts){
-    const i = (g.t != null ? idxOfTime(g.t) : null) ?? g.i;
-    if(i == null || i < s - 1 || i > e + 1) continue;
-    const x = xOf(i);
-    if(x < -200 || x > W - AXIS_W + 200) continue;
-
-    const isEntry = g.type === 'ENTREE';
-    const up = g.originDir ? g.originDir === 1 : g.dir === 1;
-    const color = isEntry ? (g.dir === 1 ? '#22D3EE' : '#F472B6') : (g.pnlPct >= 0 ? '#22C55E' : '#EF4444');
-    const bg = isEntry ? 'rgba(6,26,34,0.95)' : 'rgba(10,22,16,0.95)';
-
-    const yDot = isEntry
-      ? (g.dir === 1 ? yOf(g.price) + 30 : yOf(g.price) - 30)
-      : (up ? yOf(g.price) - 30 : yOf(g.price) + 30);
-    const down = isEntry ? (g.dir === 1) : !up;
-
-    const bw = 168, bh = isEntry ? 40 : 34;
-    const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
-    const by = placeBadge(bx, bw, down ? (yDot + 46) : (yDot - 52 - bh), bh, down ? 1 : -1);
-
-    ctx.save();
-    ctx.shadowColor = color; ctx.shadowBlur = 10;
-    ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(x, yDot, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.3; ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash([3, 2]);
-    ctx.beginPath(); ctx.moveTo(x, yDot); ctx.lineTo(x, down ? by : by + bh); ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = bg; ctx.strokeStyle = color; ctx.lineWidth = 2;
-    roundRect(bx, by, bw, bh, 9); ctx.fill(); ctx.stroke();
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = color;
-    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
-    const title = isEntry
-      ? (g.dir === 1 ? '🏆 ENTRÉE ACHAT · score ' + g.score : '🏆 ENTRÉE VENTE · score ' + g.score)
-      : '🏁 SORTIE · ' + (g.pnlPct >= 0 ? '+' : '') + (g.pnlPct || 0).toFixed(2) + '%';
-    ctx.fillText(title, bx + bw / 2, by + 12);
-
-    ctx.fillStyle = '#E2E8F0';
-    ctx.font = '8px "IBM Plex Mono",monospace';
-    ctx.fillText('Prix: ' + fmtP(g.price) + ' $', bx + bw / 2, by + 22);
-
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '7.5px "IBM Plex Mono",monospace';
-    if(isEntry){
-      ctx.fillText((g.reasons || []).join(' · ').slice(0, 34), bx + bw / 2, by + 31);
-      ctx.fillStyle = '#64748B';
-      ctx.fillText('SL ' + fmtP(g.sl) + '  TP ' + fmtP(g.tp), bx + bw / 2, by + 38);
-    } else {
-      ctx.fillText((g.reason || '').slice(0, 34), bx + bw / 2, by + 31);
-    }
-    ctx.textAlign = 'left';
-    labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'strat_master'});
-    ctx.restore();
-  }
-}
-
-/* ---- Backtest dédié de la Stratégie Confluence Totale ---- */
-function openMasterBacktestModal(){
-  const m = document.getElementById('mbt-modal');
-  if(!m) return;
-  m.style.display = 'flex';
-  document.getElementById('mbt-res').innerHTML =
-    '<div style="color:#94A3B8;padding:12px;font-size:12px">Choisis tes paramètres puis lance le backtest.</div>';
-}
-async function runMasterBacktest(){
-  const btn = document.getElementById('mbt-run');
-  const res = document.getElementById('mbt-res');
-  const days = +(document.getElementById('mbt-days').value || 7);
-  const capital0 = +(document.getElementById('mbt-capital').value || 10000);
-  const feePct = (+(document.getElementById('mbt-fee').value || 0.06)) / 100;
-  const lev = +(document.getElementById('mbt-lev').value || 1);
-  const minScore = +(document.getElementById('mbt-score').value || 5);
-  const trailMult = +(document.getElementById('mbt-trail').value || 2);
-  const slMult = +(document.getElementById('mbt-sl').value || 1.5);
-  const tpRR = +(document.getElementById('mbt-rr').value || 2.5);
-  const allowShort = document.getElementById('mbt-short').classList.contains('on');
-  const useObExit = document.getElementById('mbt-ob').classList.contains('on');
-  const exhMode = document.getElementById('mbt-exh').value;
-  const exhMinTf = +document.getElementById('mbt-exhtf').value;
-  const cloudVeto = document.getElementById('mbt-cloud').classList.contains('on');
-  const cloudEntry = document.getElementById('mbt-cloudin').classList.contains('on');
-  const useStop = document.getElementById('mbt-stop').classList.contains('on');
-  const beMove = useStop ? 1 : 0;
-
-  btn.textContent = '⏳ Chargement de ' + days + ' jour(s)…';
-  btn.style.pointerEvents = 'none';
-  let d;
-  try{ d = await fetchBigHistory(days); }catch(e){ d = state.data; }
-  btn.textContent = '▶ Lancer le Backtest';
-  btn.style.pointerEvents = 'auto';
-
-  if(!d || d.length < 220){
-    res.innerHTML = '<div style="color:#EF4444;padding:12px">Historique insuffisant pour cette stratégie (220 bougies minimum).</div>';
-    return;
-  }
-
-  const evts = computeMasterStrategy(d, {minScore, trailMult, slMult, tpRR, allowShort, useObExit, exhMode, exhMinTf, cloudVeto, cloudEntry, useStop, beMove});
-  let cap = capital0, peak = capital0, maxDD = 0;
-  const trades = [];
-  for(const g of evts){
-    if(g.type !== 'SORTIE') continue;
-    const gross = ((g.price - g.entryPrice) / g.entryPrice) * g.originDir * lev;
-    const net = Math.max(-0.95, gross - 2 * feePct * lev);
-    const pnl = cap * net;
-    cap += pnl;
-    peak = Math.max(peak, cap);
-    maxDD = Math.max(maxDD, peak - cap);
-    trades.push({t: g.t, dir: g.originDir === 1 ? 'ACHAT' : 'VENTE', entry: g.entryPrice,
-      exit: g.price, pnl, pct: net * 100, reason: g.reason, cap});
-  }
-
-  const n = trades.length;
-  const wins = trades.filter(t => t.pnl > 0);
-  const losses = trades.filter(t => t.pnl <= 0);
-  const wr = n ? (wins.length / n * 100) : 0;
-  const gGain = wins.reduce((a, t) => a + t.pnl, 0);
-  const gLoss = Math.abs(losses.reduce((a, t) => a + t.pnl, 0));
-  const pf = gLoss > 0 ? gGain / gLoss : (gGain > 0 ? Infinity : 0);
-  const netTot = cap - capital0;
-  const netPct = netTot / capital0 * 100;
-  const bestT = trades.reduce((a, t) => (!a || t.pnl > a.pnl) ? t : a, null);
-  const worstT = trades.reduce((a, t) => (!a || t.pnl < a.pnl) ? t : a, null);
-  const f = v => (v >= 0 ? '+' : '') + v.toFixed(2);
-  const box = (lab, val, col) =>
-    '<div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px">' +
-    '<div style="color:#94A3B8;font-size:9.5px">' + lab + '</div>' +
-    '<div style="color:' + col + ';font-weight:800;font-size:14px;margin-top:2px">' + val + '</div></div>';
-
-  let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">' +
-    box('PnL net', f(netPct) + ' %', netTot >= 0 ? '#22C55E' : '#EF4444') +
-    box('Capital final', cap.toFixed(0) + ' $', netTot >= 0 ? '#22C55E' : '#EF4444') +
-    box('Trades', String(n), '#E2E8F0') +
-    box('Taux de réussite', wr.toFixed(1) + ' %', wr >= 50 ? '#22C55E' : '#F59E0B') +
-    box('Facteur de profit', pf === Infinity ? '∞' : pf.toFixed(2), pf >= 1.5 ? '#22C55E' : (pf >= 1 ? '#F59E0B' : '#EF4444')) +
-    box('Perte max (DD)', '-' + maxDD.toFixed(0) + ' $', '#EF4444') +
-    '</div>';
-
-  if(bestT) html += '<div style="font-size:10.5px;color:#94A3B8;margin-bottom:8px">' +
-    'Meilleur trade : <b style="color:#22C55E">' + f(bestT.pct) + ' %</b> · ' +
-    'Pire trade : <b style="color:#EF4444">' + f(worstT.pct) + ' %</b> · ' +
-    'Analyse sur ' + d.length + ' bougies (' + (TF_MAP[state.tf] || state.tf) + ')</div>';
-
-  if(!n){
-    html += '<div style="color:#F59E0B;padding:10px;font-size:11.5px">Aucun trade déclenché. Le score minimum est peut-être trop élevé — essaie de le baisser d\'un cran.</div>';
-  } else {
-    html += '<div style="max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
-      '<table style="width:100%;border-collapse:collapse;font-size:10px">' +
-      '<thead><tr style="position:sticky;top:0;background:var(--panel-2,#0F172A)">' +
-      ['Date','Sens','Entrée','Sortie','Résultat','Motif'].map(h =>
-        '<th style="padding:5px;text-align:left;color:#94A3B8;font-weight:700">' + h + '</th>').join('') +
-      '</tr></thead><tbody>';
-    for(const t of trades.slice().reverse()){
-      const dt = new Date(t.t);
-      html += '<tr style="border-top:1px solid var(--line)">' +
-        '<td style="padding:4px 5px;color:#94A3B8">' + dt.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) + ' ' +
-        dt.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + '</td>' +
-        '<td style="padding:4px 5px;color:' + (t.dir === 'ACHAT' ? '#22D3EE' : '#F472B6') + ';font-weight:700">' + t.dir + '</td>' +
-        '<td style="padding:4px 5px;color:#CBD5E1">' + t.entry.toFixed(1) + '</td>' +
-        '<td style="padding:4px 5px;color:#CBD5E1">' + t.exit.toFixed(1) + '</td>' +
-        '<td style="padding:4px 5px;color:' + (t.pnl >= 0 ? '#22C55E' : '#EF4444') + ';font-weight:700">' + f(t.pct) + ' %</td>' +
-        '<td style="padding:4px 5px;color:#94A3B8">' + (t.reason || '') + '</td></tr>';
-    }
-    html += '</tbody></table></div>';
-  }
-  res.innerHTML = html;
-}
-
-/* ---- Câblage de la fenêtre de backtest de la stratégie ---- */
-try{
-  const bm=document.getElementById('btn-bt-strat-master');
-  if(bm) bm.addEventListener('click',e=>{ e.stopPropagation(); openMasterBacktestModal(); });
-}catch(e){}
-try{
-  document.getElementById('mbt-close').addEventListener('click',()=>{
-    document.getElementById('mbt-modal').style.display='none';
-  });
-  document.getElementById('mbt-modal').addEventListener('click',ev=>{
-    if(ev.target.id==='mbt-modal') ev.currentTarget.style.display='none';
-  });
-  document.getElementById('mbt-run').addEventListener('click',runMasterBacktest);
-  document.getElementById('mbt-short').addEventListener('click',function(){
-    this.classList.toggle('on');
-  });
-  document.getElementById('mbt-ob').addEventListener('click',function(){
-    this.classList.toggle('on');
-  });
-  document.getElementById('mbt-cloud').addEventListener('click',function(){
-    this.classList.toggle('on');
-  });
-  document.getElementById('mbt-cloudin').addEventListener('click',function(){
-    this.classList.toggle('on');
-  });
-  document.getElementById('mbt-stop').addEventListener('click',function(){
-    this.classList.toggle('on');
-  });
-}catch(e){}
-
-
-
-/* =======================================================================
-   MODULE IMPORTÉ TEL QUEL : LUMEN_STRATEGIE_ET_COMPTE_DEMO_CODE_COMPLET.js
-   Contenu inchangé, placé dans une portée fermée.
-   Raison : ce module définit sa propre computeEmaHaCrossSignals, qui porte
-   le même nom que celle de Lumen. Sans cette portée, elle écraserait
-   l'originale et la stratégie EMA 9 / HA existante changerait de
-   comportement. À l'intérieur du module, c'est bien sa version qui sert.
-   Réparations prévues plus tard : ré-agrégation réelle en 5m et 3m,
-   stop et objectif, contrôle de fraîcheur du signal en auto-trade,
-   dimensionnement du levier et de la marge.
-   ===================================================================== */
-(function(){
-/**
- * =========================================================================================
- * LUMEN CHARTS - CODE COMPLET DE LA STRATÉGIE & MODULE COMPTE DÉMO (AUTO-TRADE + BANQUE)
- * =========================================================================================
- * 1. La Stratégie de Trading complète (Croisement EMA 9, Bougies Heikin Ashi 5m, Filtre MACD S/R 3m)
- * 2. Le Moteur de Backtest & Calcul des Métriques
- * 3. Le Moteur du Compte Démo & Exécution Auto-Trade
- * 4. Le Module Banque & Sécurisation des Retraits de Gains
- * =========================================================================================
- */
-
-function calculateEMA(prices, period) {
-  const ema = [];
-  const k = 2 / (period + 1);
-  let prevEma = prices[0];
-  ema[0] = prevEma;
-  for (let i = 1; i < prices.length; i++) {
-    const curEma = (prices[i] * k) + (prevEma * (1 - k));
-    ema.push(curEma);
-    prevEma = curEma;
-  }
-  return ema;
-}
-
-function calculateMACD(closes, fastP = 12, slowP = 26, signalP = 9) {
-  const emaFast = calculateEMA(closes, fastP);
-  const emaSlow = calculateEMA(closes, slowP);
-  const macdLine = emaFast.map((f, i) => f - emaSlow[i]);
-  const signalLine = calculateEMA(macdLine, signalP);
-  const histogram = macdLine.map((m, i) => m - signalLine[i]);
-  return { macdLine, signalLine, histogram };
-}
-
-function calculateHeikinAshi(candles) {
-  const ha = [];
-  for (let i = 0; i < candles.length; i++) {
-    const c = candles[i];
-    const haClose = (c.o + c.h + c.l + c.c) / 4;
-    let haOpen;
-    if (i === 0) { haOpen = (c.o + c.c) / 2; }
-    else { haOpen = (ha[i - 1].haOpen + ha[i - 1].haClose) / 2; }
-    const haHigh = Math.max(c.h, haOpen, haClose);
-    const haLow = Math.min(c.l, haOpen, haClose);
-    ha.push({ ...c, haOpen, haHigh, haLow, haClose, isGreen: haClose >= haOpen });
-  }
-  return ha;
-}
-
-function computeEmaHaCrossSignals(candles1m, options = {}) {
-  const emaPeriod = options.emaPeriod || 9;
-  const exitMode = options.exitMode || 'macd';
-  if (!candles1m || candles1m.length < 50) return [];
-  const closes1m = candles1m.map(c => c.c);
-  const ema1m = calculateEMA(closes1m, emaPeriod);
-  const macd3m = calculateMACD(closes1m, 12, 26, 9);
-  const haCandles = calculateHeikinAshi(candles1m);
-  const signals = [];
-  let currentPosition = null;
-  for (let i = 1; i < candles1m.length; i++) {
-    const prevC = candles1m[i - 1];
-    const curC = candles1m[i];
-    const curPrice = curC.c;
-    const curEma = ema1m[i];
-    const prevEma = ema1m[i - 1];
-    const isHaGreen = haCandles[i].isGreen;
-    const isMacdPositive = macd3m.histogram[i] > 0;
-    const isMacdNegative = macd3m.histogram[i] < 0;
-    const crossUpEMA = prevC.c <= prevEma && curC.c > curEma;
-    const crossDownEMA = prevC.c >= prevEma && curC.c < curEma;
-    const buyCondition = crossUpEMA && isHaGreen && isMacdPositive;
-    const sellCondition = crossDownEMA && !isHaGreen && isMacdNegative;
-    let shouldExit = false;
-    if (currentPosition) {
-      if (exitMode === 'macd') {
-        if (currentPosition.type === 'long' && isMacdNegative) shouldExit = true;
-        if (currentPosition.type === 'short' && isMacdPositive) shouldExit = true;
-      } else if (exitMode === 'color') {
-        if (currentPosition.type === 'long' && !isHaGreen) shouldExit = true;
-        if (currentPosition.type === 'short' && isHaGreen) shouldExit = true;
-      } else if (exitMode === 'ema_cross') {
-        if (currentPosition.type === 'long' && crossDownEMA) shouldExit = true;
-        if (currentPosition.type === 'short' && crossUpEMA) shouldExit = true;
-      }
-    }
-    if (currentPosition && (shouldExit || (currentPosition.type === 'long' && sellCondition) || (currentPosition.type === 'short' && buyCondition))) {
-      signals.push({ i, t: curC.t, type: 'SORTIE', dir: 0, price: curPrice,
-        sourceName: 'Sortie ' + exitMode.toUpperCase(), exitReason: 'Inversion MACD / Tendance' });
-      currentPosition = null;
-    }
-    if (!currentPosition) {
-      if (buyCondition) {
-        currentPosition = { type: 'long', entryPrice: curPrice, entryIndex: i, entryTime: curC.t };
-        signals.push({ i, t: curC.t, type: 'ACHAT (LONG)', dir: 1, price: curPrice, sourceName: 'EMA 9 / HA 5m (ACHAT)' });
-      } else if (sellCondition) {
-        currentPosition = { type: 'short', entryPrice: curPrice, entryIndex: i, entryTime: curC.t };
-        signals.push({ i, t: curC.t, type: 'VENTE (SHORT)', dir: -1, price: curPrice, sourceName: 'EMA 9 / HA 5m (VENTE)' });
-      }
-    }
-  }
-  return signals;
-}
-
-function runBacktestEngine(candles, options = {}) {
-  const initialCapital = options.capital || 100;
-  const leverage = options.leverage || 100;
-  const feePct = options.feePct || 0.04;
-  const exitMode = options.exitMode || 'macd';
-  const signals = computeEmaHaCrossSignals(candles, { exitMode });
-  let capital = initialCapital;
-  let peakCapital = initialCapital;
-  let maxDrawdown = 0;
-  let maxDrawdownPct = 0;
-  const tradesHistory = [];
-  let activeTrade = null;
-  for (const sig of signals) {
-    if (sig.dir !== 0 && !activeTrade) {
-      activeTrade = { side: sig.dir === 1 ? 'LONG' : 'SHORT', entryPrice: sig.price, entryTime: sig.t, margin: capital };
-    } else if ((sig.dir === 0 || (activeTrade && ((activeTrade.side === 'LONG' && sig.dir === -1) || (activeTrade.side === 'SHORT' && sig.dir === 1)))) && activeTrade) {
-      const exitPrice = sig.price;
-      const rawReturn = activeTrade.side === 'LONG'
-        ? (exitPrice - activeTrade.entryPrice) / activeTrade.entryPrice
-        : (activeTrade.entryPrice - exitPrice) / activeTrade.entryPrice;
-      const grossPnl = activeTrade.margin * rawReturn * leverage;
-      const fees = (activeTrade.margin * leverage * (feePct / 100)) * 2;
-      const netPnl = grossPnl - fees;
-      capital += netPnl;
-      if (capital <= 0) capital = 0.01;
-      if (capital > peakCapital) peakCapital = capital;
-      const dd = peakCapital - capital;
-      const ddPct = (dd / peakCapital) * 100;
-      if (dd > maxDrawdown) maxDrawdown = dd;
-      if (ddPct > maxDrawdownPct) maxDrawdownPct = ddPct;
-      tradesHistory.push({ entryTime: activeTrade.entryTime, exitTime: sig.t, side: activeTrade.side,
-        entryPrice: activeTrade.entryPrice, exitPrice, netPnl, capitalAfter: capital, isWin: netPnl > 0 });
-      activeTrade = null;
-      if (sig.dir !== 0) {
-        activeTrade = { side: sig.dir === 1 ? 'LONG' : 'SHORT', entryPrice: sig.price, entryTime: sig.t, margin: capital };
-      }
-    }
-  }
-  const wins = tradesHistory.filter(t => t.isWin);
-  const losses = tradesHistory.filter(t => !t.isWin);
-  const totalGrossWin = wins.reduce((acc, t) => acc + t.netPnl, 0);
-  const totalGrossLoss = Math.abs(losses.reduce((acc, t) => acc + t.netPnl, 0));
-  const winRate = tradesHistory.length > 0 ? (wins.length / tradesHistory.length) * 100 : 0;
-  const profitFactor = totalGrossLoss > 0 ? (totalGrossWin / totalGrossLoss) : (totalGrossWin > 0 ? 99 : 0);
-  const netPnlTotal = capital - initialCapital;
-  const netPnlTotalPct = (netPnlTotal / initialCapital) * 100;
-  return { initialCapital, finalCapital: capital, netPnlTotal, netPnlTotalPct, winRate,
-    profitFactor, maxDrawdown, maxDrawdownPct, totalTrades: tradesHistory.length, tradesHistory };
-}
-
-const DemoAccount = {
-  state: {
-    cash: 100000.00,
-    bank: 0.00,
-    withdrawals: [],
-    positions: [],
-    history: [],
-    autoTradeEnabled: false
-  },
-  init() {
-    try {
-      const saved = localStorage.getItem('lumen_paper_data');
-      if (saved) { this.state = { ...this.state, ...JSON.parse(saved) }; }
-    } catch(e) {}
-  },
-  save() {
-    try { localStorage.setItem('lumen_paper_data', JSON.stringify(this.state)); } catch(e) {}
-  },
-  openPosition(side, symbol, price, amountUSDT, leverage = 100) {
-    if (this.state.positions.length > 0) { this.closePosition(0, price); }
-    const margin = amountUSDT;
-    const qty = (margin * leverage) / price;
-    const pos = { sym: symbol, side: side.toLowerCase(), price: price, qty: qty,
-      margin: margin, lev: leverage, time: Date.now() };
-    this.state.positions.push(pos);
-    this.save();
-    return pos;
-  },
-  closePosition(index, currentPrice) {
-    if (index < 0 || index >= this.state.positions.length) return null;
-    const pos = this.state.positions[index];
-    const isLong = pos.side === 'long';
-    const priceDiff = isLong ? (currentPrice - pos.price) : (pos.price - currentPrice);
-    const grossPnl = priceDiff * pos.qty;
-    const feePct = 0.04;
-    const fees = (pos.margin * pos.lev * (feePct / 100)) * 2;
-    const netPnl = grossPnl - fees;
-    this.state.cash += netPnl;
-    const closedTrade = { sym: pos.sym, side: pos.side, entryPrice: pos.price, exitPrice: currentPrice,
-      qty: pos.qty, margin: pos.margin, lev: pos.lev, netPnl: netPnl,
-      netPnlPct: (netPnl / pos.margin) * 100, closeTime: Date.now() };
-    this.state.history.unshift(closedTrade);
-    this.state.positions.splice(index, 1);
-    this.save();
-    return closedTrade;
-  },
-  withdrawToBank(amount) {
-    if (amount <= 0 || amount > this.state.cash) return false;
-    this.state.cash -= amount;
-    this.state.bank += amount;
-    this.state.withdrawals.unshift({ id: Date.now().toString(), amount: amount, date: new Date().toISOString() });
-    this.save();
-    return true;
-  },
-  restoreWithdrawal(withdrawalId) {
-    const idx = this.state.withdrawals.findIndex(w => w.id === withdrawalId);
-    if (idx === -1) return false;
-    const item = this.state.withdrawals[idx];
-    this.state.cash += item.amount;
-    this.state.bank -= item.amount;
-    this.state.withdrawals.splice(idx, 1);
-    this.save();
-    return true;
-  }
-};
-
-let lastExecutedSignalId = null;
-
-function processAutoTrade(currentCandles, currentSymbol, currentPrice) {
-  if (!DemoAccount.state.autoTradeEnabled) return;
-  const signals = computeEmaHaCrossSignals(currentCandles, { exitMode: 'macd' });
-  if (!signals || !signals.length) return;
-  const lastSignal = signals[signals.length - 1];
-  const sigType = lastSignal.type;
-  const sigId = currentSymbol + '|' + lastSignal.t + '|' + sigType + '|' + lastSignal.dir;
-  if (lastExecutedSignalId === sigId) return;
-  const currentPos = DemoAccount.state.positions[0];
-  if (sigType.includes('SORTIE') || lastSignal.dir === 0) {
-    if (currentPos) {
-      lastExecutedSignalId = sigId;
-      DemoAccount.closePosition(0, currentPrice);
-      console.log('[Auto-Trade] Position fermée suite à un signal de sortie @ ' + currentPrice);
-    }
-    return;
-  }
-  const targetSide = (lastSignal.dir === 1 || sigType.includes('ACHAT')) ? 'long' : 'short';
-  if (!currentPos) {
-    lastExecutedSignalId = sigId;
-    DemoAccount.openPosition(targetSide, currentSymbol, currentPrice, 100, 100);
-    console.log('[Auto-Trade] Ordre ' + targetSide.toUpperCase() + ' exécuté @ ' + currentPrice);
-  } else if (currentPos.side !== targetSide) {
-    lastExecutedSignalId = sigId;
-    DemoAccount.closePosition(0, currentPrice);
-    DemoAccount.openPosition(targetSide, currentSymbol, currentPrice, 100, 100);
-    console.log('[Auto-Trade] Inversion de Tendance : Nouvelle position ' + targetSide.toUpperCase() + ' @ ' + currentPrice);
-  }
-}
-
-  window.LumenDemoModule = {
-    calculateEMA, calculateMACD, calculateHeikinAshi,
-    computeEmaHaCrossSignals,
-    runBacktestEngine, DemoAccount, processAutoTrade
-  };
-  window.DemoAccount = DemoAccount;
-  window.runBacktestEngine = runBacktestEngine;
-  window.processAutoTrade = processAutoTrade;
-  try{ DemoAccount.init(); }catch(e){}
-})();
-
-
-/* =======================================================================
-   STRATÉGIE MÉDIAIRE
-   Indicateur autonome qui affiche les signaux du module Compte Démo
-   (croisement EMA 9, Heikin Ashi, filtre MACD) et propose son propre
-   backtest via le moteur runBacktestEngine du module.
-   ===================================================================== */
-function computeMediaireSignals(d, ind){
-  const M = window.LumenDemoModule;
-  if(!M || !Array.isArray(d) || d.length < 60) return [];
-  try{
-    return M.computeEmaHaCrossSignals(d, {
-      emaPeriod: (ind && ind.emaPeriod) || 9,
-      exitMode: (ind && ind.exitMode) || 'macd'
-    });
-  }catch(e){ return []; }
-}
-
-function drawMediaire(evts, s, e, yOf){
-  if(!Array.isArray(evts) || !evts.length) return;
-  const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
-  for(const g of evts){
-    const i = (g.t != null ? idxOfTime(g.t) : null) ?? g.i;
-    if(i == null || i < s - 1 || i > e + 1) continue;
-    const x = xOf(i);
-    if(x < -200 || x > W - AXIS_W + 200) continue;
-
-    const isExit = (g.dir === 0);
-    const up = g.dir === 1;
-    const color = isExit ? '#A78BFA' : (up ? '#34D399' : '#FB7185');
-    const bg = isExit ? 'rgba(24,16,42,0.95)' : (up ? 'rgba(6,32,24,0.95)' : 'rgba(38,10,20,0.95)');
-    const down = isExit ? false : up;
-
-    const yDot = down ? yOf(g.price) + 26 : yOf(g.price) - 26;
-    const bw = 158, bh = 30;
-    const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
-    const by = placeBadge(bx, bw, down ? (yDot + 40) : (yDot - 46 - bh), bh, down ? 1 : -1);
-
-    ctx.save();
-    ctx.shadowColor = color; ctx.shadowBlur = 9;
-    ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(x, yDot, 4.5, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
-
-    ctx.strokeStyle = color; ctx.lineWidth = 1.1; ctx.setLineDash([3, 2]);
-    ctx.beginPath(); ctx.moveTo(x, yDot); ctx.lineTo(x, down ? by : by + bh); ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = bg; ctx.strokeStyle = color; ctx.lineWidth = 1.8;
-    roundRect(bx, by, bw, bh, 8); ctx.fill(); ctx.stroke();
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = color;
-    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
-    const titre = isExit ? '🌓 MÉDIAIRE · SORTIE'
-                         : (up ? '🌓 MÉDIAIRE · ACHAT' : '🌓 MÉDIAIRE · VENTE');
-    ctx.fillText(titre, bx + bw / 2, by + 12);
-    ctx.fillStyle = '#E2E8F0';
-    ctx.font = '8px "IBM Plex Mono",monospace';
-    ctx.fillText('Prix: ' + fmtP(g.price) + ' $', bx + bw / 2, by + 23);
-    ctx.textAlign = 'left';
-    labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'strat_mediaire'});
-    ctx.restore();
-  }
-}
-
-function openMediaireBacktestModal(){
-  const m = document.getElementById('dbt-modal');
-  if(!m) return;
-  m.style.display = 'flex';
-  document.getElementById('dbt-res').innerHTML =
-    '<div style="color:#94A3B8;padding:12px;font-size:12px">Choisis tes paramètres puis lance le backtest.</div>';
-}
-
-async function runMediaireBacktest(){
-  const M = window.LumenDemoModule;
-  const btn = document.getElementById('dbt-run');
-  const res = document.getElementById('dbt-res');
-  if(!M){ res.innerHTML = '<div style="color:#EF4444;padding:12px">Module Médiaire introuvable.</div>'; return; }
-
-  const days = +(document.getElementById('dbt-days').value || 7);
-  const capital = +(document.getElementById('dbt-capital').value || 100);
-  const lev = +(document.getElementById('dbt-lev').value || 100);
-  const fee = +(document.getElementById('dbt-fee').value || 0.04);
-  const exitMode = document.getElementById('dbt-exit').value;
-
-  btn.textContent = '⏳ Chargement de ' + days + ' jour(s)…';
-  btn.style.pointerEvents = 'none';
-  let d;
-  try{ d = await fetchBigHistory(days); }catch(e){ d = state.data; }
-  btn.textContent = '▶ Lancer le Backtest';
-  btn.style.pointerEvents = 'auto';
-  if(!d || d.length < 60){
-    res.innerHTML = '<div style="color:#EF4444;padding:12px">Historique insuffisant.</div>';
-    return;
-  }
-
-  const r = M.runBacktestEngine(d, {capital, leverage: lev, feePct: fee, exitMode});
-  const f = v => (v >= 0 ? '+' : '') + v.toFixed(2);
-  const box = (lab, val, col) =>
-    '<div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px">' +
-    '<div style="color:#94A3B8;font-size:9.5px">' + lab + '</div>' +
-    '<div style="color:' + col + ';font-weight:800;font-size:14px;margin-top:2px">' + val + '</div></div>';
-
-  const ruine = r.finalCapital <= 0.02;
-  let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">' +
-    box('PnL net', f(r.netPnlTotalPct) + ' %', r.netPnlTotal >= 0 ? '#22C55E' : '#EF4444') +
-    box('Capital final', r.finalCapital.toFixed(2) + ' $', r.netPnlTotal >= 0 ? '#22C55E' : '#EF4444') +
-    box('Trades', String(r.totalTrades), '#E2E8F0') +
-    box('Taux de réussite', r.winRate.toFixed(1) + ' %', r.winRate >= 50 ? '#22C55E' : '#F59E0B') +
-    box('Facteur de profit', r.profitFactor.toFixed(2), r.profitFactor >= 1.5 ? '#22C55E' : (r.profitFactor >= 1 ? '#F59E0B' : '#EF4444')) +
-    box('Perte max (DD)', r.maxDrawdownPct.toFixed(1) + ' %', '#EF4444') +
-    '</div>';
-
-  if(ruine) html += '<div style="background:rgba(239,68,68,0.12);border:1px solid #EF4444;border-radius:8px;padding:9px;margin-bottom:10px;color:#FCA5A5;font-size:11px">' +
-    'Compte liquidé. Ce moteur engage la totalité du capital comme marge à chaque trade, avec le levier choisi. Baisse le levier pour voir le comportement réel de la stratégie.</div>';
-
-  const tr = (r.tradesHistory || []).slice(-120).reverse();
-  if(tr.length){
-    html += '<div style="max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
-      '<table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr style="position:sticky;top:0;background:var(--panel-2,#0F172A)">' +
-      ['Date','Sens','Entrée','Sortie','Résultat','Capital'].map(h =>
-        '<th style="padding:5px;text-align:left;color:#94A3B8;font-weight:700">' + h + '</th>').join('') +
-      '</tr></thead><tbody>';
-    for(const t of tr){
-      const dt = new Date(t.exitTime);
-      html += '<tr style="border-top:1px solid var(--line)">' +
-        '<td style="padding:4px 5px;color:#94A3B8">' + dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' +
-        dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + '</td>' +
-        '<td style="padding:4px 5px;color:' + (t.side === 'LONG' ? '#34D399' : '#FB7185') + ';font-weight:700">' + t.side + '</td>' +
-        '<td style="padding:4px 5px;color:#CBD5E1">' + t.entryPrice.toFixed(1) + '</td>' +
-        '<td style="padding:4px 5px;color:#CBD5E1">' + t.exitPrice.toFixed(1) + '</td>' +
-        '<td style="padding:4px 5px;color:' + (t.netPnl >= 0 ? '#22C55E' : '#EF4444') + ';font-weight:700">' + f(t.netPnl) + ' $</td>' +
-        '<td style="padding:4px 5px;color:#94A3B8">' + t.capitalAfter.toFixed(2) + '</td></tr>';
-    }
-    html += '</tbody></table></div>';
-  }
-  res.innerHTML = html;
-}
-
-try{
-  const bd = document.getElementById('btn-bt-strat-mediaire');
-  if(bd) bd.addEventListener('click', e => { e.stopPropagation(); openMediaireBacktestModal(); });
-  document.getElementById('dbt-close').addEventListener('click', () => {
-    document.getElementById('dbt-modal').style.display = 'none';
-  });
-  document.getElementById('dbt-modal').addEventListener('click', ev => {
-    if(ev.target.id === 'dbt-modal') ev.currentTarget.style.display = 'none';
-  });
-  document.getElementById('dbt-run').addEventListener('click', runMediaireBacktest);
-}catch(e){}
-
 </script>
 </body>
 </html>

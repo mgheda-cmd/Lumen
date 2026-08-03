@@ -1,0 +1,53 @@
+{
+  "appName": "Lumen Charts - Master Strategy & Demo Account Suite",
+  "exportVersion": "2.0",
+  "exportDate": "2026-08-03T12:24:00.000Z",
+  "description": "Exportation complète de la stratégie de trading, des modifications apportées au Compte Démo (Auto-Trade, Banque & Retraits de gains), et du code autonome pour utilisation sur un autre support.",
+  
+  "activeStrategy": {
+    "name": "Stratégie MACD 3m Revers. (EMA 9 x HA 5m)",
+    "timeframe": "1m",
+    "secondaryTimeframeHA": "5m",
+    "filterTimeframeMACD": "3m",
+    "leverage": 100,
+    "defaultCapital": 100,
+    "feePct": 0.04,
+    "exitMode": "macd",
+    "exitModeLabel": "Sortie dès Inversion MACD S/R 3m",
+    "autoTradeStatus": true,
+    "rules": {
+      "entryLong": "Achat LONG lorsque le prix casse l'EMA 9 (1m) à la hausse + Bougie Heikin Ashi 5m verte + MACD S/R 3m positif.",
+      "entryShort": "Vente SHORT lorsque le prix casse l'EMA 9 (1m) à la baisse + Bougie Heikin Ashi 5m rouge + MACD S/R 3m négatif.",
+      "exit": "Sortie automatique dès que la stratégie opposée se déclenche ou que l'histogramme MACD 3m inverse son signe.",
+      "riskManagement": "Frais calculés à 0.04% par ordre, levier configurable de 1x à 200x, protection par Inversion de Tendance."
+    }
+  },
+
+  "demoAccountState": {
+    "cashAvailable": 100000.00,
+    "bankSecuredTotal": 0.00,
+    "withdrawalsHistory": [],
+    "openPositions": [],
+    "tradeHistory": [],
+    "paperUnit": "coin",
+    "autoTradeEnabled": true
+  },
+
+  "bankAndWithdrawalModule": {
+    "enabled": true,
+    "featureDescription": "Permet de retirer des gains du capital de trading disponible pour les mettre en Banque sécurisée, afin de simuler la prise de profits réels.",
+    "restoreCapability": "Les retraits individuels ou la banque entière peuvent être restitués au capital de trading à tout moment."
+  },
+
+  "notifications": {
+    "telegramAlerts": {
+      "enabled": true,
+      "botToken": "",
+      "chatId": "",
+      "format": "⚡ [Auto-Trade] Signal {TYPE} {SYMBOL} @ {PRICE} $"
+    }
+  },
+
+  "standaloneModuleFile": "STRATEGY_AND_DEMO_MODULE.js",
+  "integrationGuide": "Pour utiliser cette stratégie sur un autre support (TradingView, Node.js, Python Bot, MT5 Webhook), importez le fichier STRATEGY_AND_DEMO_MODULE.js qui contient les fonctions purement autonomes 'computeStrategySignals', 'runBacktestEngine', et 'checkAutoTrade'."
+}
