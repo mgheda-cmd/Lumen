@@ -3049,7 +3049,9 @@ function startStream(g){
       if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
     };
     ws.onerror=()=>{clearTimeout(guard);
-      if(g!==gen&&!pollTimer){setStatus('poll');startPolling(g);}};
+      // la condition testait g!==gen : le repli ne se declenchait donc jamais
+      // pour la connexion en cours, et le statut restait bloque sur CHARGEMENT
+      if(g===gen&&!pollTimer){try{ws&&ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}};
   }catch(e){setStatus('poll');startPolling(g);}
 }
 document.addEventListener('visibilitychange',()=>{
