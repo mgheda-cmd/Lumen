@@ -3755,8 +3755,8 @@ function render(){
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
     // commandes de panneau (monter / descendre / fusionner) en haut à droite
     if(p.key!=='price'){
-      const bx=W-AXIS_W-150, by=p.y+4, bw=22, bh=16;
-      const btns=[['▲','up'],['▼','down'],['⧉','merge'],['=','same'],['⬍','front'],['🔒','lock']];
+      const bx=W-AXIS_W-174, by=p.y+4, bw=22, bh=16;
+      const btns=[['▲','up'],['▼','down'],['⧉','merge'],['=','same'],['⬍','front'],['🔒','lock'],['✕','close']];
       ctx.font='11px system-ui';ctx.textAlign='center';
       btns.forEach((b,i)=>{
         const x=bx+i*(bw+2);
@@ -3765,8 +3765,9 @@ function render(){
         if(b[1]==='same'&&state.subSameScale[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
         if(b[1]==='front'&&state.subFront&&state.subFront[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
         if(b[1]==='lock'){const mm=(p.members||[p.key]);if(mm.some(k=>state.subLock&&state.subLock[k]))ctx.fillStyle='rgba(255,180,60,.4)';}
+        if(b[1]==='close'){ctx.fillStyle='rgba(244,91,125,.20)';}
         roundRect(x,by,bw,bh,4);ctx.fill();
-        ctx.fillStyle='rgba(200,212,235,.9)';
+        ctx.fillStyle=(b[1]==='close')?'rgba(244,91,125,.95)':'rgba(200,212,235,.9)';
         ctx.fillText(b[0],x+bw/2,by+bh-4);
         paneCtrls.push({x,y:by,w:bw,h:bh,key:p.key,act:b[1]});
       });
@@ -6359,6 +6360,22 @@ canvas.addEventListener('touchend',e=>{
 function applyPaneCtrl(key,act){
   // construire l'ordre courant des sous-panneaux visibles
   const cur=(state.lastPanes||[]).filter(p=>p.key!=='price').flatMap(p=>p.members||[p.key]);
+  if(act==='close'){
+    // fermer directement le sous-panneau : désactive tous ses indicateurs
+    const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
+    const mm=pane?(pane.members||[pane.key]):[key];
+    for(const k of mm){
+      if(state.indicators[k]) state.indicators[k].on=false;
+      if(state.subMergeUp) delete state.subMergeUp[k];
+      if(state.subLock) delete state.subLock[k];
+      if(state.subScale) delete state.subScale[k];
+      if(state.subSameScale) delete state.subSameScale[k];
+      if(state.paneH) delete state.paneH[k];
+      if(state.subFront) delete state.subFront[k];
+    }
+    if(typeof syncMenu==='function') syncMenu();
+    saveConfig(); render(); return;
+  }
   if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); render(); return; }
   if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); render(); return; }
   if(act==='front'){
