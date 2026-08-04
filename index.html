@@ -13832,21 +13832,23 @@ function computeTripleConfluence(d, ind){
   let impCol = null;
   if(useImp){
     try{
-      const ib = (state.tf === impTf) ? d : aggregateData(d, impTf);
-      const im = calc.impmacd(ib, impLen, 9);
-      const col = im && im.col;
-      if(col){
-        if(ib === d) impCol = col;
-        else if(impClos){
-          // Option prudente : uniquement la couleur d'une bougie 15m close.
-          // Plus rigoureux, mais décalé d'une bougie par rapport à l'écran.
-          const dec = col.map((v, k) => k > 0 ? col[k-1] : null);
-          impCol = mapHTF(ib, dec, d);
-        }
-        else {
-          // Par défaut, la couleur de la bougie 15m EN COURS, celle que
-          // l'indicateur dessine. Le filtre voit exactement ce que tu vois.
-          impCol = mapHTF(ib, col, d);
+      // On reprend EXACTEMENT la même source que l'indicateur affiché :
+      // les vraies bougies 15m de Binance via getMTFBars, et le même
+      // paramètre de signal. Reconstruire des bougies 15m en agrégeant le
+      // 1m donnait une série différente, d'où le désaccord à l'écran.
+      const sig = (typeof S === 'function') ? (S('imp','sig') || 9) : 9;
+      if(state.tf === impTf){
+        const im = calc.impmacd(d, impLen, sig);
+        impCol = im && im.col;
+      } else {
+        if(typeof ensureMTF === 'function') ensureMTF(impTf);
+        const bars = (typeof getMTFBars === 'function') ? getMTFBars(impTf) : null;
+        if(bars && bars.length){
+          const im = calc.impmacd(bars, impLen, sig);
+          if(im && im.col){
+            const src = impClos ? im.col.map((v,k)=> k>0 ? im.col[k-1] : null) : im.col;
+            impCol = mapHTF(bars, src, d);
+          }
         }
       }
     }catch(e){}
