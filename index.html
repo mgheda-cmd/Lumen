@@ -2735,7 +2735,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.28},
+    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -9670,7 +9670,8 @@ const SCHEMA={
     {k:'roscPeriod',t:'num',lab:'Range oscillateur — période',min:5,max:200,def:50,ind:1},
     {k:'useEfficiency',t:'bool',lab:'Pas d\'entrée en range large (efficience faible)',def:true,ind:1},
     {k:'erWindow',t:'num',lab:'Fenêtre du range large (bougies)',min:30,max:600,def:180,ind:1},
-    {k:'erMax',t:'num',lab:'Efficience maximale tolérée (0 à 1, plus bas = plus permissif)',min:0.05,max:0.9,def:0.28,ind:1},
+    {k:'erMax',t:'num',lab:'Efficience maximale tolérée (plus bas = détecte moins de range)',min:0.03,max:0.9,def:0.15,ind:1},
+    {k:'erCross',t:'num',lab:'Allers-retours exigés dans la fenêtre',min:1,max:30,def:6,ind:1},
     {k:'useAdxFilter',t:'bool',lab:'Pas d\'entrée quand le bandeau ADX est rose (consolidation)',def:true,ind:1},
     {k:'useRangeFilter',t:'bool',lab:'Utiliser aussi le détecteur de range intégré',def:false,ind:1},
     {k:'rangeThreshold',t:'num',lab:'Sensibilité du détecteur de range (plus bas = plus sévère)',min:5,max:95,def:50,ind:1},
@@ -13753,7 +13754,8 @@ function computeTripleConfluence(d, ind){
   const cloudSlow = ind.cloudSlow || 90;
   const useER     = ind.useEfficiency !== false;    // range large detecté par l'efficience
   const erWin     = +ind.erWindow || 180;           // fenêtre d'observation, en bougies
-  const erMax     = ind.erMax != null ? +ind.erMax : 0.28;
+  const erMax     = ind.erMax != null ? +ind.erMax : 0.15;
+  const erCross   = +ind.erCross || 6;   // allers-retours exigés dans la fenêtre
   const useAdx    = ind.useAdxFilter !== false;     // veto quand le bandeau est rose
   const useRange  = ind.useRangeFilter === true;    // détecteur intégré, en option
   const rangePer  = ind.rangePeriod || 20;
@@ -13819,9 +13821,11 @@ function computeTripleConfluence(d, ind){
      On exige aussi que le prix soit repassé plusieurs fois par le milieu de
      la bande, signature d'un va-et-vient plutôt que d'une pause dans une
      tendance. */
-  let erArr = null;
+  let erArr = null, erVal = null, erCr = null;
   if(useER && d.length > erWin + 2){
     erArr = new Array(d.length).fill(null);
+    erVal = new Array(d.length).fill(null);
+    erCr  = new Array(d.length).fill(null);
     let somme = 0;
     const pas = new Array(d.length).fill(0);
     for(let i = 1; i < d.length; i++) pas[i] = Math.abs(d[i].c - d[i-1].c);
@@ -13836,7 +13840,8 @@ function computeTripleConfluence(d, ind){
       let croisements = 0;
       for(let j = i - erWin + 1; j <= i; j++)
         if((d[j-1].c - mid) * (d[j].c - mid) < 0) croisements++;
-      erArr[i] = (er <= erMax && croisements >= 2);
+      erArr[i] = (er <= erMax && croisements >= erCross);
+      erVal[i] = er; erCr[i] = croisements;
     }
   }
 
@@ -13872,7 +13877,7 @@ function computeTripleConfluence(d, ind){
 
   // contexte conservé : permet d'attacher les mesures à un repère posé
   // n'importe où sur le graphique, pas seulement sur une pastille
-  _tripleCtx = {d, ema, ha, cF, cS, rosc, atr: atrArr, adxRange, erArr, emaPeriod, haTf, roscTf};
+  _tripleCtx = {d, ema, ha, cF, cS, rosc, atr: atrArr, adxRange, erArr, erVal, erCr, emaPeriod, haTf, roscTf};
 
   const out = [];
   /* Alternance stricte : après une VENTE TRIPLE on n'émet plus rien tant
@@ -13929,6 +13934,17 @@ function drawTripleConfluence(evts, s, e, yOf){
       for(let i = Math.max(1,s); i <= e && i < cx0.erArr.length; i++){
         if(!cx0.erArr[i]) continue;
         ctx.fillRect(xOf(i)-cw2/2, pr.y+2, Math.max(1,cw2), 5);
+      }
+      // lecture en direct : sans le chiffre, impossible de choisir le seuil
+      const iL = Math.min(e, cx0.erArr.length-1);
+      if(cx0.erVal && cx0.erVal[iL] != null){
+        const dedans = !!cx0.erArr[iL];
+        ctx.fillStyle = dedans ? '#F59E0B' : 'rgba(126,140,168,.85)';
+        ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('efficience ' + cx0.erVal[iL].toFixed(2) +
+                     '  ·  ' + cx0.erCr[iL] + ' allers-retours' +
+                     (dedans ? '  ·  RANGE LARGE' : ''), 10, pr.y + 20);
       }
       ctx.restore();
     }
