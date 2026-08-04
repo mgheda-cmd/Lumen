@@ -708,6 +708,7 @@ footer{
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
     <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
+    <button class="btn" id="clean-chart-btn" title="Graphique propre : masquer toutes les pastilles pour travailler sur un graphique dégagé" style="font-size:15px;padding:6px 11px">🧹</button>
     <button class="btn" id="exhaust-all-btn" title="Pastilles épuisement et sortie : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:15px;padding:6px 11px">🪫</button>
     <span style="width:1px;height:20px;background:var(--line);margin:0 4px;display:inline-block"></span>
     <button class="btn tzb" id="tz-ny" data-tz="ny" title="Heure de New York" style="font-size:12px;padding:6px 9px">NY</button>
@@ -2723,7 +2724,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
-  showAllExhaust:false,
+  showAllExhaust:false, hideBadges:false,
   yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{}, subOrder:[], subMergeUp:{},
 };
 
@@ -2736,7 +2737,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,bank:paper.bank||0,withdrawals:Array.isArray(paper.withdrawals)?paper.withdrawals.slice(0,100):[],positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -2761,6 +2762,7 @@ function mergeConfig(c){
       state.style[k]=c.style[k];
   }
   if(typeof c.showAllExhaust==='boolean')state.showAllExhaust=c.showAllExhaust;
+  if(typeof c.hideBadges==='boolean')state.hideBadges=c.hideBadges;
   if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
   if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
@@ -3815,6 +3817,24 @@ try{
   });
 }catch(e){}
 // Bascule des pastilles d'epuisement : derniere seule / toutes
+function applyCleanBtn(){
+  const b=document.getElementById('clean-chart-btn'); if(!b)return;
+  const on=!!state.hideBadges;
+  b.style.background=on?'rgba(122,162,255,0.20)':'';
+  b.style.borderColor=on?'#7AA2FF':'';
+  b.style.color=on?'#7AA2FF':'';
+  b.title=on
+    ? 'Graphique propre actif — toutes les pastilles sont masquées. Appuyer pour les réafficher.'
+    : 'Graphique propre : masquer toutes les pastilles pour travailler sur un graphique dégagé';
+}
+try{
+  const cb=document.getElementById('clean-chart-btn');
+  cb.addEventListener('click',()=>{
+    state.hideBadges=!state.hideBadges;
+    applyCleanBtn(); saveConfig(); render();
+  });
+  applyCleanBtn();
+}catch(e){}
 function applyExhaustBtn(){
   const b=document.getElementById('exhaust-all-btn'); if(!b)return;
   const on=!!state.showAllExhaust;
@@ -3971,7 +3991,7 @@ function render(){
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, W, priceClipBot); ctx.clip();
   // Flèches de signaux de confluence
-  if(vis('signal')){
+  if(visB('signal')){
     const sig=getInd('signal');
     for(const g of sig){
       const i=(g.t!=null?idxOfTime(g.t):null)??g.i; if(i==null||i<s-1||i>e)continue;
@@ -4000,7 +4020,7 @@ function render(){
     }
   }
   // Badges et flèches de signaux Confluence INVERSÉE (Entrées & Sorties avec Prix)
-  if(vis('signal_inv')){
+  if(visB('signal_inv')){
     const sigInv=getInd('signal_inv');
     const fmtP=v=>(v==null||isNaN(v))?'':(v>=1000?v.toFixed(1):v.toFixed(2));
     for(const g of sigInv){
@@ -4135,7 +4155,7 @@ function render(){
     }
   }
   // Badges et étiquettes pour Stratégie EMA 9 / Heikin Ashi 5 min (design capsule distinctif)
-  if(vis('signal_ema_ha')){
+  if(visB('signal_ema_ha')){
     const sigs = getInd('signal_ema_ha');
     if(typeof checkAllAlerts === 'function') checkAllAlerts();
     const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
@@ -4307,15 +4327,15 @@ function render(){
     }
   }
   // Badges pastille Sortie KK (KK + Épuisement)
-  if(vis('signal_exit_kk')){
+  if(visB('signal_exit_kk')){
     drawExitSignalsKK(getInd('signal_exit_kk'), s, e, yOf, cw, mainBadgeStack);
   }
   // Badges pastille Sortie OB (Order Block - Pastille Violette)
-  if(vis('signal_exit_ob')){
+  if(visB('signal_exit_ob')){
     drawExitSignalsOB(getInd('signal_exit_ob'), s, e, yOf, cw, mainBadgeStack);
   }
   // Stratégie Confluence Totale
-  if(vis('strat_master')){
+  if(visB('strat_master')){
     drawMasterStrategy(getInd('strat_master'), s, e, yOf);
   }
   ctx.restore();
@@ -4522,9 +4542,9 @@ function drawPrice(p,s,e,cw,sharedXStack){
 
   // zones de renversement : bande + etiquette de confluence
   if(vis('bos')) drawBOS(getInd('bos'),s,e,yOf,cw,p);
-  if(vis('rev')) drawReversal(getInd('rev'),s,e,yOf,cw,p);
-  if(vis('exhaustion')) drawExhaustion(getInd('exhaustion'),s,e,yOf,cw,p,sharedXStack);
-  if(vis('exhaustion_pro')) drawExhaustionPro(getInd('exhaustion_pro'),s,e,yOf,cw,p,sharedXStack);
+  if(visB('rev')) drawReversal(getInd('rev'),s,e,yOf,cw,p);
+  if(visB('exhaustion')) drawExhaustion(getInd('exhaustion'),s,e,yOf,cw,p,sharedXStack);
+  if(visB('exhaustion_pro')) drawExhaustionPro(getInd('exhaustion_pro'),s,e,yOf,cw,p,sharedXStack);
 
   // nuage Ichimoku (sous le prix)
   if(vis('ichi')){
@@ -6219,7 +6239,7 @@ function drawTwoIndSub(p, s, e, cw) {
   });
   ctx.restore();
 
-  if (vis('signal_exit_kk')) {
+  if (visB('signal_exit_kk')) {
     const exitSigs = getInd('signal_exit_kk');
     if (Array.isArray(exitSigs)) {
       for (const ex of exitSigs) {
@@ -6396,6 +6416,10 @@ const IND_META={
   },color:'#C084FC'},
 };
 function vis(k){return state.indicators[k] && state.indicators[k].on && !state.indicators[k].hidden;}
+/* visB : comme vis(), mais rend faux quand le mode « graphique propre »
+   est actif. Réservé aux familles de pastilles, pour toutes les masquer
+   d'un geste sans désactiver les indicateurs eux-mêmes. */
+function visB(k){return !state.hideBadges && vis(k);}
 function updateChips(){
   if(!state.data || !state.data.length) return;
   const i=hoverIndex()??state.data.length-1;
@@ -10101,7 +10125,7 @@ function checkAllAlerts(){
   const allSignals = [];
 
   // 1. Signal EMA 9 / HA 5m
-  if(vis('signal_ema_ha')){
+  if(visB('signal_ema_ha')){
     const sigs = getInd('signal_ema_ha');
     if(Array.isArray(sigs)){
       sigs.forEach(s => allSignals.push({ ...s, source: 'signal_ema_ha', sourceName: 'EMA 9 / HA 5m' }));
@@ -10109,7 +10133,7 @@ function checkAllAlerts(){
   }
 
   // 2. Signaux Confluence
-  if(vis('signal')){
+  if(visB('signal')){
     const sigs = getInd('signal');
     if(Array.isArray(sigs)){
       sigs.forEach(s => {
@@ -10128,7 +10152,7 @@ function checkAllAlerts(){
   }
 
   // 3. Confluence Inversée
-  if(vis('signal_inv')){
+  if(visB('signal_inv')){
     const sigs = getInd('signal_inv');
     if(Array.isArray(sigs)){
       sigs.forEach(s => {
@@ -10161,7 +10185,7 @@ function checkAllAlerts(){
   }
 
   // 4. Détecteur d'Épuisement
-  if(vis('exhaustion')){
+  if(visB('exhaustion')){
     const events = getInd('exhaustion');
     if(Array.isArray(events)){
       events.forEach(ev => {
@@ -10181,7 +10205,7 @@ function checkAllAlerts(){
   }
 
   // 5. Détecteur d'Épuisement Pro (Smart Flow)
-  if(vis('exhaustion_pro')){
+  if(visB('exhaustion_pro')){
     const events = getInd('exhaustion_pro');
     if(Array.isArray(events)){
       events.forEach(ev => {
@@ -10201,7 +10225,7 @@ function checkAllAlerts(){
   }
 
   // 6. Signal Sortie KK (KK + Épuisement)
-  if(vis('signal_exit_kk')){
+  if(visB('signal_exit_kk')){
     const exitSigs = getInd('signal_exit_kk');
     if(Array.isArray(exitSigs)){
       exitSigs.forEach(s => {
@@ -10220,7 +10244,7 @@ function checkAllAlerts(){
   }
 
   // 7. Signal Sortie Order Block (Pastille Violette)
-  if(vis('signal_exit_ob')){
+  if(visB('signal_exit_ob')){
     const obExits = getInd('signal_exit_ob');
     if(Array.isArray(obExits)){
       obExits.forEach(s => {
