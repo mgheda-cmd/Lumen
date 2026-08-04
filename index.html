@@ -2723,7 +2723,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,minAtrDist:0.6,minCloudSep:0.8},
+    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,minAtrDist:0.6,minCloudSep:0.8},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -9439,6 +9439,7 @@ const SCHEMA={
     {k:'cloudSlow',t:'num',lab:'Nuage — EMA lente',min:5,max:400,def:90,ind:1},
     {k:'roscTf',t:'num',lab:'UT du range oscillateur (minutes)',min:1,max:240,def:3,ind:1},
     {k:'roscPeriod',t:'num',lab:'Range oscillateur — période',min:5,max:200,def:50,ind:1},
+    {k:'useAdxFilter',t:'bool',lab:'Pas d\'entrée quand le bandeau ADX est rose (consolidation)',def:true,ind:1},
     {k:'useRangeFilter',t:'bool',lab:'Utiliser aussi le détecteur de range intégré',def:false,ind:1},
     {k:'rangeThreshold',t:'num',lab:'Sensibilité du détecteur de range (plus bas = plus sévère)',min:5,max:95,def:50,ind:1},
     {k:'minAtrDist',t:'num',lab:'Écart minimum au nuage (× ATR, 0 = désactivé)',min:0,max:5,def:0.6,ind:1},
@@ -13518,6 +13519,7 @@ function computeTripleConfluence(d, ind){
   const cloudTf   = +ind.cloudTf || 0;          // 0 = unité de temps du graphique
   const cloudFast = ind.cloudFast || 30;
   const cloudSlow = ind.cloudSlow || 90;
+  const useAdx    = ind.useAdxFilter !== false;     // veto quand le bandeau est rose
   const useRange  = ind.useRangeFilter === true;    // détecteur intégré, en option
   const rangePer  = ind.rangePeriod || 20;
   const rangeThr  = ind.rangeThreshold != null ? +ind.rangeThreshold : 50;
@@ -13558,6 +13560,18 @@ function computeTripleConfluence(d, ind){
   if(useRange){
     try{ const rd = calc.rangeDetector(d, rangePer, rangeThr); isRange = rd && rd.isRange; }catch(e){}
   }
+  /* Veto ADX. On reprend EXACTEMENT les réglages de l'indicateur Détecteur
+     de Range 2, celui qui pilote le bandeau du haut. Quand le bandeau est
+     rose (« RANGE SQUEEZE & ADX »), aucune entrée n'est émise. L'intérêt :
+     tu peux vérifier chaque blocage à l'œil, le bandeau te le dit. */
+  let adxRange = null;
+  if(useAdx){
+    try{
+      const rc = (state.indicators && state.indicators.rangeDet2) || {};
+      const rd2 = calc.rangeDetector2(d, rc.period || 14, rc.threshold != null ? rc.threshold : 25);
+      adxRange = rd2 && rd2.isRange;
+    }catch(e){}
+  }
   const atrArr = calc.atr(d, 14);
 
   const etat = (i) => {
@@ -13571,7 +13585,8 @@ function computeTripleConfluence(d, ind){
     let dir = (A === 1 && B === 1 && C === 1) ? 1
              : ((A === -1 && B === -1 && C === -1) ? -1 : 0);
     let veto = '';
-    if(dir !== 0 && isRange && isRange[i]){ veto = 'range'; }
+    if(dir !== 0 && adxRange && adxRange[i]){ veto = 'consolidation ADX'; }
+    if(dir !== 0 && !veto && isRange && isRange[i]){ veto = 'range'; }
     if(dir !== 0 && !veto && minAtr > 0 && atrArr[i]){
       const ecart = Math.abs(d[i].c - cS[i]) / atrArr[i];
       if(ecart < minAtr) veto = 'prix collé au nuage';
