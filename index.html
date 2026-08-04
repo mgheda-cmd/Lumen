@@ -719,6 +719,7 @@ footer{
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
     <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
+    <button class="btn" id="review-done-btn" title="J'ai terminé : enregistrer et envoyer mes annotations" style="font-size:15px;padding:6px 11px">✅</button>
     <button class="btn" id="want-clear-btn" title="Effacer les repères ou annuler le dernier" style="font-size:15px;padding:6px 11px">🧽</button>
     <button class="btn" id="want-btn" title="Pointer les entrées souhaitées : 1er appui = mode ACHAT, 2e = mode VENTE, 3e = arrêt" style="font-size:15px;padding:6px 11px">📌</button>
     <button class="btn" id="full-chart-btn" title="Plein graphique : escamoter tous les indicateurs du bas" style="font-size:15px;padding:6px 11px">⛶</button>
@@ -3854,6 +3855,27 @@ try{
   });
 }catch(e){}
 // Bascule des pastilles d'epuisement : derniere seule / toutes
+/* « J'ai terminé » : enregistre, pousse la configuration vers GitHub et
+   affiche le décompte, pour que les annotations soient immédiatement
+   lisibles de l'extérieur. */
+async function finishReview(){
+  const b=document.getElementById('review-done-btn');
+  const tk=state.tripleKeep||{}, wm=state.wantMarks||{};
+  const n={ok:0,inv:0,no:0};
+  Object.values(tk).forEach(v=>{ if(n[v.mark]!=null) n[v.mark]++; });
+  if(b){ b.textContent='⏳'; b.style.pointerEvents='none'; }
+  try{ saveConfig(); if(typeof syncPushNow==='function') await syncPushNow(); }catch(e){}
+  if(b){ b.textContent='✅'; b.style.pointerEvents='auto'; }
+  alert('Annotations enregistrées et envoyées.\n\n'
+    + '✓ confirmés : ' + n.ok + '\n'
+    + '⇄ sens inverse : ' + n.inv + '\n'
+    + '✗ à supprimer : ' + n.no + '\n'
+    + '📌 entrées souhaitées : ' + Object.keys(wm).length);
+}
+try{
+  const rb=document.getElementById('review-done-btn');
+  rb.addEventListener('click',finishReview);
+}catch(e){}
 function applyWantClearBtn(){
   const b=document.getElementById('want-clear-btn'); if(!b)return;
   const n=Object.keys(state.wantMarks||{}).length;
@@ -13880,6 +13902,9 @@ function drawTripleConfluence(evts, s, e, yOf){
       if(_m && _m.mark === 'inv'){
         ctx.fillStyle = '#F59E0B'; ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
         ctx.fillText('↺ sens inverse souhaité', bx + bw/2, by + bh - 2);
+      } else if(_m && _m.mark === 'no'){
+        ctx.fillStyle = '#EF4444'; ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
+        ctx.fillText('✗ signal à supprimer', bx + bw/2, by + bh - 2);
       }
     }
     ctx.textAlign = 'left';
@@ -13891,7 +13916,7 @@ function drawTripleConfluence(evts, s, e, yOf){
       const cle = String(g.t);
       const mk = state.tripleKeep && state.tripleKeep[cle] ? state.tripleKeep[cle].mark : null;
       const cw2 = 15, ch2 = 14, cy = by + 4;
-      const cases = [['✓','ok','#22C55E'], ['⇄','inv','#F59E0B']];
+      const cases = [['✓','ok','#22C55E'], ['⇄','inv','#F59E0B'], ['✗','no','#EF4444']];
       ctx.globalAlpha = 1;
       cases.forEach((c, ci) => {
         const cx = bx + 5 + ci * (cw2 + 3);
@@ -13908,7 +13933,7 @@ function drawTripleConfluence(evts, s, e, yOf){
           dir: g.dir, rejete: g.rejete || null, sep: g.sep, dist: g.dist, adx: g.adx});
       });
       ctx.textAlign = 'left';
-      if(!rej) labelHits.push({x: bx + 44, y: by, w: bw - 44, h: bh, key: 'signal_triple'});
+      if(!rej) labelHits.push({x: bx + 62, y: by, w: bw - 62, h: bh, key: 'signal_triple'});
     }
     ctx.restore();
   }
