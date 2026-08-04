@@ -701,6 +701,7 @@ footer{
           <span class="srtf" data-tripleflag="useCloudSep" title="Aucune entrée quand le nuage est trop ouvert (mouvement déjà avancé)">☁️ Nuage trop ouvert</span>
           <span class="srtf" data-tripleflag="useCloudDist" title="Aucune entrée quand le prix est trop loin du nuage">↔️ Trop loin</span>
           <span class="srtf" data-tripleflag="useRangeFilter" title="Détecteur de range intégré, en plus de l'ADX">🌀 Range</span>
+          <span class="srtf" data-tripleflag="useEfficiency" title="Aucune entrée quand le marché tourne en rond sur une longue fenêtre (efficience faible)">📉 Range large</span>
           <span class="srtf" data-tripleflag="showGhosts" title="Afficher les signaux écartés en transparence, avec leurs cases d'annotation">👻 Fantômes</span>
         </div>
         <span class="state" style="margin-left:auto">off</span>
@@ -2734,7 +2735,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true},
+    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.28},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -2793,6 +2794,7 @@ function mergeConfig(c){
     if(typeof st_.useCloudDist!=='boolean')   st_.useCloudDist=false;
     if(typeof st_.useRangeFilter!=='boolean') st_.useRangeFilter=false;
     if(typeof st_.showGhosts!=='boolean')     st_.showGhosts=true;
+    if(typeof st_.useEfficiency!=='boolean')  st_.useEfficiency=true;
   }
   if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
@@ -9666,6 +9668,9 @@ const SCHEMA={
     {k:'cloudSlow',t:'num',lab:'Nuage — EMA lente',min:5,max:400,def:90,ind:1},
     {k:'roscTf',t:'num',lab:'UT du range oscillateur (minutes)',min:1,max:240,def:3,ind:1},
     {k:'roscPeriod',t:'num',lab:'Range oscillateur — période',min:5,max:200,def:50,ind:1},
+    {k:'useEfficiency',t:'bool',lab:'Pas d\'entrée en range large (efficience faible)',def:true,ind:1},
+    {k:'erWindow',t:'num',lab:'Fenêtre du range large (bougies)',min:30,max:600,def:180,ind:1},
+    {k:'erMax',t:'num',lab:'Efficience maximale tolérée (0 à 1, plus bas = plus permissif)',min:0.05,max:0.9,def:0.28,ind:1},
     {k:'useAdxFilter',t:'bool',lab:'Pas d\'entrée quand le bandeau ADX est rose (consolidation)',def:true,ind:1},
     {k:'useRangeFilter',t:'bool',lab:'Utiliser aussi le détecteur de range intégré',def:false,ind:1},
     {k:'rangeThreshold',t:'num',lab:'Sensibilité du détecteur de range (plus bas = plus sévère)',min:5,max:95,def:50,ind:1},
@@ -13746,6 +13751,9 @@ function computeTripleConfluence(d, ind){
   const cloudTf   = +ind.cloudTf || 0;          // 0 = unité de temps du graphique
   const cloudFast = ind.cloudFast || 30;
   const cloudSlow = ind.cloudSlow || 90;
+  const useER     = ind.useEfficiency !== false;    // range large detecté par l'efficience
+  const erWin     = +ind.erWindow || 180;           // fenêtre d'observation, en bougies
+  const erMax     = ind.erMax != null ? +ind.erMax : 0.28;
   const useAdx    = ind.useAdxFilter !== false;     // veto quand le bandeau est rose
   const useRange  = ind.useRangeFilter === true;    // détecteur intégré, en option
   const rangePer  = ind.rangePeriod || 20;
@@ -13803,6 +13811,35 @@ function computeTripleConfluence(d, ind){
   }
   const atrArr = calc.atr(d, 14);
 
+  /* Détecteur de range large, par le ratio d'efficience de Kaufman.
+     On compare le déplacement NET sur la fenêtre à la somme des déplacements
+     absolus. Un marché qui monte et descend sans aller nulle part donne un
+     ratio proche de zéro, même sur plusieurs heures — c'est exactement le cas
+     que les détecteurs à fenêtre courte laissent passer.
+     On exige aussi que le prix soit repassé plusieurs fois par le milieu de
+     la bande, signature d'un va-et-vient plutôt que d'une pause dans une
+     tendance. */
+  let erArr = null;
+  if(useER && d.length > erWin + 2){
+    erArr = new Array(d.length).fill(null);
+    let somme = 0;
+    const pas = new Array(d.length).fill(0);
+    for(let i = 1; i < d.length; i++) pas[i] = Math.abs(d[i].c - d[i-1].c);
+    for(let i = 1; i <= erWin; i++) somme += pas[i];
+    for(let i = erWin + 1; i < d.length; i++){
+      somme += pas[i] - pas[i - erWin];
+      const net = Math.abs(d[i].c - d[i - erWin].c);
+      const er = somme > 0 ? net / somme : 1;
+      let hi = -Infinity, lo = Infinity;
+      for(let j = i - erWin; j <= i; j++){ if(d[j].h > hi) hi = d[j].h; if(d[j].l < lo) lo = d[j].l; }
+      const mid = (hi + lo) / 2;
+      let croisements = 0;
+      for(let j = i - erWin + 1; j <= i; j++)
+        if((d[j-1].c - mid) * (d[j].c - mid) < 0) croisements++;
+      erArr[i] = (er <= erMax && croisements >= 2);
+    }
+  }
+
   const etat = (i) => {
     if(i < 1 || ema[i] == null || !ha[i] || cF[i] == null || cS[i] == null || rosc[i] == null)
       return {dir:0, A:0, B:0, C:0};
@@ -13817,7 +13854,8 @@ function computeTripleConfluence(d, ind){
     const _sep = atrArr[i] ? Math.abs(cF[i] - cS[i]) / atrArr[i] : null;
     const _dist = atrArr[i] ? Math.abs(d[i].c - cS[i]) / atrArr[i] : null;
     const _adx = !!(adxRange && adxRange[i]);
-    if(dir !== 0 && adxRange && adxRange[i]){ veto = 'consolidation ADX'; }
+    if(dir !== 0 && erArr && erArr[i]){ veto = 'range large'; }
+    if(dir !== 0 && !veto && adxRange && adxRange[i]){ veto = 'consolidation ADX'; }
     if(dir !== 0 && !veto && isRange && isRange[i]){ veto = 'range'; }
     if(dir !== 0 && !veto && useDist && maxAtr > 0 && atrArr[i]){
       const ecart = Math.abs(d[i].c - cS[i]) / atrArr[i];
@@ -13834,7 +13872,7 @@ function computeTripleConfluence(d, ind){
 
   // contexte conservé : permet d'attacher les mesures à un repère posé
   // n'importe où sur le graphique, pas seulement sur une pastille
-  _tripleCtx = {d, ema, ha, cF, cS, rosc, atr: atrArr, adxRange, emaPeriod, haTf, roscTf};
+  _tripleCtx = {d, ema, ha, cF, cS, rosc, atr: atrArr, adxRange, erArr, emaPeriod, haTf, roscTf};
 
   const out = [];
   /* Alternance stricte : après une VENTE TRIPLE on n'émet plus rien tant
@@ -13878,6 +13916,23 @@ function computeTripleConfluence(d, ind){
 }
 
 function drawTripleConfluence(evts, s, e, yOf){
+  /* Bandeau des zones de range large, en haut du panneau des prix.
+     Le rendre visible est indispensable : c'est le seul moyen de régler
+     le seuil à l'œil, en vérifiant qu'il couvre bien les zones plates. */
+  const cx0 = _tripleCtx;
+  if(cx0 && cx0.erArr && state.indicators.signal_triple && state.indicators.signal_triple.useEfficiency !== false){
+    const pr = (state.lastPanes||[]).find(q=>q.key==='price');
+    if(pr){
+      const cw2 = (W-AXIS_W)/state.view.count;
+      ctx.save();
+      ctx.fillStyle = 'rgba(245,158,11,0.30)';
+      for(let i = Math.max(1,s); i <= e && i < cx0.erArr.length; i++){
+        if(!cx0.erArr[i]) continue;
+        ctx.fillRect(xOf(i)-cw2/2, pr.y+2, Math.max(1,cw2), 5);
+      }
+      ctx.restore();
+    }
+  }
   if(!Array.isArray(evts) || !evts.length) return;
   const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
   const montreFantomes = !(state.indicators.signal_triple && state.indicators.signal_triple.showGhosts === false);
