@@ -719,6 +719,7 @@ footer{
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
     <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
+    <button class="btn" id="want-btn" title="Pointer les entrées souhaitées : 1er appui = mode ACHAT, 2e = mode VENTE, 3e = arrêt" style="font-size:15px;padding:6px 11px">📌</button>
     <button class="btn" id="full-chart-btn" title="Plein graphique : escamoter tous les indicateurs du bas" style="font-size:15px;padding:6px 11px">⛶</button>
     <button class="btn" id="clean-chart-btn" title="Graphique propre : masquer toutes les pastilles pour travailler sur un graphique dégagé" style="font-size:15px;padding:6px 11px">🧹</button>
     <button class="btn" id="exhaust-all-btn" title="Pastilles épuisement et sortie : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:15px;padding:6px 11px">🪫</button>
@@ -2737,7 +2738,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
-  showAllExhaust:false, hideBadges:false, fullChart:false, tripleKeep:{},
+  showAllExhaust:false, hideBadges:false, fullChart:false, tripleKeep:{}, wantMarks:{}, wantMode:0,
   yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{}, subOrder:[], subMergeUp:{},
 };
 
@@ -2750,7 +2751,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, fullChart:state.fullChart, tripleKeep:state.tripleKeep, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, fullChart:state.fullChart, tripleKeep:state.tripleKeep, wantMarks:state.wantMarks, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,bank:paper.bank||0,withdrawals:Array.isArray(paper.withdrawals)?paper.withdrawals.slice(0,100):[],positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -2778,6 +2779,7 @@ function mergeConfig(c){
   if(typeof c.hideBadges==='boolean')state.hideBadges=c.hideBadges;
   if(typeof c.fullChart==='boolean')state.fullChart=c.fullChart;
   if(c.tripleKeep && typeof c.tripleKeep==='object')state.tripleKeep=c.tripleKeep;
+  if(c.wantMarks && typeof c.wantMarks==='object')state.wantMarks=c.wantMarks;
   // Confluence Triple : les filtres sont actifs par défaut. Une configuration
   // enregistrée avant leur ajout n'a pas ces clés, on les initialise pour que
   // les boutons du menu reflètent l'état réel dès l'ouverture.
@@ -3851,6 +3853,25 @@ try{
   });
 }catch(e){}
 // Bascule des pastilles d'epuisement : derniere seule / toutes
+function applyWantBtn(){
+  const b=document.getElementById('want-btn'); if(!b)return;
+  const m=state.wantMode|0;
+  b.textContent = m===1?'📌↑' : (m===2?'📌↓' : '📌');
+  b.style.background = m===1?'rgba(0,230,118,0.20)' : (m===2?'rgba(255,82,82,0.20)':'');
+  b.style.borderColor = m===1?'#00E676' : (m===2?'#FF5252':'');
+  b.style.color = m===1?'#00E676' : (m===2?'#FF5252':'');
+  b.title = m===1?'Mode ACHAT : chaque appui pose un repère « j\'aurais voulu acheter ici »'
+          : m===2?'Mode VENTE : chaque appui pose un repère « j\'aurais voulu vendre ici »'
+          : 'Pointer les entrées souhaitées : 1er appui = ACHAT, 2e = VENTE, 3e = arrêt';
+}
+try{
+  const wb=document.getElementById('want-btn');
+  wb.addEventListener('click',()=>{
+    state.wantMode=((state.wantMode|0)+1)%3;
+    applyWantBtn(); saveConfig(); render();
+  });
+  applyWantBtn();
+}catch(e){}
 function applyFullBtn(){
   const b=document.getElementById('full-chart-btn'); if(!b)return;
   const on=!!state.fullChart;
@@ -4385,6 +4406,7 @@ function render(){
   if(visB('signal_exit_ob')){
     drawExitSignalsOB(getInd('signal_exit_ob'), s, e, yOf, cw, mainBadgeStack);
   }
+  drawWantMarks(s, e, yOf);
   // Confluence Triple
   if(vis('signal_triple')){
     drawTripleConfluence(getInd('signal_triple'), s, e, yOf);
@@ -6599,6 +6621,7 @@ function paneHeightOf(key){
 }
 canvas.addEventListener('mousedown',e=>{
   const x=e.offsetX,y=e.offsetY;
+  if(state.wantMode&&wantTapAt(x,y)){return;}
   if((state.zoneMode|| false)&&zoneTapAt(x,y)){return;}
   const gh=ghostHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
   if(gh){toggleGhostKeep(gh);return;}
@@ -6709,6 +6732,7 @@ canvas.addEventListener('touchstart',e=>{
   if(e.touches.length!==1)return;
   const r=canvas.getBoundingClientRect();
   const tx=e.touches[0].clientX-r.left, ty=e.touches[0].clientY-r.top;
+  if(state.wantMode&&wantTapAt(tx,ty)){ if(e.cancelable)e.preventDefault(); return; }
   if(state.zoneMode&&zoneTapAt(tx,ty)){ if(e.cancelable)e.preventDefault(); return; }
   const gh=ghostHits.find(h=>tx>=h.x&&tx<=h.x+h.w&&ty>=h.y&&ty<=h.y+h.h);
   if(gh){ if(e.cancelable)e.preventDefault(); toggleGhostKeep(gh); return; }
@@ -6781,6 +6805,47 @@ function toggleGhostKeep(g){
     sep: g.sep!=null ? +g.sep.toFixed(3) : null,
     dist: g.dist!=null ? +g.dist.toFixed(3) : null, adx: !!g.adx};
   saveConfig(); render();
+}
+/* Mode pointage : chaque appui sur le graphique pose un repère « j'aurais
+   voulu entrer ici », dans le sens choisi. Un appui sur un repère existant
+   le retire. Sert à repérer ce que l'indicateur rate complètement. */
+function wantTapAt(x,y){
+  if(!state.wantMode || !state.data || !state.data.length) return false;
+  const pr=(state.lastPanes||[]).find(q=>q.key==='price'); if(!pr) return false;
+  if(y<pr.y || y>pr.y+pr.h || x>W-AXIS_W) return false;
+  const cw=(W-AXIS_W)/state.view.count;
+  let i=Math.round(state.view.start + (x-cw/2)/cw);
+  i=Math.max(0,Math.min(state.data.length-1,i));
+  const b=state.data[i]; if(!b) return false;
+  const cle=String(b.t);
+  state.wantMarks = state.wantMarks || {};
+  if(state.wantMarks[cle]) delete state.wantMarks[cle];
+  else state.wantMarks[cle] = {t:b.t, dir: state.wantMode===1?1:-1, price:b.c};
+  saveConfig(); render();
+  return true;
+}
+function drawWantMarks(s,e,yOf){
+  const wm=state.wantMarks; if(!wm) return;
+  const cles=Object.keys(wm); if(!cles.length) return;
+  ctx.save();
+  for(const k of cles){
+    const m=wm[k];
+    const i=idxOfTime(m.t); if(i==null||i<s-1||i>e+1) continue;
+    const x=xOf(i);
+    if(x<-20||x>W-AXIS_W+20) continue;
+    const up=m.dir===1;
+    const col=up?'#00E676':'#FF5252';
+    const y=yOf(m.price)+(up?34:-34);
+    ctx.fillStyle=col; ctx.beginPath();
+    if(up){ctx.moveTo(x,y-11);ctx.lineTo(x-7,y+3);ctx.lineTo(x+7,y+3);}
+    else{ctx.moveTo(x,y+11);ctx.lineTo(x-7,y-3);ctx.lineTo(x+7,y-3);}
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='#FFFFFF'; ctx.lineWidth=1.2; ctx.stroke();
+    ctx.fillStyle=col; ctx.font='bold 8px "IBM Plex Mono",monospace'; ctx.textAlign='center';
+    ctx.fillText(up?'VOULU ACHAT':'VOULU VENTE', x, up?y+14:y-9);
+    ctx.textAlign='left';
+  }
+  ctx.restore();
 }
 function hitPaneCtrl(x,y){
   for(const c of paneCtrls){ if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h)return c; }
