@@ -6773,8 +6773,11 @@ function applyPaneCtrl(key,act){
 function toggleGhostKeep(g){
   state.tripleKeep = state.tripleKeep || {};
   const cle = String(g.t);
-  if(state.tripleKeep[cle]) delete state.tripleKeep[cle];
-  else state.tripleKeep[cle] = {t:g.t, dir:g.dir, motif:g.rejete,
+  const cur = state.tripleKeep[cle];
+  if(cur && cur.mark === g.act){ delete state.tripleKeep[cle]; }   // même case : on annule
+  else state.tripleKeep[cle] = {
+    t: g.t, mark: g.act, dir: g.dir, motif: g.rejete || null,
+    sens: g.act === 'inv' ? -g.dir : g.dir,     // sens réellement souhaité
     sep: g.sep!=null ? +g.sep.toFixed(3) : null,
     dist: g.dist!=null ? +g.dist.toFixed(3) : null, adx: !!g.adx};
   saveConfig(); render();
@@ -13768,26 +13771,40 @@ function drawTripleConfluence(evts, s, e, yOf){
     ctx.font = '7.5px "IBM Plex Mono",monospace';
     if(rej) ctx.fillStyle = '#FDE68A';
     ctx.fillText(rej ? ('Bloqué : ' + g.rejete) : ('Déclenché par ' + (g.dernier || '')), bx + bw / 2, by + 33);
-    ctx.textAlign = 'left';
-    if(rej){
-      const cw2 = 14, ch2 = 14, cx = bx + 5, cy = by + 4;
-      const cle = String(g.t);
-      const coche = !!(state.tripleKeep && state.tripleKeep[cle]);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = coche ? 'rgba(251,191,36,0.92)' : 'rgba(15,23,42,0.88)';
-      roundRect(cx, cy, cw2, ch2, 3); ctx.fill();
-      ctx.strokeStyle = coche ? '#FBBF24' : 'rgba(200,212,235,.75)';
-      ctx.lineWidth = 1; ctx.stroke();
-      if(coche){
-        ctx.strokeStyle = '#0F172A'; ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(cx+3.5, cy+7.5); ctx.lineTo(cx+6, cy+10.5); ctx.lineTo(cx+10.5, cy+4);
-        ctx.stroke();
+    {
+      const _m = state.tripleKeep && state.tripleKeep[String(g.t)];
+      if(_m && _m.mark === 'inv'){
+        ctx.fillStyle = '#F59E0B'; ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
+        ctx.fillText('↺ sens inverse souhaité', bx + bw/2, by + bh - 2);
       }
-      ghostHits.push({x: cx-4, y: cy-4, w: cw2+8, h: ch2+8, t: g.t,
-        dir: g.dir, rejete: g.rejete, sep: g.sep, dist: g.dist, adx: g.adx});
-    } else {
-      labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_triple'});
+    }
+    ctx.textAlign = 'left';
+    /* Deux cases sur chaque pastille, écartée ou non :
+       ✓ « ce signal était bon dans ce sens »
+       ⇄ « il aurait fallu le sens inverse »
+       Un second appui sur la même case l'annule. */
+    {
+      const cle = String(g.t);
+      const mk = state.tripleKeep && state.tripleKeep[cle] ? state.tripleKeep[cle].mark : null;
+      const cw2 = 15, ch2 = 14, cy = by + 4;
+      const cases = [['✓','ok','#22C55E'], ['⇄','inv','#F59E0B']];
+      ctx.globalAlpha = 1;
+      cases.forEach((c, ci) => {
+        const cx = bx + 5 + ci * (cw2 + 3);
+        const actif = (mk === c[1]);
+        ctx.fillStyle = actif ? c[2] : 'rgba(15,23,42,0.88)';
+        roundRect(cx, cy, cw2, ch2, 3); ctx.fill();
+        ctx.strokeStyle = actif ? c[2] : 'rgba(200,212,235,.7)';
+        ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = actif ? '#0F172A' : 'rgba(200,212,235,.9)';
+        ctx.font = 'bold 10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(c[0], cx + cw2/2, cy + ch2 - 3.5);
+        ghostHits.push({x: cx-3, y: cy-3, w: cw2+6, h: ch2+6, t: g.t, act: c[1],
+          dir: g.dir, rejete: g.rejete || null, sep: g.sep, dist: g.dist, adx: g.adx});
+      });
+      ctx.textAlign = 'left';
+      if(!rej) labelHits.push({x: bx + 44, y: by, w: bw - 44, h: bh, key: 'signal_triple'});
     }
     ctx.restore();
   }
