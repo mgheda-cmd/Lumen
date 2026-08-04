@@ -3832,7 +3832,7 @@ function applyCleanBtn(){
   b.style.color=on?'#7AA2FF':'';
   b.title=on
     ? 'Graphique propre actif — toutes les pastilles sont masquées. Appuyer pour les réafficher.'
-    : 'Graphique propre : masquer toutes les pastilles pour travailler sur un graphique dégagé';
+    : 'Graphique propre : masquer les pastilles historiques. Les indicateurs récents (Confluence Triple, Stratégie complète) restent visibles.';
 }
 try{
   const cb=document.getElementById('clean-chart-btn');
@@ -4342,11 +4342,11 @@ function render(){
     drawExitSignalsOB(getInd('signal_exit_ob'), s, e, yOf, cw, mainBadgeStack);
   }
   // Confluence Triple
-  if(visB('signal_triple')){
+  if(vis('signal_triple')){
     drawTripleConfluence(getInd('signal_triple'), s, e, yOf);
   }
   // Stratégie Confluence Totale
-  if(visB('strat_master')){
+  if(vis('strat_master')){
     drawMasterStrategy(getInd('strat_master'), s, e, yOf);
   }
   ctx.restore();
