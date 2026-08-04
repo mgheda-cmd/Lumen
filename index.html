@@ -13691,7 +13691,7 @@ function drawTripleConfluence(evts, s, e, yOf){
     const by = placeBadge(bx, bw, up ? (yDot + 44) : (yDot - 50 - bh), bh, up ? 1 : -1);
 
     ctx.save();
-    if(rej) ctx.globalAlpha = 0.30;   // signal écarté : visible mais effacé
+    if(rej) ctx.globalAlpha = 0.72;   // signal écarté : lisible, mais distinct d'un signal retenu
     ctx.shadowColor = color; ctx.shadowBlur = rej ? 0 : 11;
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.arc(x, yDot, 5, 0, Math.PI * 2); ctx.fill();
@@ -13717,6 +13717,7 @@ function drawTripleConfluence(evts, s, e, yOf){
     ctx.fillText('Prix: ' + fmtP(g.price) + ' $', bx + bw / 2, by + 23);
     ctx.fillStyle = '#94A3B8';
     ctx.font = '7.5px "IBM Plex Mono",monospace';
+    if(rej) ctx.fillStyle = '#FDE68A';
     ctx.fillText(rej ? ('Bloqué : ' + g.rejete) : ('Déclenché par ' + (g.dernier || '')), bx + bw / 2, by + 33);
     ctx.textAlign = 'left';
     labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_triple'});
