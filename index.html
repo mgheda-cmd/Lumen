@@ -2723,7 +2723,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2},
+    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,minAtrDist:0.6,minCloudSep:0.8},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -9439,6 +9439,10 @@ const SCHEMA={
     {k:'cloudSlow',t:'num',lab:'Nuage — EMA lente',min:5,max:400,def:90,ind:1},
     {k:'roscTf',t:'num',lab:'UT du range oscillateur (minutes)',min:1,max:240,def:3,ind:1},
     {k:'roscPeriod',t:'num',lab:'Range oscillateur — période',min:5,max:200,def:50,ind:1},
+    {k:'useRangeFilter',t:'bool',lab:'Utiliser aussi le détecteur de range intégré',def:false,ind:1},
+    {k:'rangeThreshold',t:'num',lab:'Sensibilité du détecteur de range (plus bas = plus sévère)',min:5,max:95,def:50,ind:1},
+    {k:'minAtrDist',t:'num',lab:'Écart minimum au nuage (× ATR, 0 = désactivé)',min:0,max:5,def:0.6,ind:1},
+    {k:'minCloudSep',t:'num',lab:'Ouverture minimum du nuage (× ATR, 0 = désactivé)',min:0,max:5,def:0.8,ind:1},
   ]},
   strat_master:{title:'Stratégie Confluence Totale 🏆',fields:[
     {k:'minScore',t:'num',lab:'Score minimum d\'entrée (2 à 10)',min:2,max:10,ind:1,def:5},
@@ -13514,6 +13518,11 @@ function computeTripleConfluence(d, ind){
   const cloudTf   = +ind.cloudTf || 0;          // 0 = unité de temps du graphique
   const cloudFast = ind.cloudFast || 30;
   const cloudSlow = ind.cloudSlow || 90;
+  const useRange  = ind.useRangeFilter === true;    // détecteur intégré, en option
+  const rangePer  = ind.rangePeriod || 20;
+  const rangeThr  = ind.rangeThreshold != null ? +ind.rangeThreshold : 50;
+  const minAtr    = ind.minAtrDist != null ? +ind.minAtrDist : 0.6;  // écart mini au nuage, en ATR
+  const minSep    = ind.minCloudSep != null ? +ind.minCloudSep : 0.8;  // ouverture mini du nuage, en ATR
   const roscTf    = +ind.roscTf || 3;
   const roscPeriod= ind.roscPeriod || 50;
   const roscSmooth= ind.roscSmooth || 2;
@@ -13539,6 +13548,18 @@ function computeTripleConfluence(d, ind){
   const r0 = calc.rangeOsc(rb, roscPeriod, roscSmooth);
   const rosc = (rb === d) ? r0 : mapHTF(rb, r0, d);
 
+  /* Filtres anti-range. En marché sans direction, les trois conditions
+     s'alignent et se défont sans arrêt : c'est là que naissent les entrées
+     parasites. Deux garde-fous, désactivables séparément.
+     1. Le détecteur de range intégré marque les bougies sans tendance.
+     2. Le prix doit être à une distance minimale du nuage, mesurée en ATR :
+        collé au nuage, un croisement ne vaut rien. */
+  let isRange = null;
+  if(useRange){
+    try{ const rd = calc.rangeDetector(d, rangePer, rangeThr); isRange = rd && rd.isRange; }catch(e){}
+  }
+  const atrArr = calc.atr(d, 14);
+
   const etat = (i) => {
     if(i < 1 || ema[i] == null || !ha[i] || cF[i] == null || cS[i] == null || rosc[i] == null)
       return {dir:0, A:0, B:0, C:0};
@@ -13547,9 +13568,20 @@ function computeTripleConfluence(d, ind){
     const A = (haUp && emaUp) ? 1 : ((!haUp && !emaUp) ? -1 : 0);
     const B = cF[i] > cS[i] ? 1 : -1;
     const C = rosc[i] >= 0 ? 1 : -1;
-    const dir = (A === 1 && B === 1 && C === 1) ? 1
-              : ((A === -1 && B === -1 && C === -1) ? -1 : 0);
-    return {dir, A, B, C};
+    let dir = (A === 1 && B === 1 && C === 1) ? 1
+             : ((A === -1 && B === -1 && C === -1) ? -1 : 0);
+    let veto = '';
+    if(dir !== 0 && isRange && isRange[i]){ veto = 'range'; }
+    if(dir !== 0 && !veto && minAtr > 0 && atrArr[i]){
+      const ecart = Math.abs(d[i].c - cS[i]) / atrArr[i];
+      if(ecart < minAtr) veto = 'prix collé au nuage';
+    }
+    // Nuage refermé = pas de tendance de fond. C'est la signature d'un range.
+    if(dir !== 0 && !veto && minSep > 0 && atrArr[i]){
+      const ouverture = Math.abs(cF[i] - cS[i]) / atrArr[i];
+      if(ouverture < minSep) veto = 'nuage fermé';
+    }
+    return {dir, A, B, C, veto};
   };
 
   const out = [];
@@ -13559,7 +13591,7 @@ function computeTripleConfluence(d, ind){
   let lastDir = 0;
   for(let i = 2; i < d.length; i++){
     const cur = etat(i), prev = etat(i - 1);
-    if(cur.dir !== 0 && cur.dir !== prev.dir && cur.dir !== lastDir){
+    if(cur.dir !== 0 && !cur.veto && cur.dir !== prev.dir && cur.dir !== lastDir){
       // quelle condition vient de basculer ? c'est elle qui déclenche
       let dernier = 'confluence';
       if(prev.A !== cur.A) dernier = 'EMA ' + emaPeriod + ' / HA ' + haTf + 'm';
