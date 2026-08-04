@@ -693,7 +693,12 @@ footer{
         <span class="srtf on" data-indzero="rangeDet2" title="Afficher/Masquer la Ligne Zéro">Axe 0</span>
         <span class="state">on</span>
       </div>
-      <h4 style="color:#FBBF24;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🏆 Stratégie complète</h4>
+            <div class="ind-item" data-ind="signal_triple" id="item-signal_triple" style="background:linear-gradient(135deg,rgba(0,230,118,0.12),rgba(6,182,212,0.08));border:1.5px solid #00E676;border-radius:8px;padding:9px 10px;margin-top:10px;margin-bottom:6px">
+        <span class="dot" style="background:#00E676;box-shadow:0 0 7px #00E676;flex:none"></span>
+        <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Confluence Triple<br><span class="desc" style="color:#A7F3D0;font-size:11px">EMA 9 / HA 5m, nuage EMA et range oscillateur 3m alignés. L'entrée part sur la dernière condition qui rejoint les deux autres.</span></span>
+        <span class="state" style="margin-left:auto">off</span>
+      </div>
+<h4 style="color:#FBBF24;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🏆 Stratégie complète</h4>
       <div class="ind-item" data-ind="strat_master" id="item-strat_master" style="background:linear-gradient(135deg,rgba(251,191,36,0.14),rgba(249,115,22,0.10));border:1.5px solid #FBBF24;border-radius:8px;padding:9px 10px;margin-top:4px;margin-bottom:10px;box-shadow:0 2px 10px rgba(251,191,36,0.20)">
         <span class="dot" style="background:#FBBF24;box-shadow:0 0 7px #FBBF24;flex:none"></span>
         <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Stratégie Confluence Totale <span style="background:#FBBF24;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🏆 AUTONOME</span><br><span class="desc" style="color:#FDE68A;font-size:11px">Agrège toutes les pastilles : EMA/HA, oscillateur KK, épuisements simples et Pro, Order Blocks, range et ATR. Entrées scorées, sorties multiples, stop suiveur.</span></span>
@@ -2718,6 +2723,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
+    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -3448,6 +3454,7 @@ function getInd(key){
     if(key==='signal_inv')state.cache[ck]=computeInvertedConfluenceSignals(d);
     if(key==='signal_ema_ha')state.cache[ck]=computeEmaHaCrossSignals(d,ind);
     if(key==='strat_master')state.cache[ck]=computeMasterStrategy(d,ind);
+    if(key==='signal_triple')state.cache[ck]=computeTripleConfluence(d,ind);
     if(key==='signal_exit_kk'){
       const activeTfsStr = Object.keys(ind.tfs || {}).filter(k => ind.tfs[k]).sort().join('_');
       const uL = S('signal_exit_kk','upper') ?? S('two_ind','upper') ?? 64;
@@ -4333,6 +4340,10 @@ function render(){
   // Badges pastille Sortie OB (Order Block - Pastille Violette)
   if(visB('signal_exit_ob')){
     drawExitSignalsOB(getInd('signal_exit_ob'), s, e, yOf, cw, mainBadgeStack);
+  }
+  // Confluence Triple
+  if(visB('signal_triple')){
+    drawTripleConfluence(getInd('signal_triple'), s, e, yOf);
   }
   // Stratégie Confluence Totale
   if(visB('strat_master')){
@@ -6366,6 +6377,7 @@ const IND_META={
   signal_inv:{label:()=>'Confluence INVERSÉE 🏆',color:'#25D0A4'},
   signal_ema_ha:{label:()=>'Stratégie EMA 9 / HA 5m 🎯',color:'#00E5FF'},
   strat_master:{label:()=>'Stratégie Confluence Totale 🏆',color:'#FBBF24'},
+  signal_triple:{label:()=>'Confluence Triple 🎯',color:'#00E676'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
   lrc:{label:()=>{
@@ -9418,6 +9430,15 @@ const SCHEMA={
       {v:'macd',t:'Réactif (Inversion MACD 3m uniquement)'},
       {v:'cross',t:'Classique (Croisement Inverse EMA/HA uniquement)'}
     ]}
+  ]},
+  signal_triple:{title:'🎯 Confluence Triple',fields:[
+    {k:'emaPeriod',t:'num',lab:'Période de l\'EMA',min:2,max:50,def:9,ind:1},
+    {k:'haTf',t:'num',lab:'UT du Heikin Ashi (minutes)',min:1,max:240,def:5,ind:1},
+    {k:'cloudTf',t:'num',lab:'UT du nuage en minutes (0 = celle du graphique)',min:0,max:240,def:0,ind:1},
+    {k:'cloudFast',t:'num',lab:'Nuage — EMA rapide',min:2,max:200,def:30,ind:1},
+    {k:'cloudSlow',t:'num',lab:'Nuage — EMA lente',min:5,max:400,def:90,ind:1},
+    {k:'roscTf',t:'num',lab:'UT du range oscillateur (minutes)',min:1,max:240,def:3,ind:1},
+    {k:'roscPeriod',t:'num',lab:'Range oscillateur — période',min:5,max:200,def:50,ind:1},
   ]},
   strat_master:{title:'Stratégie Confluence Totale 🏆',fields:[
     {k:'minScore',t:'num',lab:'Score minimum d\'entrée (2 à 10)',min:2,max:10,ind:1,def:5},
@@ -13477,6 +13498,128 @@ setTimeout(resize,500);
     loadData();
   }
 })();
+
+/* =======================================================================
+   CONFLUENCE TRIPLE — croisement EMA 9 / HA + nuage EMA + range oscillateur
+   Les trois conditions sont des ÉTATS, pas des événements. Le signal part
+   sur la bougie où la dernière condition manquante rejoint les deux autres.
+   ===================================================================== */
+function computeTripleConfluence(d, ind){
+  ind = ind || {};
+  if(!d || d.length < 120) return [];
+  const emaPeriod = ind.emaPeriod || 9;
+  const haTf      = +ind.haTf || 5;
+  const haPeriod  = ind.haPeriod || 10;
+  const mode      = ind.mode || 'lisse';
+  const cloudTf   = +ind.cloudTf || 0;          // 0 = unité de temps du graphique
+  const cloudFast = ind.cloudFast || 30;
+  const cloudSlow = ind.cloudSlow || 90;
+  const roscTf    = +ind.roscTf || 3;
+  const roscPeriod= ind.roscPeriod || 50;
+  const roscSmooth= ind.roscSmooth || 2;
+
+  const ema = calc.ema(d, emaPeriod);
+
+  // Heikin Ashi de son unité de temps, ramené sur les bougies du graphique
+  const bars5 = (state.tf === haTf) ? d : aggregateData(d, haTf);
+  if(!bars5 || !bars5.length) return [];
+  const plain = calc.plainHA(bars5);
+  const sm = (mode === 'lisse') ? calc.smoothHA(bars5, haPeriod, haPeriod) : plain;
+  const ha5 = bars5.map((b, i) => (sm && sm[i]) ? sm[i] : plain[i]);
+  const ha = (state.tf === haTf) ? ha5 : mapHTF(bars5, ha5, d);
+
+  // Nuage EMA
+  const cb = (!cloudTf || state.tf === cloudTf) ? d : aggregateData(d, cloudTf);
+  const cfa = calc.ema(cb, cloudFast), csl = calc.ema(cb, cloudSlow);
+  const cF = (cb === d) ? cfa : mapHTF(cb, cfa, d);
+  const cS = (cb === d) ? csl : mapHTF(cb, csl, d);
+
+  // Range oscillateur
+  const rb = (state.tf === roscTf) ? d : aggregateData(d, roscTf);
+  const r0 = calc.rangeOsc(rb, roscPeriod, roscSmooth);
+  const rosc = (rb === d) ? r0 : mapHTF(rb, r0, d);
+
+  const etat = (i) => {
+    if(i < 1 || ema[i] == null || !ha[i] || cF[i] == null || cS[i] == null || rosc[i] == null)
+      return {dir:0, A:0, B:0, C:0};
+    const haUp = ha[i].c >= ha[i].o;
+    const emaUp = d[i].c > ema[i];
+    const A = (haUp && emaUp) ? 1 : ((!haUp && !emaUp) ? -1 : 0);
+    const B = cF[i] > cS[i] ? 1 : -1;
+    const C = rosc[i] >= 0 ? 1 : -1;
+    const dir = (A === 1 && B === 1 && C === 1) ? 1
+              : ((A === -1 && B === -1 && C === -1) ? -1 : 0);
+    return {dir, A, B, C};
+  };
+
+  const out = [];
+  for(let i = 2; i < d.length; i++){
+    const cur = etat(i), prev = etat(i - 1);
+    if(cur.dir !== 0 && cur.dir !== prev.dir){
+      // quelle condition vient de basculer ? c'est elle qui déclenche
+      let dernier = 'confluence';
+      if(prev.A !== cur.A) dernier = 'EMA ' + emaPeriod + ' / HA ' + haTf + 'm';
+      else if(prev.B !== cur.B) dernier = 'Nuage EMA';
+      else if(prev.C !== cur.C) dernier = 'Range Osc ' + roscTf + 'm';
+      out.push({
+        i, t: d[i].t, price: d[i].c, dir: cur.dir,
+        type: cur.dir === 1 ? 'ACHAT' : 'VENTE',
+        dernier,
+        detail: (cur.dir === 1 ? 'Nuage vert' : 'Nuage rouge') + ' · ' +
+                'Osc ' + (cur.C === 1 ? 'vert' : 'rouge') + ' ' + roscTf + 'm'
+      });
+    }
+  }
+  return out;
+}
+
+function drawTripleConfluence(evts, s, e, yOf){
+  if(!Array.isArray(evts) || !evts.length) return;
+  const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+  for(const g of evts){
+    const i = (g.t != null ? idxOfTime(g.t) : null) ?? g.i;
+    if(i == null || i < s - 1 || i > e + 1) continue;
+    const x = xOf(i);
+    if(x < -210 || x > W - AXIS_W + 210) continue;
+
+    const up = g.dir === 1;
+    const color = up ? '#00E676' : '#FF5252';
+    const bg = up ? 'rgba(4,32,18,0.95)' : 'rgba(38,8,10,0.95)';
+    const yDot = up ? yOf(g.price) + 28 : yOf(g.price) - 28;
+    const bw = 176, bh = 40;
+    const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
+    const by = placeBadge(bx, bw, up ? (yDot + 44) : (yDot - 50 - bh), bh, up ? 1 : -1);
+
+    ctx.save();
+    ctx.shadowColor = color; ctx.shadowBlur = 11;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x, yDot, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash([3, 2]);
+    ctx.beginPath(); ctx.moveTo(x, yDot); ctx.lineTo(x, up ? by : by + bh); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = bg; ctx.strokeStyle = color; ctx.lineWidth = 2;
+    roundRect(bx, by, bw, bh, 9); ctx.fill(); ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = color;
+    ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+    ctx.fillText((up ? '🎯 ACHAT TRIPLE' : '🎯 VENTE TRIPLE'), bx + bw / 2, by + 12);
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '8.5px "IBM Plex Mono",monospace';
+    ctx.fillText('Prix: ' + fmtP(g.price) + ' $', bx + bw / 2, by + 23);
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '7.5px "IBM Plex Mono",monospace';
+    ctx.fillText('Déclenché par ' + (g.dernier || ''), bx + bw / 2, by + 33);
+    ctx.textAlign = 'left';
+    labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_triple'});
+    ctx.restore();
+  }
+}
+
 </script>
 </body>
 </html>
