@@ -726,7 +726,7 @@ footer{
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:11px;color:#94A3B8">
       <label>Historique (jours)<select id="mbt-days" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="3">3 jours</option><option value="7" selected>7 jours</option><option value="14">14 jours</option><option value="30">30 jours</option></select></label>
       <label>Capital ($)<input type="number" id="mbt-capital" value="100" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
-      <label>Frais par trade (%) <span style="color:#00E5FF;font-size:10px">(MEXC Taker: 0.02%)</span><input type="number" id="mbt-fee" value="0.02" step="0.001" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Frais par trade (%) <span style="color:#00E5FF;font-size:10px">(MEXC Taker: 0.04%)</span><input type="number" id="mbt-fee" value="0.04" step="0.001" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Levier<select id="mbt-lev" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="1" selected>1x (Spot)</option><option value="2">2x</option><option value="5">5x</option><option value="10">10x</option><option value="20">20x</option><option value="50">50x</option></select></label>
       <label>Score minimum<input type="number" id="mbt-score" value="5" min="2" max="10" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Stop suiveur (× ATR)<input type="number" id="mbt-trail" value="2" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
@@ -1112,12 +1112,12 @@ footer{
           <input type="number" id="bt-capital" value="100" min="1" onchange="runBacktest(true)" style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-weight:bold">
         </label>
         <label style="display:flex;flex-direction:column;gap:4px">
-          <span style="color:var(--muted)">Frais / Trade (%) <span style="font-size:10px;color:#00E5FF">(MEXC Taker: 0.04%)</span></span>
+          <span style="color:var(--muted)">Frais / Trade (%) <span style="font-size:10px;color:#00E5FF">(BingX Taker: 0.02% | MEXC: 0.04%)</span></span>
           <input type="number" id="bt-fee" value="0.02" step="0.001" min="0" onchange="runBacktest(true)" style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-weight:bold">
           <div style="display:flex;gap:4px;margin-top:2px;flex-wrap:wrap">
-            <button type="button" onclick="document.getElementById('bt-fee').value=0.02;runBacktest(true)" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="MEXC Futures Taker Standard (0.04%)">MEXC Taker 0.04%</button>
-            <button type="button" onclick="document.getElementById('bt-fee').value=0;runBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="MEXC Maker (0.00% - Ordres Limite)">Maker 0.00%</button>
-            <button type="button" onclick="document.getElementById('bt-fee').value=0.06;runBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="Frais Crypto Standard (0.06%)">Standard 0.06%</button>
+            <button type="button" onclick="document.getElementById('bt-fee').value=0.02;runBacktest(true)" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="BingX / VIP Futures Taker (0.02%)">BingX Taker 0.02%</button>
+            <button type="button" onclick="document.getElementById('bt-fee').value=0.04;runBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="MEXC Futures Taker Standard (0.04%)">MEXC Taker 0.04%</button>
+            <button type="button" onclick="document.getElementById('bt-fee').value=0;runBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="Maker (0.00% - Ordres Limite)">Maker 0.00%</button>
           </div>
         </label>
         <label style="display:flex;flex-direction:column;gap:4px">
@@ -2960,7 +2960,7 @@ function applyTickPrice(px){
     state.cache = {};
     updateHeader();
     if(typeof updatePaper === 'function') updatePaper();
-    if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
     scheduleRender();
   }
 }
@@ -2972,7 +2972,7 @@ function applyKline(k){
   else if(bar.t>last.t){d.push(bar);d.shift();}
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
-  if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+  if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
   scheduleRender();
 }
 let lastTick=0, wsRetry=0, watchdog=null;
@@ -3049,7 +3049,7 @@ function startStream(g){
       if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
     };
     ws.onerror=()=>{clearTimeout(guard);
-      if(g===gen&&!pollTimer){try{ws&&ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}};
+      if(g!==gen&&!pollTimer){setStatus('poll');startPolling(g);}};
   }catch(e){setStatus('poll');startPolling(g);}
 }
 document.addEventListener('visibilitychange',()=>{
@@ -3165,7 +3165,7 @@ async function loadData(){
     updateHeader(); render();
     startStream(g);
     ensureSR();
-    if(paperAutoTrade && typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
   }catch(e){
     if(g!==gen)return;
     // nouvelle tentative avant de basculer en démo (rate limit temporaire ?)
@@ -3264,10 +3264,11 @@ function mtfZones(kind,tf){
   }
   return calc.finalize(z,state.data,kind);
 }
-function aggregateData(data, targetTfMin){
+function aggregateData(data, targetTfMin, baseTfMin){
   if(!data || !data.length) return [];
   targetTfMin = +targetTfMin;
-  if(state.tf === targetTfMin) return data;
+  const currentBaseTf = baseTfMin != null ? +baseTfMin : (state.tf || 1);
+  if(currentBaseTf === targetTfMin) return data;
   const intervalMs = targetTfMin * 60000;
   const agg = [];
   let curBucket = null, curChunk = [];
@@ -6320,6 +6321,7 @@ const IND_META={
   signal:{label:()=>'Signaux A/V',color:'#FFE24D'},
   signal_inv:{label:()=>'Confluence INVERSÉE 🏆',color:'#25D0A4'},
   signal_ema_ha:{label:()=>'Stratégie EMA 9 / HA 5m 🎯',color:'#00E5FF'},
+  strat_master:{label:()=>'Stratégie Confluence Totale 🏆',color:'#FBBF24'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
   lrc:{label:()=>{
@@ -6421,6 +6423,8 @@ function updateChips(){
       const exitColor = showExits ? '#00E5FF' : '#94A3B8';
       btBtn = `<button class="chip-bt" data-bt-strat="${k}" title="Lancer le Backtest de cette stratégie" style="background:linear-gradient(135deg, #00E5FF, #00A3FF);color:#0F172A;border:none;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:800;cursor:pointer;margin-left:4px;margin-right:2px;display:inline-flex;align-items:center;gap:3px">🚀 Backtest</button>
       <button class="chip-exits" data-toggle-exits="${k}" title="Masquer / Afficher les étiquettes de sortie sur le graphique" style="background:${exitBg};color:${exitColor};border:1px solid ${exitColor};border-radius:4px;padding:2px 6px;font-size:10px;font-weight:700;cursor:pointer;margin-right:2px;display:inline-flex;align-items:center;gap:3px">${exitText}</button>`;
+    } else if (k === 'strat_master') {
+      btBtn = `<button class="chip-bt" data-bt-strat="${k}" title="Lancer le Backtest de cette stratégie" style="background:linear-gradient(135deg, #FBBF24, #F97316);color:#0F172A;border:none;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:800;cursor:pointer;margin-left:4px;margin-right:2px;display:inline-flex;align-items:center;gap:3px">🚀 Backtest</button>`;
     }
     html+=`<div class="chip${hidden?' chip-off':''}" data-chip-key="${k}" title="Cliquer pour configurer l'indicateur ${m.label(ind.period)}"><span class="dot" style="background:${m.color}"></span>`+
       btBtn+
@@ -6446,6 +6450,9 @@ chips.addEventListener('click',e=>{
   const btk = e.target.dataset.btStrat || e.target.closest('[data-bt-strat]')?.dataset.btStrat;
   if(btk === 'signal_ema_ha'){
     openEmaHaBacktestModal();
+    return;
+  } else if(btk === 'strat_master'){
+    openMasterBacktestModal();
     return;
   }
   const ek=e.target.dataset.eye || e.target.closest('[data-eye]')?.dataset.eye;
@@ -8433,7 +8440,7 @@ function toggleAutoTrade(){
     autoTradeLastExecutedSigId = null;
     toast('🤖 Auto-Trade ACTIVÉ — Exécution automatique sur tous les signaux de stratégie !', '#F59E0B');
     if(state.data && state.data.length){
-      try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+      checkAutoTrade();
     }
   } else {
     toast('🤖 Auto-Trade DÉSACTIVÉ', '#94A3B8');
@@ -8783,7 +8790,7 @@ function checkAutoTrade(inputSignals){
 // Boucle périodique de vérification d'Auto-Trade
 setInterval(()=>{
   if(paperAutoTrade && state.data && state.data.length){
-    try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    checkAutoTrade();
   }
 }, 1500);
 
@@ -9363,6 +9370,13 @@ const SCHEMA={
       {v:'macd',t:'Réactif (Inversion MACD 3m uniquement)'},
       {v:'cross',t:'Classique (Croisement Inverse EMA/HA uniquement)'}
     ]}
+  ]},
+  strat_master:{title:'Stratégie Confluence Totale 🏆',fields:[
+    {k:'minScore',t:'num',lab:'Score minimum d\'entrée (2 à 10)',min:2,max:10,ind:1,def:5},
+    {k:'trailMult',t:'num',lab:'Stop suiveur (× ATR)',min:0.5,max:10,ind:1,def:2},
+    {k:'slMult',t:'num',lab:'Stop de protection (× ATR)',min:0.5,max:10,ind:1,def:1.5},
+    {k:'tpRR',t:'num',lab:'Objectif de gain (× le risque)',min:1,max:20,ind:1,def:2.5},
+    {k:'allowShort',t:'bool',lab:'Autoriser les positions vendeuses (Shorts)',def:true}
   ]},
   almasd:{title:'Alma SD SuperTrend',fields:[
     {k:'fac',t:'num',lab:'Facteur',min:0.1,max:10,ind:1},
@@ -10054,7 +10068,7 @@ function checkAllAlerts(){
 
   // Exécution de l'Auto-Trade si actif (indépendant de la config des notifs téléphones)
   if(paperAutoTrade){
-    try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    checkAutoTrade();
   }
 
   const phoneCfg = getPhoneNotifConfig();
@@ -10603,6 +10617,155 @@ function computeEmaHaCrossSignals(d, ind){
           price: d[d.length - 1].c,
           isTemp: true
         });
+      }
+    }
+  }
+
+  return signals;
+}
+
+function computeMasterStrategy(d, ind){
+  if(!d || d.length < 5) return [];
+  ind = ind || {};
+  const minScore = ind.minScore != null ? ind.minScore : 5;
+  const allowShort = ind.allowShort !== false;
+
+  const emaHaSigs = (typeof computeEmaHaCrossSignals === 'function') ? computeEmaHaCrossSignals(d, state.indicators.signal_ema_ha) : [];
+  const stdSigs   = (typeof computeSignals === 'function') ? computeSignals(d, state.indicators.signal) : [];
+  const invSigs   = (typeof computeInvertedConfluenceSignals === 'function') ? computeInvertedConfluenceSignals(d) : [];
+  const exSigs    = (typeof getInd === 'function') ? (getInd('exhaustion') || []) : [];
+  const exProSigs = (typeof getInd === 'function') ? (getInd('exhaustion_pro') || []) : [];
+
+  const emaHaMap = {};
+  if (Array.isArray(emaHaSigs)) {
+    emaHaSigs.forEach(s => { const idx = (s.t != null ? idxOfTime(s.t) : null) ?? s.i; if (idx != null) emaHaMap[idx] = s; });
+  }
+
+  const stdMap = {};
+  if (Array.isArray(stdSigs)) {
+    stdSigs.forEach(s => { const idx = (s.t != null ? idxOfTime(s.t) : null) ?? s.i; if (idx != null) stdMap[idx] = s; });
+  }
+
+  const invMap = {};
+  if (Array.isArray(invSigs)) {
+    invSigs.forEach(s => { const idx = (s.t != null ? idxOfTime(s.t) : null) ?? s.i; if (idx != null) invMap[idx] = s; });
+  }
+
+  const exMap = {};
+  if (Array.isArray(exSigs)) {
+    exSigs.forEach(s => { const idx = (s.t != null ? idxOfTime(s.t) : null) ?? s.i; if (idx != null) exMap[idx] = s; });
+  }
+
+  const exProMap = {};
+  if (Array.isArray(exProSigs)) {
+    exProSigs.forEach(s => { const idx = (s.t != null ? idxOfTime(s.t) : null) ?? s.i; if (idx != null) exProMap[idx] = s; });
+  }
+
+  const ema9  = calc.ema(d, 9);
+  const ema21 = calc.ema(d, 21);
+
+  const bars5 = (state.tf === 5) ? d : aggregateData(d, 5);
+  const plainHA5 = (bars5 && bars5.length) ? calc.plainHA(bars5) : [];
+  const smoothHA5 = (bars5 && bars5.length) ? calc.smoothHA(bars5, 10, 10) : plainHA5;
+  const haSeries5 = (bars5 && bars5.length) ? bars5.map((b, idx) => (smoothHA5 && smoothHA5[idx]) ? smoothHA5[idx] : plainHA5[idx]) : [];
+  const haMapped = (state.tf === 5) ? haSeries5 : (bars5 && bars5.length ? mapHTF(bars5, haSeries5, d) : []);
+
+  const signals = [];
+  let lastSignalType = null;
+  let lastSignalIdx = -10;
+
+  for (let i = 2; i < d.length; i++) {
+    let buyScore = 0;
+    let sellScore = 0;
+    const detailsBuy = [];
+    const detailsSell = [];
+
+    if (emaHaMap[i]) {
+      const s = emaHaMap[i];
+      if (s.type === 'ACHAT' || s.dir === 1) {
+        buyScore += 3;
+        detailsBuy.push('Croisement EMA/HA (+3)');
+      } else if (s.type === 'VENTE' || s.dir === -1) {
+        sellScore += 3;
+        detailsSell.push('Croisement EMA/HA Vente (+3)');
+      }
+    }
+
+    if (stdMap[i]) {
+      const s = stdMap[i];
+      if (s.type === 'ACHAT' || s.dir === 1) {
+        buyScore += 2;
+        detailsBuy.push('Confluence Standard (+2)');
+      } else if (s.type === 'VENTE' || s.dir === -1) {
+        sellScore += 2;
+        detailsSell.push('Confluence Standard Vente (+2)');
+      }
+    }
+
+    if (invMap[i]) {
+      const s = invMap[i];
+      if (s.type === 'ACHAT' || s.dir === 1) {
+        buyScore += 2;
+        detailsBuy.push('Confluence Inversée (+2)');
+      } else if (s.type === 'VENTE' || s.dir === -1) {
+        sellScore += 2;
+        detailsSell.push('Confluence Inversée Vente (+2)');
+      }
+    }
+
+    if (exMap[i]) {
+      const ev = exMap[i];
+      if (ev.dir === 1 || ev.type === 'bear_exhaust') {
+        buyScore += 2; detailsBuy.push('Épuisement Vendeur (+2)');
+      } else {
+        sellScore += 2; detailsSell.push('Épuisement Acheteur (+2)');
+      }
+    }
+
+    if (exProMap[i]) {
+      const ev = exProMap[i];
+      if (ev.dir === 1 || ev.type === 'bear_exhaust_pro') {
+        buyScore += 2; detailsBuy.push('Épuisement Pro Vendeur (+2)');
+      } else {
+        sellScore += 2; detailsSell.push('Épuisement Pro Acheteur (+2)');
+      }
+    }
+
+    if (ema9[i] != null && ema21[i] != null) {
+      if (ema9[i] > ema21[i]) { buyScore += 1; detailsBuy.push('EMA 9 > 21 (+1)'); }
+      else if (ema9[i] < ema21[i]) { sellScore += 1; detailsSell.push('EMA 9 < 21 (+1)'); }
+    }
+
+    if (haMapped[i]) {
+      if (haMapped[i].c > haMapped[i].o) { buyScore += 1; detailsBuy.push('HA 5m Verte (+1)'); }
+      else if (haMapped[i].c < haMapped[i].o) { sellScore += 1; detailsSell.push('HA 5m Rouge (+1)'); }
+    }
+
+    if (i - lastSignalIdx >= 3) {
+      if (buyScore >= minScore && buyScore >= sellScore && lastSignalType !== 'ACHAT') {
+        signals.push({
+          i,
+          t: d[i].t,
+          price: d[i].c,
+          dir: 1,
+          type: 'ACHAT',
+          score: buyScore,
+          details: detailsBuy
+        });
+        lastSignalType = 'ACHAT';
+        lastSignalIdx = i;
+      } else if (allowShort && sellScore >= minScore && sellScore > buyScore && lastSignalType !== 'VENTE') {
+        signals.push({
+          i,
+          t: d[i].t,
+          price: d[i].c,
+          dir: -1,
+          type: 'VENTE',
+          score: sellScore,
+          details: detailsSell
+        });
+        lastSignalType = 'VENTE';
+        lastSignalIdx = i;
       }
     }
   }
@@ -11465,6 +11628,49 @@ function drawExitSignalsOB(exits, s, e, yOf, cw, sharedXStack) {
   }
 }
 
+function drawMasterStrategy(signals, s, e, yOf) {
+  if (!Array.isArray(signals) || !signals.length) return;
+  for (const sig of signals) {
+    const i = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
+    if (i == null || i < s - 1 || i > e + 1) continue;
+    const x = xOf(i);
+    if (x < -180 || x > W - AXIS_W + 180) continue;
+
+    const isBuy = sig.dir === 1 || sig.type === 'ACHAT';
+    const candle = state.data[i];
+    if (!candle) continue;
+
+    const yVal = isBuy ? yOf(candle.l) + 18 : yOf(candle.h) - 18;
+    const color = isBuy ? '#00E676' : '#FF5252';
+    const bgFill = 'rgba(15, 23, 42, 0.92)';
+
+    ctx.save();
+    ctx.font = 'bold 10px "IBM Plex Sans", sans-serif';
+
+    const text = (isBuy ? '🏆 ACHAT (' : '🏆 VENTE (') + (sig.score || '') + '/10)';
+    const textWidth = ctx.measureText(text).width;
+    const bw = textWidth + 14;
+    const bh = 20;
+    const bx = x - bw / 2;
+    const by = isBuy ? yVal : yVal - bh;
+
+    ctx.fillStyle = bgFill;
+    ctx.strokeStyle = '#FBBF24';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, by + bh / 2);
+
+    ctx.restore();
+  }
+}
+
 function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   if (!L || !d || !d.length) return;
 
@@ -11701,7 +11907,7 @@ async function fetchBigHistory(days = 7){
   for(let r=0; r<maxRounds; r++){
     let rows;
     try{
-      rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${per}&endTime=${endTime}`);
+      rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=1m&limit=${per}&endTime=${endTime}`);
     }catch(e){break;}
     if(!Array.isArray(rows)||!rows.length)break;
     const mapped=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
@@ -11728,6 +11934,172 @@ function openEmaHaBacktestModal(){
   if(ind.exitMode) document.getElementById('bt-exitmode').value = ind.exitMode;
 
   runBacktest(false);
+}
+
+function openMasterBacktestModal(){
+  const modal = document.getElementById('mbt-modal');
+  if(!modal) return;
+  modal.style.display = 'flex';
+  const ind = state.indicators.strat_master || {};
+  if(ind.minScore != null && document.getElementById('mbt-score')) document.getElementById('mbt-score').value = ind.minScore;
+  if(ind.trailMult != null && document.getElementById('mbt-trail')) document.getElementById('mbt-trail').value = ind.trailMult;
+  if(ind.slMult != null && document.getElementById('mbt-sl')) document.getElementById('mbt-sl').value = ind.slMult;
+  if(ind.tpRR != null && document.getElementById('mbt-rr')) document.getElementById('mbt-rr').value = ind.tpRR;
+
+  runMasterBacktest();
+}
+
+async function runMasterBacktest(){
+  const modal = document.getElementById('mbt-modal');
+  const resDiv = document.getElementById('mbt-res');
+  const btnRun = document.getElementById('mbt-run');
+  if(!resDiv || !btnRun) return;
+
+  const days = +(document.getElementById('mbt-days')?.value || 7);
+  const capital = +(document.getElementById('mbt-capital')?.value || 100);
+  const feePct = (+document.getElementById('mbt-fee')?.value || 0.04) / 100;
+  const lev = +(document.getElementById('mbt-lev')?.value || 1);
+  const minScore = +(document.getElementById('mbt-score')?.value || 5);
+  const trailMult = +(document.getElementById('mbt-trail')?.value || 2);
+  const slMult = +(document.getElementById('mbt-sl')?.value || 1.5);
+  const tpRR = +(document.getElementById('mbt-rr')?.value || 2.5);
+  const allowShortBtn = document.getElementById('mbt-short');
+  const allowShort = allowShortBtn ? allowShortBtn.classList.contains('on') : true;
+
+  btnRun.textContent = `⏳ Chargement de ${days} jour(s) d'historique…`;
+  btnRun.style.pointerEvents = 'none';
+
+  let d;
+  try {
+    d = await fetchBigHistory(days);
+  } catch(e) {
+    d = state.data;
+  }
+  btnRun.textContent = '▶ Lancer le Backtest Confluence Totale';
+  btnRun.style.pointerEvents = 'auto';
+
+  if (!d || d.length < 80) {
+    resDiv.innerHTML = '<div style="color:#FF5252;padding:10px">Impossible de charger l\'historique pour le backtest.</div>';
+    return;
+  }
+
+  state.indicators.strat_master = {
+    ...state.indicators.strat_master,
+    on: true,
+    minScore,
+    trailMult,
+    slMult,
+    tpRR,
+    allowShort
+  };
+
+  const signals = computeMasterStrategy(d, state.indicators.strat_master);
+  const sigMap = {};
+  signals.forEach(s => { const idx = (s.t != null ? idxOfTime(s.t) : null) ?? s.i; if (idx != null) sigMap[idx] = s; });
+
+  const atr1m = calc.atr(d, 14);
+  let curCap = capital;
+  let peakCap = capital;
+  let maxDD = 0;
+  const trades = [];
+  let pos = null;
+
+  for (let i = 2; i < d.length; i++) {
+    const sig = sigMap[i];
+    const atr = atr1m[i] || (d[i].c * 0.005);
+
+    if (pos) {
+      pos.peakPrice = Math.max(pos.peakPrice, d[i].h);
+      pos.lowPrice  = Math.min(pos.lowPrice, d[i].l);
+
+      let exitTriggered = false;
+      let exitReason = '';
+      let exitP = d[i].c;
+
+      if (pos.dir === 1) {
+        const slPrice = pos.entryP - slMult * pos.entryAtr;
+        const tpPrice = pos.entryP + (pos.entryP - slPrice) * tpRR;
+        const trailPrice = pos.peakPrice - trailMult * atr;
+
+        if (d[i].l <= slPrice) { exitTriggered = true; exitP = slPrice; exitReason = `Stop Loss Protection (${slMult}× ATR)`; }
+        else if (d[i].h >= tpPrice) { exitTriggered = true; exitP = tpPrice; exitReason = `Take Profit (${tpRR} R:R)`; }
+        else if (d[i].l <= trailPrice) { exitTriggered = true; exitP = trailPrice; exitReason = `Trailing Stop (${trailMult}× ATR)`; }
+        else if (sig && sig.dir === -1) { exitTriggered = true; exitReason = 'Signal Inverse (Vente)'; }
+      } else {
+        const slPrice = pos.entryP + slMult * pos.entryAtr;
+        const tpPrice = pos.entryP - (slPrice - pos.entryP) * tpRR;
+        const trailPrice = pos.lowPrice + trailMult * atr;
+
+        if (d[i].h >= slPrice) { exitTriggered = true; exitP = slPrice; exitReason = `Stop Loss Protection (${slMult}× ATR)`; }
+        else if (d[i].l <= tpPrice) { exitTriggered = true; exitP = tpPrice; exitReason = `Take Profit (${tpRR} R:R)`; }
+        else if (d[i].h >= trailPrice) { exitTriggered = true; exitP = trailPrice; exitReason = `Trailing Stop (${trailMult}× ATR)`; }
+        else if (sig && sig.dir === 1) { exitTriggered = true; exitReason = 'Signal Inverse (Achat)'; }
+      }
+
+      if (exitTriggered) {
+        const grossReturnPct = (((exitP - pos.entryP) / pos.entryP) * pos.dir) * lev;
+        const feesPctOnMargin = lev * (2 * feePct);
+        const netReturnPct = Math.max(-0.95, grossReturnPct - feesPctOnMargin);
+        const pnlDollar = curCap * netReturnPct;
+
+        curCap = Math.max(0, curCap + pnlDollar);
+        peakCap = Math.max(peakCap, curCap);
+        const dd = peakCap - curCap;
+        if (dd > maxDD) maxDD = dd;
+
+        trades.push({
+          time: d[i].t,
+          dir: pos.dir === 1 ? 'ACHAT' : 'VENTE',
+          entryP: pos.entryP,
+          exitP,
+          pnlDollar,
+          netReturnPct: netReturnPct * 100,
+          reason: exitReason,
+          capitalAfter: curCap
+        });
+
+        pos = null;
+      }
+    }
+
+    if (!pos && sig) {
+      pos = {
+        dir: sig.dir,
+        entryP: d[i].c,
+        entryT: d[i].t,
+        entryAtr: atr,
+        peakPrice: d[i].h,
+        lowPrice: d[i].l
+      };
+    }
+  }
+
+  const wins = trades.filter(t => t.pnlDollar > 0);
+  const losses = trades.filter(t => t.pnlDollar <= 0);
+  const winRate = trades.length ? (wins.length / trades.length) * 100 : 0;
+  const netPnlTotal = curCap - capital;
+  const netPnlPct = (netPnlTotal / capital) * 100;
+  const grossProfit = wins.reduce((a, b) => a + b.pnlDollar, 0);
+  const grossLoss = Math.abs(losses.reduce((a, b) => a + b.pnlDollar, 0));
+  const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss) : (grossProfit > 0 ? 99 : 0);
+  const maxDDPct = peakCap > 0 ? (maxDD / peakCap) * 100 : 0;
+
+  resDiv.innerHTML = `
+    <div style="background:rgba(15,23,42,0.8);border:1px solid #FBBF24;border-radius:10px;padding:12px;margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:bold;color:#FBBF24;font-size:13px">📊 Bilan Backtest (${trades.length} trades sur ${days}d)</span>
+        <span style="font-size:12px;font-weight:bold;color:${colVal(netPnlTotal)}">${fmtDollar(netPnlTotal)} (${fmtPct(netPnlPct)})</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:11px;color:var(--text)">
+        <div><b>Taux de succès :</b> <span style="color:${winRate>=50?'#00E676':'#FF5252'}">${winRate.toFixed(1)}%</span></div>
+        <div><b>Profit Factor :</b> <span style="color:${profitFactor>=1.3?'#00E676':'var(--text)'}">${profitFactor.toFixed(2)}</span></div>
+        <div><b>Drawdown Max :</b> <span style="color:#FF5252">-${maxDD.toFixed(2)}$ (-${maxDDPct.toFixed(1)}%)</span></div>
+        <div><b>Gagnants / Perdants :</b> ${wins.length} / ${losses.length}</div>
+        <div><b>Capital Final :</b> ${fmtDollar(curCap)}</div>
+        <div><b>Levier :</b> ${lev}x</div>
+      </div>
+    </div>
+  `;
 }
 
 async function runBacktest(skipFetch){
@@ -11757,27 +12129,31 @@ async function runBacktest(skipFetch){
   const feePct=(+document.getElementById('bt-fee').value ?? 0.04)/100;
   const btLev=+(document.getElementById('bt-lev')?.value||1);
 
-  function simMode(eMode, levOverride){
+  function simMode(eMode, levOverride, candlesInput, tfMinInput){
     const activeLev = (levOverride != null) ? levOverride : btLev;
     const currInd = state.indicators.signal_ema_ha || {};
+    const dSim = candlesInput || d;
+    const currentTfMin = tfMinInput || state.tf || 1;
     
-    // Pre-calculate indicators on candles array d
-    const ema1m = calc.ema(d, emaPeriod);
-    const atr1m = calc.atr(d, 14);
+    // Pre-calculate indicators on candles array dSim
+    const ema1m = calc.ema(dSim, emaPeriod);
+    const atr1m = calc.atr(dSim, 14);
 
-    const bars5 = (state.tf === haTf) ? d : aggregateData(d, haTf);
+    const effectiveHaTf = Math.max(haTf, currentTfMin);
+    const bars5 = (currentTfMin === effectiveHaTf) ? dSim : aggregateData(dSim, effectiveHaTf, currentTfMin);
     const plainHA5 = (bars5 && bars5.length) ? calc.plainHA(bars5) : [];
     const smoothHA5 = (haMode === 'lisse' && bars5 && bars5.length) ? calc.smoothHA(bars5, haPeriod, haPeriod) : plainHA5;
     const haSeries5 = (bars5 && bars5.length) ? bars5.map((b, idx) => (smoothHA5 && smoothHA5[idx]) ? smoothHA5[idx] : plainHA5[idx]) : [];
-    const haMapped = (state.tf === haTf) ? haSeries5 : (bars5 && bars5.length ? mapHTF(bars5, haSeries5, d) : []);
+    const haMapped = (currentTfMin === effectiveHaTf) ? haSeries5 : (bars5 && bars5.length ? mapHTF(bars5, haSeries5, dSim) : []);
 
-    const bars3 = (state.tf === 3) ? d : aggregateData(d, 3);
+    const effective3Tf = Math.max(3, currentTfMin);
+    const bars3 = (currentTfMin === effective3Tf) ? dSim : aggregateData(dSim, effective3Tf, currentTfMin);
     let macd3_line = null, macd3_sg = null;
     if (currInd.useMacdSR !== false && bars3 && bars3.length >= 2) {
       const msr3 = calc.macdSR(bars3, 12, 26, 9);
       if (msr3 && msr3.macd && msr3.sg) {
-        macd3_line = (state.tf === 3) ? msr3.macd : mapHTF(bars3, msr3.macd, d);
-        macd3_sg   = (state.tf === 3) ? msr3.sg   : mapHTF(bars3, msr3.sg, d);
+        macd3_line = (currentTfMin === effective3Tf) ? msr3.macd : mapHTF(bars3, msr3.macd, dSim);
+        macd3_sg   = (currentTfMin === effective3Tf) ? msr3.sg   : mapHTF(bars3, msr3.sg, dSim);
       }
     }
 
@@ -11785,7 +12161,7 @@ async function runBacktest(skipFetch){
     if (currInd.useRangeOsc !== false && bars5 && bars5.length >= 2) {
       const rosc5 = calc.rangeOsc(bars5, currInd.roscPeriod || 50, 2);
       if (rosc5 && rosc5.length) {
-        roscMapped = (state.tf === haTf) ? rosc5 : mapHTF(bars5, rosc5, d);
+        roscMapped = (currentTfMin === effectiveHaTf) ? rosc5 : mapHTF(bars5, rosc5, dSim);
       }
     }
 
@@ -11793,7 +12169,7 @@ async function runBacktest(skipFetch){
     if (currInd.useImpMacd !== false && bars5 && bars5.length >= 2) {
       const imp5 = calc.impmacd(bars5, currInd.impPeriod || 34, 9);
       if (imp5 && imp5.col) {
-        imp5_col = (state.tf === haTf) ? imp5.col : mapHTF(bars5, imp5.col, d);
+        imp5_col = (currentTfMin === effectiveHaTf) ? imp5.col : mapHTF(bars5, imp5.col, dSim);
       }
     }
 
@@ -11803,7 +12179,7 @@ async function runBacktest(skipFetch){
     const trades = [];
     let pos = null; // { dir: 1 or -1, entryP, entryT, peakPrice, lowPrice }
 
-    for (let i = 2; i < d.length; i++) {
+    for (let i = 2; i < dSim.length; i++) {
       const emaPrev = ema1m[i - 1], emaCurr = ema1m[i], emaPrev2 = ema1m[i - 2];
       const haObjPrev = haMapped[i - 1], haObjCurr = haMapped[i], haObjPrev2 = haMapped[i - 2];
 
@@ -11849,56 +12225,71 @@ async function runBacktest(skipFetch){
 
       // Si une position est ouverte, vérifier les règles de sortie selon eMode
       if (pos) {
-        pos.peakPrice = Math.max(pos.peakPrice, d[i].h);
-        pos.lowPrice  = Math.min(pos.lowPrice, d[i].l);
+        pos.peakPrice = Math.max(pos.peakPrice, dSim[i].h);
+        pos.lowPrice  = Math.min(pos.lowPrice, dSim[i].l);
 
         let exitTriggered = false;
         let exitReason = '';
+        let isLiquidated = false;
+
+        const liqP = activeLev > 1 ? (pos.dir === 1 ? pos.entryP * (1 - 0.95 / activeLev) : pos.entryP * (1 + 0.95 / activeLev)) : null;
+
+        // 1. Vérification de la Liquidation Intra-Bougie (Mèche/Volatilité)
+        if (liqP != null) {
+          if (pos.dir === 1 && dSim[i].l <= liqP) {
+            exitTriggered = true;
+            isLiquidated = true;
+            exitReason = `💥 LIQUIDATION (${activeLev}x - Mèche sous $${liqP.toFixed(2)})`;
+          } else if (pos.dir === -1 && dSim[i].h >= liqP) {
+            exitTriggered = true;
+            isLiquidated = true;
+            exitReason = `💥 LIQUIDATION (${activeLev}x - Mèche sur $${liqP.toFixed(2)})`;
+          }
+        }
 
         const isHaRed   = haObjCurr.c < haObjCurr.o;
         const isHaGreen = haObjCurr.c > haObjCurr.o;
-        const atrVal    = atr1m[i] || (d[i].c * 0.005);
+        const atrVal    = atr1m[i] || (dSim[i].c * 0.005);
 
-        if (pos.dir === 1) { // LONG
-          if (sellSignal) { exitTriggered = true; exitReason = 'Signal opposé (Vente)'; }
-          else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaRed) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Rouge)'; }
-          else if ((eMode === 'atr_trail' || eMode === 'combined') && d[i].l <= pos.peakPrice - 1.5 * atrVal) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
-          else if ((eMode === 'ema_cross' || eMode === 'combined') && d[i].c < emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
-          else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr < mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
-          else if ((eMode === 'cross' || eMode === 'combined') && emaCurr < haBotCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
-        } else { // SHORT
-          if (buySignal) { exitTriggered = true; exitReason = 'Signal opposé (Achat)'; }
-          else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaGreen) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Verte)'; }
-          else if ((eMode === 'atr_trail' || eMode === 'combined') && d[i].h >= pos.lowPrice + 1.5 * atrVal) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
-          else if ((eMode === 'ema_cross' || eMode === 'combined') && d[i].c > emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
-          else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr > mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
-          else if ((eMode === 'cross' || eMode === 'combined') && emaCurr > haTopCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
+        if (!exitTriggered) {
+          if (pos.dir === 1) { // LONG
+            if (sellSignal) { exitTriggered = true; exitReason = 'Signal opposé (Vente)'; }
+            else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaRed) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Rouge)'; }
+            else if ((eMode === 'atr_trail' || eMode === 'combined') && dSim[i].l <= pos.peakPrice - 1.5 * atrVal) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
+            else if ((eMode === 'ema_cross' || eMode === 'combined') && dSim[i].c < emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
+            else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr < mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
+            else if ((eMode === 'cross' || eMode === 'combined') && emaCurr < haBotCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
+          } else { // SHORT
+            if (buySignal) { exitTriggered = true; exitReason = 'Signal opposé (Achat)'; }
+            else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaGreen) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Verte)'; }
+            else if ((eMode === 'atr_trail' || eMode === 'combined') && dSim[i].h >= pos.lowPrice + 1.5 * atrVal) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
+            else if ((eMode === 'ema_cross' || eMode === 'combined') && dSim[i].c > emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
+            else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr > mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
+            else if ((eMode === 'cross' || eMode === 'combined') && emaCurr > haTopCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
+          }
         }
 
         if (exitTriggered) {
           const entryP = pos.entryP;
-          const exitP = d[i].c;
+          const exitP = isLiquidated ? liqP : dSim[i].c;
           const dir = pos.dir;
           const grossReturnPct = (((exitP - entryP) / entryP) * dir) * activeLev;
-          // Les frais sont prélevés sur le NOTIONNEL (capital x levier), pas sur
-          // le capital. Sans le facteur activeLev ils étaient sous-estimés d'un
-          // facteur égal au levier.
-          const feesPct = 2 * feePct * activeLev;
-          const netReturnPct = Math.max(-0.95, grossReturnPct - feesPct);
+          // Frais réels sur notionnel appliqués au capital engagé (Marge)
+          const feesPctOnMargin = activeLev * (2 * feePct);
+          const netReturnPct = isLiquidated ? -0.95 - (activeLev * feePct) : Math.max(-0.95, grossReturnPct - feesPctOnMargin);
           const pnlDollar = capital * netReturnPct;
 
           const engagedCapital = pos.capitalAtEntry || capital;
           const engagedNotional = engagedCapital * activeLev;
           const engagedQty = entryP > 0 ? engagedNotional / entryP : 0;
-          const liqP = activeLev > 1 ? (dir === 1 ? entryP * (1 - 0.95 / activeLev) : entryP * (1 + 0.95 / activeLev)) : null;
 
-          capital += pnlDollar;
+          capital = Math.max(0, capital + pnlDollar);
           peak = Math.max(peak, capital);
           const dd = peak - capital;
           if (dd > maxDD) maxDD = dd;
 
           trades.push({
-            time: d[i].t,
+            time: dSim[i].t,
             dir: dir === 1 ? 'ACHAT' : 'VENTE',
             entryP,
             exitP,
@@ -11920,21 +12311,21 @@ async function runBacktest(skipFetch){
       // Ouvrir une nouvelle position s'il n'y en a pas d'active
       if (!pos) {
         if (buySignal) {
-          pos = { dir: 1, entryP: d[i].c, entryT: d[i].t, peakPrice: d[i].h, lowPrice: d[i].l, capitalAtEntry: capital };
+          pos = { dir: 1, entryP: dSim[i].c, entryT: dSim[i].t, peakPrice: dSim[i].h, lowPrice: dSim[i].l, capitalAtEntry: capital };
         } else if (sellSignal) {
-          pos = { dir: -1, entryP: d[i].c, entryT: d[i].t, peakPrice: d[i].h, lowPrice: d[i].l, capitalAtEntry: capital };
+          pos = { dir: -1, entryP: dSim[i].c, entryT: dSim[i].t, peakPrice: dSim[i].h, lowPrice: dSim[i].l, capitalAtEntry: capital };
         }
       }
     }
 
     // Clôture automatique en fin de période
-    if (pos && d.length) {
-      const lastBar = d[d.length - 1];
+    if (pos && dSim.length) {
+      const lastBar = dSim[dSim.length - 1];
       const entryP = pos.entryP;
       const exitP = lastBar.c;
       const dir = pos.dir;
       const grossReturnPct = (((exitP - entryP) / entryP) * dir) * activeLev;
-      const feesPct = 2 * feePct * activeLev;   // frais sur le notionnel
+      const feesPct = 2 * feePct;
       const netReturnPct = Math.max(-0.95, grossReturnPct - feesPct);
       const pnlDollar = capital * netReturnPct;
 
@@ -12131,7 +12522,7 @@ async function runBacktest(skipFetch){
       localStorage.setItem('lumen_paper_autotrade', '1');
     } catch(e){}
     if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
-    if (typeof checkAutoTrade === 'function') try{ checkAutoTrade(); }catch(_e){ console.warn('Auto-Trade ignoré :', _e); }
+    if (typeof checkAutoTrade === 'function') checkAutoTrade();
 
     // 7. Rafraîchir les données et l'IU Démo
     if (typeof saveConfig === 'function') saveConfig();
@@ -12155,68 +12546,91 @@ async function runBacktest(skipFetch){
 
   const allModes = ['combined', 'ha_flip', 'atr_trail', 'ema_cross', 'macd', 'cross'];
   const allLevs = [1, 2, 5, 10, 20, 50, 100, 200];
-  const allCombos = [];
+  const targetTFs = [1, 3, 5, 15, 60, 240];
 
-  for (const m of allModes) {
-    for (const l of allLevs) {
-      const res = simMode(m, l);
-      if (!res || res.totalTrades === 0) continue;
+  window.changeTop5Tf = function(tfVal) {
+    window.activeTop5Tf = Number(tfVal);
+    runBacktest(true);
+  };
 
-      let ddPenalty = res.maxDDPct;
-      if (res.maxDDPct >= 90) ddPenalty = 1000;
-      
-      let score = res.netPnlTotalPct / (1 + (ddPenalty / 12));
-      if (res.netPnlTotal <= 0) score = -10000 + res.netPnlTotal;
+  function computeTop5ForTF(targetTfMin) {
+    const dTF = (targetTfMin === 1) ? d : aggregateData(d, targetTfMin, 1);
+    if (!dTF || dTF.length < 3) return { top5Combos: [], allCombosTF: [] };
 
-      allCombos.push({
-        mode: m,
-        lev: l,
-        res: res,
-        score: score
-      });
+    const combos = [];
+    for (const m of allModes) {
+      for (const l of allLevs) {
+        const res = simMode(m, l, dTF, targetTfMin);
+        if (!res || res.totalTrades === 0) continue;
+
+        let ddPenalty = res.maxDDPct;
+        if (res.maxDDPct >= 90) ddPenalty = 1000;
+        
+        let score = res.netPnlTotalPct / (1 + (ddPenalty / 12));
+        if (res.netPnlTotal <= 0) score = -10000 + res.netPnlTotal;
+
+        combos.push({
+          mode: m,
+          lev: l,
+          res: res,
+          score: score,
+          tfMin: targetTfMin
+        });
+      }
     }
+
+    if (!combos.length) return { top5Combos: [], allCombosTF: [] };
+    combos.sort((a, b) => b.score - a.score);
+
+    const c1 = combos[0];
+    const c2 = combos[1] || combos[0];
+    const c3 = combos[2] || combos[0];
+
+    const pickedKeys = new Set([
+      `${c1?.mode}_${c1?.lev}`,
+      `${c2?.mode}_${c2?.lev}`,
+      `${c3?.mode}_${c3?.lev}`
+    ]);
+
+    const validForWr = combos.filter(c => c.res.totalTrades >= 2 && c.res.netPnlTotal > 0);
+    const sortedWr = [...(validForWr.length ? validForWr : combos)].sort((a, b) => {
+      if (Math.abs(b.res.winRate - a.res.winRate) > 0.1) {
+        return b.res.winRate - a.res.winRate;
+      }
+      return b.score - a.score;
+    });
+    let c4 = sortedWr.find(c => !pickedKeys.has(`${c.mode}_${c.lev}`)) || sortedWr[0] || c1;
+    pickedKeys.add(`${c4?.mode}_${c4?.lev}`);
+
+    const validForDd = combos.filter(c => c.res.totalTrades >= 2 && c.res.netPnlTotal > 0);
+    const sortedDd = [...(validForDd.length ? validForDd : combos)].sort((a, b) => {
+      if (Math.abs(a.res.maxDDPct - b.res.maxDDPct) > 0.1) {
+        return a.res.maxDDPct - b.res.maxDDPct;
+      }
+      return b.score - a.score;
+    });
+    let c5 = sortedDd.find(c => !pickedKeys.has(`${c.mode}_${c.lev}`)) || sortedDd[0] || c1;
+
+    const top5 = [
+      { ...c1, medal: '🥇 #1 OPTIMAL', medalBg: 'linear-gradient(135deg,#FFD700,#FFA000)', desc: 'Meilleur équilibre Gain/Risque' },
+      { ...c2, medal: '🥈 #2 EXCELLENT', medalBg: 'linear-gradient(135deg,#E0E0E0,#9E9E9E)', desc: 'Très forte rentabilité globale' },
+      { ...c3, medal: '🥉 #3 ROBUSTE', medalBg: 'linear-gradient(135deg,#CD7F32,#8B4513)', desc: 'Rendement solide et régulier' },
+      { ...c4, medal: '🎯 #4 MEILLEUR WIN RATE', medalBg: 'linear-gradient(135deg,#00E676,#00B0FF)', desc: 'Taux de succès le plus élevé' },
+      { ...c5, medal: '🛡️ #5 MOINS DE DRAWDOWN', medalBg: 'linear-gradient(135deg,#C084FC,#A855F7)', desc: 'Risque & perte max minimisés' }
+    ];
+
+    return { top5Combos: top5, allCombosTF: combos };
   }
 
-  allCombos.sort((a, b) => b.score - a.score);
-  
-  const c1 = allCombos[0];
-  const c2 = allCombos[1] || allCombos[0];
-  const c3 = allCombos[2] || allCombos[0];
-
-  const pickedKeys = new Set([
-    `${c1?.mode}_${c1?.lev}`,
-    `${c2?.mode}_${c2?.lev}`,
-    `${c3?.mode}_${c3?.lev}`
-  ]);
-
-  // 4: Meilleur Win Rate (parmi les stratégies avec trades et gain positif de préférence)
-  const validForWr = allCombos.filter(c => c.res.totalTrades >= 2 && c.res.netPnlTotal > 0);
-  const sortedWr = [...(validForWr.length ? validForWr : allCombos)].sort((a, b) => {
-    if (Math.abs(b.res.winRate - a.res.winRate) > 0.1) {
-      return b.res.winRate - a.res.winRate;
-    }
-    return b.score - a.score;
+  const tfTop5Data = {};
+  targetTFs.forEach(tf => {
+    tfTop5Data[tf] = computeTop5ForTF(tf);
   });
-  let c4 = sortedWr.find(c => !pickedKeys.has(`${c.mode}_${c.lev}`)) || sortedWr[0] || c1;
-  pickedKeys.add(`${c4?.mode}_${c4?.lev}`);
 
-  // 5: Moins de Drawdown % (parmi les stratégies profitables)
-  const validForDd = allCombos.filter(c => c.res.totalTrades >= 2 && c.res.netPnlTotal > 0);
-  const sortedDd = [...(validForDd.length ? validForDd : allCombos)].sort((a, b) => {
-    if (Math.abs(a.res.maxDDPct - b.res.maxDDPct) > 0.1) {
-      return a.res.maxDDPct - b.res.maxDDPct;
-    }
-    return b.score - a.score;
-  });
-  let c5 = sortedDd.find(c => !pickedKeys.has(`${c.mode}_${c.lev}`)) || sortedDd[0] || c1;
-
-  const top5Combos = [
-    { ...c1, medal: '🥇 #1 OPTIMAL', medalBg: 'linear-gradient(135deg,#FFD700,#FFA000)', desc: 'Meilleur équilibre Gain/Risque' },
-    { ...c2, medal: '🥈 #2 EXCELLENT', medalBg: 'linear-gradient(135deg,#E0E0E0,#9E9E9E)', desc: 'Très forte rentabilité globale' },
-    { ...c3, medal: '🥉 #3 ROBUSTE', medalBg: 'linear-gradient(135deg,#CD7F32,#8B4513)', desc: 'Rendement solide et régulier' },
-    { ...c4, medal: '🎯 #4 MEILLEUR WIN RATE', medalBg: 'linear-gradient(135deg,#00E676,#00B0FF)', desc: 'Taux de succès le plus élevé' },
-    { ...c5, medal: '🛡️ #5 MOINS DE DRAWDOWN', medalBg: 'linear-gradient(135deg,#C084FC,#A855F7)', desc: 'Risque & perte max minimisés' }
-  ];
+  const activeTop5Tf = window.activeTop5Tf != null ? window.activeTop5Tf : (state.tf || 1);
+  const currentTfData = tfTop5Data[activeTop5Tf] || tfTop5Data[1] || { top5Combos: [], allCombosTF: [] };
+  const top5Combos = currentTfData.top5Combos;
+  const allCombos = currentTfData.allCombosTF;
 
   const modesList=[resCombined, resHaFlip, resAtrTrail, resEmaCross, resMacd, resCross];
   modesList.sort((a,b)=>b.netPnlTotal-a.netPnlTotal);
@@ -12371,18 +12785,98 @@ async function runBacktest(skipFetch){
       </button>
     </div>
 
-    <!-- Top 5 Meilleurs Combinaisons (Stratégie + Levier) -->
+    <!-- Top 5 Meilleurs Combinaisons (Stratégie + Levier) multi-timeframes -->
     <div style="background:linear-gradient(135deg, rgba(255,215,0,0.1), rgba(0,229,255,0.08));border:1.5px solid rgba(255,215,0,0.5);border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 20px rgba(0,0,0,0.35)">
       <div style="margin-bottom:10px">
         <div style="font-weight:900;font-size:13px;color:#FFD700;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
-          <span>🏆 TOP 5 DES STRATÉGIES — SÉLECTIONNEZ ET ACTIVEZ SUR VOTRE COMPTE DÉMO 🤖</span>
-          <span style="font-size:10px;color:var(--muted);font-weight:normal">Calculé sur ${d.length} bougies</span>
+          <span>🏆 TOP 5 DES STRATÉGIES MULTI-TIMEFRAMES — DÉMO & BACKTEST 🤖</span>
+          <span style="font-size:10px;color:var(--muted);font-weight:normal">Calculé sur la base 1m (${d.length} bougies)</span>
         </div>
         <div style="font-size:11px;color:var(--text);margin-top:2px;line-height:1.4">
-          👇 <b>Appuyez sur "🚀 Activer en Démo" sur l'une des 5 cartes ci-dessous</b> pour lancer automatiquement cette stratégie avec son levier optimal sur votre compte Démo.
+          👇 Select-ionnez une Timeframe ci-dessous pour voir son Top 5 spécifique ou appliquez directement la meilleure stratégie de n'importe quel horizon temporel.
+        </div>
+
+        <!-- Onglets des Timeframes (1m, 3m, 5m, 15m, 1h, 4h) -->
+        <div style="display:flex;align-items:center;gap:6px;margin-top:10px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:bold;color:#00E5FF;margin-right:2px">⏱️ Timeframe Analyse :</span>
+          ${[
+            { tf: 1, label: '1m (1 Min)' },
+            { tf: 3, label: '3m (3 Min)' },
+            { tf: 5, label: '5m (5 Min)' },
+            { tf: 15, label: '15m (15 Min)' },
+            { tf: 60, label: '1h (1 Heure)' },
+            { tf: 240, label: '4h (4 Heures)' }
+          ].map(t => {
+            const isActive = activeTop5Tf === t.tf;
+            return `
+              <button onclick="changeTop5Tf(${t.tf})" style="background:${isActive ? 'linear-gradient(135deg,#00E5FF,#00B0FF)' : 'rgba(255,255,255,0.06)'};color:${isActive ? '#0F172A' : '#E2E8F0'};border:${isActive ? '1px solid #00E5FF' : '1px solid var(--line)'};padding:5px 12px;border-radius:6px;font-size:11px;font-weight:${isActive ? '900' : '600'};cursor:pointer;box-shadow:${isActive ? '0 0 10px rgba(0,229,255,0.4)' : 'none'}">
+                ${t.label} ${isActive ? '★' : ''}
+              </button>
+            `;
+          }).join('')}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px">
+
+      <!-- Table de Synthèse Récapitulative N°1 de Chaque Timeframe -->
+      <div style="background:rgba(15,23,42,0.6);border:1px solid rgba(0,229,255,0.25);border-radius:8px;padding:10px;margin-bottom:14px;overflow-x:auto">
+        <div style="font-size:11px;font-weight:bold;color:#00E5FF;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <span>⚡ APERÇU COMPARATIF MEILLEURE STRATÉGIE PAR TIMEFRAME (#1 OPTIMAL)</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'IBM Plex Mono',monospace">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--muted);text-align:left">
+              <th style="padding:4px 8px">Timeframe</th>
+              <th style="padding:4px 8px">Stratégie #1 Optimale</th>
+              <th style="padding:4px 8px">Levier</th>
+              <th style="padding:4px 8px">Gain Net</th>
+              <th style="padding:4px 8px">Win Rate</th>
+              <th style="padding:4px 8px">Drawdown Max</th>
+              <th style="padding:4px 8px;text-align:right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${targetTFs.map(tfVal => {
+              const tfData = tfTop5Data[tfVal];
+              const bestCombo = tfData && tfData.top5Combos && tfData.top5Combos[0];
+              if (!bestCombo) return '';
+              const tfLabels = { 1: '1 min (1m)', 3: '3 min (3m)', 5: '5 min (5m)', 15: '15 min (15m)', 60: '1 heure (1h)', 240: '4 heures (4h)' };
+              const isCurrentTf = activeTop5Tf === tfVal;
+              return `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:${isCurrentTf ? 'rgba(0,229,255,0.08)' : 'transparent'}">
+                  <td style="padding:5px 8px;font-weight:bold;color:${isCurrentTf ? '#00E5FF' : 'var(--text)'}">
+                    ${tfLabels[tfVal]} ${isCurrentTf ? '◄' : ''}
+                  </td>
+                  <td style="padding:5px 8px;color:#FFF;font-weight:600">
+                    ${modeLabels[bestCombo.mode]?.split(' ')[0] || bestCombo.mode}
+                  </td>
+                  <td style="padding:5px 8px;color:#FFD700;font-weight:bold">${bestCombo.lev}x</td>
+                  <td style="padding:5px 8px;color:${colVal(bestCombo.res.netPnlTotal)};font-weight:bold">
+                    ${fmtDollar(bestCombo.res.netPnlTotal)} (${fmtPct(bestCombo.res.netPnlTotalPct)})
+                  </td>
+                  <td style="padding:5px 8px;color:${bestCombo.res.winRate>=60?'#00E676':'var(--text)'}">
+                    ${bestCombo.res.winRate.toFixed(1)}%
+                  </td>
+                  <td style="padding:5px 8px;color:#FF5252">
+                    -${bestCombo.res.maxDD.toFixed(2)} $ (-${bestCombo.res.maxDDPct.toFixed(1)}%)
+                  </td>
+                  <td style="padding:5px 8px;text-align:right">
+                    <button onclick="changeTop5Tf(${tfVal})" style="background:${isCurrentTf ? '#00E676' : 'rgba(0,229,255,0.2)'};color:${isCurrentTf ? '#0F172A' : '#00E5FF'};border:none;border-radius:4px;padding:3px 8px;font-size:10px;font-weight:bold;cursor:pointer">
+                      ${isCurrentTf ? 'Affichée' : 'Voir Top 5'}
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Grille des 5 cartes du Top 5 pour la Timeframe sélectionnée -->
+      <div style="font-weight:800;font-size:11.5px;color:#FFD700;margin-bottom:8px">
+        📌 TOP 5 DÉTAILLÉ EN TIMEFRAME <span style="color:#00E5FF">${{1:'1m',3:'3m',5:'5m',15:'15m',60:'1h',240:'4h'}[activeTop5Tf]}</span> :
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
         ${top5Combos.map((c, idx) => {
           const isSelected = (c.mode === selExitMode && Number(c.lev) === Number(btLev));
           const isCardDemoActive = isDemoActiveOverall && (activeDemoStratObj.mode === c.mode && Number(activeDemoStratObj.lev) === Number(c.lev));
@@ -12635,6 +13129,38 @@ if(btnBtStrat){
     e.stopPropagation();
     openEmaHaBacktestModal();
   });
+}
+const btnBtMaster=document.getElementById('btn-bt-strat-master');
+if(btnBtMaster){
+  btnBtMaster.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    openMasterBacktestModal();
+  });
+}
+const btnMbtClose=document.getElementById('mbt-close');
+if(btnMbtClose){
+  btnMbtClose.addEventListener('click',()=>{
+    const modal=document.getElementById('mbt-modal');
+    if(modal)modal.style.display='none';
+  });
+}
+const mbtModal=document.getElementById('mbt-modal');
+if(mbtModal){
+  mbtModal.addEventListener('click',(e)=>{
+    if(e.target.id==='mbt-modal')mbtModal.style.display='none';
+  });
+}
+const btnMbtShort=document.getElementById('mbt-short');
+if(btnMbtShort){
+  btnMbtShort.addEventListener('click',()=>{
+    btnMbtShort.classList.toggle('on');
+    const isOn=btnMbtShort.classList.contains('on');
+    btnMbtShort.textContent=isOn?'📉 Positions vendeuses autorisées':'📉 Ventes désactivées (Achats uniquement)';
+  });
+}
+const btnMbtRun=document.getElementById('mbt-run');
+if(btnMbtRun){
+  btnMbtRun.addEventListener('click',runMasterBacktest);
 }
 document.getElementById('btn-backtest').addEventListener('click',()=>{
   openEmaHaBacktestModal();
