@@ -701,6 +701,7 @@ footer{
           <span class="srtf" data-tripleflag="useCloudSep" title="Aucune entrée quand le nuage est trop ouvert (mouvement déjà avancé)">☁️ Nuage trop ouvert</span>
           <span class="srtf" data-tripleflag="useCloudDist" title="Aucune entrée quand le prix est trop loin du nuage">↔️ Trop loin</span>
           <span class="srtf" data-tripleflag="useRangeFilter" title="Détecteur de range intégré, en plus de l'ADX">🌀 Range</span>
+          <span class="srtf" data-tripleflag="useImpulse" title="Pas de vente quand l'Impulse MACD est vert, pas d'achat quand il est rouge">⚡ Impulse 15m</span>
           <span class="srtf" data-tripleflag="useEfficiency" title="Aucune entrée quand le marché tourne en rond sur une longue fenêtre (efficience faible)">📉 Range large</span>
           <span class="srtf" data-tripleflag="showGhosts" title="Afficher les signaux écartés en transparence, avec leurs cases d'annotation">👻 Fantômes</span>
         </div>
@@ -2735,7 +2736,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6},
+    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -2795,6 +2796,7 @@ function mergeConfig(c){
     if(typeof st_.useRangeFilter!=='boolean') st_.useRangeFilter=false;
     if(typeof st_.showGhosts!=='boolean')     st_.showGhosts=true;
     if(typeof st_.useEfficiency!=='boolean')  st_.useEfficiency=true;
+    if(typeof st_.useImpulse!=='boolean')     st_.useImpulse=true;
   }
   if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
@@ -9668,6 +9670,9 @@ const SCHEMA={
     {k:'cloudSlow',t:'num',lab:'Nuage — EMA lente',min:5,max:400,def:90,ind:1},
     {k:'roscTf',t:'num',lab:'UT du range oscillateur (minutes)',min:1,max:240,def:3,ind:1},
     {k:'roscPeriod',t:'num',lab:'Range oscillateur — période',min:5,max:200,def:50,ind:1},
+    {k:'useImpulse',t:'bool',lab:'Suivre la couleur de l\'Impulse MACD (pas de vente s\'il est vert)',def:true,ind:1},
+    {k:'impTf',t:'num',lab:'UT de l\'Impulse MACD (minutes)',min:1,max:240,def:15,ind:1},
+    {k:'impPeriod',t:'num',lab:'Période de l\'Impulse MACD',min:5,max:100,def:34,ind:1},
     {k:'useEfficiency',t:'bool',lab:'Pas d\'entrée en range large (efficience faible)',def:true,ind:1},
     {k:'erWindow',t:'num',lab:'Fenêtre du range large (bougies)',min:30,max:600,def:180,ind:1},
     {k:'erMax',t:'num',lab:'Efficience maximale tolérée (plus bas = détecte moins de range)',min:0.03,max:0.9,def:0.15,ind:1},
@@ -13752,6 +13757,9 @@ function computeTripleConfluence(d, ind){
   const cloudTf   = +ind.cloudTf || 0;          // 0 = unité de temps du graphique
   const cloudFast = ind.cloudFast || 30;
   const cloudSlow = ind.cloudSlow || 90;
+  const useImp    = ind.useImpulse !== false;       // Impulse MACD directionnel
+  const impTf     = +ind.impTf || 15;
+  const impLen    = +ind.impPeriod || 34;
   const useER     = ind.useEfficiency !== false;    // range large detecté par l'efficience
   const erWin     = +ind.erWindow || 180;           // fenêtre d'observation, en bougies
   const erMax     = ind.erMax != null ? +ind.erMax : 0.15;
@@ -13813,6 +13821,20 @@ function computeTripleConfluence(d, ind){
   }
   const atrArr = calc.atr(d, 14);
 
+  /* Impulse MACD de l'unité de temps choisie. Son code couleur : 0 et 1 sont
+     haussiers, 2 et 3 baissiers. Tant qu'il est vert, on refuse les ventes ;
+     tant qu'il est rouge, on refuse les achats. C'est un veto de direction,
+     pas un filtre de qualité. */
+  let impCol = null;
+  if(useImp){
+    try{
+      const ib = (state.tf === impTf) ? d : aggregateData(d, impTf);
+      const im = calc.impmacd(ib, impLen, 9);
+      const col = im && im.col;
+      if(col) impCol = (ib === d) ? col : mapHTF(ib, col, d);
+    }catch(e){}
+  }
+
   /* Détecteur de range large, par le ratio d'efficience de Kaufman.
      On compare le déplacement NET sur la fenêtre à la somme des déplacements
      absolus. Un marché qui monte et descend sans aller nulle part donne un
@@ -13859,7 +13881,12 @@ function computeTripleConfluence(d, ind){
     const _sep = atrArr[i] ? Math.abs(cF[i] - cS[i]) / atrArr[i] : null;
     const _dist = atrArr[i] ? Math.abs(d[i].c - cS[i]) / atrArr[i] : null;
     const _adx = !!(adxRange && adxRange[i]);
-    if(dir !== 0 && erArr && erArr[i]){ veto = 'range large'; }
+    if(dir !== 0 && impCol && impCol[i] != null){
+      const haussier = (impCol[i] === 0 || impCol[i] === 1);
+      if(dir === -1 && haussier) veto = 'Impulse ' + impTf + 'm vert';
+      if(dir === 1 && !haussier) veto = 'Impulse ' + impTf + 'm rouge';
+    }
+    if(dir !== 0 && !veto && erArr && erArr[i]){ veto = 'range large'; }
     if(dir !== 0 && !veto && adxRange && adxRange[i]){ veto = 'consolidation ADX'; }
     if(dir !== 0 && !veto && isRange && isRange[i]){ veto = 'range'; }
     if(dir !== 0 && !veto && useDist && maxAtr > 0 && atrArr[i]){
