@@ -719,6 +719,7 @@ footer{
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
     <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
+    <button class="btn" id="full-chart-btn" title="Plein graphique : escamoter tous les indicateurs du bas" style="font-size:15px;padding:6px 11px">⛶</button>
     <button class="btn" id="clean-chart-btn" title="Graphique propre : masquer toutes les pastilles pour travailler sur un graphique dégagé" style="font-size:15px;padding:6px 11px">🧹</button>
     <button class="btn" id="exhaust-all-btn" title="Pastilles épuisement et sortie : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:15px;padding:6px 11px">🪫</button>
     <span style="width:1px;height:20px;background:var(--line);margin:0 4px;display:inline-block"></span>
@@ -2736,7 +2737,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
-  showAllExhaust:false, hideBadges:false, tripleKeep:{},
+  showAllExhaust:false, hideBadges:false, fullChart:false, tripleKeep:{},
   yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{}, subOrder:[], subMergeUp:{},
 };
 
@@ -2749,7 +2750,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, tripleKeep:state.tripleKeep, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, fullChart:state.fullChart, tripleKeep:state.tripleKeep, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,bank:paper.bank||0,withdrawals:Array.isArray(paper.withdrawals)?paper.withdrawals.slice(0,100):[],positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -2775,6 +2776,7 @@ function mergeConfig(c){
   }
   if(typeof c.showAllExhaust==='boolean')state.showAllExhaust=c.showAllExhaust;
   if(typeof c.hideBadges==='boolean')state.hideBadges=c.hideBadges;
+  if(typeof c.fullChart==='boolean')state.fullChart=c.fullChart;
   if(c.tripleKeep && typeof c.tripleKeep==='object')state.tripleKeep=c.tripleKeep;
   // Confluence Triple : les filtres sont actifs par défaut. Une configuration
   // enregistrée avant leur ajout n'a pas ces clés, on les initialise pour que
@@ -3700,6 +3702,14 @@ function subYOf(p,key,lo0,hi0,padded){
 }
 function computePanes(){
   let subs=[];
+  // Mode plein graphique : les sous-panneaux sont escamotés, le prix occupe
+  // toute la hauteur. Les indicateurs restent actifs, ils ne sont plus
+  // dessinés en bas — un second appui les ramène tels quels.
+  if(state.fullChart){
+    const p={key:'price',y:0,h:H-AXIS_H,members:['price']};
+    state.lastPanes=[p];
+    return [p];
+  }
   if(vis('rsi')) subs.push('rsi');
   if(vis('rsi2')) subs.push('rsi2');
   if(vis('macd')) subs.push('macd');
@@ -3841,6 +3851,23 @@ try{
   });
 }catch(e){}
 // Bascule des pastilles d'epuisement : derniere seule / toutes
+function applyFullBtn(){
+  const b=document.getElementById('full-chart-btn'); if(!b)return;
+  const on=!!state.fullChart;
+  b.style.background=on?'rgba(37,208,164,0.20)':'';
+  b.style.borderColor=on?'#25D0A4':'';
+  b.style.color=on?'#25D0A4':'';
+  b.title=on ? 'Plein graphique actif — appuyer pour revoir les indicateurs du bas'
+             : 'Plein graphique : escamoter tous les indicateurs du bas';
+}
+try{
+  const fb=document.getElementById('full-chart-btn');
+  fb.addEventListener('click',()=>{
+    state.fullChart=!state.fullChart;
+    applyFullBtn(); saveConfig(); resize(); render();
+  });
+  applyFullBtn();
+}catch(e){}
 function applyCleanBtn(){
   const b=document.getElementById('clean-chart-btn'); if(!b)return;
   const on=!!state.hideBadges;
