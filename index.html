@@ -2736,7 +2736,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false},
+    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -9674,6 +9674,7 @@ const SCHEMA={
     {k:'impTf',t:'num',lab:'UT de l\'Impulse MACD (minutes)',min:1,max:240,def:15,ind:1},
     {k:'impPeriod',t:'num',lab:'Période de l\'Impulse MACD',min:5,max:100,def:34,ind:1},
     {k:'impStrict',t:'bool',lab:'Exiger la couleur franche de l\'Impulse (vert vif / rouge vif)',def:false,ind:1},
+    {k:'impClosed',t:'bool',lab:'N\'utiliser que la bougie 15m close (décalé d\'une bougie à l\'écran)',def:false,ind:1},
     {k:'useEfficiency',t:'bool',lab:'Pas d\'entrée en range large (efficience faible)',def:true,ind:1},
     {k:'erWindow',t:'num',lab:'Fenêtre du range large (bougies)',min:30,max:600,def:180,ind:1},
     {k:'erMax',t:'num',lab:'Efficience maximale tolérée (plus bas = détecte moins de range)',min:0.03,max:0.9,def:0.15,ind:1},
@@ -13762,6 +13763,7 @@ function computeTripleConfluence(d, ind){
   const impTf     = +ind.impTf || 15;
   const impLen    = +ind.impPeriod || 34;
   const impStrict = ind.impStrict === true;   // exiger la couleur franche
+  const impClos   = ind.impClosed === true;   // n'utiliser que la bougie 15m close
   const useER     = ind.useEfficiency !== false;    // range large detecté par l'efficience
   const erWin     = +ind.erWindow || 180;           // fenêtre d'observation, en bougies
   const erMax     = ind.erMax != null ? +ind.erMax : 0.15;
@@ -13835,12 +13837,16 @@ function computeTripleConfluence(d, ind){
       const col = im && im.col;
       if(col){
         if(ib === d) impCol = col;
-        else {
-          // Décalage d'une bougie agrégée : la couleur d'une bougie 15m n'est
-          // connue qu'APRÈS sa clôture. Sans ce décalage, le filtre lisait le
-          // futur et validait forcément le sens du mouvement en cours.
+        else if(impClos){
+          // Option prudente : uniquement la couleur d'une bougie 15m close.
+          // Plus rigoureux, mais décalé d'une bougie par rapport à l'écran.
           const dec = col.map((v, k) => k > 0 ? col[k-1] : null);
           impCol = mapHTF(ib, dec, d);
+        }
+        else {
+          // Par défaut, la couleur de la bougie 15m EN COURS, celle que
+          // l'indicateur dessine. Le filtre voit exactement ce que tu vois.
+          impCol = mapHTF(ib, col, d);
         }
       }
     }catch(e){}
