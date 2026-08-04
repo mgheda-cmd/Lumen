@@ -3941,8 +3941,10 @@ function render(){
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
     // commandes de panneau (monter / descendre / fusionner) en haut à droite
     if(p.key!=='price'){
-      const bx=W-AXIS_W-174, by=p.y+4, bw=22, bh=16;
-      const btns=[['▲','up'],['▼','down'],['⧉','merge'],['=','same'],['⬍','front'],['🔒','lock'],['✕','close']];
+      const bx=W-AXIS_W-126, by=p.y+4, bw=22, bh=16;
+      // les flèches ▲▼ sont désormais portées par chaque indicateur, à côté
+      // de son nom : plus besoin d'une paire commune au panneau entier
+      const btns=[['⧉','merge'],['=','same'],['⬍','front'],['🔒','lock'],['✕','close']];
       ctx.font='11px system-ui';ctx.textAlign='center';
       btns.forEach((b,i)=>{
         const x=bx+i*(bw+2);
@@ -5635,13 +5637,35 @@ function subLabel(p,txt,val,color,titleColor){
   ctx.font='11px "IBM Plex Mono",monospace';
   const row=(typeof _subRow==='number')?_subRow:0;
   const yy=p.y+16+row*15;                       // empilement vertical des intitulés
+  const mk=(typeof _subRowKey==='string')?_subRowKey:'';
+  let x0=10;
+  /* Chaque indicateur porte SES propres flèches, juste à gauche de son nom.
+     Quand deux indicateurs partagent un panneau, on sait donc lequel monte
+     ou descend. Les flèches sont dessinées avant l'intitulé pour que la zone
+     cliquable du nom (qui ouvre les réglages) ne les recouvre pas. */
+  if(mk && p.key!=='price'){
+    const aw=14, ah=13, ay=yy-11;
+    const col=(IND_META[mk]&&IND_META[mk].color)||'rgba(200,212,235,.9)';
+    [['▲','up'],['▼','down']].forEach((b,bi)=>{
+      const ax=5+bi*(aw+2);
+      ctx.fillStyle='rgba(90,105,140,.20)';
+      roundRect(ax,ay,aw,ah,3); ctx.fill();
+      ctx.fillStyle=col;
+      ctx.font='9px system-ui'; ctx.textAlign='center';
+      ctx.fillText(b[0],ax+aw/2,ay+ah-3);
+      paneCtrls.push({x:ax,y:ay,w:aw,h:ah,key:mk,act:b[1]});
+    });
+    ctx.textAlign='left';
+    ctx.font='11px "IBM Plex Mono",monospace';
+    x0=5+2*(aw+2)+6;
+  }
   ctx.fillStyle=titleColor || css('--text');
-  ctx.fillText(txt,10,yy);
+  ctx.fillText(txt,x0,yy);
   let wtot=ctx.measureText(txt).width;
-  if(val!=null){ctx.fillStyle=color;ctx.fillText(val,10+wtot+8,yy);wtot+=8+ctx.measureText(val).width;}
+  if(val!=null){ctx.fillStyle=color;ctx.fillText(val,x0+wtot+8,yy);wtot+=8+ctx.measureText(val).width;}
   // zone cliquable de l'intitulé -> ouvre les paramètres de CET indicateur
-  if(typeof _subRowKey==='string'&&SCHEMA[_subRowKey])
-    labelHits.push({x:6,y:yy-12,w:wtot+8,h:15,key:_subRowKey});
+  if(mk&&SCHEMA[mk])
+    labelHits.push({x:x0-4,y:yy-12,w:wtot+8,h:15,key:mk});
 }
 function drawRSI(p,s,e,cw,K){
   K=K||'rsi';
