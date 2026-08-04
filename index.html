@@ -2775,6 +2775,16 @@ function mergeConfig(c){
   }
   if(typeof c.showAllExhaust==='boolean')state.showAllExhaust=c.showAllExhaust;
   if(typeof c.hideBadges==='boolean')state.hideBadges=c.hideBadges;
+  // Confluence Triple : les filtres sont actifs par défaut. Une configuration
+  // enregistrée avant leur ajout n'a pas ces clés, on les initialise pour que
+  // les boutons du menu reflètent l'état réel dès l'ouverture.
+  if(state.indicators.signal_triple){
+    const st_=state.indicators.signal_triple;
+    if(typeof st_.useAdxFilter!=='boolean')   st_.useAdxFilter=true;
+    if(typeof st_.useCloudSep!=='boolean')    st_.useCloudSep=true;
+    if(typeof st_.useCloudDist!=='boolean')   st_.useCloudDist=true;
+    if(typeof st_.useRangeFilter!=='boolean') st_.useRangeFilter=false;
+  }
   if(Array.isArray(c.subOrder))state.subOrder=c.subOrder.filter(k=>typeof k==='string');
   if(c.subMergeUp&&typeof c.subMergeUp==='object')state.subMergeUp=c.subMergeUp;
   if(c.subFront&&typeof c.subFront==='object')state.subFront=c.subFront;
@@ -13629,7 +13639,21 @@ function computeTripleConfluence(d, ind){
   let lastDir = 0;
   for(let i = 2; i < d.length; i++){
     const cur = etat(i), prev = etat(i - 1);
-    if(cur.dir !== 0 && !cur.veto && cur.dir !== prev.dir && cur.dir !== lastDir){
+    const candidat = cur.dir !== 0 && cur.dir !== prev.dir && cur.dir !== lastDir;
+    if(candidat && cur.veto){
+      // Le signal était complet mais un filtre l'a écarté : on le garde à
+      // l'écran, en transparence, avec le motif du rejet.
+      let dern = 'confluence';
+      if(prev.A !== cur.A) dern = 'EMA ' + emaPeriod + ' / HA ' + haTf + 'm';
+      else if(prev.B !== cur.B) dern = 'Nuage EMA';
+      else if(prev.C !== cur.C) dern = 'Range Osc ' + roscTf + 'm';
+      out.push({i, t: d[i].t, price: d[i].c, dir: cur.dir,
+        type: cur.dir === 1 ? 'ACHAT' : 'VENTE',
+        dernier: dern, rejete: cur.veto,
+        detail: (cur.dir === 1 ? 'Nuage vert' : 'Nuage rouge')});
+      continue;
+    }
+    if(candidat && !cur.veto){
       // quelle condition vient de basculer ? c'est elle qui déclenche
       let dernier = 'confluence';
       if(prev.A !== cur.A) dernier = 'EMA ' + emaPeriod + ' / HA ' + haTf + 'm';
@@ -13658,6 +13682,7 @@ function drawTripleConfluence(evts, s, e, yOf){
     if(x < -210 || x > W - AXIS_W + 210) continue;
 
     const up = g.dir === 1;
+    const rej = !!g.rejete;
     const color = up ? '#00E676' : '#FF5252';
     const bg = up ? 'rgba(4,32,18,0.95)' : 'rgba(38,8,10,0.95)';
     const yDot = up ? yOf(g.price) + 28 : yOf(g.price) - 28;
@@ -13666,7 +13691,8 @@ function drawTripleConfluence(evts, s, e, yOf){
     const by = placeBadge(bx, bw, up ? (yDot + 44) : (yDot - 50 - bh), bh, up ? 1 : -1);
 
     ctx.save();
-    ctx.shadowColor = color; ctx.shadowBlur = 11;
+    if(rej) ctx.globalAlpha = 0.30;   // signal écarté : visible mais effacé
+    ctx.shadowColor = color; ctx.shadowBlur = rej ? 0 : 11;
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.arc(x, yDot, 5, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.2; ctx.stroke();
@@ -13676,19 +13702,22 @@ function drawTripleConfluence(evts, s, e, yOf){
     ctx.beginPath(); ctx.moveTo(x, yDot); ctx.lineTo(x, up ? by : by + bh); ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = bg; ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.fillStyle = bg; ctx.strokeStyle = color; ctx.lineWidth = rej ? 1 : 2;
+    if(rej) ctx.setLineDash([4,3]);
     roundRect(bx, by, bw, bh, 9); ctx.fill(); ctx.stroke();
+    ctx.setLineDash([]);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = color;
     ctx.font = 'bold 10px "IBM Plex Mono",monospace';
-    ctx.fillText((up ? '🎯 ACHAT TRIPLE' : '🎯 VENTE TRIPLE'), bx + bw / 2, by + 12);
+    ctx.fillText(rej ? (up ? '⃠ ACHAT ÉCARTÉ' : '⃠ VENTE ÉCARTÉE')
+                     : (up ? '🎯 ACHAT TRIPLE' : '🎯 VENTE TRIPLE'), bx + bw / 2, by + 12);
     ctx.fillStyle = '#E2E8F0';
     ctx.font = '8.5px "IBM Plex Mono",monospace';
     ctx.fillText('Prix: ' + fmtP(g.price) + ' $', bx + bw / 2, by + 23);
     ctx.fillStyle = '#94A3B8';
     ctx.font = '7.5px "IBM Plex Mono",monospace';
-    ctx.fillText('Déclenché par ' + (g.dernier || ''), bx + bw / 2, by + 33);
+    ctx.fillText(rej ? ('Bloqué : ' + g.rejete) : ('Déclenché par ' + (g.dernier || '')), bx + bw / 2, by + 33);
     ctx.textAlign = 'left';
     labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_triple'});
     ctx.restore();
