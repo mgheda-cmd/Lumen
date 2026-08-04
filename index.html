@@ -719,6 +719,7 @@ footer{
     <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
     <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
     <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
+    <button class="btn" id="want-clear-btn" title="Effacer les repères ou annuler le dernier" style="font-size:15px;padding:6px 11px">🧽</button>
     <button class="btn" id="want-btn" title="Pointer les entrées souhaitées : 1er appui = mode ACHAT, 2e = mode VENTE, 3e = arrêt" style="font-size:15px;padding:6px 11px">📌</button>
     <button class="btn" id="full-chart-btn" title="Plein graphique : escamoter tous les indicateurs du bas" style="font-size:15px;padding:6px 11px">⛶</button>
     <button class="btn" id="clean-chart-btn" title="Graphique propre : masquer toutes les pastilles pour travailler sur un graphique dégagé" style="font-size:15px;padding:6px 11px">🧹</button>
@@ -3853,6 +3854,44 @@ try{
   });
 }catch(e){}
 // Bascule des pastilles d'epuisement : derniere seule / toutes
+function applyWantClearBtn(){
+  const b=document.getElementById('want-clear-btn'); if(!b)return;
+  const n=Object.keys(state.wantMarks||{}).length;
+  b.textContent = n ? ('🧽'+n) : '🧽';
+  b.style.opacity = n ? '1' : '0.45';
+  b.title = n ? ('Appui court : annuler le dernier repère · Appui long : effacer les '+n+' repères')
+              : 'Aucun repère à effacer';
+}
+/* Appui court = annuler le dernier repère posé. Appui long = tout effacer,
+   avec confirmation. On peut donc se tromper sans avoir à tout recommencer. */
+function undoLastWant(){
+  const wm=state.wantMarks||{};
+  const cles=Object.keys(wm);
+  if(!cles.length) return;
+  cles.sort((a,b)=>(wm[a].ordre||+a)-(wm[b].ordre||+b));
+  delete wm[cles[cles.length-1]];
+  saveConfig(); applyWantClearBtn(); render();
+}
+function clearAllWant(){
+  const n=Object.keys(state.wantMarks||{}).length;
+  if(!n) return;
+  if(window.confirm('Effacer les '+n+' repères ? Cette action est définitive.')){
+    state.wantMarks={};
+    saveConfig(); applyWantClearBtn(); render();
+  }
+}
+try{
+  const cb2=document.getElementById('want-clear-btn');
+  let longTimer=null, longFired=false;
+  const start=()=>{ longFired=false; longTimer=setTimeout(()=>{longFired=true;clearAllWant();},650); };
+  const end=(ev)=>{ clearTimeout(longTimer); if(!longFired){ if(ev&&ev.cancelable)ev.preventDefault(); undoLastWant(); } };
+  cb2.addEventListener('touchstart',e=>{e.stopPropagation();start();},{passive:true});
+  cb2.addEventListener('touchend',e=>{e.stopPropagation();end(e);});
+  cb2.addEventListener('mousedown',e=>{e.stopPropagation();start();});
+  cb2.addEventListener('mouseup',e=>{e.stopPropagation();end(e);});
+  cb2.addEventListener('mouseleave',()=>{clearTimeout(longTimer);});
+  applyWantClearBtn();
+}catch(e){}
 function applyWantBtn(){
   const b=document.getElementById('want-btn'); if(!b)return;
   const m=state.wantMode|0;
@@ -6820,8 +6859,8 @@ function wantTapAt(x,y){
   const cle=String(b.t);
   state.wantMarks = state.wantMarks || {};
   if(state.wantMarks[cle]) delete state.wantMarks[cle];
-  else state.wantMarks[cle] = {t:b.t, dir: state.wantMode===1?1:-1, price:b.c};
-  saveConfig(); render();
+  else state.wantMarks[cle] = {t:b.t, dir: state.wantMode===1?1:-1, price:b.c, ordre: Date.now()};
+  saveConfig(); if(typeof applyWantClearBtn==='function') applyWantClearBtn(); render();
   return true;
 }
 function drawWantMarks(s,e,yOf){
