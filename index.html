@@ -726,7 +726,7 @@ footer{
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:11px;color:#94A3B8">
       <label>Historique (jours)<select id="mbt-days" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="3">3 jours</option><option value="7" selected>7 jours</option><option value="14">14 jours</option><option value="30">30 jours</option></select></label>
       <label>Capital ($)<input type="number" id="mbt-capital" value="100" min="1" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
-      <label>Frais par trade (%) <span style="color:#00E5FF;font-size:10px">(MEXC Taker: 0.04%)</span><input type="number" id="mbt-fee" value="0.04" step="0.001" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
+      <label>Frais par trade (%) <span style="color:#00E5FF;font-size:10px">(MEXC Taker: 0.02%)</span><input type="number" id="mbt-fee" value="0.02" step="0.001" min="0" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Levier<select id="mbt-lev" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"><option value="1" selected>1x (Spot)</option><option value="2">2x</option><option value="5">5x</option><option value="10">10x</option><option value="20">20x</option><option value="50">50x</option></select></label>
       <label>Score minimum<input type="number" id="mbt-score" value="5" min="2" max="10" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
       <label>Stop suiveur (× ATR)<input type="number" id="mbt-trail" value="2" step="0.1" min="0.5" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px"></label>
@@ -1113,9 +1113,9 @@ footer{
         </label>
         <label style="display:flex;flex-direction:column;gap:4px">
           <span style="color:var(--muted)">Frais / Trade (%) <span style="font-size:10px;color:#00E5FF">(MEXC Taker: 0.04%)</span></span>
-          <input type="number" id="bt-fee" value="0.04" step="0.001" min="0" onchange="runBacktest(true)" style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-weight:bold">
+          <input type="number" id="bt-fee" value="0.02" step="0.001" min="0" onchange="runBacktest(true)" style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-weight:bold">
           <div style="display:flex;gap:4px;margin-top:2px;flex-wrap:wrap">
-            <button type="button" onclick="document.getElementById('bt-fee').value=0.04;runBacktest(true)" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="MEXC Futures Taker Standard (0.04%)">MEXC Taker 0.04%</button>
+            <button type="button" onclick="document.getElementById('bt-fee').value=0.02;runBacktest(true)" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="MEXC Futures Taker Standard (0.04%)">MEXC Taker 0.04%</button>
             <button type="button" onclick="document.getElementById('bt-fee').value=0;runBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="MEXC Maker (0.00% - Ordres Limite)">Maker 0.00%</button>
             <button type="button" onclick="document.getElementById('bt-fee').value=0.06;runBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 5px;font-size:9.5px;cursor:pointer" title="Frais Crypto Standard (0.06%)">Standard 0.06%</button>
           </div>
@@ -11880,7 +11880,10 @@ async function runBacktest(skipFetch){
           const exitP = d[i].c;
           const dir = pos.dir;
           const grossReturnPct = (((exitP - entryP) / entryP) * dir) * activeLev;
-          const feesPct = 2 * feePct;
+          // Les frais sont prélevés sur le NOTIONNEL (capital x levier), pas sur
+          // le capital. Sans le facteur activeLev ils étaient sous-estimés d'un
+          // facteur égal au levier.
+          const feesPct = 2 * feePct * activeLev;
           const netReturnPct = Math.max(-0.95, grossReturnPct - feesPct);
           const pnlDollar = capital * netReturnPct;
 
@@ -11931,7 +11934,7 @@ async function runBacktest(skipFetch){
       const exitP = lastBar.c;
       const dir = pos.dir;
       const grossReturnPct = (((exitP - entryP) / entryP) * dir) * activeLev;
-      const feesPct = 2 * feePct;
+      const feesPct = 2 * feePct * activeLev;   // frais sur le notionnel
       const netReturnPct = Math.max(-0.95, grossReturnPct - feesPct);
       const pnlDollar = capital * netReturnPct;
 
