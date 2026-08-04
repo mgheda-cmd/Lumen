@@ -13553,9 +13553,13 @@ function computeTripleConfluence(d, ind){
   };
 
   const out = [];
+  /* Alternance stricte : après une VENTE TRIPLE on n'émet plus rien tant
+     qu'un ACHAT TRIPLE n'est pas apparu, et inversement. Si les trois
+     conditions se réalignent dans le même sens, le signal est ignoré. */
+  let lastDir = 0;
   for(let i = 2; i < d.length; i++){
     const cur = etat(i), prev = etat(i - 1);
-    if(cur.dir !== 0 && cur.dir !== prev.dir){
+    if(cur.dir !== 0 && cur.dir !== prev.dir && cur.dir !== lastDir){
       // quelle condition vient de basculer ? c'est elle qui déclenche
       let dernier = 'confluence';
       if(prev.A !== cur.A) dernier = 'EMA ' + emaPeriod + ' / HA ' + haTf + 'm';
@@ -13568,6 +13572,7 @@ function computeTripleConfluence(d, ind){
         detail: (cur.dir === 1 ? 'Nuage vert' : 'Nuage rouge') + ' · ' +
                 'Osc ' + (cur.C === 1 ? 'vert' : 'rouge') + ' ' + roscTf + 'm'
       });
+      lastDir = cur.dir;
     }
   }
   return out;
