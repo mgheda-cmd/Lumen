@@ -6688,10 +6688,12 @@ canvas.addEventListener('mousemove',e=>{
       }
     }
   }else{
+    // survol : on ne fait que changer le curseur, jamais cocher quoi que ce soit
     const gh=ghostHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
-  if(gh){toggleGhostKeep(gh);return;}
-  const lh=labelHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
-    if(lh){
+    const lh=labelHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
+    if(gh){
+      canvas.style.cursor='pointer';
+    }else if(lh){
       canvas.style.cursor='pointer';
     }else{
       const z=hitZone(x,y);
