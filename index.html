@@ -2736,7 +2736,7 @@ const state = {
   },
   cache:{},
   mouse:null, dragging:false, dragX:0, dragStart:0,
-  showAllExhaust:false, hideBadges:false,
+  showAllExhaust:false, hideBadges:false, tripleKeep:{},
   yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{}, subOrder:[], subMergeUp:{},
 };
 
@@ -2749,7 +2749,7 @@ const CFG_KEY='lumen-config-v1';
 let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
-    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
+    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, tripleKeep:state.tripleKeep, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
     paper:{cash:paper.cash,bank:paper.bank||0,withdrawals:Array.isArray(paper.withdrawals)?paper.withdrawals.slice(0,100):[],positions:paper.positions,history:paper.history.slice(0,50)}};
 }
 function mergeConfig(c){
@@ -2775,6 +2775,7 @@ function mergeConfig(c){
   }
   if(typeof c.showAllExhaust==='boolean')state.showAllExhaust=c.showAllExhaust;
   if(typeof c.hideBadges==='boolean')state.hideBadges=c.hideBadges;
+  if(c.tripleKeep && typeof c.tripleKeep==='object')state.tripleKeep=c.tripleKeep;
   // Confluence Triple : les filtres sont actifs par défaut. Une configuration
   // enregistrée avant leur ajout n'a pas ces clés, on les initialise pour que
   // les boutons du menu reflètent l'état réel dès l'ouverture.
@@ -3757,7 +3758,7 @@ function xOf(i){
   return (i-state.view.start)*cw + cw/2;
 }
 
-let paneCtrls=[]; let labelHits=[]; let _subRow=0; let _subRowKey='';
+let paneCtrls=[]; let labelHits=[]; let ghostHits=[]; let _subRow=0; let _subRowKey='';
 try{
   const ct=document.getElementById('chips-toggle');
   ct.classList.add('showing');
@@ -3925,7 +3926,7 @@ function render(){
   }
 
   ctx.clearRect(0,0,W,H);
-  paneCtrls=[]; labelHits=[];
+  paneCtrls=[]; labelHits=[]; ghostHits=[];
   const panes = computePanes();
   const _pp = panes.find(q=>q.key==='price');
   resetBadgeLayout(_pp ? (_pp.y+_pp.h) : (H-AXIS_H));
@@ -6572,6 +6573,8 @@ function paneHeightOf(key){
 canvas.addEventListener('mousedown',e=>{
   const x=e.offsetX,y=e.offsetY;
   if((state.zoneMode|| false)&&zoneTapAt(x,y)){return;}
+  const gh=ghostHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
+  if(gh){toggleGhostKeep(gh);return;}
   const lh=labelHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
   if(lh){openCfg(lh.key);state.dragging=false;state.dragMode='none';return;}
   const cc=hitPaneCtrl(x,y);
@@ -6658,7 +6661,9 @@ canvas.addEventListener('mousemove',e=>{
       }
     }
   }else{
-    const lh=labelHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
+    const gh=ghostHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
+  if(gh){toggleGhostKeep(gh);return;}
+  const lh=labelHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
     if(lh){
       canvas.style.cursor='pointer';
     }else{
@@ -6676,6 +6681,8 @@ canvas.addEventListener('touchstart',e=>{
   const r=canvas.getBoundingClientRect();
   const tx=e.touches[0].clientX-r.left, ty=e.touches[0].clientY-r.top;
   if(state.zoneMode&&zoneTapAt(tx,ty)){ if(e.cancelable)e.preventDefault(); return; }
+  const gh=ghostHits.find(h=>tx>=h.x&&tx<=h.x+h.w&&ty>=h.y&&ty<=h.y+h.h);
+  if(gh){ if(e.cancelable)e.preventDefault(); toggleGhostKeep(gh); return; }
   const lh=labelHits.find(h=>tx>=h.x&&tx<=h.x+h.w&&ty>=h.y&&ty<=h.y+h.h);
   if(lh){ if(e.cancelable)e.preventDefault(); openCfg(lh.key); return; }
   const cc=hitPaneCtrl(tx,ty);
@@ -6733,6 +6740,15 @@ function applyPaneCtrl(key,act){
   if(act==='up'&&i>0){ [cur[i-1],cur[i]]=[cur[i],cur[i-1]]; state.subMergeUp[key]=false; }
   else if(act==='down'&&i<cur.length-1){ [cur[i+1],cur[i]]=[cur[i],cur[i+1]]; }
   state.subOrder=cur; saveConfig(); render();
+}
+function toggleGhostKeep(g){
+  state.tripleKeep = state.tripleKeep || {};
+  const cle = String(g.t);
+  if(state.tripleKeep[cle]) delete state.tripleKeep[cle];
+  else state.tripleKeep[cle] = {t:g.t, dir:g.dir, motif:g.rejete,
+    sep: g.sep!=null ? +g.sep.toFixed(3) : null,
+    dist: g.dist!=null ? +g.dist.toFixed(3) : null, adx: !!g.adx};
+  saveConfig(); render();
 }
 function hitPaneCtrl(x,y){
   for(const c of paneCtrls){ if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h)return c; }
@@ -13618,6 +13634,9 @@ function computeTripleConfluence(d, ind){
     let dir = (A === 1 && B === 1 && C === 1) ? 1
              : ((A === -1 && B === -1 && C === -1) ? -1 : 0);
     let veto = '';
+    const _sep = atrArr[i] ? Math.abs(cF[i] - cS[i]) / atrArr[i] : null;
+    const _dist = atrArr[i] ? Math.abs(d[i].c - cS[i]) / atrArr[i] : null;
+    const _adx = !!(adxRange && adxRange[i]);
     if(dir !== 0 && adxRange && adxRange[i]){ veto = 'consolidation ADX'; }
     if(dir !== 0 && !veto && isRange && isRange[i]){ veto = 'range'; }
     if(dir !== 0 && !veto && useDist && minAtr > 0 && atrArr[i]){
@@ -13629,7 +13648,7 @@ function computeTripleConfluence(d, ind){
       const ouverture = Math.abs(cF[i] - cS[i]) / atrArr[i];
       if(ouverture < minSep) veto = 'nuage fermé';
     }
-    return {dir, A, B, C, veto};
+    return {dir, A, B, C, veto, sep:_sep, dist:_dist, adx:_adx};
   };
 
   const out = [];
@@ -13650,6 +13669,7 @@ function computeTripleConfluence(d, ind){
       out.push({i, t: d[i].t, price: d[i].c, dir: cur.dir,
         type: cur.dir === 1 ? 'ACHAT' : 'VENTE',
         dernier: dern, rejete: cur.veto,
+        sep: cur.sep, dist: cur.dist, adx: cur.adx,
         detail: (cur.dir === 1 ? 'Nuage vert' : 'Nuage rouge')});
       continue;
     }
@@ -13720,7 +13740,26 @@ function drawTripleConfluence(evts, s, e, yOf){
     if(rej) ctx.fillStyle = '#FDE68A';
     ctx.fillText(rej ? ('Bloqué : ' + g.rejete) : ('Déclenché par ' + (g.dernier || '')), bx + bw / 2, by + 33);
     ctx.textAlign = 'left';
-    labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_triple'});
+    if(rej){
+      const cw2 = 14, ch2 = 14, cx = bx + 5, cy = by + 4;
+      const cle = String(g.t);
+      const coche = !!(state.tripleKeep && state.tripleKeep[cle]);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = coche ? 'rgba(251,191,36,0.92)' : 'rgba(15,23,42,0.88)';
+      roundRect(cx, cy, cw2, ch2, 3); ctx.fill();
+      ctx.strokeStyle = coche ? '#FBBF24' : 'rgba(200,212,235,.75)';
+      ctx.lineWidth = 1; ctx.stroke();
+      if(coche){
+        ctx.strokeStyle = '#0F172A'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx+3.5, cy+7.5); ctx.lineTo(cx+6, cy+10.5); ctx.lineTo(cx+10.5, cy+4);
+        ctx.stroke();
+      }
+      ghostHits.push({x: cx-4, y: cy-4, w: cw2+8, h: ch2+8, t: g.t,
+        dir: g.dir, rejete: g.rejete, sep: g.sep, dist: g.dist, adx: g.adx});
+    } else {
+      labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'signal_triple'});
+    }
     ctx.restore();
   }
 }
