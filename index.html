@@ -13879,44 +13879,49 @@ function computeTripleConfluence(d, ind){
   // n'importe où sur le graphique, pas seulement sur une pastille
   _tripleCtx = {d, ema, ha, cF, cS, rosc, atr: atrArr, adxRange, erArr, erVal, erCr, emaPeriod, haTf, roscTf};
 
-  const out = [];
-  /* Alternance stricte : après une VENTE TRIPLE on n'émet plus rien tant
-     qu'un ACHAT TRIPLE n'est pas apparu, et inversement. Si les trois
-     conditions se réalignent dans le même sens, le signal est ignoré. */
-  let lastDir = 0;
+  /* Deux passes.
+     1. On relève tous les basculements de sens, sans arbitrage.
+     2. On décide l'alternance EN REMONTANT depuis la bougie la plus récente.
+     C'est le point important : quand le graphique charge de l'historique plus
+     ancien en défilant vers la gauche, les bougies ajoutées se retrouvent AVANT
+     celles déjà affichées. Avec une alternance calculée d'avant en arrière,
+     toute la chaîne se décalait et des pastilles apparaissaient ou
+     disparaissaient sous les yeux. En partant de la fin, l'ajout d'historique
+     ancien ne peut plus modifier les signaux récents. */
+  const bruts = [];
   for(let i = 2; i < d.length; i++){
     const cur = etat(i), prev = etat(i - 1);
-    const candidat = cur.dir !== 0 && cur.dir !== prev.dir && cur.dir !== lastDir;
-    if(candidat && cur.veto){
-      // Le signal était complet mais un filtre l'a écarté : on le garde à
-      // l'écran, en transparence, avec le motif du rejet.
-      let dern = 'confluence';
-      if(prev.A !== cur.A) dern = 'EMA ' + emaPeriod + ' / HA ' + haTf + 'm';
-      else if(prev.B !== cur.B) dern = 'Nuage EMA';
-      else if(prev.C !== cur.C) dern = 'Range Osc ' + roscTf + 'm';
-      out.push({i, t: d[i].t, price: d[i].c, dir: cur.dir,
-        type: cur.dir === 1 ? 'ACHAT' : 'VENTE',
-        dernier: dern, rejete: cur.veto,
-        sep: cur.sep, dist: cur.dist, adx: cur.adx,
-        detail: (cur.dir === 1 ? 'Nuage vert' : 'Nuage rouge')});
+    if(cur.dir === 0 || cur.dir === prev.dir) continue;
+    let dern = 'confluence';
+    if(prev.A !== cur.A) dern = 'EMA ' + emaPeriod + ' / HA ' + haTf + 'm';
+    else if(prev.B !== cur.B) dern = 'Nuage EMA';
+    else if(prev.C !== cur.C) dern = 'Range Osc ' + roscTf + 'm';
+    bruts.push({
+      i, t: d[i].t, price: d[i].c, dir: cur.dir,
+      type: cur.dir === 1 ? 'ACHAT' : 'VENTE',
+      dernier: dern, veto: cur.veto,
+      sep: cur.sep, dist: cur.dist, adx: cur.adx,
+      detail: (cur.dir === 1 ? 'Nuage vert' : 'Nuage rouge') + ' · ' +
+              'Osc ' + (cur.C === 1 ? 'vert' : 'rouge') + ' ' + roscTf + 'm'
+    });
+  }
+
+  const out = [];
+  let lastDir = 0;
+  for(let k = bruts.length - 1; k >= 0; k--){
+    const b = bruts[k];
+    if(b.veto){
+      out.push({i:b.i, t:b.t, price:b.price, dir:b.dir, type:b.type,
+        dernier:b.dernier, rejete:b.veto, sep:b.sep, dist:b.dist, adx:b.adx,
+        detail:(b.dir === 1 ? 'Nuage vert' : 'Nuage rouge')});
       continue;
     }
-    if(candidat && !cur.veto){
-      // quelle condition vient de basculer ? c'est elle qui déclenche
-      let dernier = 'confluence';
-      if(prev.A !== cur.A) dernier = 'EMA ' + emaPeriod + ' / HA ' + haTf + 'm';
-      else if(prev.B !== cur.B) dernier = 'Nuage EMA';
-      else if(prev.C !== cur.C) dernier = 'Range Osc ' + roscTf + 'm';
-      out.push({
-        i, t: d[i].t, price: d[i].c, dir: cur.dir,
-        type: cur.dir === 1 ? 'ACHAT' : 'VENTE',
-        dernier,
-        detail: (cur.dir === 1 ? 'Nuage vert' : 'Nuage rouge') + ' · ' +
-                'Osc ' + (cur.C === 1 ? 'vert' : 'rouge') + ' ' + roscTf + 'm'
-      });
-      lastDir = cur.dir;
-    }
+    if(b.dir === lastDir) continue;   // même sens que le signal retenu suivant
+    lastDir = b.dir;
+    out.push({i:b.i, t:b.t, price:b.price, dir:b.dir, type:b.type,
+      dernier:b.dernier, detail:b.detail, sep:b.sep, dist:b.dist, adx:b.adx});
   }
+  out.reverse();
   return out;
 }
 
