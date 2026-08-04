@@ -3998,7 +3998,7 @@ function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,
    elle glisse dans sa direction naturelle (vers le haut pour les signaux du
    dessus, vers le bas pour ceux du dessous) jusqu'à trouver un trou libre.
    Elle reste toujours dans les limites du panneau des prix.            */
-let _badgeRects=[], _priceBot=0;
+let _badgeRects=[], _priceBot=0; let _tripleCtx=null;
 /* Clignotement des pastilles en confluence multi-UT.
    _blinkAny est remis à faux à chaque frame ; s'il repasse à vrai,
    un minuteur léger redessine deux fois par seconde. */
@@ -6886,7 +6886,24 @@ function wantTapAt(x,y){
   const cle=String(b.t);
   state.wantMarks = state.wantMarks || {};
   if(state.wantMarks[cle]) delete state.wantMarks[cle];
-  else state.wantMarks[cle] = {t:b.t, dir: state.wantMode===1?1:-1, price:b.c, ordre: Date.now()};
+  else {
+    const m = {t:b.t, dir: state.wantMode===1?1:-1, price:b.c, ordre: Date.now()};
+    const cx = _tripleCtx;
+    if(cx && cx.atr && cx.atr[i]){
+      const a = cx.atr[i];
+      if(cx.cF[i]!=null && cx.cS[i]!=null){
+        m.sep  = +(Math.abs(cx.cF[i]-cx.cS[i])/a).toFixed(3);
+        m.dist = +(Math.abs(b.c-cx.cS[i])/a).toFixed(3);
+        m.nuage = cx.cF[i] > cx.cS[i] ? 1 : -1;
+      }
+      if(cx.rosc && cx.rosc[i]!=null) m.osc = +cx.rosc[i].toFixed(1);
+      if(cx.ha && cx.ha[i]) m.ha = cx.ha[i].c >= cx.ha[i].o ? 1 : -1;
+      if(cx.ema && cx.ema[i]!=null) m.ema = b.c > cx.ema[i] ? 1 : -1;
+      m.adx = !!(cx.adxRange && cx.adxRange[i]);
+      m.atr = +a.toFixed(2);
+    }
+    state.wantMarks[cle] = m;
+  }
   saveConfig(); if(typeof applyWantClearBtn==='function') applyWantClearBtn(); render();
   return true;
 }
@@ -13815,6 +13832,10 @@ function computeTripleConfluence(d, ind){
     return {dir, A, B, C, veto, sep:_sep, dist:_dist, adx:_adx};
   };
 
+  // contexte conservé : permet d'attacher les mesures à un repère posé
+  // n'importe où sur le graphique, pas seulement sur une pastille
+  _tripleCtx = {d, ema, ha, cF, cS, rosc, atr: atrArr, adxRange, emaPeriod, haTf, roscTf};
+
   const out = [];
   /* Alternance stricte : après une VENTE TRIPLE on n'émet plus rien tant
      qu'un ACHAT TRIPLE n'est pas apparu, et inversement. Si les trois
@@ -13860,6 +13881,24 @@ function drawTripleConfluence(evts, s, e, yOf){
   if(!Array.isArray(evts) || !evts.length) return;
   const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
   const montreFantomes = !(state.indicators.signal_triple && state.indicators.signal_triple.showGhosts === false);
+  /* Pour chaque repère 📌, on retient la pastille la plus proche qui va dans
+     le sens voulu, à 40 bougies au plus. Elle sera entourée d'or. */
+  const lien = {};
+  {
+    const wm = state.wantMarks || {};
+    for(const k in wm){
+      const r = wm[k]; const ri = idxOfTime(r.t); if(ri == null) continue;
+      let best = null, bd = 41;
+      for(const g of evts){
+        if(g.dir !== r.dir) continue;
+        const gi = (g.t != null ? idxOfTime(g.t) : null) ?? g.i;
+        if(gi == null) continue;
+        const dd = Math.abs(gi - ri);
+        if(dd < bd){ bd = dd; best = g; }
+      }
+      if(best) lien[String(best.t)] = {ecart: bd, avant: (idxOfTime(best.t) < ri)};
+    }
+  }
   for(const g of evts){
     const i = (g.t != null ? idxOfTime(g.t) : null) ?? g.i;
     if(i == null || i < s - 1 || i > e + 1) continue;
@@ -13892,6 +13931,18 @@ function drawTripleConfluence(evts, s, e, yOf){
     if(rej) ctx.setLineDash([4,3]);
     roundRect(bx, by, bw, bh, 9); ctx.fill(); ctx.stroke();
     ctx.setLineDash([]);
+    const _li = lien[String(g.t)];
+    if(_li){
+      // pastille qui correspond à un repère : liseré doré
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#FBBF24'; ctx.lineWidth = 2.5;
+      roundRect(bx-3, by-3, bw+6, bh+6, 11); ctx.stroke();
+      ctx.fillStyle = '#FBBF24'; ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('📌 ' + (_li.ecart === 0 ? 'pile' : (_li.ecart + ' bougies ' + (_li.avant ? 'avant' : 'après'))), bx + bw - 6, by - 6);
+      ctx.textAlign = 'center';
+      if(rej) ctx.globalAlpha = 0.72;
+    }
 
     ctx.textAlign = 'center';
     ctx.fillStyle = color;
