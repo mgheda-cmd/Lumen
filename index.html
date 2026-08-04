@@ -696,6 +696,12 @@ footer{
             <div class="ind-item" data-ind="signal_triple" id="item-signal_triple" style="background:linear-gradient(135deg,rgba(0,230,118,0.12),rgba(6,182,212,0.08));border:1.5px solid #00E676;border-radius:8px;padding:9px 10px;margin-top:10px;margin-bottom:6px">
         <span class="dot" style="background:#00E676;box-shadow:0 0 7px #00E676;flex:none"></span>
         <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Confluence Triple<br><span class="desc" style="color:#A7F3D0;font-size:11px">EMA 9 / HA 5m, nuage EMA et range oscillateur 3m alignés. L'entrée part sur la dernière condition qui rejoint les deux autres.</span></span>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;width:100%">
+          <span class="srtf" data-tripleflag="useAdxFilter" title="Aucune entrée quand le bandeau ADX est rose">🌸 ADX</span>
+          <span class="srtf" data-tripleflag="useCloudSep" title="Aucune entrée quand le nuage est refermé">☁️ Nuage ouvert</span>
+          <span class="srtf" data-tripleflag="useCloudDist" title="Aucune entrée quand le prix est collé au nuage">↔️ Écart nuage</span>
+          <span class="srtf" data-tripleflag="useRangeFilter" title="Détecteur de range intégré, en plus de l'ADX">🌀 Range</span>
+        </div>
         <span class="state" style="margin-left:auto">off</span>
       </div>
 <h4 style="color:#FBBF24;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🏆 Stratégie complète</h4>
@@ -2723,7 +2729,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,minAtrDist:0.6,minCloudSep:0.8},
+    signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:true,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,minAtrDist:0.6,minCloudSep:0.8},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
@@ -7005,7 +7011,18 @@ function syncMenu(){
     const opt = el.dataset.fvgopt;
     if(state.indicators.fvg) el.classList.toggle('on', !!state.indicators.fvg[opt]);
   });
-  document.querySelectorAll('.srtf[data-indzero]').forEach(el=>{
+  document.querySelectorAll('.srtf[data-tripleflag]').forEach(el=>{
+  const f = el.dataset.tripleflag;
+  if(state.indicators.signal_triple) el.classList.toggle('on', !!state.indicators.signal_triple[f]);
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    const s2 = state.indicators.signal_triple; if(!s2)return;
+    s2[f] = !s2[f];
+    el.classList.toggle('on', !!s2[f]);
+    state.cache={}; saveConfig(); render();
+  });
+});
+document.querySelectorAll('.srtf[data-indzero]').forEach(el=>{
     const ind = el.dataset.indzero;
     if(ind && state.indicators[ind]){
       el.classList.toggle('on', state.indicators[ind].showZero !== false);
@@ -7070,7 +7087,11 @@ document.querySelectorAll('.srtf[data-exhaustionproopt]').forEach(el=>{
     state.cache={}; saveConfig(); render();
   });
 });
-document.querySelectorAll('.srtf[data-indzero]').forEach(el=>{
+document.querySelectorAll('.srtf[data-tripleflag]').forEach(el=>{
+    const f = el.dataset.tripleflag;
+    if(state.indicators.signal_triple) el.classList.toggle('on', !!state.indicators.signal_triple[f]);
+  });
+  document.querySelectorAll('.srtf[data-indzero]').forEach(el=>{
   const ind = el.dataset.indzero;
   if(ind && state.indicators[ind]) el.classList.toggle('on', state.indicators[ind].showZero !== false);
   el.addEventListener('click',e=>{
@@ -13523,6 +13544,8 @@ function computeTripleConfluence(d, ind){
   const useRange  = ind.useRangeFilter === true;    // détecteur intégré, en option
   const rangePer  = ind.rangePeriod || 20;
   const rangeThr  = ind.rangeThreshold != null ? +ind.rangeThreshold : 50;
+  const useDist   = ind.useCloudDist !== false;
+  const useSep    = ind.useCloudSep !== false;
   const minAtr    = ind.minAtrDist != null ? +ind.minAtrDist : 0.6;  // écart mini au nuage, en ATR
   const minSep    = ind.minCloudSep != null ? +ind.minCloudSep : 0.8;  // ouverture mini du nuage, en ATR
   const roscTf    = +ind.roscTf || 3;
@@ -13587,12 +13610,12 @@ function computeTripleConfluence(d, ind){
     let veto = '';
     if(dir !== 0 && adxRange && adxRange[i]){ veto = 'consolidation ADX'; }
     if(dir !== 0 && !veto && isRange && isRange[i]){ veto = 'range'; }
-    if(dir !== 0 && !veto && minAtr > 0 && atrArr[i]){
+    if(dir !== 0 && !veto && useDist && minAtr > 0 && atrArr[i]){
       const ecart = Math.abs(d[i].c - cS[i]) / atrArr[i];
       if(ecart < minAtr) veto = 'prix collé au nuage';
     }
     // Nuage refermé = pas de tendance de fond. C'est la signature d'un range.
-    if(dir !== 0 && !veto && minSep > 0 && atrArr[i]){
+    if(dir !== 0 && !veto && useSep && minSep > 0 && atrArr[i]){
       const ouverture = Math.abs(cF[i] - cS[i]) / atrArr[i];
       if(ouverture < minSep) veto = 'nuage fermé';
     }
