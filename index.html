@@ -15082,6 +15082,47 @@ async function runZZBacktest(skipFetch){
           + '<span style="font-size:11px;color:var(--text)">' + e.nom + '</span>'
           + '<span style="font-size:11px;color:#22C55E;font-weight:700">+' + e.gain.toFixed(0) + ' pts de gain</span></div>';
       });
+      /* Contrôle de robustesse : la même configuration est rejouée sur les
+         7, 14 et 30 derniers jours de l'historique chargé. Si elle reste
+         gagnante partout, elle tient debout. Si elle ne gagne que sur une
+         période, c'est probablement du hasard. */
+      const finT = d[d.length-1].t, JOUR = 86400000;
+      let stabRows = '', nbOk = 0, nbTest = 0;
+      for(const nj of [7, 14, 30]){
+        const dep = finT - nj * JOUR;
+        if(d[0].t > dep + JOUR){
+          stabRows += '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding:4px 0">'
+            + '<span style="font-size:11px;color:var(--muted)">' + nj + ' jours</span>'
+            + '<span style="font-size:10.5px;color:var(--muted)">historique insuffisant</span></div>';
+          continue;
+        }
+        const sous = dTF0.filter(x => x.t >= dep);
+        if(sous.length < 50) continue;
+        const sMap = {};
+        const sSig = (typeof computeZZSignals === 'function') ? computeZZSignals(sous, indConfig) : [];
+        sSig.forEach(x => { if(!x.isExit) sMap[x.i] = x; });
+        const rr = runSingleZZSim(sous, sMap, b0.tpVal, b0.sl, b0.cap, b0.lev, feeRate, b0.part);
+        nbTest++;
+        const gagne = rr && rr.tradesCount && rr.netPnlTotal > 0 && !rr.ruine;
+        if(gagne) nbOk++;
+        const col = gagne ? '#22C55E' : '#EF4444';
+        stabRows += '<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding:4px 0">'
+          + '<span style="font-size:11px;color:var(--text)">' + nj + ' jours</span>'
+          + '<span style="font-size:11px;color:' + col + ';font-weight:700">'
+          + (rr && rr.tradesCount ? (gagne?'✓ ':'✗ ') + (rr.netPnlPct>=0?'+':'') + rr.netPnlPct.toFixed(1) + ' % · '
+             + rr.tradesCount + ' trades · DD -' + rr.maxDDPct.toFixed(0) + ' %' + (rr.ruine?' · ruiné':'')
+             : 'aucun trade') + '</span></div>';
+      }
+      const verdict = nbTest === 0 ? {txt:'Pas assez d\'historique pour vérifier.', col:'var(--muted)'}
+        : nbOk === nbTest ? {txt:'✓ Gagnante sur toutes les périodes testées — la configuration tient.', col:'#22C55E'}
+        : nbOk === 0 ? {txt:'✗ Perdante partout : ce classement ne vaut rien en dehors de l\'échantillon.', col:'#EF4444'}
+        : {txt:'⚠ Gagnante sur ' + nbOk + ' période(s) sur ' + nbTest + ' — résultat fragile, probablement du hasard.', col:'#F59E0B'};
+      window.__zzStab = '<div style="margin-top:10px;border:1px solid ' + verdict.col + ';border-radius:8px;padding:8px">'
+        + '<div style="font-weight:800;color:' + verdict.col + ';font-size:12px">📆 La configuration n°1 tient-elle dans le temps ?</div>'
+        + '<div style="font-size:10px;color:var(--muted);margin-bottom:2px">Même configuration rejouée sur les 7, 14 et 30 derniers jours de l\'historique chargé.</div>'
+        + stabRows
+        + '<div style="margin-top:5px;font-size:11px;color:' + verdict.col + ';font-weight:600">' + verdict.txt + '</div></div>';
+
       window.__zzSensi = trois.length
         ? '<div style="margin-top:10px;border:1px solid #22D3EE;border-radius:8px;padding:8px;background:rgba(34,211,238,0.06)">'
           + '<div style="font-weight:800;color:#22D3EE;font-size:12px">🔧 Les 3 réglages les plus efficaces à ajuster</div>'
@@ -15119,6 +15160,7 @@ async function runZZBacktest(skipFetch){
       + '<button type="button" onclick="window.__zzTop5Refaire=1;runZZBacktest(true)" style="background:rgba(251,191,36,0.15);border:1px solid #FBBF24;color:#FBBF24;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer">🔄 Recalculer</button></div>'
       + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Toutes les combinaisons testées : unité de temps, sortie, stop, levier, part engagée et capital de départ. Les comptes ruinés sont écartés.</div>'
       + (cartes || '<div style="color:var(--muted);font-size:11px">Aucune configuration rentable trouvée.</div>')
+      + (window.__zzStab || '')
       + (window.__zzSensi || '')
       + '</div>';
   }catch(e){}
