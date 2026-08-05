@@ -776,9 +776,9 @@ footer{
         <input type="number" id="bt-zz-fee" value="0.02" step="0.001" min="0" onchange="runZZBacktest(true)" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px;font-weight:bold">
         <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
           <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.02;runZZBacktest(true)" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:bold;cursor:pointer" title="BingX / VIP Taker (0.02%)">0.02% Exchange</button>
-          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.04;runZZBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 4px;font-size:9px;cursor:pointer" title="MEXC Taker (0.04%)">MEXC 0.04%</button>
-          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.055;runZZBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 4px;font-size:9px;cursor:pointer" title="Bybit / OKX (0.055%)">Bybit 0.055%</button>
-          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0;runZZBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 4px;font-size:9px;cursor:pointer" title="Maker Ordres Limite (0.00%)">Maker 0%</button>
+          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.04;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="MEXC Taker (0.04%)">MEXC 0.04%</button>
+          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.055;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="Bybit / OKX (0.055%)">Bybit 0.055%</button>
+          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="Maker Ordres Limite (0.00%)">Maker 0%</button>
         </div>
       </label>
       <label>Levier
@@ -806,12 +806,12 @@ footer{
           <option value="150">🛑 SL 150 pts</option>
         </select>
         <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
-          <button type="button" onclick="document.getElementById('bt-zz-sl').value=0;runZZBacktest(true)" style="background:rgba(255,255,255,0.06);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:2px 3px;font-size:8.5px;cursor:pointer" title="Sans Stop Loss fixe">Aucun</button>
-          <button type="button" onclick="document.getElementById('bt-zz-sl').value=50;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:8.5px;font-weight:bold;cursor:pointer">50</button>
-          <button type="button" onclick="document.getElementById('bt-zz-sl').value=75;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:8.5px;font-weight:bold;cursor:pointer">75</button>
-          <button type="button" onclick="document.getElementById('bt-zz-sl').value=100;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:8.5px;font-weight:bold;cursor:pointer">100</button>
-          <button type="button" onclick="document.getElementById('bt-zz-sl').value=125;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:8.5px;font-weight:bold;cursor:pointer">125</button>
-          <button type="button" onclick="document.getElementById('bt-zz-sl').value=150;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:8.5px;font-weight:bold;cursor:pointer">150</button>
+          <button type="button" onclick="document.getElementById('bt-zz-sl').value=0;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 3px;font-size:10px;cursor:pointer" title="Sans Stop Loss fixe">Aucun</button>
+          <button type="button" onclick="document.getElementById('bt-zz-sl').value=50;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:10px;font-weight:bold;cursor:pointer">50</button>
+          <button type="button" onclick="document.getElementById('bt-zz-sl').value=75;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:10px;font-weight:bold;cursor:pointer">75</button>
+          <button type="button" onclick="document.getElementById('bt-zz-sl').value=100;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:10px;font-weight:bold;cursor:pointer">100</button>
+          <button type="button" onclick="document.getElementById('bt-zz-sl').value=125;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:10px;font-weight:bold;cursor:pointer">125</button>
+          <button type="button" onclick="document.getElementById('bt-zz-sl').value=150;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 3px;font-size:10px;font-weight:bold;cursor:pointer">150</button>
         </div>
       </label>
       <label>Filtre Impulse MACD (15m)
@@ -820,8 +820,8 @@ footer{
           <option value="0">❌ DÉSACTIVÉ (3 Filtres Z.Z. Seuls)</option>
         </select>
         <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
-          <button type="button" onclick="document.getElementById('bt-zz-imp').value='1';runZZBacktest(true)" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:4px;padding:2px 4px;font-size:8.5px;font-weight:bold;cursor:pointer">Avec Filtre 15m</button>
-          <button type="button" onclick="document.getElementById('bt-zz-imp').value='0';runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 4px;font-size:8.5px;font-weight:bold;cursor:pointer">Sans Filtre 15m</button>
+          <button type="button" onclick="document.getElementById('bt-zz-imp').value='1';runZZBacktest(true)" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:4px;padding:2px 4px;font-size:10px;font-weight:bold;cursor:pointer">Avec Filtre 15m</button>
+          <button type="button" onclick="document.getElementById('bt-zz-imp').value='0';runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:4px;padding:2px 4px;font-size:10px;font-weight:bold;cursor:pointer">Sans Filtre 15m</button>
         </div>
       </label>
     </div>
@@ -14302,6 +14302,14 @@ function drawTripleConfluence(evts, s, e, yOf){
 
 
 /* ===== Indicateur Z. Z. — repris de la version AI Studio 44cacda ===== */
+const scenarios = [
+    { id: 'tp200', name: 'TP +200 pts', subtitle: 'Sortie Fixe 200 pts / USDT (ou Pastille)', tp: 200, pastille: true, badge: '200 pts', icon: '⚡' },
+    { id: 'tp300', name: 'TP +300 pts', subtitle: 'Sortie Fixe 300 pts / USDT (ou Pastille)', tp: 300, pastille: true, badge: '300 pts', icon: '🎯' },
+    { id: 'tp400', name: 'TP +400 pts', subtitle: 'Sortie Fixe 400 pts / USDT (ou Pastille)', tp: 400, pastille: true, badge: '400 pts', icon: '🚀' },
+    { id: 'tp500', name: 'TP +500 pts', subtitle: 'Sortie Fixe 500 pts / USDT (ou Pastille)', tp: 500, pastille: true, badge: '500 pts', icon: '🔥' },
+    { id: 'pastille_only', name: 'Pastille Seule', subtitle: 'Apparition Pastille Opposée', tp: null, pastille: true, badge: 'Pastille', icon: '🔄' }
+  ];
+
 function findBarIndexByTime(dArr, tVal) {
   if (!dArr || !dArr.length || tVal == null) return null;
   let low = 0, high = dArr.length - 1;
