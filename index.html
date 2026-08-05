@@ -783,8 +783,8 @@ footer{
           <button type="button" onclick="document.getElementById('bt-zz-risk').value=100;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer">100%</button>
         </div></div>
       <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
-          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.02;runZZBacktest(true)" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:bold;cursor:pointer" title="BingX / VIP Taker (0.02%)">0.02% Exchange</button>
-          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.04;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="MEXC Taker (0.04%)">MEXC 0.04%</button>
+          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.02;runZZBacktest(true)" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:bold;cursor:pointer" title="BingX / VIP Taker (0.02%)">MEXC 0.02% ✓</button>
+          <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.04;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="MEXC Taker (0.04%)">Taker 0.04%</button>
           <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.055;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="Bybit / OKX (0.055%)">Bybit 0.055%</button>
           <button type="button" onclick="document.getElementById('bt-zz-fee').value=0;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="Maker Ordres Limite (0.00%)">Maker 0%</button>
         </div>
@@ -15405,6 +15405,41 @@ function renderZZBtResultsUI(bestIdOverride){
       </div>
     `;
   }
+
+  /* Balayage de la part de capital engagée. On rejoue la simulation pour
+     plusieurs proportions et on désigne celle qui donne le meilleur
+     rendement une fois le drawdown déduit — un gain obtenu au prix d'un
+     drawdown de 80 % ne vaut pas un gain plus modeste et stable. */
+  try{
+    const parts = [5, 10, 20, 30, 50, 75, 100];
+    let rows = '', meilleur = null;
+    for(const pp of parts){
+      const rp0 = runSingleZZSim(d, sigMapBase, curScenarioObj.tp, slPts, capital, lev, feeRate, pp);
+      const score = rp0.netPnlPct - rp0.maxDDPct - (rp0.ruine ? 1000 : 0) - rp0.liquidations * 5;
+      if(!meilleur || score > meilleur.score) meilleur = {pp, score, r: rp0};
+      const col = rp0.netPnlTotal >= 0 ? '#22C55E' : '#EF4444';
+      rows += '<tr style="border-top:1px solid var(--line)">'
+        + '<td style="padding:4px;color:var(--text);font-weight:700">' + pp + ' %</td>'
+        + '<td style="padding:4px;color:' + col + ';font-weight:700">' + (rp0.netPnlPct>=0?'+':'') + rp0.netPnlPct.toFixed(1) + ' %</td>'
+        + '<td style="padding:4px;color:' + col + '">' + rp0.curCap.toFixed(2) + ' $</td>'
+        + '<td style="padding:4px;color:#EF4444">-' + rp0.maxDDPct.toFixed(0) + ' %</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + (rp0.profitFactor>=99?'∞':rp0.profitFactor.toFixed(2)) + '</td>'
+        + '<td style="padding:4px;color:' + (rp0.liquidations?'#EF4444':'#94A3B8') + '">' + rp0.liquidations + (rp0.ruine?' ⚠':'') + '</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + score.toFixed(0) + '</td></tr>';
+    }
+    html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
+      + '<div style="font-weight:800;color:#22D3EE;font-size:12px;margin-bottom:4px">⚙️ Quelle part de capital engager ?</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Score = rendement net moins le drawdown. Une ruine ou des liquidations sont lourdement pénalisées.</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr style="background:var(--panel-2,#0F172A)">'
+      + ['Part engagée','Gain','Final','DD','PF','Liq.','Score'].map(h=>'<th style="padding:4px;text-align:left;color:#94A3B8">'+h+'</th>').join('')
+      + '</tr></thead><tbody>' + rows + '</tbody></table>';
+    if(meilleur) html += '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<span style="font-size:11px;color:#22D3EE">Meilleure part : <b>' + meilleur.pp + ' %</b> — '
+      + (meilleur.r.netPnlPct>=0?'+':'') + meilleur.r.netPnlPct.toFixed(1) + ' % pour -' + meilleur.r.maxDDPct.toFixed(0) + ' % de drawdown</span>'
+      + '<button type="button" onclick="document.getElementById(\'bt-zz-risk\').value=' + meilleur.pp + ';runZZBacktest(true)" '
+      + 'style="background:linear-gradient(135deg,#22D3EE,#0891B2);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:10.5px;font-weight:800;cursor:pointer">🎯 Appliquer ' + meilleur.pp + ' %</button></div>';
+    html += '</div>';
+  }catch(e){}
 
   /* Comparaison des capitaux de départ. À levier et réglages identiques, on
      rejoue la simulation pour 100 à 500 $ afin de voir lequel tient le mieux
