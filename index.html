@@ -774,7 +774,15 @@ footer{
       </label>
       <label>Frais par Trade (%)
         <input type="number" id="bt-zz-fee" value="0.02" step="0.001" min="0" onchange="runZZBacktest(true)" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px;margin-top:3px;font-weight:bold">
-        <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
+        <div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Capital engagé par trade (%)</label>
+        <input type="number" id="bt-zz-risk" value="20" min="1" max="100" step="1" onchange="runZZBacktest(true)" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px;font-size:11px">
+        <div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap">
+          <button type="button" onclick="document.getElementById('bt-zz-risk').value=10;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer">10%</button>
+          <button type="button" onclick="document.getElementById('bt-zz-risk').value=20;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer">20%</button>
+          <button type="button" onclick="document.getElementById('bt-zz-risk').value=50;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer">50%</button>
+          <button type="button" onclick="document.getElementById('bt-zz-risk').value=100;runZZBacktest(true)" style="background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer">100%</button>
+        </div></div>
+      <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
           <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.02;runZZBacktest(true)" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:bold;cursor:pointer" title="BingX / VIP Taker (0.02%)">0.02% Exchange</button>
           <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.04;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="MEXC Taker (0.04%)">MEXC 0.04%</button>
           <button type="button" onclick="document.getElementById('bt-zz-fee').value=0.055;runZZBacktest(true)" style="background:rgba(122,162,255,0.12);border:1px solid var(--accent);color:var(--text);font-weight:600;border-radius:4px;padding:2px 4px;font-size:10px;cursor:pointer" title="Bybit / OKX (0.055%)">Bybit 0.055%</button>
@@ -14707,14 +14715,23 @@ function drawZZSignals(signals, s, e, yOf, cw, sharedXStack) {
   }
 }
 
-function runSingleZZSim(d, sigMap, tpVal, slPts, capital, lev, feeRate) {
+function runSingleZZSim(d, sigMap, tpVal, slPts, capital, lev, feeRate, riskPct) {
+  /* Moteur assaini.
+     1. La marge engagée est une part réglable du capital, pas la totalité.
+     2. La liquidation est vérifiée pendant le trade, pas seulement à la
+        sortie : si le prix touche liqP, la position est perdue en entier.
+     3. Un compte ruiné arrête la simulation au lieu de repartir de 5 %. */
+  const part = Math.min(1, Math.max(0.01, (riskPct != null ? riskPct : 100) / 100));
   let curCap = capital;
   let peakCap = capital;
   let maxDD = 0;
+  let liquidations = 0;
+  let ruine = false;
   const trades = [];
   let pos = null;
 
   for (let i = 1; i < d.length; i++) {
+    if (ruine) break;
     const bar = d[i];
     const sig = sigMap[i];
 
@@ -14722,87 +14739,68 @@ function runSingleZZSim(d, sigMap, tpVal, slPts, capital, lev, feeRate) {
       let exitTriggered = false;
       let exitP = bar.c;
       let exitReason = '';
+      let liquide = false;
 
-      if (pos.dir === 1) { // LONG / ACHAT
-        const slPrice = slPts > 0 ? (pos.entryP - slPts) : null;
-        const tpPrice = tpVal ? (pos.entryP + tpVal) : null;
+      // La liquidation prime sur tout le reste : elle survient dans la bougie.
+      if (pos.liqP != null) {
+        if (pos.dir === 1 && bar.l <= pos.liqP) { exitTriggered = true; exitP = pos.liqP; exitReason = '💀 Liquidation'; liquide = true; }
+        else if (pos.dir === -1 && bar.h >= pos.liqP) { exitTriggered = true; exitP = pos.liqP; exitReason = '💀 Liquidation'; liquide = true; }
+      }
 
-        if (slPrice && bar.l <= slPrice) {
-          exitTriggered = true;
-          exitP = slPrice;
-          exitReason = `🛑 SL -${slPts} pts`;
-        } else if (tpPrice && bar.h >= tpPrice) {
-          exitTriggered = true;
-          exitP = tpPrice;
-          exitReason = `🎯 TP +${tpVal} pts`;
-        } else if (sig && sig.dir === -1) {
-          exitTriggered = true;
-          exitP = bar.c;
-          exitReason = '🔴 Pastille Vente';
-        }
-      } else { // SHORT / VENTE
-        const slPrice = slPts > 0 ? (pos.entryP + slPts) : null;
-        const tpPrice = tpVal ? (pos.entryP - tpVal) : null;
-
-        if (slPrice && bar.h >= slPrice) {
-          exitTriggered = true;
-          exitP = slPrice;
-          exitReason = `🛑 SL -${slPts} pts`;
-        } else if (tpPrice && bar.l <= tpPrice) {
-          exitTriggered = true;
-          exitP = tpPrice;
-          exitReason = `🎯 TP +${tpVal} pts`;
-        } else if (sig && sig.dir === 1) {
-          exitTriggered = true;
-          exitP = bar.c;
-          exitReason = '🟢 Pastille Achat';
+      if (!exitTriggered) {
+        if (pos.dir === 1) {
+          const slPrice = slPts > 0 ? (pos.entryP - slPts) : null;
+          const tpPrice = tpVal ? (pos.entryP + tpVal) : null;
+          if (slPrice && bar.l <= slPrice) { exitTriggered = true; exitP = slPrice; exitReason = `🛑 SL -${slPts} pts`; }
+          else if (tpPrice && bar.h >= tpPrice) { exitTriggered = true; exitP = tpPrice; exitReason = `🎯 TP +${tpVal} pts`; }
+          else if (sig && sig.dir === -1) { exitTriggered = true; exitP = bar.c; exitReason = '🔴 Pastille Vente'; }
+        } else {
+          const slPrice = slPts > 0 ? (pos.entryP + slPts) : null;
+          const tpPrice = tpVal ? (pos.entryP - tpVal) : null;
+          if (slPrice && bar.h >= slPrice) { exitTriggered = true; exitP = slPrice; exitReason = `🛑 SL -${slPts} pts`; }
+          else if (tpPrice && bar.l <= tpPrice) { exitTriggered = true; exitP = tpPrice; exitReason = `🎯 TP +${tpVal} pts`; }
+          else if (sig && sig.dir === 1) { exitTriggered = true; exitP = bar.c; exitReason = '🟢 Pastille Achat'; }
         }
       }
 
       if (exitTriggered) {
-        const grossReturnPct = (((exitP - pos.entryP) / pos.entryP) * pos.dir) * lev;
-        const feesPctOnMargin = lev * (2 * feeRate);
-        const netReturnPct = Math.max(-0.95, grossReturnPct - feesPctOnMargin);
-        const pnlDollar = curCap * netReturnPct;
+        const marge = pos.marge;
+        const notional = marge * lev;
+        const varPct = ((exitP - pos.entryP) / pos.entryP) * pos.dir;
+        const brut = notional * varPct;
+        const frais = notional * feeRate * 2;
+        let pnlDollar = brut - frais;
+        // On ne peut jamais perdre plus que la marge engagée.
+        if (pnlDollar < -marge) { pnlDollar = -marge; liquide = true; }
+        if (liquide) liquidations++;
 
         curCap = Math.max(0, curCap + pnlDollar);
         peakCap = Math.max(peakCap, curCap);
         const dd = peakCap - curCap;
         if (dd > maxDD) maxDD = dd;
 
-        const engagedUsd = pos.entryCap || capital;
-        const engagedNotional = engagedUsd * lev;
-        const engagedQty = engagedNotional / (pos.entryP || 1);
-        const liqP = lev > 1 ? (pos.dir === 1 ? pos.entryP * (1 - 0.95 / lev) : pos.entryP * (1 + 0.95 / lev)) : null;
-
         trades.push({
-          i,
-          t: bar.t,
-          time: bar.t,
+          i, t: bar.t, time: bar.t,
           dir: pos.dir === 1 ? 'ACHAT' : 'VENTE',
-          entryP: pos.entryP,
-          exitP,
-          pnlDollar,
-          netReturnPct: netReturnPct * 100,
-          reason: exitReason,
-          capitalAfter: curCap,
-          engagedUsd,
-          engagedNotional,
-          engagedQty,
-          liqP,
-          lev
+          entryP: pos.entryP, exitP, pnlDollar,
+          netReturnPct: marge > 0 ? (pnlDollar / marge) * 100 : 0,
+          reason: exitReason, capitalAfter: curCap,
+          engagedUsd: marge, engagedNotional: notional,
+          engagedQty: notional / (pos.entryP || 1),
+          liqP: pos.liqP, lev, liquide
         });
 
         pos = null;
+        if (curCap < capital * 0.02 || curCap < 1) ruine = true;   // compte réellement ruiné
       }
     }
 
-    if (!pos && sig) {
+    if (!pos && sig && !ruine) {
+      const marge = curCap * part;
+      if (marge < 0.01) { ruine = true; continue; }
       pos = {
-        dir: sig.dir,
-        entryP: bar.c,
-        entryIdx: i,
-        entryCap: curCap
+        dir: sig.dir, entryP: bar.c, entryIdx: i, entryCap: curCap, marge,
+        liqP: lev > 1 ? (sig.dir === 1 ? bar.c * (1 - 0.95 / lev) : bar.c * (1 + 0.95 / lev)) : null
       };
     }
   }
@@ -14815,23 +14813,21 @@ function runSingleZZSim(d, sigMap, tpVal, slPts, capital, lev, feeRate) {
   const grossProfit = wins.reduce((a, b) => a + b.pnlDollar, 0);
   const grossLoss = Math.abs(losses.reduce((a, b) => a + b.pnlDollar, 0));
   const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss) : (grossProfit > 0 ? 99 : 0);
+  // Contrôle : le gain net doit égaler la somme des trades, à l'arrondi près
+  const coherent = Math.abs((grossProfit - grossLoss) - netPnlTotal) < 0.01 && maxDD <= peakCap + 0.01;
 
   return {
-    tradesCount: trades.length,
-    wins: wins.length,
-    losses: losses.length,
-    winRate,
-    netPnlTotal,
-    netPnlPct,
-    curCap,
-    profitFactor,
-    maxDD,
+    tradesCount: trades.length, wins: wins.length, losses: losses.length, winRate,
+    netPnlTotal, netPnlPct, curCap, profitFactor, maxDD,
     maxDDPct: peakCap > 0 ? (maxDD / peakCap) * 100 : 0,
-    trades
+    liquidations, ruine, coherent, riskPct: part * 100, trades
   };
 }
 
 async function runZZBacktest(skipFetch){
+  const _rk = document.getElementById('bt-zz-risk');
+  var riskPctVal = _rk ? (+_rk.value || 100) : 100;
+
   const resDiv = document.getElementById('bt-zz-results');
   const btnRun = document.getElementById('bt-zz-run');
   if(!resDiv) return;
@@ -14890,7 +14886,7 @@ async function runZZBacktest(skipFetch){
   let maxPnl = -Infinity;
 
   scenarios.forEach(sc => {
-    const res = runSingleZZSim(d, sigMapBase, sc.tp, slPts, capital, lev, feeRate);
+    const res = runSingleZZSim(d, sigMapBase, sc.tp, slPts, capital, lev, feeRate, riskPctVal);
     res.scenario = sc;
     results[sc.id] = res;
 
@@ -14905,7 +14901,7 @@ async function runZZBacktest(skipFetch){
   const curScenarioObj = scenarios.find(s => s.id === (activeZZBtScenario || bestPnlId)) || scenarios[1];
   const levZZResults = levList.map(l => ({
     lev: l,
-    res: runSingleZZSim(d, sigMapBase, curScenarioObj.tp, slPts, capital, l, feeRate)
+    res: runSingleZZSim(d, sigMapBase, curScenarioObj.tp, slPts, capital, l, feeRate, riskPctVal)
   }));
   const sortedLevsZZ = [...levZZResults].sort((a,b) => b.res.netPnlTotal - a.res.netPnlTotal);
   const bestLevZZItem = sortedLevsZZ[0];
@@ -14926,7 +14922,7 @@ async function runZZBacktest(skipFetch){
     scenarios.forEach(sc => {
       slList.forEach(sVal => {
         levList.forEach(lVal => {
-          const res = runSingleZZSim(dTF, sigMapTF, sc.tp, sVal, capital, lVal, feeRate);
+          const res = runSingleZZSim(dTF, sigMapTF, sc.tp, sVal, capital, lVal, feeRate, riskPctVal);
           if (!res || res.tradesCount === 0) return;
 
           let ddPenalty = res.maxDDPct;
@@ -15410,6 +15406,43 @@ function renderZZBtResultsUI(bestIdOverride){
     `;
   }
 
+  /* Comparaison des capitaux de départ. À levier et réglages identiques, on
+     rejoue la simulation pour 100 à 500 $ afin de voir lequel tient le mieux
+     la route — la liquidation ne frappe pas de la même façon selon la taille. */
+  try{
+    const rk = document.getElementById('bt-zz-risk');
+    const rp = rk ? (+rk.value || 100) : 100;
+    let capHtml = '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
+      + '<div style="font-weight:800;color:#FBBF24;font-size:12px;margin-bottom:4px">💰 Quel capital de départ ?</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Même stratégie, même levier, même part engagée ('
+      + rp + ' %). Seul le capital de départ change.</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr style="background:var(--panel-2,#0F172A)">'
+      + ['Capital','Final','Gain','Trades','Réussite','PF','DD','Liquidations'].map(h=>
+        '<th style="padding:4px;text-align:left;color:#94A3B8">'+h+'</th>').join('')
+      + '</tr></thead><tbody>';
+    let best = null;
+    for(const c0 of [100,200,300,400,500]){
+      const r0 = runSingleZZSim(d, sigMapBase, curScenarioObj.tp, slPts, c0, lev, feeRate, rp);
+      if(!best || r0.netPnlPct > best.pct) best = {cap:c0, pct:r0.netPnlPct};
+      const col = r0.netPnlTotal >= 0 ? '#22C55E' : '#EF4444';
+      capHtml += '<tr style="border-top:1px solid var(--line)">'
+        + '<td style="padding:4px;color:var(--text);font-weight:700">' + c0 + ' $</td>'
+        + '<td style="padding:4px;color:' + col + '">' + r0.curCap.toFixed(2) + ' $</td>'
+        + '<td style="padding:4px;color:' + col + ';font-weight:700">' + (r0.netPnlPct>=0?'+':'') + r0.netPnlPct.toFixed(1) + ' %</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + r0.tradesCount + '</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + r0.winRate.toFixed(0) + ' %</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + (r0.profitFactor>=99?'∞':r0.profitFactor.toFixed(2)) + '</td>'
+        + '<td style="padding:4px;color:#EF4444">-' + r0.maxDDPct.toFixed(0) + ' %</td>'
+        + '<td style="padding:4px;color:' + (r0.liquidations?'#EF4444':'#94A3B8') + '">' + r0.liquidations + (r0.ruine?' ⚠ ruiné':'') + '</td>'
+        + '</tr>';
+    }
+    capHtml += '</tbody></table>';
+    if(best) capHtml += '<div style="margin-top:6px;font-size:11px;color:#FBBF24">Meilleur rendement : <b>'
+      + best.cap + ' $</b> (' + (best.pct>=0?'+':'') + best.pct.toFixed(1) + ' %)</div>';
+    capHtml += '<div style="margin-top:4px;font-size:9.5px;color:var(--muted)">En pourcentage, le capital ne change rien tant qu\'aucune liquidation ne survient. Un écart entre les lignes signale que certaines tailles se font liquider et d\'autres non.</div></div>';
+    html += capHtml;
+  }catch(e){}
+
   html += `</div>`;
   resDiv.innerHTML = html;
 }
@@ -15447,7 +15480,7 @@ function computeZZTop5ForTF(targetTfMin) {
     scenarios.forEach(sc => {
       slList.forEach(sVal => {
         levList.forEach(lVal => {
-          const res = runSingleZZSim(dTF, sigMapTF, sc.tp, sVal, capital, lVal, feeRate);
+          const res = runSingleZZSim(dTF, sigMapTF, sc.tp, sVal, capital, lVal, feeRate, riskPctVal);
           if (!res || res.tradesCount === 0) return;
 
           let ddPenalty = res.maxDDPct;
