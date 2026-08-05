@@ -14923,7 +14923,10 @@ async function runZZBacktest(skipFetch){
         + '<span style="font-weight:800;color:#FFD700;font-size:13px">🏆 TOP 5 — classé par le gain</span>'
         + '<button type="button" onclick="window.__zzTop5Refaire=1;runZZBacktest(true)" style="background:rgba(251,191,36,0.15);border:1px solid #FBBF24;color:#FBBF24;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer">🔄 Recalculer</button></div>'
         + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Classement figé : essaie les cinq configurations l\'une après l\'autre sans le perdre.</div>'
-        + cartes + '</div>';
+        + cartes
+        + (window.__zzStab || '')
+        + (window.__zzSensi || '')
+        + '</div>';
       throw new Error('__deja__');
     }
     window.__zzTop5Refaire = 0;
