@@ -15064,12 +15064,26 @@ async function runZZBacktest(skipFetch){
         : nbOk === nbTest ? {txt:'✓ Gagnante sur toutes les périodes testées — la configuration tient.', col:'#22C55E'}
         : nbOk === 0 ? {txt:'✗ Perdante partout : ce classement ne vaut rien en dehors de l\'échantillon.', col:'#EF4444'}
         : {txt:'⚠ Gagnante sur ' + nbOk + ' période(s) sur ' + nbTest + ' — résultat fragile, probablement du hasard.', col:'#F59E0B'};
-      window.__zzStab = '<div style="margin-top:10px;border:1px solid ' + verdict.col + ';border-radius:8px;padding:8px">'
+      /* On conserve le contrôle complet dès qu'il a pu être fait sur les trois
+         périodes. Ainsi, en repassant sur 7 jours pour travailler, le bloc
+         reste affiché au lieu de disparaître : les trois cartes restent sous
+         les yeux pendant qu'on manipule une fenêtre plus courte. */
+      const bloc = '<div style="margin-top:10px;border:1px solid ' + verdict.col + ';border-radius:8px;padding:8px">'
         + '<div style="font-weight:800;color:' + verdict.col + ';font-size:12px">📆 La configuration n°1 sur trois périodes</div>'
         + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'
         + b0.tpName + ' · SL ' + (b0.sl||'—') + ' · ' + b0.lev + 'x · ' + b0.part + ' % engagé · départ ' + b0.cap + ' $</div>'
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">' + stabRows + '</div>'
         + '<div style="margin-top:6px;font-size:11px;color:' + verdict.col + ';font-weight:600">' + verdict.txt + '</div></div>';
+      if(nbTest >= 3){
+        window.__zzStabComplet = bloc;
+        window.__zzStabConfig = b0.tpName + ' · SL ' + (b0.sl||'—') + ' · ' + b0.lev + 'x · ' + b0.part + ' % · ' + b0.cap + ' $';
+        window.__zzStab = bloc;
+      } else if(window.__zzStabComplet){
+        window.__zzStab = '<div style="font-size:10px;color:#F59E0B;margin-top:10px;margin-bottom:-6px">⤵ Contrôle conservé du dernier calcul sur 30 jours ('
+          + (window.__zzStabConfig || '') + ') — l\'historique actuel ne permet pas de le refaire.</div>' + window.__zzStabComplet;
+      } else {
+        window.__zzStab = bloc;
+      }
 
       window.__zzSensi = trois.length
         ? '<div style="margin-top:10px;border:1px solid #22D3EE;border-radius:8px;padding:8px;background:rgba(34,211,238,0.06)">'
