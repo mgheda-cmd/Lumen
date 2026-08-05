@@ -9006,123 +9006,34 @@ function checkAutoTrade(inputSignals){
 
   const eMode = strat?.mode || state.indicators?.signal_ema_ha?.exitMode || 'macd';
 
-  // 1. Évaluation en direct de la stratégie active sur la bougie courante (identique à simMode)
-  const currInd = state.indicators?.signal_ema_ha || {};
-  const emaPeriod = currInd.emaPeriod || 9;
-  const haTf = currInd.haTf || 5;
-  const haPeriod = currInd.haPeriod || 10;
-  const haMode = currInd.haMode || 'lisse';
-
-  const ema1m = calc.ema(d, emaPeriod);
-  const atr1m = calc.atr(d, 14);
-
-  const bars5 = (state.tf === haTf) ? d : aggregateData(d, haTf);
-  const plainHA5 = (bars5 && bars5.length) ? calc.plainHA(bars5) : [];
-  const smoothHA5 = (haMode === 'lisse' && bars5 && bars5.length) ? calc.smoothHA(bars5, haPeriod, haPeriod) : plainHA5;
-  const haSeries5 = (bars5 && bars5.length) ? bars5.map((b, idx) => (smoothHA5 && smoothHA5[idx]) ? smoothHA5[idx] : plainHA5[idx]) : [];
-  const haMapped = (state.tf === haTf) ? haSeries5 : (bars5 && bars5.length ? mapHTF(bars5, haSeries5, d) : []);
-
-  const bars3 = (state.tf === 3) ? d : aggregateData(d, 3);
-  let macd3_line = null, macd3_sg = null;
-  if (currInd.useMacdSR !== false && bars3 && bars3.length >= 2) {
-    const msr3 = calc.macdSR(bars3, 12, 26, 9);
-    if (msr3 && msr3.macd && msr3.sg) {
-      macd3_line = (state.tf === 3) ? msr3.macd : mapHTF(bars3, msr3.macd, d);
-      macd3_sg   = (state.tf === 3) ? msr3.sg   : mapHTF(bars3, msr3.sg, d);
+  // 1. SOURCE UNIQUE : on interroge exactement la même fonction que le
+    //    backtest et que les pastilles du graphique. Auparavant cette section
+    //    recalculait la stratégie de son côté, avec ses propres options : la
+    //    démo n'exécutait donc pas ce qui était backtesté ni ce qui était
+    //    dessiné à l'écran.
+    const lastIdx = d.length - 1;
+    let buySignal = false, sellSignal = false, exitTriggered = false, exitReason = '';
+    let zzSigs = [];
+    try{
+      const indZZ = (state.indicators && state.indicators.strat_zz) || {};
+      zzSigs = computeZZSignals(d, indZZ) || [];
+    }catch(e){ zzSigs = []; }
+    // on ne regarde que la toute dernière bougie
+    const sigNow = zzSigs.filter(x => x.i === lastIdx);
+    for(const sg of sigNow){
+      if(sg.isExit){ exitTriggered = true; exitReason = sg.reason || 'Sortie Z. Z.'; }
+      else if(sg.dir === 1) buySignal = true;
+      else if(sg.dir === -1) sellSignal = true;
     }
-  }
-
-  let roscMapped = null;
-  if (currInd.useRangeOsc !== false && bars5 && bars5.length >= 2) {
-    const rosc5 = calc.rangeOsc(bars5, currInd.roscPeriod || 50, 2);
-    if (rosc5 && rosc5.length) {
-      roscMapped = (state.tf === haTf) ? rosc5 : mapHTF(bars5, rosc5, d);
+    // une pastille de sens opposé ferme la position en cours
+    if(existingPos && !exitTriggered){
+      if(existingPos.side === 'long' && sellSignal){ exitTriggered = true; exitReason = 'Pastille Vente Z. Z.'; }
+      if(existingPos.side === 'short' && buySignal){ exitTriggered = true; exitReason = 'Pastille Achat Z. Z.'; }
     }
-  }
+    // une seule position à la fois : pas d'ouverture si une autre est en cours
+    if(existingPos){ buySignal = false; sellSignal = false; }
 
-  let imp5_col = null;
-  if (currInd.useImpMacd !== false && bars5 && bars5.length >= 2) {
-    const imp5 = calc.impmacd(bars5, currInd.impPeriod || 34, 9);
-    if (imp5 && imp5.col) {
-      imp5_col = (state.tf === haTf) ? imp5.col : mapHTF(bars5, imp5.col, d);
-    }
-  }
-
-  const lastIdx = d.length - 1;
-  const emaPrev = ema1m[lastIdx - 1], emaCurr = ema1m[lastIdx], emaPrev2 = ema1m[lastIdx - 2];
-  const haObjPrev = haMapped[lastIdx - 1], haObjCurr = haMapped[lastIdx], haObjPrev2 = haMapped[lastIdx - 2];
-
-  let buySignal = false, sellSignal = false;
-  let crossedUp = false, crossedDown = false;
-  let haTopCurr = 0, haBotCurr = 0;
-  let mLineCurr = null, mSgCurr = null;
-
-  if (emaPrev != null && emaCurr != null && haObjPrev && haObjCurr) {
-    haTopCurr = Math.max(haObjCurr.o, haObjCurr.c);
-    haBotCurr = Math.min(haObjCurr.o, haObjCurr.c);
-    const haTopPrev = Math.max(haObjPrev.o, haObjPrev.c);
-    const haBotPrev = Math.min(haObjPrev.o, haObjPrev.c);
-    const haTopPrev2 = haObjPrev2 ? Math.max(haObjPrev2.o, haObjPrev2.c) : null;
-    const haBotPrev2 = haObjPrev2 ? Math.min(haObjPrev2.o, haObjPrev2.c) : null;
-
-    crossedUp = (emaPrev < haTopPrev) && (emaCurr > haTopCurr) && (emaPrev2 == null || haTopPrev2 == null || emaPrev2 <= haTopPrev2);
-    crossedDown = (emaPrev > haBotPrev) && (emaCurr < haBotCurr) && (emaPrev2 == null || haBotPrev2 == null || emaPrev2 >= haBotPrev2);
-
-    mLineCurr = macd3_line ? macd3_line[lastIdx] : null;
-    mSgCurr   = macd3_sg   ? macd3_sg[lastIdx]   : null;
-    const passMacdBuy  = (currInd.useMacdSR === false) || (mLineCurr != null && mSgCurr != null && mLineCurr > mSgCurr);
-    const passMacdSell = (currInd.useMacdSR === false) || (mLineCurr != null && mSgCurr != null && mLineCurr < mSgCurr);
-
-    const rCurr = roscMapped ? roscMapped[lastIdx] : null;
-    const isRoscGreen = (rCurr != null && rCurr >= 0);
-    const isRoscRed   = (rCurr != null && rCurr < 0);
-
-    const cImp = imp5_col ? imp5_col[lastIdx] : null;
-    const isImpGreen = (cImp === 0 || cImp === 1);
-    const isImpRed   = (cImp === 2 || cImp === 3);
-
-    let passOscBuy = true, passOscSell = true;
-    if (currInd.useRangeOsc !== false && currInd.useImpMacd !== false) {
-      passOscBuy = isRoscGreen || isImpGreen;
-      passOscSell = isRoscRed || isImpRed;
-    } else if (currInd.useRangeOsc !== false) {
-      passOscBuy = isRoscGreen; passOscSell = isRoscRed;
-    } else if (currInd.useImpMacd !== false) {
-      passOscBuy = isImpGreen; passOscSell = isImpRed;
-    }
-
-    buySignal  = crossedUp && passMacdBuy && passOscBuy;
-    sellSignal = crossedDown && passMacdSell && passOscSell;
-  }
-
-  // 2. Si une position est ouverte dans le compte démo, appliquer strictement la règle de sortie choisie
-  if (existingPos) {
-    existingPos.peakPrice = Math.max(existingPos.peakPrice || existingPos.entry, d[lastIdx].h);
-    existingPos.lowPrice  = Math.min(existingPos.lowPrice || existingPos.entry, d[lastIdx].l);
-
-    let exitTriggered = false;
-    let exitReason = '';
-
-    const isHaRed   = haObjCurr ? (haObjCurr.c < haObjCurr.o) : false;
-    const isHaGreen = haObjCurr ? (haObjCurr.c > haObjCurr.o) : false;
-    const atrVal    = (atr1m && atr1m[lastIdx]) ? atr1m[lastIdx] : (px * 0.005);
-
-    if (existingPos.side === 'long') {
-      if (sellSignal) { exitTriggered = true; exitReason = 'Signal opposé (Vente)'; }
-      else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaRed) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Rouge)'; }
-      else if ((eMode === 'atr_trail' || eMode === 'combined') && d[lastIdx].l <= (existingPos.peakPrice - 1.5 * atrVal)) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
-      else if ((eMode === 'ema_cross' || eMode === 'combined') && px < emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
-      else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr < mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
-      else if ((eMode === 'cross' || eMode === 'combined') && emaCurr < haBotCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
-    } else if (existingPos.side === 'short') {
-      if (buySignal) { exitTriggered = true; exitReason = 'Signal opposé (Achat)'; }
-      else if ((eMode === 'ha_flip' || eMode === 'combined') && isHaGreen) { exitTriggered = true; exitReason = 'Inversion HA 5m (Bougie Verte)'; }
-      else if ((eMode === 'atr_trail' || eMode === 'combined') && d[lastIdx].h >= (existingPos.lowPrice + 1.5 * atrVal)) { exitTriggered = true; exitReason = 'Trailing Stop ATR (1.5×)'; }
-      else if ((eMode === 'ema_cross' || eMode === 'combined') && px > emaCurr) { exitTriggered = true; exitReason = 'Cassure EMA 9'; }
-      else if ((eMode === 'macd' || eMode === 'combined') && mLineCurr != null && mSgCurr != null && mLineCurr > mSgCurr) { exitTriggered = true; exitReason = 'Inversion MACD 3m'; }
-      else if ((eMode === 'cross' || eMode === 'combined') && emaCurr > haTopCurr) { exitTriggered = true; exitReason = 'Croisement inverse EMA/HA'; }
-    }
-
+    if (existingPos) {
     if (exitTriggered) {
       const sigId = `${state.symbol}|${state.tf}|${d[lastIdx].t}|exit|${exitReason}`;
       if (autoTradeLastExecutedSigId !== sigId) {
