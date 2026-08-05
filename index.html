@@ -15054,7 +15054,7 @@ async function runZZBacktest(skipFetch){
            + (v.part >= 100 ? 'tout le capital engagé à chaque trade' : '')
            + (v.part >= 100 && r0.maxDDPct >= 50 ? ' · ' : '')
            + (r0.maxDDPct >= 50 ? 'drawdown supérieur à 50 %' : '') + '</div>' : '')
-        + '<button type="button" onclick="window.appliquerZZ(' + JSON.stringify(JSON.stringify({sl:v.sl,lev:v.lev,part:v.part,cap:v.cap,sc:v.scId})).slice(1,-1).replace(/"/g,'&quot;') + ')" '
+        + '<button type="button" onclick="window.appliquerZZ(' + (v.sl||0) + ',' + v.lev + ',' + v.part + ',' + v.cap + ',&quot;' + v.scId + '&quot;)" '
         + 'style="width:100%;margin-top:5px;background:linear-gradient(135deg,#22D3EE,#0891B2);color:#0F172A;border:none;border-radius:5px;padding:5px;font-size:11px;font-weight:800;cursor:pointer">⚙️ Appliquer</button>'
         + '</div>';
     });
@@ -15646,14 +15646,13 @@ function computeTop5ForTF(targetTfMin) {
     return { top5Combos: top5, allCombosTF: combos };
   }
 
-window.appliquerZZ = function(cfg) {
-  try{ if(typeof cfg === 'string') cfg = JSON.parse(cfg); }catch(e){ return; }
-  const set = (id, v) => { const el = document.getElementById(id); if(el && v != null) el.value = v; };
-  set('bt-zz-sl', cfg.sl != null ? cfg.sl : 0);
-  set('bt-zz-risk', cfg.part);
-  set('bt-zz-lev', cfg.lev);
-  set('bt-zz-capital', cfg.cap);
-  if(cfg.sc) activeZZBtScenario = cfg.sc;
+window.appliquerZZ = function(sl, lev, part, cap, sc) {
+  const set = (id, v) => { const el = document.getElementById(id); if(el && v != null && v !== '') el.value = v; };
+  set('bt-zz-sl', sl != null ? sl : 0);
+  set('bt-zz-risk', part);
+  set('bt-zz-lev', lev);
+  set('bt-zz-capital', cap);
+  if(sc) activeZZBtScenario = sc;
   runZZBacktest(true);
 };
 
