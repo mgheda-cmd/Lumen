@@ -15052,6 +15052,43 @@ async function runZZBacktest(skipFetch){
       if(top.length >= 5) break;
     }
     window.__zzTop5 = top;
+    /* Analyse de sensibilité sur la configuration gagnante : on fait varier
+       chaque paramètre séparément, tout le reste étant maintenu, et on
+       retient les trois qui apportent le plus grand gain supplémentaire.
+       C'est la réponse à « que dois-je ajuster en priorité ». */
+    if(top.length){
+      const b0 = top[0], base0 = b0.res.netPnlPct;
+      const dTF0 = (b0.tf === 1) ? d : aggregateData(d, b0.tf, 1);
+      const sig0 = (typeof computeZZSignals === 'function') ? computeZZSignals(dTF0, indConfig) : [];
+      const map0 = {}; sig0.forEach(x => { if(!x.isExit) map0[x.i] = x; });
+      const essais = [];
+      const test = (nom, o) => {
+        const r = runSingleZZSim(dTF0, map0,
+          o.tp != null ? o.tp : b0.tpVal, o.sl != null ? o.sl : b0.sl,
+          o.cap != null ? o.cap : b0.cap, o.lev != null ? o.lev : b0.lev,
+          feeRate, o.part != null ? o.part : b0.part);
+        if(!r || !r.tradesCount || r.ruine) return;
+        essais.push({nom, gain: r.netPnlPct - base0, res: r, o});
+      };
+      for(const l of [1,5,10,20,50,75,100,125,150,200]) if(l !== b0.lev) test('Levier ' + l + 'x', {lev:l});
+      for(const pp of [5,10,20,30,50,75,100]) if(pp !== b0.part) test('Part engagée ' + pp + ' %', {part:pp});
+      for(const s of [0,50,75,100,125,150,200,300]) if(s !== b0.sl) test('Stop ' + (s?s+' pts':'aucun'), {sl:s});
+      for(const tp of [200,300,400,500]) if(tp !== b0.tpVal) test('Objectif +' + tp + ' pts', {tp:tp});
+      essais.sort((x,y) => y.gain - x.gain);
+      const trois = essais.filter(e => e.gain > 0).slice(0, 3);
+      let sens = '';
+      trois.forEach(e => {
+        sens += '<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding:5px 0">'
+          + '<span style="font-size:11px;color:var(--text)">' + e.nom + '</span>'
+          + '<span style="font-size:11px;color:#22C55E;font-weight:700">+' + e.gain.toFixed(0) + ' pts de gain</span></div>';
+      });
+      window.__zzSensi = trois.length
+        ? '<div style="margin-top:10px;border:1px solid #22D3EE;border-radius:8px;padding:8px;background:rgba(34,211,238,0.06)">'
+          + '<div style="font-weight:800;color:#22D3EE;font-size:12px">🔧 Les 3 réglages les plus efficaces à ajuster</div>'
+          + '<div style="font-size:10px;color:var(--muted);margin-bottom:2px">Sur la configuration n°1, un seul paramètre modifié à la fois.</div>'
+          + sens + '</div>'
+        : '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Aucun ajustement d\'un seul paramètre n\'améliore la configuration n°1 : elle est déjà au sommet de son voisinage.</div>';
+    }
     let cartes = '';
     top.forEach((v, k) => { cartes += window.__zzCarte(v, k, utNom); });
     const _inutile = () => { top.forEach((v, k) => {
@@ -15082,6 +15119,7 @@ async function runZZBacktest(skipFetch){
       + '<button type="button" onclick="window.__zzTop5Refaire=1;runZZBacktest(true)" style="background:rgba(251,191,36,0.15);border:1px solid #FBBF24;color:#FBBF24;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer">🔄 Recalculer</button></div>'
       + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Toutes les combinaisons testées : unité de temps, sortie, stop, levier, part engagée et capital de départ. Les comptes ruinés sont écartés.</div>'
       + (cartes || '<div style="color:var(--muted);font-size:11px">Aucune configuration rentable trouvée.</div>')
+      + (window.__zzSensi || '')
       + '</div>';
   }catch(e){}
 
@@ -15503,7 +15541,12 @@ function renderZZBtResultsUI(bestIdOverride){
     `;
   }
 
-  html += (window.__zzExtras || '');
+  /* Les blocs hérités restent accessibles mais repliés : ils utilisent les
+     réglages du formulaire et non ceux de chaque carte, ce qui rendait la
+     lecture impossible quand tout était affiché ensemble. */
+  html = (window.__zzExtras || '')
+    + '<details style="margin-top:14px"><summary style="cursor:pointer;font-size:11px;color:var(--muted);padding:6px 0">▸ Anciens tableaux et historique des trades (avancé)</summary>'
+    + html + '</details>';
 
   html += `</div>`;
   resDiv.innerHTML = html;
