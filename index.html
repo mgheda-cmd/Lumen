@@ -14990,6 +14990,126 @@ async function runZZBacktest(skipFetch){
 
   if (!activeZZBtScenario || !results[activeZZBtScenario]) activeZZBtScenario = bestPnlId;
 
+  /* Tableaux supplémentaires : ils ont besoin des variables locales de
+     runZZBacktest, on les construit ici puis on les transmet au rendu. */
+  { let __x = '';
+  /* Meilleure combinaison pour CHAQUE unité de temps.
+     Pour chaque UT on rejoue tous les scénarios, tous les stops et tous les
+     leviers, et on garde la configuration qui l'emporte. Cela répond à la
+     question : sur quelle UT cette stratégie fonctionne-t-elle le mieux,
+     et avec quel stop ? */
+  try{
+    const utList = [1, 3, 5, 15, 60, 240];
+    const utNom = {1:'1m', 3:'3m', 5:'5m', 15:'15m', 60:'1H', 240:'4H'};
+    let rows = '', champion = null;
+    for(const tfm of utList){
+      const r5 = computeZZTop5ForTF(tfm);
+      const c = r5 && r5.top5Combos && r5.top5Combos[0];
+      if(!c || !c.res || !c.res.tradesCount){
+        rows += '<tr style="border-top:1px solid var(--line)"><td style="padding:4px;color:var(--text);font-weight:700">'
+             + utNom[tfm] + '</td><td colspan="7" style="padding:4px;color:var(--muted)">aucun trade</td></tr>';
+        continue;
+      }
+      if(!champion || c.score > champion.score) champion = {tf:tfm, c};
+      const col = c.res.netPnlTotal >= 0 ? '#22C55E' : '#EF4444';
+      rows += '<tr style="border-top:1px solid var(--line)">'
+        + '<td style="padding:4px;color:var(--text);font-weight:800">' + utNom[tfm] + '</td>'
+        + '<td style="padding:4px;color:#FBBF24;font-weight:700">SL ' + (c.slVal || '—') + '</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + c.tpName + '</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + c.lev + 'x</td>'
+        + '<td style="padding:4px;color:' + col + ';font-weight:700">' + (c.res.netPnlPct>=0?'+':'') + c.res.netPnlPct.toFixed(1) + ' %</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + c.res.tradesCount + '</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + c.res.winRate.toFixed(0) + ' %</td>'
+        + '<td style="padding:4px;color:#EF4444">-' + c.res.maxDDPct.toFixed(0) + ' %</td>'
+        + '</tr>';
+    }
+    __x += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
+      + '<div style="font-weight:800;color:#A78BFA;font-size:12px;margin-bottom:4px">🕐 Le meilleur stop pour chaque unité de temps</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Tous les scénarios, stops et leviers testés sur chaque UT. Seule la meilleure combinaison de chacune est affichée.</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr style="background:var(--panel-2,#0F172A)">'
+      + ['UT','Stop','Sortie','Levier','Gain','Trades','Réussite','DD'].map(h=>'<th style="padding:4px;text-align:left;color:#94A3B8">'+h+'</th>').join('')
+      + '</tr></thead><tbody>' + rows + '</tbody></table>';
+    if(champion) __x += '<div style="margin-top:6px;font-size:11px;color:#A78BFA">Meilleure unité de temps : <b>'
+      + utNom[champion.tf] + '</b> avec un stop de <b>' + (champion.c.slVal||'—') + ' pts</b> et '
+      + champion.c.tpName + ' en ' + champion.c.lev + 'x — ' + (champion.c.res.netPnlPct>=0?'+':'')
+      + champion.c.res.netPnlPct.toFixed(1) + ' % pour -' + champion.c.res.maxDDPct.toFixed(0) + ' % de drawdown</div>';
+    __x += '</div>';
+  }catch(e){}
+
+  /* Balayage de la part de capital engagée. On rejoue la simulation pour
+     plusieurs proportions et on désigne celle qui donne le meilleur
+     rendement une fois le drawdown déduit — un gain obtenu au prix d'un
+     drawdown de 80 % ne vaut pas un gain plus modeste et stable. */
+  try{
+    const parts = [5, 10, 20, 30, 50, 75, 100];
+    let rows = '', meilleur = null;
+    for(const pp of parts){
+      const rp0 = runSingleZZSim(d, sigMapBase, curScenarioObj.tp, slPts, capital, lev, feeRate, pp);
+      const score = rp0.netPnlPct - rp0.maxDDPct - (rp0.ruine ? 1000 : 0) - rp0.liquidations * 5;
+      if(!meilleur || score > meilleur.score) meilleur = {pp, score, r: rp0};
+      const col = rp0.netPnlTotal >= 0 ? '#22C55E' : '#EF4444';
+      rows += '<tr style="border-top:1px solid var(--line)">'
+        + '<td style="padding:4px;color:var(--text);font-weight:700">' + pp + ' %</td>'
+        + '<td style="padding:4px;color:' + col + ';font-weight:700">' + (rp0.netPnlPct>=0?'+':'') + rp0.netPnlPct.toFixed(1) + ' %</td>'
+        + '<td style="padding:4px;color:' + col + '">' + rp0.curCap.toFixed(2) + ' $</td>'
+        + '<td style="padding:4px;color:#EF4444">-' + rp0.maxDDPct.toFixed(0) + ' %</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + (rp0.profitFactor>=99?'∞':rp0.profitFactor.toFixed(2)) + '</td>'
+        + '<td style="padding:4px;color:' + (rp0.liquidations?'#EF4444':'#94A3B8') + '">' + rp0.liquidations + (rp0.ruine?' ⚠':'') + '</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + score.toFixed(0) + '</td></tr>';
+    }
+    __x += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
+      + '<div style="font-weight:800;color:#22D3EE;font-size:12px;margin-bottom:4px">⚙️ Quelle part de capital engager ?</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Score = rendement net moins le drawdown. Une ruine ou des liquidations sont lourdement pénalisées.</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr style="background:var(--panel-2,#0F172A)">'
+      + ['Part engagée','Gain','Final','DD','PF','Liq.','Score'].map(h=>'<th style="padding:4px;text-align:left;color:#94A3B8">'+h+'</th>').join('')
+      + '</tr></thead><tbody>' + rows + '</tbody></table>';
+    if(meilleur) __x += '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<span style="font-size:11px;color:#22D3EE">Meilleure part : <b>' + meilleur.pp + ' %</b> — '
+      + (meilleur.r.netPnlPct>=0?'+':'') + meilleur.r.netPnlPct.toFixed(1) + ' % pour -' + meilleur.r.maxDDPct.toFixed(0) + ' % de drawdown</span>'
+      + '<button type="button" onclick="document.getElementById(\'bt-zz-risk\').value=' + meilleur.pp + ';runZZBacktest(true)" '
+      + 'style="background:linear-gradient(135deg,#22D3EE,#0891B2);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:10.5px;font-weight:800;cursor:pointer">🎯 Appliquer ' + meilleur.pp + ' %</button></div>';
+    __x += '</div>';
+  }catch(e){}
+
+  /* Comparaison des capitaux de départ. À levier et réglages identiques, on
+     rejoue la simulation pour 100 à 500 $ afin de voir lequel tient le mieux
+     la route — la liquidation ne frappe pas de la même façon selon la taille. */
+  try{
+    const rk = document.getElementById('bt-zz-risk');
+    const rp = rk ? (+rk.value || 100) : 100;
+    let capHtml = '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
+      + '<div style="font-weight:800;color:#FBBF24;font-size:12px;margin-bottom:4px">💰 Quel capital de départ ?</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Même stratégie, même levier, même part engagée ('
+      + rp + ' %). Seul le capital de départ change.</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr style="background:var(--panel-2,#0F172A)">'
+      + ['Capital','Final','Gain','Trades','Réussite','PF','DD','Liquidations'].map(h=>
+        '<th style="padding:4px;text-align:left;color:#94A3B8">'+h+'</th>').join('')
+      + '</tr></thead><tbody>';
+    let best = null;
+    for(const c0 of [100,200,300,400,500]){
+      const r0 = runSingleZZSim(d, sigMapBase, curScenarioObj.tp, slPts, c0, lev, feeRate, rp);
+      if(!best || r0.netPnlPct > best.pct) best = {cap:c0, pct:r0.netPnlPct};
+      const col = r0.netPnlTotal >= 0 ? '#22C55E' : '#EF4444';
+      capHtml += '<tr style="border-top:1px solid var(--line)">'
+        + '<td style="padding:4px;color:var(--text);font-weight:700">' + c0 + ' $</td>'
+        + '<td style="padding:4px;color:' + col + '">' + r0.curCap.toFixed(2) + ' $</td>'
+        + '<td style="padding:4px;color:' + col + ';font-weight:700">' + (r0.netPnlPct>=0?'+':'') + r0.netPnlPct.toFixed(1) + ' %</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + r0.tradesCount + '</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + r0.winRate.toFixed(0) + ' %</td>'
+        + '<td style="padding:4px;color:#94A3B8">' + (r0.profitFactor>=99?'∞':r0.profitFactor.toFixed(2)) + '</td>'
+        + '<td style="padding:4px;color:#EF4444">-' + r0.maxDDPct.toFixed(0) + ' %</td>'
+        + '<td style="padding:4px;color:' + (r0.liquidations?'#EF4444':'#94A3B8') + '">' + r0.liquidations + (r0.ruine?' ⚠ ruiné':'') + '</td>'
+        + '</tr>';
+    }
+    capHtml += '</tbody></table>';
+    if(best) capHtml += '<div style="margin-top:6px;font-size:11px;color:#FBBF24">Meilleur rendement : <b>'
+      + best.cap + ' $</b> (' + (best.pct>=0?'+':'') + best.pct.toFixed(1) + ' %)</div>';
+    capHtml += '<div style="margin-top:4px;font-size:9.5px;color:var(--muted)">En pourcentage, le capital ne change rien tant qu\'aucune liquidation ne survient. Un écart entre les lignes signale que certaines tailles se font liquider et d\'autres non.</div></div>';
+    __x += capHtml;
+  }catch(e){}
+
+  window.__zzExtras = __x; }
+
   renderZZBtResultsUI(bestPnlId);
 }
 
@@ -15406,77 +15526,7 @@ function renderZZBtResultsUI(bestIdOverride){
     `;
   }
 
-  /* Balayage de la part de capital engagée. On rejoue la simulation pour
-     plusieurs proportions et on désigne celle qui donne le meilleur
-     rendement une fois le drawdown déduit — un gain obtenu au prix d'un
-     drawdown de 80 % ne vaut pas un gain plus modeste et stable. */
-  try{
-    const parts = [5, 10, 20, 30, 50, 75, 100];
-    let rows = '', meilleur = null;
-    for(const pp of parts){
-      const rp0 = runSingleZZSim(d, sigMapBase, curScenarioObj.tp, slPts, capital, lev, feeRate, pp);
-      const score = rp0.netPnlPct - rp0.maxDDPct - (rp0.ruine ? 1000 : 0) - rp0.liquidations * 5;
-      if(!meilleur || score > meilleur.score) meilleur = {pp, score, r: rp0};
-      const col = rp0.netPnlTotal >= 0 ? '#22C55E' : '#EF4444';
-      rows += '<tr style="border-top:1px solid var(--line)">'
-        + '<td style="padding:4px;color:var(--text);font-weight:700">' + pp + ' %</td>'
-        + '<td style="padding:4px;color:' + col + ';font-weight:700">' + (rp0.netPnlPct>=0?'+':'') + rp0.netPnlPct.toFixed(1) + ' %</td>'
-        + '<td style="padding:4px;color:' + col + '">' + rp0.curCap.toFixed(2) + ' $</td>'
-        + '<td style="padding:4px;color:#EF4444">-' + rp0.maxDDPct.toFixed(0) + ' %</td>'
-        + '<td style="padding:4px;color:#94A3B8">' + (rp0.profitFactor>=99?'∞':rp0.profitFactor.toFixed(2)) + '</td>'
-        + '<td style="padding:4px;color:' + (rp0.liquidations?'#EF4444':'#94A3B8') + '">' + rp0.liquidations + (rp0.ruine?' ⚠':'') + '</td>'
-        + '<td style="padding:4px;color:#94A3B8">' + score.toFixed(0) + '</td></tr>';
-    }
-    html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
-      + '<div style="font-weight:800;color:#22D3EE;font-size:12px;margin-bottom:4px">⚙️ Quelle part de capital engager ?</div>'
-      + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Score = rendement net moins le drawdown. Une ruine ou des liquidations sont lourdement pénalisées.</div>'
-      + '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr style="background:var(--panel-2,#0F172A)">'
-      + ['Part engagée','Gain','Final','DD','PF','Liq.','Score'].map(h=>'<th style="padding:4px;text-align:left;color:#94A3B8">'+h+'</th>').join('')
-      + '</tr></thead><tbody>' + rows + '</tbody></table>';
-    if(meilleur) html += '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-      + '<span style="font-size:11px;color:#22D3EE">Meilleure part : <b>' + meilleur.pp + ' %</b> — '
-      + (meilleur.r.netPnlPct>=0?'+':'') + meilleur.r.netPnlPct.toFixed(1) + ' % pour -' + meilleur.r.maxDDPct.toFixed(0) + ' % de drawdown</span>'
-      + '<button type="button" onclick="document.getElementById(\'bt-zz-risk\').value=' + meilleur.pp + ';runZZBacktest(true)" '
-      + 'style="background:linear-gradient(135deg,#22D3EE,#0891B2);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:10.5px;font-weight:800;cursor:pointer">🎯 Appliquer ' + meilleur.pp + ' %</button></div>';
-    html += '</div>';
-  }catch(e){}
-
-  /* Comparaison des capitaux de départ. À levier et réglages identiques, on
-     rejoue la simulation pour 100 à 500 $ afin de voir lequel tient le mieux
-     la route — la liquidation ne frappe pas de la même façon selon la taille. */
-  try{
-    const rk = document.getElementById('bt-zz-risk');
-    const rp = rk ? (+rk.value || 100) : 100;
-    let capHtml = '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">'
-      + '<div style="font-weight:800;color:#FBBF24;font-size:12px;margin-bottom:4px">💰 Quel capital de départ ?</div>'
-      + '<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Même stratégie, même levier, même part engagée ('
-      + rp + ' %). Seul le capital de départ change.</div>'
-      + '<table style="width:100%;border-collapse:collapse;font-size:10.5px"><thead><tr style="background:var(--panel-2,#0F172A)">'
-      + ['Capital','Final','Gain','Trades','Réussite','PF','DD','Liquidations'].map(h=>
-        '<th style="padding:4px;text-align:left;color:#94A3B8">'+h+'</th>').join('')
-      + '</tr></thead><tbody>';
-    let best = null;
-    for(const c0 of [100,200,300,400,500]){
-      const r0 = runSingleZZSim(d, sigMapBase, curScenarioObj.tp, slPts, c0, lev, feeRate, rp);
-      if(!best || r0.netPnlPct > best.pct) best = {cap:c0, pct:r0.netPnlPct};
-      const col = r0.netPnlTotal >= 0 ? '#22C55E' : '#EF4444';
-      capHtml += '<tr style="border-top:1px solid var(--line)">'
-        + '<td style="padding:4px;color:var(--text);font-weight:700">' + c0 + ' $</td>'
-        + '<td style="padding:4px;color:' + col + '">' + r0.curCap.toFixed(2) + ' $</td>'
-        + '<td style="padding:4px;color:' + col + ';font-weight:700">' + (r0.netPnlPct>=0?'+':'') + r0.netPnlPct.toFixed(1) + ' %</td>'
-        + '<td style="padding:4px;color:#94A3B8">' + r0.tradesCount + '</td>'
-        + '<td style="padding:4px;color:#94A3B8">' + r0.winRate.toFixed(0) + ' %</td>'
-        + '<td style="padding:4px;color:#94A3B8">' + (r0.profitFactor>=99?'∞':r0.profitFactor.toFixed(2)) + '</td>'
-        + '<td style="padding:4px;color:#EF4444">-' + r0.maxDDPct.toFixed(0) + ' %</td>'
-        + '<td style="padding:4px;color:' + (r0.liquidations?'#EF4444':'#94A3B8') + '">' + r0.liquidations + (r0.ruine?' ⚠ ruiné':'') + '</td>'
-        + '</tr>';
-    }
-    capHtml += '</tbody></table>';
-    if(best) capHtml += '<div style="margin-top:6px;font-size:11px;color:#FBBF24">Meilleur rendement : <b>'
-      + best.cap + ' $</b> (' + (best.pct>=0?'+':'') + best.pct.toFixed(1) + ' %)</div>';
-    capHtml += '<div style="margin-top:4px;font-size:9.5px;color:var(--muted)">En pourcentage, le capital ne change rien tant qu\'aucune liquidation ne survient. Un écart entre les lignes signale que certaines tailles se font liquider et d\'autres non.</div></div>';
-    html += capHtml;
-  }catch(e){}
+  html += (window.__zzExtras || '');
 
   html += `</div>`;
   resDiv.innerHTML = html;
