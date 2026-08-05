@@ -4105,7 +4105,7 @@ function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,
    elle glisse dans sa direction naturelle (vers le haut pour les signaux du
    dessus, vers le bas pour ceux du dessous) jusqu'à trouver un trou libre.
    Elle reste toujours dans les limites du panneau des prix.            */
-let _badgeRects=[], _priceBot=0; let _tripleCtx=null;
+let _badgeRects=[], _priceBot=0; let _tripleMesures=null; let _tripleCtx=null;
 /* Clignotement des pastilles en confluence multi-UT.
    _blinkAny est remis à faux à chaque frame ; s'il repasse à vrai,
    un minuteur léger redessine deux fois par seconde. */
@@ -6974,11 +6974,10 @@ function toggleGhostKeep(g){
   const cle = String(g.t);
   const cur = state.tripleKeep[cle];
   if(cur && cur.mark === g.act){ delete state.tripleKeep[cle]; }   // même case : on annule
-  else state.tripleKeep[cle] = {
-    t: g.t, mark: g.act, dir: g.dir, motif: g.rejete || null,
-    sens: g.act === 'inv' ? -g.dir : g.dir,     // sens réellement souhaité
-    sep: g.sep!=null ? +g.sep.toFixed(3) : null,
-    dist: g.dist!=null ? +g.dist.toFixed(3) : null, adx: !!g.adx};
+  else state.tripleKeep[cle] = Object.assign({
+      t: g.t, mark: g.act, dir: g.dir, motif: g.rejete || null,
+      sens: g.act === 'inv' ? -g.dir : g.dir},   // sens réellement souhaité
+    g.mes || {sep: g.sep, dist: g.dist, adx: !!g.adx});
   saveConfig(); render();
 }
 /* Mode pointage : chaque appui sur le graphique pose un repère « j'aurais
@@ -6997,8 +6996,9 @@ function wantTapAt(x,y){
   if(state.wantMarks[cle]) delete state.wantMarks[cle];
   else {
     const m = {t:b.t, dir: state.wantMode===1?1:-1, price:b.c, ordre: Date.now()};
+    if(typeof _tripleMesures === 'function') Object.assign(m, _tripleMesures(i));
     const cx = _tripleCtx;
-    if(cx && cx.atr && cx.atr[i]){
+    if(false && cx && cx.atr && cx.atr[i]){
       const a = cx.atr[i];
       if(cx.cF[i]!=null && cx.cS[i]!=null){
         m.sep  = +(Math.abs(cx.cF[i]-cx.cS[i])/a).toFixed(3);
@@ -13929,6 +13929,73 @@ function computeTripleConfluence(d, ind){
     }catch(e){}
   }
   const atrArr = calc.atr(d, 14);
+  /* Mesures supplémentaires conservées pour l'analyse des annotations.
+     Trois chiffres ne suffisaient pas à expliquer un jugement ; on en garde
+     une quinzaine, calculés une seule fois. */
+  let rsiArr = null, adxVal = null, srLev = null, imp5col = null, imp5sh = null;
+  try{ rsiArr = calc.rsi(d, 14); }catch(e){}
+  try{
+    const rc = (state.indicators && state.indicators.rangeDet2) || {};
+    const rd2 = calc.rangeDetector2(d, rc.period || 14, rc.threshold != null ? rc.threshold : 25);
+    adxVal = rd2 && rd2.adx;
+  }catch(e){}
+  try{ srLev = calc.sr(d); }catch(e){}
+  try{
+    const b5 = (state.tf === 5) ? d : aggregateData(d, 5);
+    const i5 = calc.impmacd(b5, 34, 9);
+    if(i5){
+      imp5col = (b5 === d) ? i5.col : mapHTF(b5, i5.col, d);
+      imp5sh  = (b5 === d) ? i5.sh  : mapHTF(b5, i5.sh,  d);
+    }
+  }catch(e){}
+  /* Rassemble toutes les mesures d'une bougie. Utilisé par les annotations
+     des pastilles ET par les repères posés à la main. */
+  function mesures(i){
+    const a = atrArr[i] || null, b = d[i];
+    const m = {};
+    if(!b) return m;
+    m.atr = a ? +a.toFixed(2) : null;
+    if(a){
+      if(cF[i] != null && cS[i] != null){
+        m.sep  = +(Math.abs(cF[i]-cS[i])/a).toFixed(3);
+        m.dist = +(Math.abs(b.c-cS[i])/a).toFixed(3);
+        m.nuage = cF[i] > cS[i] ? 1 : -1;
+        if(i >= 10 && cF[i-10] != null) m.pente = +(((cF[i]-cF[i-10])/a)).toFixed(3);
+      }
+      if(ema[i] != null){ m.dEma = +(((b.c-ema[i])/a)).toFixed(3); m.ema = b.c > ema[i] ? 1 : -1; }
+      m.corps = +(((b.c-b.o)/a)).toFixed(3);
+      m.meche = +(((b.h-b.l)/a)).toFixed(3);
+    }
+    if(ha[i]){ m.ha = ha[i].c >= ha[i].o ? 1 : -1;
+               if(a) m.haCorps = +(((ha[i].c-ha[i].o)/a)).toFixed(3); }
+    if(rosc && rosc[i] != null){
+      m.osc = +rosc[i].toFixed(1);
+      if(i >= 5 && rosc[i-5] != null) m.oscPente = +(rosc[i]-rosc[i-5]).toFixed(1);
+    }
+    if(rsiArr && rsiArr[i] != null) m.rsi = +rsiArr[i].toFixed(1);
+    if(adxVal && adxVal[i] != null) m.adxVal = +adxVal[i].toFixed(1);
+    m.adx = !!(adxRange && adxRange[i]);
+    if(impCol && impCol[i] != null){
+      m.imp15 = impCol[i];
+      if(i >= 15 && impCol[i-15] != null) m.imp15Chg = impCol[i] !== impCol[i-15] ? 1 : 0;
+    }
+    if(imp5col && imp5col[i] != null) m.imp5 = imp5col[i];
+    if(imp5sh && imp5sh[i] != null) m.imp5sh = +imp5sh[i].toFixed(2);
+    if(erVal && erVal[i] != null){ m.er = +erVal[i].toFixed(3); m.erCr = erCr[i]; }
+    if(srLev && srLev.length && a){
+      let sup = null, res = null;
+      for(const l of srLev){
+        const v = l.price != null ? l.price : l.p;
+        if(v == null) continue;
+        if(v <= b.c && (sup == null || v > sup)) sup = v;
+        if(v >= b.c && (res == null || v < res)) res = v;
+      }
+      if(sup != null) m.dSup = +(((b.c-sup)/a)).toFixed(2);
+      if(res != null) m.dRes = +(((res-b.c)/a)).toFixed(2);
+    }
+    return m;
+  }
+  _tripleMesures = mesures;
 
   /* Impulse MACD de l'unité de temps choisie. Son code couleur : 0 et 1 sont
      haussiers, 2 et 3 baissiers. Tant qu'il est vert, on refuse les ventes ;
@@ -14057,7 +14124,7 @@ function computeTripleConfluence(d, ind){
     bruts.push({
       i, t: d[i].t, price: d[i].c, dir: cur.dir,
       type: cur.dir === 1 ? 'ACHAT' : 'VENTE',
-      dernier: dern, veto: cur.veto,
+      dernier: dern, veto: cur.veto, mes: mesures(i),
       sep: cur.sep, dist: cur.dist, adx: cur.adx,
       detail: (cur.dir === 1 ? 'Nuage vert' : 'Nuage rouge') + ' · ' +
               'Osc ' + (cur.C === 1 ? 'vert' : 'rouge') + ' ' + roscTf + 'm'
@@ -14070,14 +14137,14 @@ function computeTripleConfluence(d, ind){
     const b = bruts[k];
     if(b.veto){
       out.push({i:b.i, t:b.t, price:b.price, dir:b.dir, type:b.type,
-        dernier:b.dernier, rejete:b.veto, sep:b.sep, dist:b.dist, adx:b.adx,
+        dernier:b.dernier, rejete:b.veto, sep:b.sep, dist:b.dist, adx:b.adx, mes:b.mes,
         detail:(b.dir === 1 ? 'Nuage vert' : 'Nuage rouge')});
       continue;
     }
     if(b.dir === lastDir) continue;   // même sens que le signal retenu suivant
     lastDir = b.dir;
     out.push({i:b.i, t:b.t, price:b.price, dir:b.dir, type:b.type,
-      dernier:b.dernier, detail:b.detail, sep:b.sep, dist:b.dist, adx:b.adx});
+      dernier:b.dernier, detail:b.detail, sep:b.sep, dist:b.dist, adx:b.adx, mes:b.mes});
   }
   out.reverse();
   return out;
@@ -14223,7 +14290,7 @@ function drawTripleConfluence(evts, s, e, yOf){
         ctx.textAlign = 'center';
         ctx.fillText(c[0], cx + cw2/2, cy + ch2 - 3.5);
         ghostHits.push({x: cx-3, y: cy-3, w: cw2+6, h: ch2+6, t: g.t, act: c[1],
-          dir: g.dir, rejete: g.rejete || null, sep: g.sep, dist: g.dist, adx: g.adx});
+          dir: g.dir, rejete: g.rejete || null, sep: g.sep, dist: g.dist, adx: g.adx, mes: g.mes});
       });
       ctx.textAlign = 'left';
       if(!rej) labelHits.push({x: bx + 62, y: by, w: bw - 62, h: bh, key: 'signal_triple'});
