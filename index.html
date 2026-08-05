@@ -14993,63 +14993,74 @@ async function runZZBacktest(skipFetch){
   /* Tableaux supplémentaires : ils ont besoin des variables locales de
      runZZBacktest, on les construit ici puis on les transmet au rendu. */
   { let __x = '';
-  /* TOP 5 GLOBAL — la synthèse de tout.
-     Pour chaque unité de temps on récupère les meilleures combinaisons
-     (scénario, stop, levier), puis on fait varier la part de capital
-     engagée. Toutes les configurations sont mises en concurrence et seules
-     les cinq meilleures sortent. Score = rendement net divisé par le risque,
-     avec ruine et liquidations lourdement pénalisées. */
+  /* TOP 5 GLOBAL — classé par le GAIN, rien d'autre.
+     Toutes les combinaisons possibles sont mises en concurrence : unité de
+     temps, mode de sortie, stop, levier, part de capital engagée et capital
+     de départ. Le classement est fait sur le rendement net, comme demandé.
+     Le risque reste affiché sur chaque carte, mais il ne décide plus du rang. */
   try{
     const utList = [1, 3, 5, 15, 60, 240];
     const utNom = {1:'1m', 3:'3m', 5:'5m', 15:'15m', 60:'1H', 240:'4H'};
     const parts = [10, 20, 50, 100];
+    const capitaux = [100, 200, 300, 400, 500];
     const tout = [];
     for(const tfm of utList){
       const r5 = computeZZTop5ForTF(tfm);
-      const cands = (r5 && r5.allCombosTF ? r5.allCombosTF : []).slice(0, 3);
+      const cands = (r5 && r5.allCombosTF ? r5.allCombosTF : []).slice(0, 4);
       const dTF = (tfm === 1) ? d : aggregateData(d, tfm, 1);
       if(!dTF || dTF.length < 3) continue;
       const sigTF = (typeof computeZZSignals === 'function') ? computeZZSignals(dTF, indConfig) : [];
       const mapTF = {}; sigTF.forEach(x => { if(!x.isExit) mapTF[x.i] = x; });
       for(const c of cands){
         for(const pp of parts){
-          const r0 = runSingleZZSim(dTF, mapTF, c.tpVal, c.slVal, capital, c.lev, feeRate, pp);
-          if(!r0 || !r0.tradesCount) continue;
-          let sc = r0.netPnlPct / (1 + r0.maxDDPct / 12);
-          if(r0.ruine) sc -= 10000;
-          sc -= r0.liquidations * 5;
-          if(r0.netPnlTotal <= 0) sc = -10000 + r0.netPnlTotal;
-          tout.push({tf: tfm, tpName: c.tpName, sl: c.slVal, lev: c.lev, part: pp, res: r0, score: sc});
+          for(const c0 of capitaux){
+            const r0 = runSingleZZSim(dTF, mapTF, c.tpVal, c.slVal, c0, c.lev, feeRate, pp);
+            if(!r0 || !r0.tradesCount || r0.ruine) continue;   // on écarte les comptes ruinés
+            tout.push({tf: tfm, scId: c.scId, tpName: c.tpName, tpVal: c.tpVal,
+                       sl: c.slVal, lev: c.lev, part: pp, cap: c0, res: r0});
+          }
         }
       }
     }
-    tout.sort((x, y) => y.score - x.score);
-    const top = tout.slice(0, 5);
-    const medailles = ['🥇 #1', '🥈 #2', '🥉 #3', '🎯 #4', '🛡️ #5'];
+    // classement sur le gain net, du plus élevé au plus faible
+    tout.sort((x, y) => y.res.netPnlPct - x.res.netPnlPct);
+    /* Le capital de départ ne change pas le rendement en pourcentage tant
+       qu'aucune liquidation ne survient : sans regroupement, les cinq cartes
+       seraient la même configuration répétée. On ne garde donc qu'une carte
+       par réglage, avec le capital qui lui réussit le mieux en dollars. */
+    const vus = new Set(); const top = [];
+    for(const v of tout){
+      const cle = v.tf + '|' + v.scId + '|' + v.sl + '|' + v.lev + '|' + v.part;
+      if(vus.has(cle)) continue;
+      vus.add(cle); top.push(v);
+      if(top.length >= 5) break;
+    }
     let cartes = '';
     top.forEach((v, k) => {
       const r0 = v.res, col = r0.netPnlTotal >= 0 ? '#22C55E' : '#EF4444';
       cartes += '<div style="border:1.5px solid ' + (k===0?'#FFD700':'var(--line)') + ';border-radius:8px;padding:8px;margin-bottom:6px;background:var(--panel-2,#0F172A)">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-        + '<span style="font-weight:800;font-size:11px;color:' + (k===0?'#FFD700':'#94A3B8') + '">' + medailles[k] + '</span>'
-        + '<span style="font-weight:800;font-size:13px;color:' + col + '">' + (r0.netPnlPct>=0?'+':'') + r0.netPnlPct.toFixed(1) + ' %</span></div>'
-        + '<div style="font-size:11px;color:var(--text);font-weight:700">' + utNom[v.tf] + ' · ' + v.tpName
-        + ' · SL ' + (v.sl || '—') + ' pts · ' + v.lev + 'x · ' + v.part + ' % engagé</div>'
+        + '<span style="font-weight:800;font-size:11px;color:' + (k===0?'#FFD700':'#94A3B8') + '">#' + (k+1) + '</span>'
+        + '<span style="font-weight:800;font-size:15px;color:' + col + '">' + (r0.netPnlPct>=0?'+':'') + r0.netPnlPct.toFixed(1) + ' %</span></div>'
+        + '<div style="font-size:11.5px;color:var(--text);font-weight:700">' + utNom[v.tf] + ' · ' + v.tpName
+        + ' · SL ' + (v.sl || '—') + ' · ' + v.lev + 'x · ' + v.part + ' % engagé · départ ' + v.cap + ' $</div>'
         + '<div style="font-size:10px;color:#94A3B8;margin-top:3px">'
+        + v.cap + ' $ → <b style="color:' + col + '">' + r0.curCap.toFixed(0) + ' $</b> · '
         + r0.tradesCount + ' trades · réussite ' + r0.winRate.toFixed(0) + ' % · PF '
         + (r0.profitFactor>=99?'∞':r0.profitFactor.toFixed(2))
         + ' · DD <span style="color:#EF4444">-' + r0.maxDDPct.toFixed(0) + ' %</span>'
-        + ' · liq ' + r0.liquidations + (r0.ruine ? ' <span style="color:#EF4444">⚠ ruiné</span>' : '')
-        + ' · final ' + r0.curCap.toFixed(0) + ' $</div>'
-        + '<button type="button" onclick="document.getElementById(\'bt-zz-sl\').value=' + (v.sl||0)
-        + ';document.getElementById(\'bt-zz-risk\').value=' + v.part
-        + ';document.getElementById(\'bt-zz-lev\').value=' + v.lev
-        + ';runZZBacktest(true)" style="width:100%;margin-top:5px;background:linear-gradient(135deg,#22D3EE,#0891B2);color:#0F172A;border:none;border-radius:5px;padding:4px;font-size:10.5px;font-weight:800;cursor:pointer">⚙️ Appliquer cette configuration</button>'
+        + ' · liq ' + r0.liquidations + '</div>'
+        + (r0.maxDDPct >= 50 || v.part >= 100 ? '<div style="font-size:9.5px;color:#F59E0B;margin-top:2px">⚠ '
+           + (v.part >= 100 ? 'tout le capital engagé à chaque trade' : '')
+           + (v.part >= 100 && r0.maxDDPct >= 50 ? ' · ' : '')
+           + (r0.maxDDPct >= 50 ? 'drawdown supérieur à 50 %' : '') + '</div>' : '')
+        + '<button type="button" onclick="window.appliquerZZ(' + JSON.stringify(JSON.stringify({sl:v.sl,lev:v.lev,part:v.part,cap:v.cap,sc:v.scId})).slice(1,-1).replace(/"/g,'&quot;') + ')" '
+        + 'style="width:100%;margin-top:5px;background:linear-gradient(135deg,#22D3EE,#0891B2);color:#0F172A;border:none;border-radius:5px;padding:5px;font-size:11px;font-weight:800;cursor:pointer">⚙️ Appliquer</button>'
         + '</div>';
     });
     __x += '<div style="margin-top:14px;border-top:2px solid #FFD700;padding-top:10px">'
-      + '<div style="font-weight:800;color:#FFD700;font-size:13px;margin-bottom:3px">🏆 TOP 5 — toutes unités de temps confondues</div>'
-      + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Unité de temps, sortie, stop, levier et part de capital engagée : tout est mis en concurrence. Score = rendement divisé par le risque, ruine et liquidations pénalisées.</div>'
+      + '<div style="font-weight:800;color:#FFD700;font-size:13px;margin-bottom:3px">🏆 TOP 5 — classé par le gain</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Toutes les combinaisons testées : unité de temps, sortie, stop, levier, part engagée et capital de départ. Les comptes ruinés sont écartés.</div>'
       + (cartes || '<div style="color:var(--muted);font-size:11px">Aucune configuration rentable trouvée.</div>')
       + '</div>';
   }catch(e){}
@@ -15635,9 +15646,23 @@ function computeTop5ForTF(targetTfMin) {
     return { top5Combos: top5, allCombosTF: combos };
   }
 
-window.applyZZCombo = function(scId, slVal) {
+window.appliquerZZ = function(cfg) {
+  try{ if(typeof cfg === 'string') cfg = JSON.parse(cfg); }catch(e){ return; }
+  const set = (id, v) => { const el = document.getElementById(id); if(el && v != null) el.value = v; };
+  set('bt-zz-sl', cfg.sl != null ? cfg.sl : 0);
+  set('bt-zz-risk', cfg.part);
+  set('bt-zz-lev', cfg.lev);
+  set('bt-zz-capital', cfg.cap);
+  if(cfg.sc) activeZZBtScenario = cfg.sc;
+  runZZBacktest(true);
+};
+
+window.applyZZCombo = function(scId, slVal, levVal) {
   const slEl = document.getElementById('bt-zz-sl');
   if (slEl) slEl.value = slVal;
+  // le levier manquait : la configuration appliquée ne reproduisait pas la carte
+  const lvEl = document.getElementById('bt-zz-lev');
+  if (lvEl && levVal != null) lvEl.value = levVal;
   activeZZBtScenario = scId;
   runZZBacktest(true);
 };
