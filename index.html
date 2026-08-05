@@ -15746,23 +15746,34 @@ window.__zzCarte = function(v, k, utNom){
         const tr = r0.trades || [];
         if(!tr.length) return '';
         const g = tr.filter(x=>x.pnlDollar>0).length;
-        let li = '<table style="width:100%;border-collapse:collapse;font-size:9.5px;margin-top:4px">'
-          + '<tr style="color:#94A3B8"><th style="text-align:left;padding:2px">Sens</th><th style="text-align:right;padding:2px">Entrée</th>'
-          + '<th style="text-align:right;padding:2px">Sortie</th><th style="text-align:left;padding:2px">Motif</th>'
-          + '<th style="text-align:right;padding:2px">PnL</th><th style="text-align:right;padding:2px">Solde</th></tr>';
-        for(const x of tr.slice(-25)){
+        const dt = ms => { const D = new Date(ms);
+          return ('0'+D.getDate()).slice(-2) + '/' + ('0'+(D.getMonth()+1)).slice(-2)
+               + ' ' + ('0'+D.getHours()).slice(-2) + ':' + ('0'+D.getMinutes()).slice(-2); };
+        const ligne = x => {
           const c2 = x.pnlDollar >= 0 ? '#22C55E' : '#EF4444';
-          li += '<tr style="border-top:1px solid var(--line)">'
+          return '<tr style="border-top:1px solid var(--line)">'
+            + '<td style="padding:2px;color:var(--muted);white-space:nowrap">' + dt(x.t) + '</td>'
             + '<td style="padding:2px;color:' + (x.dir==='ACHAT'?'#22C55E':'#EF4444') + '">' + x.dir + '</td>'
             + '<td style="padding:2px;text-align:right;color:var(--muted)">' + x.entryP.toFixed(1) + '</td>'
             + '<td style="padding:2px;text-align:right;color:var(--muted)">' + x.exitP.toFixed(1) + '</td>'
+            + '<td style="padding:2px;text-align:right;color:#FBBF24">' + (x.engagedUsd!=null?x.engagedUsd.toFixed(2):'—') + ' $</td>'
             + '<td style="padding:2px;color:var(--muted)">' + (x.reason||'') + '</td>'
             + '<td style="padding:2px;text-align:right;color:' + c2 + ';font-weight:700">' + (x.pnlDollar>=0?'+':'') + x.pnlDollar.toFixed(2) + '</td>'
-            + '<td style="padding:2px;text-align:right;color:var(--muted)">' + x.capitalAfter.toFixed(0) + '</td></tr>';
-        }
-        li += '</table>';
+            + '<td style="padding:2px;text-align:right;color:var(--muted)">' + x.capitalAfter.toFixed(0) + '</td></tr>'; };
+        const entete = '<tr style="color:#94A3B8;position:sticky;top:0;background:var(--panel-2,#0F172A)">'
+          + ['Date','Sens','Entrée','Sortie','Engagé','Motif','PnL','Solde']
+            .map(function(h,n){ return '<th style="text-align:' + (n>=2&&n!==5?'right':'left') + ';padding:2px">' + h + '</th>'; }).join('')
+          + '</tr>';
+        const tbl = c => '<table style="width:100%;border-collapse:collapse;font-size:9.5px;margin-top:4px">' + entete + c + '</table>';
+        const derniers = tbl(tr.slice(-25).map(ligne).join(''));
+        const tous = '<div style="max-height:300px;overflow:auto">' + tbl(tr.map(ligne).join('')) + '</div>';
         return '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:10px;color:#22D3EE">▸ '
-          + tr.length + ' trades (' + g + ' gagnants, ' + (tr.length-g) + ' perdants) — 25 derniers</summary>' + li + '</details>';
+          + tr.length + ' trades (' + g + ' gagnants, ' + (tr.length-g) + ' perdants)</summary>'
+          + '<div style="display:flex;gap:4px;margin-top:4px">'
+          + '<button type="button" onclick="var b=this.closest(\'details\');b.querySelector(\'.tr-25\').style.display=\'\';b.querySelector(\'.tr-all\').style.display=\'none\';" style="background:rgba(122,162,255,.15);border:1px solid var(--accent);color:var(--text);border-radius:4px;padding:2px 7px;font-size:9.5px;cursor:pointer">25 derniers</button>'
+          + '<button type="button" onclick="var b=this.closest(\'details\');b.querySelector(\'.tr-25\').style.display=\'none\';b.querySelector(\'.tr-all\').style.display=\'\';" style="background:rgba(34,211,238,.15);border:1px solid #22D3EE;color:var(--text);border-radius:4px;padding:2px 7px;font-size:9.5px;cursor:pointer">tous les ' + tr.length + '</button></div>'
+          + '<div class="tr-25">' + derniers + '</div>'
+          + '<div class="tr-all" style="display:none">' + tous + '</div></details>';
       })()
     + '<button type="button" onclick="window.appliquerZZ(' + (v.sl||0) + ',' + v.lev + ',' + v.part + ',' + v.cap + ',&quot;' + v.scId + '&quot;,&quot;' + cle + '&quot;)" '
     + 'style="width:100%;margin-top:5px;background:' + (active ? 'rgba(34,211,238,0.25)' : 'linear-gradient(135deg,#22D3EE,#0891B2)')
