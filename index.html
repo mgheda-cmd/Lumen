@@ -14957,6 +14957,11 @@ async function runZZBacktest(skipFetch){
         + (window.__zzStab || '')
         + (window.__zzSensi || '')
         + '</div>';
+      /* Il faut publier le rendu AVANT de sortir : le lancer d'exception
+         sautait par-dessus l'affectation finale, si bien que l'affichage
+         gardait le tout premier rendu. Les boutons ne changeaient donc
+         jamais d'état, et le contrôle sur trois périodes restait figé. */
+      window.__zzExtras = __x;
       throw new Error('__deja__');
     }
     window.__zzTop5Refaire = 0;
