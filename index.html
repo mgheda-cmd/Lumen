@@ -14373,7 +14373,22 @@ function computeZZSignals(d, ind){
     }
   }
 
-  for(let i = 1; i < d.length; i++){
+  /* Ancrage temporel de la machine à états.
+     Cette fonction suit une position ouverte de bougie en bougie : entrée,
+     puis sortie, puis entrée suivante. C'est une chaîne séquentielle, et son
+     point de départ détermine tout ce qui suit. Tant qu'elle démarrait à
+     l'indice 0, charger de l'historique plus ancien en défilant vers la
+     gauche déplaçait ce point de départ et redessinait des pastilles
+     différentes. On fixe donc le départ à une DATE — les 20 derniers jours —
+     et non à une position dans le tableau. Ajouter des bougies plus
+     anciennes ne change alors plus rien à ce qui est déjà affiché. */
+  const _finT = d[d.length - 1].t;
+  const _depT = _finT - 20 * 86400000;
+  let _i0 = 1;
+  while(_i0 < d.length - 1 && d[_i0].t < _depT) _i0++;
+  if(_i0 > d.length - 200) _i0 = 1;   // historique trop court : on prend tout
+
+  for(let i = _i0; i < d.length; i++){
     const isSellMet = condSellEmaHa[i] && condSellCloud[i] && condSellRosc[i] && condSellImp[i];
     const isBuyMet  = condBuyEmaHa[i] && condBuyCloud[i] && condBuyRosc[i] && condBuyImp[i];
 
