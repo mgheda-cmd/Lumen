@@ -16138,13 +16138,13 @@ function drawBacktestSignals(signals, s, e, yOf, cw, sharedXStack) {
       ctx.restore();
 
       ctx.fillStyle = borderCol; ctx.font = 'bold 10px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
-      ctx.fillText('🧪 ' + mainText, x, by + 12);
+      ctx.fillText('🧪 ' + (g.num != null ? '#' + g.num + ' ' : '') + mainText, x, by + 12);
 
       ctx.fillStyle = pnlColor; ctx.font = 'bold 9px "IBM Plex Mono",monospace';
       ctx.fillText('PnL: ' + pnlPctTxt + '  |  Gain: ' + pnlDollarTxt, x, by + 24);
 
       ctx.fillStyle = '#CBD5E1'; ctx.font = '8px "IBM Plex Mono",monospace';
-      ctx.fillText((g.reason || g.trigger || 'Sortie').substring(0, 32), x, by + 34);
+      ctx.fillText('Sortie: ' + fmtP(g.price) + ' $  ·  ' + (g.reason || g.trigger || '').substring(0, 18), x, by + 34);
       ctx.textAlign = 'left';
 
       if (typeof labelHits !== 'undefined') {
@@ -16185,7 +16185,7 @@ function drawBacktestSignals(signals, s, e, yOf, cw, sharedXStack) {
       ctx.restore();
 
       ctx.fillStyle = color; ctx.font = 'bold 10px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
-      ctx.fillText('🧪 ' + mainText, x, by + 12);
+      ctx.fillText('🧪 ' + (g.num != null ? '#' + g.num + ' ' : '') + mainText, x, by + 12);
 
       ctx.fillStyle = '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
       ctx.fillText('Prix: ' + fmtP(entryP) + ' $  |  ' + (g.stratName || 'Backtest').substring(0, 22), x, by + 24);
