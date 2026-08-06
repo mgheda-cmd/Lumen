@@ -15626,6 +15626,22 @@ function renderZZBtResultsUI(bestIdOverride){
 
   html += `</div>`;
   resDiv.innerHTML = html;
+  /* Branchement direct sur les éléments réellement présents dans le document,
+     refait à chaque rendu. Plus de délégation, plus d'attribut onclick
+     construit par concaténation : on assigne la propriété onclick de chaque
+     bouton, ce qui ne dépend d'aucun échappement ni de la propagation. */
+  try{
+    resDiv.querySelectorAll('[data-tracer]').forEach(function(b){
+      const k = Number(b.getAttribute('data-tracer'));
+      b.onclick = function(e){
+        if(e){ e.preventDefault(); e.stopPropagation(); }
+        if(!isNaN(k) && typeof window.tracerZZ === 'function') window.tracerZZ(k);
+        return false;
+      };
+      b.style.touchAction = 'manipulation';
+      b.style.cursor = 'pointer';
+    });
+  }catch(e){}
 }
 
 function openZZBacktestModal(){
@@ -15863,28 +15879,7 @@ window.__zzCarte = function(v, k, utNom){
    invalide — le clic n'atteignait alors jamais la fonction, sans la moindre
    erreur visible. On écoute désormais sur le conteneur, ce qui ne dépend
    d'aucun échappement et survit à chaque reconstruction de l'affichage. */
-/* Sur iPad, un appui produit touchstart puis, environ 300 ms plus tard, un
-   click. Si l'affichage est reconstruit entre les deux, le click atterrit sur
-   un élément détaché du document et n'atteint jamais sa cible. On écoute donc
-   AUSSI le relâchement du doigt, qui arrive immédiatement, avec un garde-fou
-   contre le double déclenchement. */
-(function(){
-  let dernier = 0;
-  function declencher(ev){
-    const cible = ev.target && ev.target.closest ? ev.target.closest('[data-tracer]') : null;
-    if(!cible) return;
-    const maintenant = Date.now();
-    if(maintenant - dernier < 600) return;      // évite le doublon touch + click
-    dernier = maintenant;
-    if(ev.cancelable) ev.preventDefault();
-    ev.stopPropagation();
-    const k = Number(cible.getAttribute('data-tracer'));
-    if(!isNaN(k) && typeof window.tracerZZ === 'function') window.tracerZZ(k);
-  }
-  document.addEventListener('click', declencher, true);
-  document.addEventListener('touchend', declencher, true);
-  document.addEventListener('pointerup', declencher, true);
-})();
+
 
 window.tracerZZ = function(k, tradesArray, stratName) {
   const isCurrentlyTraced = (window.__zzTrace === k);
