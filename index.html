@@ -4589,6 +4589,10 @@ function render(){
   }
   drawWantMarks(s, e, yOf);
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf);
+  // Pastilles de Backtest (Achat, Sortie Achat, Vente, Sortie Vente)
+  if (window.activeBacktestSignals && window.activeBacktestSignals.length && state.showBacktestSignals !== false) {
+    try{ drawBacktestSignals(window.activeBacktestSignals, s, e, yOf, cw, mainBadgeStack); }catch(e){}
+  }
   // Confluence Triple
   if(vis('signal_triple')){
     drawTripleConfluence(getInd('signal_triple'), s, e, yOf);
@@ -15141,6 +15145,16 @@ async function runZZBacktest(skipFetch){
       + '</div>';
   }catch(e){}
 
+  /* On alimente les pastilles de backtest avec les trades de la
+     configuration n°1 : elles se dessinent alors sur le graphique. */
+  try{
+    if(window.__zzTop5 && window.__zzTop5[0] && window.__zzTop5[0].res && window.__zzTop5[0].res.trades
+       && typeof updateActiveBacktestSignals === 'function'){
+      const b1 = window.__zzTop5[0];
+      updateActiveBacktestSignals(b1.res.trades,
+        'Z.Z. ' + b1.tpName + ' · ' + b1.lev + 'x');
+    }
+  }catch(e){}
   window.__zzExtras = __x; }
 
   renderZZBtResultsUI(bestPnlId);
@@ -15916,6 +15930,205 @@ if(modalZZ){
   modalZZ.addEventListener('click', e => {
     if(e.target.id === 'bt-zz-modal') modalZZ.style.display = 'none';
   });
+}
+
+
+/* ===== Pastilles de backtest sur le graphique — repris de 2c7a21a ===== */
+window.activeBacktestSignals = window.activeBacktestSignals || [];
+function fmtDateTime(t, extraOpt) {
+  if (!t) return "";
+  const d = new Date(t);
+  const curTz = (typeof TZ_MAP !== "undefined" && typeof state !== "undefined" && TZ_MAP[state.tz]) ? TZ_MAP[state.tz] : "Africa/Tunis";
+  const defaultOpt = { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: curTz };
+  const opt = Object.assign({}, defaultOpt, extraOpt || {});
+  return d.toLocaleDateString("fr-FR", opt);
+}
+
+function drawBacktestSignals(signals, s, e, yOf, cw, sharedXStack) {
+  if (!Array.isArray(signals) || !signals.length) return;
+  if (state.showBacktestSignals === false) return;
+
+  const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+
+  for (const g of signals) {
+    const i = (g.t != null && typeof idxOfTime === 'function' ? idxOfTime(g.t) : null) ?? g.i;
+    if (i == null || (s - 1 > i) || i > e + 1) continue;
+    const x = xOf(i);
+    if (-180 > x || x > W - AXIS_W + 180) continue;
+
+    const entryP = g.price;
+
+    if (g.isExit) {
+      // Pastille de Sortie
+      const isBuyExit = (g.type === 'SORTIE_ACHAT' || g.dir === 1);
+      const pnlDollar = g.pnlDollar != null ? g.pnlDollar : 0;
+      const pnlPct = g.pnlPct != null ? g.pnlPct : 0;
+      const isWin = pnlDollar >= 0;
+
+      const pnlColor = isWin ? '#10B981' : '#EF4444';
+      const borderCol = isBuyExit ? '#00E5FF' : '#FF007A';
+      const bgFill = isBuyExit ? 'rgba(6, 26, 42, 0.95)' : 'rgba(42, 6, 26, 0.95)';
+      const mainText = isBuyExit ? '🎯 SORTIE ACHAT' : '🎯 SORTIE VENTE';
+
+      const yDot = yOf(entryP);
+
+      ctx.fillStyle = pnlColor;
+      ctx.beginPath();
+      ctx.arc(x, yDot, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = borderCol; ctx.lineWidth = 1.8; ctx.stroke();
+
+      const pnlSign = pnlPct >= 0 ? '+' : '';
+      const pnlPctTxt = pnlSign + pnlPct.toFixed(2) + '%';
+      const pnlDolSign = pnlDollar >= 0 ? '+' : '-';
+      const pnlDollarTxt = pnlDolSign + '$' + Math.abs(pnlDollar).toFixed(2);
+
+      const bh = 42;
+      const bw = 195;
+      const by = placeBadge(x - bw / 2, bw, isBuyExit ? (yDot - 55 - bh) : (yDot + 45), bh, isBuyExit ? -1 : 1);
+
+      ctx.save();
+      ctx.strokeStyle = borderCol; ctx.lineWidth = 1.3; ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, isBuyExit ? yDot - 6 : yDot + 6);
+      ctx.lineTo(x, isBuyExit ? by + bh : by);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = bgFill;
+      ctx.strokeStyle = borderCol; ctx.lineWidth = 1.8;
+      roundRect(x - bw / 2, by, bw, bh, 8); ctx.fill(); ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = borderCol; ctx.font = 'bold 10px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
+      ctx.fillText(mainText, x, by + 12);
+
+      ctx.fillStyle = pnlColor; ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      ctx.fillText('PnL: ' + pnlPctTxt + '  |  Gain: ' + pnlDollarTxt, x, by + 24);
+
+      ctx.fillStyle = '#CBD5E1'; ctx.font = '8px "IBM Plex Mono",monospace';
+      ctx.fillText((g.reason || g.trigger || 'Sortie').substring(0, 32), x, by + 34);
+      ctx.textAlign = 'left';
+
+      if (typeof labelHits !== 'undefined') {
+        labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'backtest_signal'});
+        labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'backtest_signal'});
+      }
+
+    } else {
+      // Pastille d'Entrée
+      const isBuy = (g.dir === 1 || g.type === 'ACHAT');
+      const yDot = isBuy ? (yOf(entryP) + 18) : (yOf(entryP) - 18);
+      const color = isBuy ? '#10B981' : '#EF4444';
+      const bgFill = isBuy ? 'rgba(6, 36, 22, 0.95)' : 'rgba(38, 8, 12, 0.95)';
+      const mainText = isBuy ? '⚡ ACHAT (Backtest)' : '⚡ VENTE (Backtest)';
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, yDot, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5; ctx.stroke();
+
+      const bh = 34;
+      const bw = 175;
+      const by = placeBadge(x - bw / 2, bw, isBuy ? (yDot + 42) : (yDot - 42 - bh), bh, isBuy ? 1 : -1);
+
+      ctx.save();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, isBuy ? yDot + 6 : yDot - 6);
+      ctx.lineTo(x, isBuy ? by : by + bh);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = bgFill;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+      roundRect(x - bw / 2, by, bw, bh, 8); ctx.fill(); ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = color; ctx.font = 'bold 10px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
+      ctx.fillText(mainText, x, by + 12);
+
+      ctx.fillStyle = '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
+      ctx.fillText('Prix: ' + fmtP(entryP) + ' $  |  ' + (g.stratName || 'Backtest').substring(0, 22), x, by + 24);
+      ctx.textAlign = 'left';
+
+      if (typeof labelHits !== 'undefined') {
+        labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'backtest_signal'});
+        labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'backtest_signal'});
+      }
+    }
+  }
+}
+
+function updateActiveBacktestSignals(tradesList, stratName) {
+  if (!Array.isArray(tradesList) || !tradesList.length) {
+    window.activeBacktestSignals = [];
+    if (typeof updateChips === 'function') updateChips();
+    if (typeof render === 'function') render();
+    return;
+  }
+
+  const d = state.data || window.lastFetchedBtData || window.lastZZBtData || [];
+  const sigs = [];
+
+  tradesList.forEach((tr, idx) => {
+    // 1. Pastille Entrée (ACHAT / VENTE)
+    const entryTime = tr.entryT || tr.t0 || tr.time;
+    let entryIdx = tr.entryIdx;
+    if (entryIdx == null && entryTime && typeof idxOfTime === 'function') {
+      entryIdx = idxOfTime(entryTime);
+    }
+    const isBuy = tr.dir === 'ACHAT' || tr.dir === 1;
+    const entryP = tr.entryP != null ? tr.entryP : tr.price;
+
+    if (entryP != null) {
+      sigs.push({
+        id: 'bt_entry_' + idx,
+        i: entryIdx,
+        t: entryTime,
+        price: entryP,
+        dir: isBuy ? 1 : -1,
+        type: isBuy ? 'ACHAT' : 'VENTE',
+        isBacktest: true,
+        stratName: stratName || 'Backtest',
+        trigger: 'Entrée ' + (isBuy ? 'Achat' : 'Vente') + ' (' + (stratName || 'Backtest') + ')'
+      });
+    }
+
+    // 2. Pastille Sortie (SORTIE ACHAT / SORTIE VENTE)
+    const exitTime = tr.t || tr.time;
+    let exitIdx = tr.i != null ? tr.i : tr.exitIdx;
+    if (exitIdx == null && exitTime && typeof idxOfTime === 'function') {
+      exitIdx = idxOfTime(exitTime);
+    }
+    const exitP = tr.exitP != null ? tr.exitP : tr.price;
+
+    if (exitP != null) {
+      sigs.push({
+        id: 'bt_exit_' + idx,
+        i: exitIdx,
+        t: exitTime,
+        price: exitP,
+        entryPrice: entryP,
+        dir: isBuy ? 1 : -1,
+        isExit: true,
+        type: isBuy ? 'SORTIE_ACHAT' : 'SORTIE_VENTE',
+        isBacktest: true,
+        pnlDollar: tr.pnlDollar != null ? tr.pnlDollar : tr.pnl,
+        pnlPct: tr.netReturnPct != null ? tr.netReturnPct : tr.pnlPct,
+        reason: tr.reason || tr.exitReason || 'Sortie Backtest',
+        trigger: tr.reason || tr.exitReason || 'Sortie Backtest',
+        stratName: stratName || 'Backtest'
+      });
+    }
+  });
+
+  window.activeBacktestSignals = sigs;
+  if (typeof updateChips === 'function') updateChips();
+  if (typeof render === 'function') render();
 }
 </script>
 </body>
