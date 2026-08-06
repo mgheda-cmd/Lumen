@@ -15004,6 +15004,25 @@ async function runZZBacktest(skipFetch){
       top.push(best);
       if(top.length >= 5) break;
     }
+    /* Deux cartes supplémentaires réservées au 1 minute : le classement
+       général peut être dominé par des unités de temps plus longues, alors
+       que c'est en 1m que tu traites. */
+    for(const v of tout){
+      if(top.length >= 7) break;
+      if(v.tf !== 1) continue;
+      const cle1 = v.tf + '|' + v.scId + '|' + v.sl + '|' + v.lev + '|' + v.part;
+      if(vus.has(cle1)) continue;
+      vus.add(cle1);
+      let best1 = v;
+      for(const c0 of capitaux){
+        if(c0 === capBase) continue;
+        const rc = runSingleZZSim(v._d, v._map, v.tpVal, v.sl, c0, v.lev, feeRate, v.part);
+        if(rc && rc.tradesCount && !rc.ruine && rc.netPnlPct > best1.res.netPnlPct)
+          best1 = Object.assign({}, v, {cap: c0, res: rc});
+      }
+      best1._only1m = true;
+      top.push(best1);
+    }
     window.__zzTop5 = top;
     /* Analyse de sensibilité sur la configuration gagnante : on fait varier
        chaque paramètre séparément, tout le reste étant maintenu, et on
@@ -15751,6 +15770,7 @@ window.__zzCarte = function(v, k, utNom){
     + ';border-radius:8px;padding:8px;margin-bottom:6px;background:' + (active ? 'rgba(34,211,238,0.08)' : 'var(--panel-2,#0F172A)') + '">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
     + '<span style="font-weight:800;font-size:11px;color:' + (k===0?'#FFD700':'#94A3B8') + '">#' + (k+1)
+    + (v._only1m ? ' <span style="background:rgba(122,162,255,.22);color:#7AA2FF;border-radius:4px;padding:1px 5px">1m</span>' : '')
     + (active ? ' <span style="color:#22D3EE">· appliquée</span>' : '') + '</span>'
     + '<span style="text-align:right"><span style="font-weight:800;font-size:16px;color:' + col + '">'
     + (r0.netPnlTotal>=0?'+':'') + r0.netPnlTotal.toFixed(2) + ' $</span>'
