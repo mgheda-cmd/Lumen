@@ -9018,8 +9018,19 @@ function checkAutoTrade(inputSignals){
       const indZZ = (state.indicators && state.indicators.strat_zz) || {};
       zzSigs = computeZZSignals(d, indZZ) || [];
     }catch(e){ zzSigs = []; }
-    // on ne regarde que la toute dernière bougie
-    const sigNow = zzSigs.filter(x => x.i === lastIdx);
+    /* On regarde les trois dernières bougies, pas seulement la dernière.
+       La pastille naît sur la bougie qui vient de CLÔTURER ; or au moment où
+       la vérification tourne, cette bougie n'est déjà plus la dernière — une
+       neuve est en formation. En ne testant que lastIdx, on manquait donc
+       systématiquement les signaux. Le garde-fou sigId empêche de rejouer
+       deux fois le même. */
+    const sigNow = zzSigs.filter(x => x.i >= lastIdx - 2);
+    /* Horodatage de la bougie qui a produit le signal. C'est LUI qui doit
+       identifier le signal, et non la dernière bougie : sinon, avec une
+       fenêtre de trois bougies, le même signal serait rejoué à chaque minute
+       sous une identité différente. */
+    let sigT = d[lastIdx].t;
+    if(sigNow.length) sigT = d[sigNow[sigNow.length - 1].i] ? d[sigNow[sigNow.length - 1].i].t : sigT;
     for(const sg of sigNow){
       if(sg.isExit){ exitTriggered = true; exitReason = sg.reason || 'Sortie Z. Z.'; }
       else if(sg.dir === 1) buySignal = true;
@@ -9035,7 +9046,7 @@ function checkAutoTrade(inputSignals){
 
     if (existingPos) {
     if (exitTriggered) {
-      const sigId = `${state.symbol}|${state.tf}|${d[lastIdx].t}|exit|${exitReason}`;
+      const sigId = `${state.symbol}|${state.tf}|${sigT}|exit|${exitReason}`;
       if (autoTradeLastExecutedSigId !== sigId) {
         autoTradeLastExecutedSigId = sigId;
         autoTradeSeenSet.add(sigId);
@@ -9071,7 +9082,7 @@ function checkAutoTrade(inputSignals){
     const stratLev = strat?.lev || 200;
 
     if (buySignal) {
-      const sigId = `${state.symbol}|${state.tf}|${d[lastIdx].t}|buy`;
+      const sigId = `${state.symbol}|${state.tf}|${sigT}|buy`;
       if (autoTradeLastExecutedSigId !== sigId) {
         autoTradeLastExecutedSigId = sigId;
         autoTradeSeenSet.add(sigId);
@@ -9085,7 +9096,7 @@ function checkAutoTrade(inputSignals){
         try { beep(); } catch(e){}
       }
     } else if (sellSignal) {
-      const sigId = `${state.symbol}|${state.tf}|${d[lastIdx].t}|sell`;
+      const sigId = `${state.symbol}|${state.tf}|${sigT}|sell`;
       if (autoTradeLastExecutedSigId !== sigId) {
         autoTradeLastExecutedSigId = sigId;
         autoTradeSeenSet.add(sigId);
