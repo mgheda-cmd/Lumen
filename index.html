@@ -14383,7 +14383,12 @@ function computeZZSignals(d, ind){
      et non à une position dans le tableau. Ajouter des bougies plus
      anciennes ne change alors plus rien à ce qui est déjà affiché. */
   const _finT = d[d.length - 1].t;
-  const _depT = _finT - 20 * 86400000;
+  /* L'ancre doit être une date FIXE, pas une distance à la dernière bougie.
+     Sinon elle avance d'une minute à chaque nouvelle bougie, le point de
+     départ de la chaîne se déplace en continu, et les pastilles récentes
+     peuvent basculer. On arrondit donc au début de journée : l'ancre ne
+     bouge plus qu'une fois par jour, à minuit. */
+  const _depT = Math.floor((_finT - 20 * 86400000) / 86400000) * 86400000;
   let _i0 = 1;
   while(_i0 < d.length - 1 && d[_i0].t < _depT) _i0++;
   if(_i0 > d.length - 200) _i0 = 1;   // historique trop court : on prend tout
