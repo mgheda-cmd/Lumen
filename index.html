@@ -12664,9 +12664,9 @@ async function runBacktest(skipFetch){
       // Ouvrir une nouvelle position s'il n'y en a pas d'active
       if (!pos) {
         if (buySignal) {
-          pos = { dir: 1, entryP: dSim[i].c, entryT: dSim[i].t, peakPrice: dSim[i].h, lowPrice: dSim[i].l, capitalAtEntry: capital };
+          pos = { dir: 1, entryP: dSim[i].c, entryT: dSim[i].t, entryIdx: i, peakPrice: dSim[i].h, lowPrice: dSim[i].l, capitalAtEntry: capital };
         } else if (sellSignal) {
-          pos = { dir: -1, entryP: dSim[i].c, entryT: dSim[i].t, peakPrice: dSim[i].h, lowPrice: dSim[i].l, capitalAtEntry: capital };
+          pos = { dir: -1, entryP: dSim[i].c, entryT: dSim[i].t, entryIdx: i, peakPrice: dSim[i].h, lowPrice: dSim[i].l, capitalAtEntry: capital };
         }
       }
     }
@@ -15854,6 +15854,48 @@ window.__zzCarte = function(v, k, utNom){
     + 'style="width:100%;margin-top:5px;background:' + (active ? 'rgba(34,211,238,0.25)' : 'linear-gradient(135deg,#22D3EE,#0891B2)')
     + ';color:' + (active ? '#22D3EE' : '#0F172A') + ';border:none;border-radius:5px;padding:5px;font-size:11px;font-weight:800;cursor:pointer">'
     + (active ? '✓ Appliquée' : '⚙️ Appliquer') + '</button></div>';
+};
+
+/* Trace les trades d'une carte sur le graphique. Accepte un numéro de
+   carte ou directement un tableau de trades. Un second appui efface. */
+window.tracerZZ = function(k, tradesArray, stratName) {
+  const isCurrentlyTraced = (window.__zzTrace === k);
+  if (isCurrentlyTraced) {
+    window.__zzTrace = null;
+    window.activeBacktestSignals = [];
+    if (typeof updateChips === "function") updateChips();
+    if (typeof render === "function") render();
+    if (typeof runZZBacktest === "function") runZZBacktest(true);
+    else if (typeof renderZZBtResultsUI === "function") renderZZBtResultsUI();
+    if (typeof toast === "function") toast("🧹 Trades effacés du graphique", "#3B82F6");
+  } else {
+    let tr = tradesArray;
+    let name = stratName || "";
+    if (typeof k === "number" || (typeof k === "string" && !isNaN(Number(k)))) {
+      const idx = Number(k);
+      const top = window.__zzTop5;
+      if (top && top[idx]) {
+        const v = top[idx];
+        tr = (v.res && v.res.trades) ? v.res.trades : [];
+        const utNom = {1:"1m", 3:"3m", 5:"5m", 15:"15m", 60:"1H", 240:"4H"};
+        name = "Top 5 #" + (idx + 1) + " (" + (utNom[v.tf] || "") + " " + (v.tpName || "") + ")";
+      }
+    }
+    if (!tr || !tr.length) {
+      if (typeof toast === "function") toast("Aucun trade à tracer pour cette carte", "#EF4444");
+      return;
+    }
+    window.__zzTrace = k;
+    if (typeof updateActiveBacktestSignals === "function") {
+      updateActiveBacktestSignals(tr, name || "Backtest");
+    }
+    if (typeof state === "object" && state) state.showBacktestSignals = true;
+    if (typeof updateChips === "function") updateChips();
+    if (typeof render === "function") render();
+    if (typeof runZZBacktest === "function") runZZBacktest(true);
+    else if (typeof renderZZBtResultsUI === "function") renderZZBtResultsUI();
+    if (typeof toast === "function") toast("📈 " + (name || "Trades") + " tracé sur le graphique !", "#10B981");
+  }
 };
 
 window.appliquerZZ = function(sl, lev, part, cap, sc, cle) {
