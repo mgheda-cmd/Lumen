@@ -15845,7 +15845,7 @@ window.__zzCarte = function(v, k, utNom){
           + '<div class="tr-25">' + derniers + '</div>'
           + '<div class="tr-all" style="display:none">' + tous + '</div></details>';
       })()
-    + '<button type="button" onclick="window.tracerZZ(' + k + ')" style="width:100%;margin-top:5px;background:'
+    + '<button type="button" data-tracer="' + k + '" style="width:100%;margin-top:5px;background:'
     + (window.__zzTrace === k ? 'rgba(16,185,129,.28)' : 'rgba(16,185,129,.14)')
     + ';color:' + (window.__zzTrace === k ? '#10B981' : 'var(--text)')
     + ';border:1px solid #10B981;border-radius:5px;padding:5px;font-size:11px;font-weight:800;cursor:pointer">'
@@ -15858,6 +15858,19 @@ window.__zzCarte = function(v, k, utNom){
 
 /* Trace les trades d'une carte sur le graphique. Accepte un numéro de
    carte ou directement un tableau de trades. Un second appui efface. */
+/* Écoute déléguée : le bouton portait un attribut onclick construit par
+   concaténation de chaînes, et le moindre caractère mal échappé le rendait
+   invalide — le clic n'atteignait alors jamais la fonction, sans la moindre
+   erreur visible. On écoute désormais sur le conteneur, ce qui ne dépend
+   d'aucun échappement et survit à chaque reconstruction de l'affichage. */
+document.addEventListener('click', function(ev){
+  const b = ev.target && ev.target.closest ? ev.target.closest('[data-tracer]') : null;
+  if(!b) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const k = Number(b.getAttribute('data-tracer'));
+  if(!isNaN(k) && typeof window.tracerZZ === 'function') window.tracerZZ(k);
+}, true);
+
 window.tracerZZ = function(k, tradesArray, stratName) {
   const isCurrentlyTraced = (window.__zzTrace === k);
   if (isCurrentlyTraced) {
