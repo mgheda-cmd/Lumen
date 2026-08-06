@@ -15641,6 +15641,7 @@ function renderZZBtResultsUI(bestIdOverride){
       b.style.touchAction = 'manipulation';
       b.style.cursor = 'pointer';
     });
+    if(typeof window.majBoutonsTracer === 'function') window.majBoutonsTracer();
   }catch(e){}
 }
 
@@ -15881,6 +15882,24 @@ window.__zzCarte = function(v, k, utNom){
    d'aucun échappement et survit à chaque reconstruction de l'affichage. */
 
 
+/* Met à jour l'apparence des boutons immédiatement, sans attendre la
+   reconstruction du panneau : celle-ci peut être différée ou repartir d'un
+   rendu mémorisé, et le bouton restait alors dans son état initial. */
+window.majBoutonsTracer = function(){
+  try{
+    document.querySelectorAll('[data-tracer]').forEach(function(b){
+      const k = Number(b.getAttribute('data-tracer'));
+      const actif = (window.__zzTrace === k);
+      b.textContent = actif ? '✓ Tracée sur le graphique — appuyer pour effacer'
+                            : '📈 Tracer sur le graphique';
+      b.style.background = actif ? 'rgba(16,185,129,.32)' : 'rgba(16,185,129,.14)';
+      b.style.color = actif ? '#10B981' : 'var(--text)';
+      b.style.borderColor = '#10B981';
+      b.style.fontWeight = actif ? '900' : '800';
+    });
+  }catch(e){}
+};
+
 window.tracerZZ = function(k, tradesArray, stratName) {
   const isCurrentlyTraced = (window.__zzTrace === k);
   if (isCurrentlyTraced) {
@@ -15890,6 +15909,7 @@ window.tracerZZ = function(k, tradesArray, stratName) {
     if (typeof render === "function") render();
     if (typeof runZZBacktest === "function") runZZBacktest(true);
     else if (typeof renderZZBtResultsUI === "function") renderZZBtResultsUI();
+    window.majBoutonsTracer();
     if (typeof toast === "function") toast("🧹 Trades effacés du graphique", "#3B82F6");
   } else {
     let tr = tradesArray;
@@ -15917,6 +15937,7 @@ window.tracerZZ = function(k, tradesArray, stratName) {
     if (typeof render === "function") render();
     if (typeof runZZBacktest === "function") runZZBacktest(true);
     else if (typeof renderZZBtResultsUI === "function") renderZZBtResultsUI();
+    window.majBoutonsTracer();
     if (typeof toast === "function") toast("📈 " + (name || "Trades") + " tracé sur le graphique !", "#10B981");
   }
 };
