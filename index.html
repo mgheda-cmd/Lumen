@@ -288,7 +288,8 @@ footer{
 <header>
   <div class="logo"><span class="pulse"></span>Lumen&nbsp;Charts</div>
   <span id="status" class="mono" title="Appuyer pour reconnecter" style="font-size:10px;letter-spacing:.06em;color:#7E8CA8;cursor:pointer">CHARGEMENT…</span>
-  <span id="build-tag" class="mono" title="Version du fichier actuellement chargée. Si elle ne change pas après un rechargement, le navigateur sert encore une copie en cache." style="font-size:10px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:5px;padding:1px 7px">v 06/08 16:40 UTC</span>
+  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:4px 9px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700">⟳ MAJ</button>
+  <span id="build-tag" class="mono" title="Version du fichier actuellement chargée. Si elle ne change pas après un rechargement, le navigateur sert encore une copie en cache." style="font-size:10px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:5px;padding:1px 7px">v 06/08 17:12 UTC</span>
   <div class="sep"></div>
 
   <div class="ind-wrap">
@@ -3070,6 +3071,20 @@ function loadViaWS(){
     }catch(e){reject(e);}
   });
 }
+/* Recharge la page avec un paramètre horodaté unique : le navigateur ne
+   peut pas servir sa copie en cache, puisque l'adresse n'a jamais été
+   visitée. C'est l'équivalent d'un rechargement forcé, en un appui. */
+try{
+  document.getElementById('maj-btn').addEventListener('click', function(){
+    try{
+      if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
+    }catch(e){}
+    const u = new URL(window.location.href);
+    u.searchParams.set('maj', Date.now());
+    window.location.replace(u.toString());
+  });
+}catch(e){}
+
 function reconnectNow(){ if(typeof loadData==='function')loadData(); }
 try{document.getElementById('status').addEventListener('click',reconnectNow);}catch(e){}
 function setStatus(mode){
