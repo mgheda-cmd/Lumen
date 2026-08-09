@@ -381,7 +381,7 @@ footer{
         <span class="dot" style="background:var(--sma)"></span>
         <span class="name">SMA <span class="desc">Moyenne mobile simple</span></span>
         <input type="number" min="2" max="200" value="20" aria-label="Période SMA">
-        <span class="state">off</span>
+        <span class="state">on</span>
       </div>
       <div class="ind-item" data-ind="ema">
         <span class="dot" style="background:var(--ema)"></span>
@@ -519,7 +519,7 @@ footer{
         <span class="srtf" data-tf="240">4H</span>
         <span class="state">on</span>
       </div>
-      <div class="ind-item" data-ind="kk_bis" id="item-kk_bis" style="background:var(--panel-2,#0F172A);border:1.5px solid #22D3EE;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(34,211,238,0.15)">
+      <div class="ind-item on" data-ind="kk_bis" id="item-kk_bis" style="background:var(--panel-2,#0F172A);border:1.5px solid #22D3EE;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(34,211,238,0.15)">
         <span class="dot" style="background:#22D3EE;box-shadow:0 0 6px #22D3EE;flex:none"></span>
         <span class="nm">kk bis <span class="sub">seuils adaptatifs · confirmation · délai de garde</span></span>
         <span class="srtf mtf on" data-ind2="kk_bis" data-tf="chart">UT</span>
@@ -3551,7 +3551,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:false,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
