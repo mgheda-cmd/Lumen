@@ -20573,6 +20573,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const days  = +(document.getElementById('kk-days')?.value || 22);
     const entTf = +(document.getElementById('kk-enttf')?.value || 15);
     const lev   = +(document.getElementById('kk-lev')?.value || 1);
+    const entMode = (document.getElementById('kk-entmode')?.value || 'orig');
     const upper = +(document.getElementById('kk-up')?.value || 64);
     const lower = -Math.abs(+(document.getElementById('kk-low')?.value || 64));
 
@@ -20586,7 +20587,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     const dEnt = (entTf===1) ? d : aggregateData(d, entTf, 1);
     const base = (typeof state!=='undefined' && state.indicators && state.indicators.strat_zz) || {};
-    const raw = computeZZSignals(dEnt, Object.assign({}, base, {strictMode:true, strictEmaHa:false}), true, false) || [];
+    // 'orig' = pastilles Z.Z. telles qu'affichées sur le graphique (non corrigées)
+    // 'strict' = version corrigée, sans lookahead
+    const useStrict = (entMode === 'strict');
+    const raw = computeZZSignals(dEnt, Object.assign({}, base, {strictMode:useStrict, strictEmaHa:false}), useStrict, false) || [];
     let last = 0;
     const entries = raw.filter(function(x){
       if(x.isExit) return false;
@@ -20624,7 +20628,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const ref = rows[0].r;
     const f=function(x,n){ return (x==null||!isFinite(x))?'∞':Number(x).toFixed(n==null?2:n); };
     let h = '<div style="font-size:12px;color:#7AA2FF;margin-bottom:10px">'
-          + entries.length+' entrées Z.Z. en '+entTf+'m (strict, filtre de position) · '+d.length+' bougies ('+days+' j) · levier '+lev+'x · part 10 % · frais 0,02 %/ordre<br>'
+          + entries.length+' entrées Z.Z. en '+entTf+'m ('
+          + (entMode==='strict' ? '🛡️ corrigées, sans lookahead' : '⚠️ d\'origine, telles qu\'affichées')
+          + ', filtre de position) · '+d.length+' bougies ('+days+' j) · levier '+lev+'x · part 10 % · frais 0,02 %/ordre<br>'
           + 'Niveaux KK : +'+upper+' / '+lower+'</div>'
           + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0F172A;color:#CBD5E1">'
           + ['Sortie','Trades','WR','Gain moy.','Perte moy.','Ratio G/P','PF','PnL net','DD max','Durée moy.']
@@ -20670,7 +20676,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       +'Les entrées restent tes pastilles Z.Z. en mode strict. Seule la sortie change.<br>'
       +'<span style="color:#7E8CA8">KK sort d\'un achat quand la ligne repasse sous le niveau haut après l\'avoir dépassé, et d\'une vente quand elle repasse au-dessus du niveau bas.</span>'
       +'<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:14px;align-items:center">'
-      +'<label>Entrées en <select id="kk-enttf" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:5px;padding:4px 7px"><option value="5">5m</option><option value="15" selected>15m</option><option value="1">1m</option></select></label>'
+      +'<label>Entrées <select id="kk-entmode" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:5px;padding:4px 7px"><option value="orig" selected>d\'origine (non corrigées)</option><option value="strict">corrigées (strict)</option></select></label>'
+      +'<label>en <select id="kk-enttf" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:5px;padding:4px 7px"><option value="5">5m</option><option value="15" selected>15m</option><option value="1">1m</option></select></label>'
       +'<label>Levier <select id="kk-lev" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:5px;padding:4px 7px"><option value="1" selected>1x</option><option value="5">5x</option><option value="20">20x</option></select></label>'
       +'<label>Niveau haut <input id="kk-up" type="number" value="64" style="width:60px;background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:5px;padding:4px 6px"></label>'
       +'<label>Niveau bas <input id="kk-low" type="number" value="64" style="width:60px;background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:5px;padding:4px 6px"></label>'
