@@ -19933,7 +19933,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(window.__zzCorrDiag) window.__zzCorrDiag.nCandles = d.length;
     if(!d.length || typeof computeZZSignals !== 'function') return [];
     const base = (typeof state !== 'undefined' && state.indicators && state.indicators.strat_zz) || {};
-    const key = 'ct1_' + d.length + '_' + d[d.length-1].t + '_' + (base.invertSignal !== false ? 1 : 0)
+    const key = 'ct1_nodup_' + d.length + '_' + d[d.length-1].t + '_' + (base.invertSignal !== false ? 1 : 0)
               + '_' + (base.emaPeriod||9) + '_' + (base.haTf||5) + '_' + (base.impTf||15);
     if(key === cacheKey) return cacheSigs;
     // La couche corrigée utilise le Nuage EMA comme déclencheur : il est calculé
@@ -19942,9 +19942,25 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     // pastilles ne sont pas touchés, cette configuration est locale à cette couche.
     const cfg = Object.assign({}, base, { strictMode: true, strictEmaHa: false, cloudTrigger: true });
     // Ne pas avaler l'erreur : elle doit remonter jusqu'au badge de diagnostic.
-    cacheSigs = computeZZSignals(d, cfg, true, false) || [];
+    const raw = computeZZSignals(d, cfg, true, false) || [];
+
+    /* Filtre de position : on ne garde qu'un signal par changement de sens.
+       Tant qu'un achat est en cours, les achats suivants sont ignorés ; il faut
+       une vente pour rouvrir dans l'autre sens. C'est exactement ce que fait le
+       moteur de backtest, qui refuse toute entrée quand une position est ouverte.
+       Sans ce filtre, l'affichage montrait des entrées qui n'auraient jamais été
+       exécutées. */
+    let lastDir = 0, nDropped = 0;
+    cacheSigs = raw.filter(function(sg){
+      if(sg.isExit) return true;
+      if(sg.dir === lastDir){ nDropped++; return false; }
+      lastDir = sg.dir;
+      return true;
+    });
+
     window.__zzCorrDiag.nCandles = d.length;
-    window.__zzCorrDiag.nRaw = cacheSigs.length;
+    window.__zzCorrDiag.nRaw = raw.length;
+    window.__zzCorrDiag.nDropped = nDropped;
     window.__zzCorrDiag.nEntries = cacheSigs.filter(x => !x.isExit).length;
     // Comparaison directe avec la version non stricte, sur les mêmes bougies
     try{
@@ -19967,7 +19983,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     return bucketEnd > lastT;
   }
 
-  window.__zzCorrDiag = { total:0, drawn:0, err:null, nCandles:0, nRaw:0, nEntries:0, nLoose:0 };
+  window.__zzCorrDiag = { total:0, drawn:0, err:null, nCandles:0, nRaw:0, nEntries:0, nLoose:0, nDropped:0 };
 
   window.drawZZCorrected = function(s, e, yOf, cw){
     let sigs = [];
@@ -20053,7 +20069,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(!b || !window.__zzShowCorrected) return;
     const D = window.__zzCorrDiag;
     if(D.err){ b.textContent = '✅ CORRIGÉ : ERREUR'; b.title = 'Erreur : ' + D.err; return; }
-    b.textContent = '✅ ' + D.nEntries + ' strict / ' + D.nLoose + ' brut · ' + D.drawn + ' vus · ' + D.nCandles + ' bougies';
+    b.textContent = '✅ ' + D.nEntries + ' strict / ' + D.nLoose + ' brut · ' + D.drawn + ' vus'
+                  + (D.nDropped ? ' · ' + D.nDropped + ' doublons retirés' : '');
     b.title = 'Bougies chargées : ' + D.nCandles
             + '\nSignaux stricts (entrées) : ' + D.nEntries
             + '\nSignaux non stricts (entrées) sur les mêmes bougies : ' + D.nLoose
