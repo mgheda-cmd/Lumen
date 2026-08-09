@@ -19923,8 +19923,16 @@ function updateActiveBacktestSignals(tradesList, stratName) {
               + '_' + (base.emaPeriod||9) + '_' + (base.haTf||5) + '_' + (base.impTf||15);
     if(key === cacheKey) return cacheSigs;
     const cfg = Object.assign({}, base, { strictMode: true, strictEmaHa: false });
-    try{ cacheSigs = computeZZSignals(d, cfg, true, false) || []; }
-    catch(e){ cacheSigs = []; }
+    // Ne pas avaler l'erreur : elle doit remonter jusqu'au badge de diagnostic.
+    cacheSigs = computeZZSignals(d, cfg, true, false) || [];
+    window.__zzCorrDiag.nCandles = d.length;
+    window.__zzCorrDiag.nRaw = cacheSigs.length;
+    window.__zzCorrDiag.nEntries = cacheSigs.filter(x => !x.isExit).length;
+    // Comparaison directe avec la version non stricte, sur les mêmes bougies
+    try{
+      const loose = computeZZSignals(d, Object.assign({}, base, { strictMode:false, strictEmaHa:false }), false, false) || [];
+      window.__zzCorrDiag.nLoose = loose.filter(x => !x.isExit).length;
+    }catch(e){ window.__zzCorrDiag.nLoose = -1; }
     cacheKey = key;
     return cacheSigs;
   }
@@ -19941,7 +19949,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     return bucketEnd > lastT;
   }
 
-  window.__zzCorrDiag = { total:0, drawn:0, err:null };
+  window.__zzCorrDiag = { total:0, drawn:0, err:null, nCandles:0, nRaw:0, nEntries:0, nLoose:0 };
 
   window.drawZZCorrected = function(s, e, yOf, cw){
     let sigs = [];
@@ -20027,10 +20035,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(!b || !window.__zzShowCorrected) return;
     const D = window.__zzCorrDiag;
     if(D.err){ b.textContent = '✅ CORRIGÉ : ERREUR'; b.title = 'Erreur : ' + D.err; return; }
-    b.textContent = '✅ CORRIGÉ : ' + D.drawn + '/' + D.total;
-    b.title = D.total + ' signaux stricts calculés sur tout l\'historique chargé, '
-            + D.drawn + ' visibles dans la fenêtre actuelle. '
-            + (D.total === 0 ? 'Aucun signal strict : soit les conditions ne sont jamais réunies sans lookahead, soit computeZZSignals ne renvoie rien en mode strict.' : '');
+    b.textContent = '✅ CORRIGÉ : ' + D.drawn + '/' + D.nEntries;
+    b.title = 'Bougies chargées : ' + D.nCandles
+            + '\nSignaux stricts (entrées) : ' + D.nEntries
+            + '\nSignaux non stricts (entrées) sur les mêmes bougies : ' + D.nLoose
+            + '\nVisibles dans la fenêtre : ' + D.drawn
+            + (D.nEntries === 0 && D.nLoose > 0
+                ? '\n\n→ Le mode strict supprime la totalité des signaux sur cet historique.'
+                : '');
   }
 
   window.toggleZZCorrected = function(){
