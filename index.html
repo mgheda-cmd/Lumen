@@ -20589,6 +20589,95 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     return out.sort((a,b)=>a.t-b.t);
   }
 
+  /* ================================================================
+     KK BIS — variante de l'oscillateur, orientée sortie
+     Le calcul du score reste celui du Pine, à l'identique. Les quatre
+     améliorations portent sur la DÉTECTION de la sortie, là où les
+     mesures ont montré les faiblesses :
+
+     1. SEUILS ADAPTATIFS. Les niveaux fixes ±75 échouaient selon le
+        régime de marché (semaine 2 systématiquement en échec). Ici le
+        seuil vaut k × écart quadratique moyen du score sur une fenêtre
+        glissante : il se resserre en marché calme, s'élargit en marché
+        agité. Le Pine calcule déjà un « crms » comparable pour ses
+        couleurs, sans jamais s'en servir pour les signaux.
+
+     2. ARMEMENT PAR CONFIRMATION. Le score doit rester au-delà du seuil
+        pendant N bougies avant d'armer la sortie. Cela supprime les
+        perforations d'une seule bougie, qui produisaient des sorties
+        sur du bruit.
+
+     3. CONFIRMATION DE PENTE. La sortie n'est validée que si le score
+        s'est retourné (pente contraire sur deux bougies) et a franchi
+        sa ligne de signal. Un simple passage sous le seuil ne suffit
+        plus.
+
+     4. DÉLAI DE GARDE. Aucune nouvelle sortie pendant N bougies après
+        la précédente, pour éviter les rafales.
+     ================================================================ */
+  function kkBisExits(d, tfMin, o){
+    o = o || {};
+    const kMult   = o.k        != null ? o.k        : 1.2;   // multiplicateur du seuil adaptatif
+    const win     = o.win      != null ? o.win      : 100;   // fenêtre de l'écart quadratique
+    const armBars = o.armBars  != null ? o.armBars  : 2;     // bougies de confirmation
+    const cool    = o.cool     != null ? o.cool     : 3;     // délai de garde
+
+    const bars = (tfMin === 1) ? d : aggregateData(d, tfMin, 1);
+    if(!bars || bars.length < win + 20) return [];
+    let res;
+    try{ res = calc.twoIndicator(bars, Object.assign({}, (state.indicators && state.indicators.two_ind) || {}, {tf: tfMin})); }
+    catch(e){ return []; }
+    const net = res && res.net, sg = res && res.signal;
+    if(!net || !net.length) return [];
+
+    // Écart quadratique moyen glissant du score
+    const rms = new Array(net.length).fill(null);
+    let acc = 0, cnt = 0;
+    const q = [];
+    for(let j=0; j<net.length; j++){
+      const v = net[j];
+      if(v != null){ q.push(v*v); acc += v*v; cnt++;
+        if(q.length > win){ acc -= q.shift(); cnt--; } }
+      if(cnt > 10) rms[j] = Math.sqrt(acc/cnt);
+    }
+
+    const out = [];
+    let armedUp = 0, armedDn = 0, lastExit = -999;
+    for(let j=2; j<bars.length; j++){
+      const n = net[j], p = net[j-1], p2 = net[j-2], r = rms[j], sig = sg ? sg[j] : null;
+      if(n == null || p == null || p2 == null || r == null) continue;
+      const up = kMult * r, dn = -kMult * r;
+
+      // 2. armement : compter les bougies passées au-delà du seuil
+      armedUp = (n >= up) ? armedUp + 1 : armedUp;
+      armedDn = (n <= dn) ? armedDn + 1 : armedDn;
+
+      if(j - lastExit < cool) continue;
+
+      // sortie d'achat : le score redescend sous le seuil haut
+      if(armedUp >= armBars && n < up){
+        const retourne = (n < p && p <= p2);                    // 3. pente
+        const sousSignal = (sig == null) || (n < sig);          // 3. franchissement du signal
+        if(retourne && sousSignal){
+          out.push({t: bars[j].t, price: bars[j].c, forDir: 1});
+          lastExit = j;
+        }
+        armedUp = 0;
+      }
+      // sortie de vente : le score remonte au-dessus du seuil bas
+      if(armedDn >= armBars && n > dn){
+        const retourne = (n > p && p >= p2);
+        const surSignal = (sig == null) || (n > sig);
+        if(retourne && surSignal){
+          out.push({t: bars[j].t, price: bars[j].c, forDir: -1});
+          lastExit = j;
+        }
+        armedDn = 0;
+      }
+    }
+    return out.sort(function(a,b){return a.t-b.t;});
+  }
+
   /* Sorties MACD S/R : croisement de la ligne et de son signal.
      Croisement baissier (type 'res') = fermeture d'un achat.
      Croisement haussier (type 'sup') = fermeture d'une vente. */
@@ -20717,6 +20806,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       return a.sort(function(x,y){return x.t-y.t;});
     };
 
+    btn.textContent = '⏳ Calcul KK Bis…';
+    await new Promise(r=>setTimeout(r,0));
+    const kb2  = kkBisExits(d,2,{}),  kb3 = kkBisExits(d,3,{}),
+          kb5  = kkBisExits(d,5,{}),  kb15 = kkBisExits(d,15,{});
+    const kb3s = kkBisExits(d,3,{k:1.6, armBars:3, cool:5});   // variante plus sélective
+    const kb3l = kkBisExits(d,3,{k:0.8, armBars:1, cool:1});   // variante plus réactive
+
     btn.textContent = '⏳ Calcul MACD S/R 15m…';
     await new Promise(r=>setTimeout(r,0));
     const msr15 = macdExits(d, 15);
@@ -20741,7 +20837,15 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       {n:'KK 5m ET MACD 15m',       ex:confluence(kk5,msr15),              note:'confluence, sortie au second'},
       {n:'KK 15m ET MACD 15m',      ex:confluence(kk15,msr15),             note:'confluence, sortie au second'},
       {n:'KK 5m ET MACD 15m + TP 300', ex:confluence(kk5,msr15), tp:300,   note:'confluence + plafond'},
-      {n:'MACD 15m + TP 300',       ex:msr15, tp:300,                      note:'plafond à +300 pts'}
+      {n:'MACD 15m + TP 300',       ex:msr15, tp:300,                      note:'plafond à +300 pts'},
+      {n:'★ KK Bis 2m',   ex:kb2,   note:kb2.length+' sorties · seuil adaptatif'},
+      {n:'★ KK Bis 3m',   ex:kb3,   note:kb3.length+' sorties · seuil adaptatif'},
+      {n:'★ KK Bis 5m',   ex:kb5,   note:kb5.length+' sorties · seuil adaptatif'},
+      {n:'★ KK Bis 15m',  ex:kb15,  note:kb15.length+' sorties · seuil adaptatif'},
+      {n:'★ KK Bis 3m sélectif',  ex:kb3s, note:'k 1.6 · 3 bougies · garde 5'},
+      {n:'★ KK Bis 3m réactif',   ex:kb3l, note:'k 0.8 · 1 bougie · garde 1'},
+      {n:'★ KK Bis 3m + TP 300',  ex:kb3, tp:300, note:'seuil adaptatif + plafond'},
+      {n:'★ KK Bis 2m + 3m',      ex:merge(kb2,kb3), note:'premier arrivé'}
     ];
 
     btn.textContent = '⏳ Stabilité 3 semaines…';
