@@ -4290,10 +4290,28 @@ function getMTFBars(tf){
   if(tf === state.tf) return state.data;
   ensureMTF(tf);
   const mtfBars = mtfStore.data[tf];
-  if(mtfBars && mtfBars.length) return mtfBars;
+
+  /* Le magasin multi-TF ne garde qu'un nombre limité de bougies. Dès qu'on
+     recule au-delà de sa première bougie, mapHTF ne trouve plus rien et
+     laisse des trous : l'indicateur s'arrêtait net au milieu du graphique.
+     Quand l'unité de base est plus fine, on peut toujours reconstruire les
+     bougies manquantes par agrégation. On préfère donc la source qui couvre
+     réellement tout l'historique affiché. */
   if(state.tf < tf){
-    return aggregateData(state.data, tf);
+    const agg = aggregateData(state.data, tf);
+    if(!mtfBars || !mtfBars.length) return agg;
+    if(agg && agg.length && state.data.length){
+      const baseT = state.data[0].t;
+      // le magasin ne remonte pas assez loin : on complète par l'agrégation
+      if(mtfBars[0].t > baseT + tf * 60000){
+        const older = agg.filter(function(b){ return b.t < mtfBars[0].t; });
+        return older.length ? older.concat(mtfBars) : mtfBars;
+      }
+    }
+    return mtfBars;
   }
+
+  if(mtfBars && mtfBars.length) return mtfBars;
   return state.data;
 }
 
