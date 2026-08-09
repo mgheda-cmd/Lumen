@@ -20513,6 +20513,37 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     return out.sort((a,b)=>a.t-b.t);
   }
 
+  /* Sorties MACD S/R : croisement de la ligne et de son signal.
+     Croisement baissier (type 'res') = fermeture d'un achat.
+     Croisement haussier (type 'sup') = fermeture d'une vente. */
+  function macdExits(d, tfMin){
+    const bars = (tfMin === 1) ? d : aggregateData(d, tfMin, 1);
+    if(!bars || bars.length < 40) return [];
+    let m;
+    try{ m = calc.macdSR(bars, 12, 26, 9); }catch(e){ return []; }
+    if(!m || !m.levels) return [];
+    return m.levels.map(function(l){
+      const b = bars[l.i];
+      if(!b) return null;
+      return { t: b.t, price: b.c, forDir: (l.type === 'res' ? 1 : -1) };
+    }).filter(Boolean).sort(function(a,b){return a.t-b.t;});
+  }
+
+  /* Confluence : les deux sources doivent avoir signalé.
+     On sort au second des deux, pas au premier. */
+  function confluence(a, b){
+    const out = [];
+    a.forEach(function(x){
+      const m = b.find(function(y){ return y.forDir === x.forDir && y.t >= x.t; });
+      if(m) out.push({ t: m.t, price: m.price, forDir: x.forDir });
+    });
+    b.forEach(function(x){
+      const m = a.find(function(y){ return y.forDir === x.forDir && y.t >= x.t; });
+      if(m) out.push({ t: m.t, price: m.price, forDir: x.forDir });
+    });
+    return out.sort(function(x,y){return x.t-y.t;});
+  }
+
   /* Simulation : entrées Z.Z., sorties fournies par la variante */
   function sim(entries, d, exitsByDir, lev, tpPts){
     let cap = CAP, peak = CAP, maxDD = 0;
@@ -20609,6 +20640,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       return a.sort(function(x,y){return x.t-y.t;});
     };
 
+    btn.textContent = '⏳ Calcul MACD S/R 15m…';
+    await new Promise(r=>setTimeout(r,0));
+    const msr15 = macdExits(d, 15);
+    const msr5  = macdExits(d, 5);
+
     const VAR = [
       {n:'Référence — signal opposé', ex:null,                     note:'comportement actuel'},
       {n:'KK 1m',    ex:kk1,                                       note:kk1.length+' sorties'},
@@ -20619,7 +20655,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       {n:'KK 3m + 5m + 15m', ex:merge(kk3,kk5,kk15),               note:'premier arrivé'},
       {n:'KK 15m + TP 300', ex:kk15, tp:300,                       note:'plafond à +300 pts'},
       {n:'KK 5m + TP 300',  ex:kk5,  tp:300,                       note:'plafond à +300 pts'},
-      {n:'KK 5m+15m + TP 500', ex:merge(kk5,kk15), tp:500,         note:'plafond à +500 pts'}
+      {n:'KK 5m+15m + TP 500', ex:merge(kk5,kk15), tp:500,         note:'plafond à +500 pts'},
+      {n:'MACD S/R 15m seul',       ex:msr15,                              note:msr15.length+' croisements'},
+      {n:'MACD S/R 5m seul',        ex:msr5,                               note:msr5.length+' croisements'},
+      {n:'KK 5m OU MACD 15m',       ex:merge(kk5,msr15),                   note:'premier arrivé'},
+      {n:'KK 5m ET MACD 15m',       ex:confluence(kk5,msr15),              note:'confluence, sortie au second'},
+      {n:'KK 15m ET MACD 15m',      ex:confluence(kk15,msr15),             note:'confluence, sortie au second'},
+      {n:'KK 5m ET MACD 15m + TP 300', ex:confluence(kk5,msr15), tp:300,   note:'confluence + plafond'},
+      {n:'MACD 15m + TP 300',       ex:msr15, tp:300,                      note:'plafond à +300 pts'}
     ];
 
     const rows = VAR.map(function(v){ return {v, r: sim(entries, d, v.ex, lev, v.tp)}; });
