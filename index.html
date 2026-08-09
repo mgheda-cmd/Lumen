@@ -4270,9 +4270,29 @@ function mapHTF_strict(bars, arr, baseData, tfMs){
   return out;
 }
 
+/* Empreinte complète des réglages d'un indicateur.
+   L'ancienne clé ne retenait que period/fast/slow/tf, si bien que les
+   indicateurs dont les paramètres portent d'autres noms (KK : upper, lower,
+   lookback, minExhaustion ; two_ind : phase, spacing, sigLen, ssLen…)
+   ressortaient toujours du cache avec leurs anciennes valeurs.
+   Les couleurs et les options purement visuelles sont exclues : elles ne
+   changent pas le calcul et invalideraient le cache pour rien. */
+function indFingerprint(ind){
+  const SKIP = /^(c[A-Z]|color|fill|show|on$|hide)/;
+  const parts = [];
+  Object.keys(ind).sort().forEach(function(k){
+    if(SKIP.test(k)) return;
+    const v = ind[k];
+    if(v == null) return;
+    if(typeof v === 'object'){ try{ parts.push(k+':'+JSON.stringify(v)); }catch(e){} }
+    else parts.push(k+':'+v);
+  });
+  return parts.join('|');
+}
+
 function getInd(key){
   const ind = state.indicators[key];
-  const ck = key + (ind.period||'') + (ind.fast||'') + (ind.slow||'') + (ind.tf||'') + '_' + state.tf + '_' + (ind.strictMode ? '1':'0') + '_' + (ind.strictEmaHa ? '1':'0') + '_' + (ind.invertSignal ? '1':'0');
+  const ck = key + '_' + state.tf + '_' + indFingerprint(ind);
   if(!state.cache[ck]){
     const d = state.data;
     if(key==='sma') state.cache[ck]=calc.sma(d,ind.period);
