@@ -41,11 +41,28 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // 1. VÉRIFICATION JETON X-LUMEN-TOKEN
+  // 1. VÉRIFICATION JETON X-LUMEN-TOKEN (FAIL-CLOSED)
+  // Si LUMEN_ACCESS_TOKEN n'est pas configuré, le service refuse TOUTE requête.
+  // Ne jamais laisser l'endpoint ouvert : il donne accès au passage d'ordres réels.
   const expectedToken = process.env.LUMEN_ACCESS_TOKEN ? String(process.env.LUMEN_ACCESS_TOKEN).trim().replace(/^['"]|['"]$/g, '') : null;
   const providedToken = (req.headers['x-lumen-token'] || req.headers['authorization'] || '').toString().trim().replace(/^['"]|['"]$/g, '');
 
-  if (expectedToken && providedToken !== expectedToken) {
+  if (!expectedToken) {
+    return res.status(500).json({
+      success: false,
+      error: 'Service verrouillé : la variable d\'environnement LUMEN_ACCESS_TOKEN n\'est pas configurée sur l\'hébergeur. Aucune requête n\'est acceptée tant qu\'elle n\'est pas définie.'
+    });
+  }
+
+  // Comparaison à temps constant pour éviter les attaques temporelles
+  const tokenMatch = (() => {
+    const a = Buffer.from(expectedToken, 'utf8');
+    const b = Buffer.from(providedToken, 'utf8');
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  })();
+
+  if (!tokenMatch) {
     return res.status(401).json({ success: false, error: 'Accès refusé : Jeton X-Lumen-Token invalide ou manquant.' });
   }
 
@@ -91,8 +108,17 @@ export default async function handler(req, res) {
     // Marge requise
     const margin = leverage > 0 ? notional / leverage : notional;
 
-    // Plafond maximal de sécurité sur la marge (maxUsdt / maxMargin, 500 USDT par défaut)
-    const MAX_MARGIN = parseFloat(params.maxUsdt || params.maxMargin || '500');
+    // Plafond maximal de sécurité sur la marge.
+    // Source de vérité = variable d'environnement serveur (500 USDT par défaut).
+    // Le client peut demander un plafond PLUS BAS, jamais plus haut.
+    const SERVER_MAX_MARGIN = (() => {
+      const v = parseFloat(process.env.MEXC_MAX_MARGIN || '500');
+      return Number.isFinite(v) && v > 0 ? v : 500;
+    })();
+    const clientRequested = parseFloat(params.maxUsdt || params.maxMargin || 'NaN');
+    const MAX_MARGIN = (Number.isFinite(clientRequested) && clientRequested > 0)
+      ? Math.min(clientRequested, SERVER_MAX_MARGIN)
+      : SERVER_MAX_MARGIN;
 
     const isOpeningOrder = (params.side === 1 || params.side === 3 || String(params.side) === '1' || String(params.side) === '3');
 
