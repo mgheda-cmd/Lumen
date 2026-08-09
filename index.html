@@ -3551,7 +3551,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -4484,6 +4484,47 @@ function getInd(key){
         if(q.length>10){ const r=Math.sqrt(acc/q.length); up[j]=kM*r; lo[j]=-kM*r; }
       }
 
+      // ---------- SOMMETS ET CREUX DU SCORE ----------
+      // Un sommet local marque la fin de l'accélération. C'est le premier
+      // avertissement d'essoufflement, bien avant le retour sous le seuil.
+      const L=+ind.pivotLen||3;
+      const peaks=[], troughs=[];
+      for(let j=L;j<net.length-L;j++){
+        const v=net[j]; if(v==null) continue;
+        let isP=true,isT=true;
+        for(let q=1;q<=L;q++){
+          const a=net[j-q], b=net[j+q];
+          if(a==null||b==null){ isP=isT=false; break; }
+          if(!(v>=a&&v>=b)) isP=false;
+          if(!(v<=a&&v<=b)) isT=false;
+        }
+        if(isP) peaks.push(j);
+        if(isT) troughs.push(j);
+      }
+
+      // ---------- DIVERGENCES PRIX / SCORE ----------
+      // Le prix fait un plus haut, le score un plus bas : l'élan s'épuise
+      // alors que le prix monte encore. Signal de sortie d'achat classique,
+      // et le plus lisible à l'œil sur un oscillateur.
+      const divs=[];
+      const minGap=+ind.divMinBars||5, maxGap=+ind.divMaxBars||60;
+      for(let a=1;a<peaks.length;a++){
+        const p1=peaks[a-1], p2=peaks[a];
+        if(p2-p1<minGap||p2-p1>maxGap) continue;
+        if(net[p1]<=0||net[p2]<=0) continue;                 // uniquement en zone haute
+        if(src[p2].h>src[p1].h && net[p2]<net[p1]){
+          divs.push({i1:p1,i2:p2,dir:1,t:src[p2].t,price:src[p2].c});
+        }
+      }
+      for(let a=1;a<troughs.length;a++){
+        const t1=troughs[a-1], t2=troughs[a];
+        if(t2-t1<minGap||t2-t1>maxGap) continue;
+        if(net[t1]>=0||net[t2]>=0) continue;
+        if(src[t2].l<src[t1].l && net[t2]>net[t1]){
+          divs.push({i1:t1,i2:t2,dir:-1,t:src[t2].t,price:src[t2].c});
+        }
+      }
+
       const exits=[]; let aU=0,aD=0,last=-999;
       for(let j=2;j<src.length;j++){
         const n=net[j],p=net[j-1],p2=net[j-2],u=up[j],l=lo[j],si=sg[j];
@@ -4498,11 +4539,23 @@ function getInd(key){
         }
       }
 
-      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits};
+      // Les divergences deviennent des sorties à part entière
+      divs.forEach(function(dv){
+        exits.push({i:dv.i2,t:dv.t,price:dv.price,
+                    type: dv.dir===1?'SORTIE_ACHAT':'SORTIE_VENTE', div:true});
+      });
+      exits.sort(function(a,b){return a.i-b.i;});
+
+      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs};
       else{
         const M=a=>mapHTF(src,a,d);
+        const R=x=>{const gi=idxOfTime(x.t!=null?x.t:(src[x]||{}).t); return gi;};
         state.cache[ck]={net:M(net),signal:M(sg),up:M(up),lo:M(lo),
-          exits:exits.map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean)};
+          exits:exits.map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean),
+          peaks:peaks.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
+          troughs:troughs.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
+          divs:divs.map(dv=>{const a=idxOfTime(src[dv.i1].t),b=idxOfTime(src[dv.i2].t);
+            return (a!=null&&b!=null)?Object.assign({},dv,{i1:a,i2:b}):null;}).filter(Boolean)};
       }
       return state.cache[ck];
     }
@@ -5513,6 +5566,33 @@ function render(){
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf, cw);
   // Couche supplémentaire : pastilles corrigées (mode strict). Les originales sont conservées.
   if(vis('strat_zz') && window.__zzShowCorrected && typeof window.drawZZCorrected === 'function') window.drawZZCorrected(s, e, yOf, cw);
+  // Divergences kk bis reportées sur le prix : c'est là que la sortie se joue.
+  if(vis('kk_bis') && S('kk_bis','showDivOnPrice') !== false){
+    try{
+      const kb = getInd('kk_bis');
+      if(kb && Array.isArray(kb.divs)){
+        for(const dv of kb.divs){
+          if(dv.i2 < s || dv.i2 > e) continue;
+          const x = xOf(dv.i2);
+          const isSell = (dv.dir === 1);
+          const py = isSell ? yOf(state.data[dv.i2].h) - 16 : yOf(state.data[dv.i2].l) + 16;
+          ctx.save();
+          ctx.fillStyle = isSell ? '#FF007A' : '#FFD700';
+          ctx.beginPath();
+          if(isSell){ ctx.moveTo(x, py + 9); ctx.lineTo(x + 7, py - 3); ctx.lineTo(x - 7, py - 3); }
+          else      { ctx.moveTo(x, py - 9); ctx.lineTo(x + 7, py + 3); ctx.lineTo(x - 7, py + 3); }
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.3; ctx.stroke();
+          ctx.fillStyle = isSell ? '#FF007A' : '#FFD700';
+          ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(isSell ? 'SORTIE ACHAT' : 'SORTIE VENTE', x, py + (isSell ? -8 : 20));
+          ctx.textAlign = 'left';
+          ctx.restore();
+        }
+      }
+    }catch(err){}
+  }
   // Pastilles de Backtest (Achat, Sortie Achat, Vente, Sortie Vente)
   if (window.activeBacktestSignals && window.activeBacktestSignals.length && state.showBacktestSignals !== false) {
     try{ drawBacktestSignals(window.activeBacktestSignals, s, e, yOf, cw); }catch(e){}
@@ -7533,6 +7613,49 @@ function drawKKBisSub(p, s, e, cw) {
   });
   ctx.setLineDash([]);
   ctx.restore();
+
+  // DIVERGENCES : trait plein entre les deux sommets du score, et le même
+  // trait reporté sur le prix. C'est le signal d'essoufflement le plus lisible.
+  if (S('kk_bis','showDiv') !== false && Array.isArray(res.divs)) {
+    for (const dv of res.divs) {
+      if (dv.i2 < s || dv.i1 > e) continue;
+      const c = dv.dir === 1 ? '#FF007A' : '#FFD700';
+      const y1 = yOf(isVolB ? res.net[dv.i1] : Math.max(-100, Math.min(100, res.net[dv.i1])));
+      const y2 = yOf(isVolB ? res.net[dv.i2] : Math.max(-100, Math.min(100, res.net[dv.i2])));
+      ctx.save();
+      ctx.strokeStyle = c; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(xOf(dv.i1), y1); ctx.lineTo(xOf(dv.i2), y2); ctx.stroke();
+      // pastille au point de sortie
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(xOf(dv.i2), y2, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.2; ctx.stroke();
+      // étiquette
+      ctx.fillStyle = c;
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(dv.dir === 1 ? 'DIV ▼' : 'DIV ▲', xOf(dv.i2), y2 + (dv.dir === 1 ? -8 : 15));
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
+  }
+
+  // Sommets et creux du score : premiers signes d'essoufflement
+  if (S('kk_bis','showPivots') !== false && Array.isArray(res.peaks)) {
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    const mk = (idx, isTop) => {
+      if (idx < s || idx > e || res.net[idx] == null) return;
+      const x = xOf(idx), y = yOf(isVolB ? res.net[idx] : Math.max(-100, Math.min(100, res.net[idx])));
+      ctx.fillStyle = isTop ? '#FF8A80' : '#25D0A4';
+      ctx.beginPath();
+      if (isTop) { ctx.moveTo(x, y - 7); ctx.lineTo(x + 4, y - 1); ctx.lineTo(x - 4, y - 1); }
+      else       { ctx.moveTo(x, y + 7); ctx.lineTo(x + 4, y + 1); ctx.lineTo(x - 4, y + 1); }
+      ctx.closePath(); ctx.fill();
+    };
+    res.peaks.forEach(i => mk(i, true));
+    (res.troughs || []).forEach(i => mk(i, false));
+    ctx.restore();
+  }
 
   // Sorties détectées
   if (S('kk_bis','showExits') !== false && Array.isArray(res.exits)) {
@@ -11244,6 +11367,12 @@ const SCHEMA={
     {k:'sigLen',t:'num',lab:'Signal — longueur',min:1,max:100,def:20,ind:1},
     {k:'postLen',t:'num',lab:'Post-lissage — longueur',min:1,max:50,def:1,ind:1},
     {k:'showExits',t:'bool',lab:'Marqueurs de sortie',def:true},
+    {k:'showDiv',t:'bool',lab:'Divergences prix / score',def:true},
+    {k:'showDivOnPrice',t:'bool',lab:'Reporter les divergences sur le prix',def:true},
+    {k:'showPivots',t:'bool',lab:'Sommets et creux du score',def:true},
+    {k:'pivotLen',t:'num',lab:'Largeur du sommet (bougies)',min:1,max:15,def:3,ind:1},
+    {k:'divMinBars',t:'num',lab:'Écart minimum entre sommets',min:2,max:50,def:5,ind:1},
+    {k:'divMaxBars',t:'num',lab:'Écart maximum entre sommets',min:10,max:300,def:60,ind:1},
     {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
     {k:'fillBg',t:'bool',lab:'Fond coloré',def:true},
     {k:'cGold',t:'col',lab:'Couleur haute',def:'#22D3EE'},
@@ -20982,6 +21111,34 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     await new Promise(r=>setTimeout(r,0));
     const kb2  = kkBisExits(d,2,{}),  kb3 = kkBisExits(d,3,{}),
           kb5  = kkBisExits(d,5,{}),  kb15 = kkBisExits(d,15,{});
+    // Sorties par divergence prix / score, mesurables comme les autres
+    const divExits = function(tf){
+      try{
+        const bars = (tf===1)?d:aggregateData(d,tf,1);
+        if(!bars||bars.length<60) return [];
+        const r = calc.twoIndicator(bars, Object.assign({}, (state.indicators&&state.indicators.two_ind)||{}, {tf:tf}));
+        const net = r&&r.net; if(!net) return [];
+        const L=3, pk=[], tr=[];
+        for(let j=L;j<net.length-L;j++){
+          const v=net[j]; if(v==null) continue;
+          let p=true,t=true;
+          for(let q=1;q<=L;q++){ const a=net[j-q],b=net[j+q];
+            if(a==null||b==null){p=t=false;break;}
+            if(!(v>=a&&v>=b))p=false; if(!(v<=a&&v<=b))t=false; }
+          if(p)pk.push(j); if(t)tr.push(j);
+        }
+        const out=[];
+        for(let a=1;a<pk.length;a++){ const p1=pk[a-1],p2=pk[a];
+          if(p2-p1<5||p2-p1>60||net[p1]<=0||net[p2]<=0) continue;
+          if(bars[p2].h>bars[p1].h && net[p2]<net[p1]) out.push({t:bars[p2].t,price:bars[p2].c,forDir:1}); }
+        for(let a=1;a<tr.length;a++){ const t1=tr[a-1],t2=tr[a];
+          if(t2-t1<5||t2-t1>60||net[t1]>=0||net[t2]>=0) continue;
+          if(bars[t2].l<bars[t1].l && net[t2]>net[t1]) out.push({t:bars[t2].t,price:bars[t2].c,forDir:-1}); }
+        return out.sort(function(x,y){return x.t-y.t;});
+      }catch(e){ return []; }
+    };
+    const dv3 = divExits(3), dv5 = divExits(5), dv15 = divExits(15);
+
     const kb3s = kkBisExits(d,3,{k:1.6, armBars:3, cool:5});   // variante plus sélective
     const kb3l = kkBisExits(d,3,{k:0.8, armBars:1, cool:1});   // variante plus réactive
 
@@ -21017,7 +21174,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       {n:'★ KK Bis 3m sélectif',  ex:kb3s, note:'k 1.6 · 3 bougies · garde 5'},
       {n:'★ KK Bis 3m réactif',   ex:kb3l, note:'k 0.8 · 1 bougie · garde 1'},
       {n:'★ KK Bis 3m + TP 300',  ex:kb3, tp:300, note:'seuil adaptatif + plafond'},
-      {n:'★ KK Bis 2m + 3m',      ex:merge(kb2,kb3), note:'premier arrivé'}
+      {n:'★ KK Bis 2m + 3m',      ex:merge(kb2,kb3), note:'premier arrivé'},
+      {n:'◆ Divergence 3m',       ex:dv3,  note:dv3.length+' divergences prix/score'},
+      {n:'◆ Divergence 5m',       ex:dv5,  note:dv5.length+' divergences prix/score'},
+      {n:'◆ Divergence 15m',      ex:dv15, note:dv15.length+' divergences prix/score'},
+      {n:'◆ Divergence 3m OU KK 3m', ex:merge(dv3,kk3), note:'premier arrivé'},
+      {n:'◆ Divergence 5m + TP 300', ex:dv5, tp:300, note:'divergence + plafond'}
     ];
 
     btn.textContent = '⏳ Stabilité 3 semaines…';
