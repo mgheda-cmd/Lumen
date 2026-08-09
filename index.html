@@ -19128,6 +19128,24 @@ if(modalTable){
 /* ===== Pastilles de la Stratégie Z.Z. sur le graphique ===== */
 function drawZZSignals(signals, s, e, yOf, cw) {
   if (!Array.isArray(signals) || !signals.length) return;
+
+  /* Filtre de position : un seul signal par changement de sens.
+     Tant qu'un achat est en cours, les achats suivants sont masqués ; il faut
+     une vente pour rouvrir dans l'autre sens. C'est le comportement du moteur
+     de backtest et de la protection serveur MEXC, qui refusent toute entrée
+     lorsqu'une position est déjà ouverte. Filtrage à l'affichage uniquement :
+     computeZZSignals et le backtest ne sont pas modifiés. */
+  {
+    let lastDir = 0;
+    signals = signals.filter(function(sg){
+      if (sg.isExit) return true;
+      if (sg.dir === lastDir) return false;
+      lastDir = sg.dir;
+      return true;
+    });
+    if (!signals.length) return;
+  }
+
   const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
   const ind = state.indicators && state.indicators.strat_zz;
   const showEntries = ind ? (ind.showEntries !== false) : true;
