@@ -3557,7 +3557,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:false,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -5612,6 +5612,34 @@ function render(){
   if(vis('kk_bis') && S('kk_bis','showDivOnPrice') !== false){
     try{
       const kb = getInd('kk_bis');
+
+      // Sorties par seuil : marqueur discret, elles sont bien plus nombreuses
+      // que les divergences et noieraient les pastilles Z.Z. si on les
+      // traitait de la même façon.
+      if(kb && Array.isArray(kb.exits) && S('kk_bis','showSeuilOnPrice') === true){
+        for(const ex of kb.exits){
+          if(ex.div) continue;                       // les divergences ont leur propre pastille
+          if(ex.i == null || ex.i < s || ex.i > e) continue;
+          const isSell = (ex.type === 'SORTIE_ACHAT');
+          const col = isSell ? '#FF007A' : '#FFD700';
+          const bar = state.data[ex.i]; if(!bar) continue;
+          const x = xOf(ex.i);
+          const y = isSell ? yOf(bar.h) - 9 : yOf(bar.l) + 9;
+          ctx.save();
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(x, y, 3.6, 0, Math.PI*2); ctx.fill();
+          ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1; ctx.stroke();
+          const px = bar.c;
+          ctx.fillStyle = col;
+          ctx.font = 'bold 8px "IBM Plex Mono",monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText((px >= 1000 ? px.toFixed(0) : px.toFixed(2)), x, y + (isSell ? -7 : 14));
+          ctx.textAlign = 'left';
+          ctx.restore();
+        }
+      }
+
       if(kb && Array.isArray(kb.divs)){
         for(const dv of kb.divs){
           if(dv.i2 < s || dv.i2 > e) continue;
@@ -11528,6 +11556,7 @@ const SCHEMA={
     {k:'showExits',t:'bool',lab:'Marqueurs de sortie',def:true},
     {k:'showDiv',t:'bool',lab:'Divergences prix / score',def:true},
     {k:'showDivOnPrice',t:'bool',lab:'Reporter les divergences sur le prix',def:true},
+    {k:'showSeuilOnPrice',t:'bool',lab:'Reporter aussi les sorties par seuil',def:false},
     {k:'showPivots',t:'bool',lab:'Sommets et creux du score',def:true},
     {k:'pivotLen',t:'num',lab:'Largeur du sommet (bougies)',min:1,max:15,def:3,ind:1},
     {k:'divMinBars',t:'num',lab:'Écart minimum entre sommets',min:2,max:50,def:5,ind:1},
@@ -21494,6 +21523,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       [DIAM('#F59E0B'), 'Losange ambre + ⏳', 'Signal provisoire : la bougie 15m qui le produit n\'a pas encore clôturé. Il peut disparaître.'],
       [CAPS('#FF007A','🔻 SORTIE ACHAT'), 'Pastille rose', 'Divergence détectée par kk bis : le prix fait un plus haut, le score un plus bas. L\'élan s\'épuise, c\'est le moment de fermer un achat. La pastille indique le prix de sortie.'],
       [CAPS('#FFD700','🔺 SORTIE VENTE'), 'Pastille or', 'Divergence inverse : le prix fait un plus bas, le score un plus haut. Moment de fermer une vente.'],
+      [CIRC('#FF007A',9)+' <span style="color:#FF007A;font-size:9px;font-weight:700">64985</span>', 'Petit rond + prix', 'Sortie par seuil de kk bis, bien plus fréquente que les divergences. Masquée par défaut : à activer dans les paramètres via « Reporter aussi les sorties par seuil ». Rose ferme un achat, or ferme une vente.'],
     ]},
     { titre:'Panneau kk (indicateur d\'origine)', items:[
       [CIRC('#FF007A'), 'Rond rose', 'Sortie d\'achat : le score repasse sous le niveau haut après l\'avoir dépassé.'],
