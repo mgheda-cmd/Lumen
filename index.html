@@ -19958,7 +19958,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     window.__zzCorrDiag.total = sigs.length;
     window.__zzCorrDiag.drawn = 0;
     window.__zzCorrDiag.err = null;
-    if(!sigs.length){ updateCorrBadge(); return; }
+    if(!sigs.length){ window.__zzCorrDiag.drawn = 0; updateCorrBadge(); return; }
     const d = state.data;
     const ind = (state.indicators && state.indicators.strat_zz) || {};
     if(ind.showEntries === false) return;
@@ -20035,7 +20035,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(!b || !window.__zzShowCorrected) return;
     const D = window.__zzCorrDiag;
     if(D.err){ b.textContent = '✅ CORRIGÉ : ERREUR'; b.title = 'Erreur : ' + D.err; return; }
-    b.textContent = '✅ CORRIGÉ : ' + D.drawn + '/' + D.nEntries;
+    b.textContent = '✅ ' + D.nEntries + ' strict / ' + D.nLoose + ' brut · ' + D.drawn + ' vus · ' + D.nCandles + ' bougies';
     b.title = 'Bougies chargées : ' + D.nCandles
             + '\nSignaux stricts (entrées) : ' + D.nEntries
             + '\nSignaux non stricts (entrées) sur les mêmes bougies : ' + D.nLoose
