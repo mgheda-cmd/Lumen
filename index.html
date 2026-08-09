@@ -20633,8 +20633,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     btn.textContent = '⏳ Calcul KK…';
     await new Promise(r=>setTimeout(r,0));
-    const kk1 = kkExits(d,1,upper,lower), kk3 = kkExits(d,3,upper,lower),
-          kk5 = kkExits(d,5,upper,lower), kk15 = kkExits(d,15,upper,lower);
+    const kk1 = kkExits(d,1,upper,lower), kk2 = kkExits(d,2,upper,lower),
+          kk3 = kkExits(d,3,upper,lower), kk5 = kkExits(d,5,upper,lower),
+          kk15 = kkExits(d,15,upper,lower);
     const merge = function(){
       const a=[].concat.apply([], arguments);
       return a.sort(function(x,y){return x.t-y.t;});
@@ -20648,7 +20649,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const VAR = [
       {n:'Référence — signal opposé', ex:null,                     note:'comportement actuel'},
       {n:'KK 1m',    ex:kk1,                                       note:kk1.length+' sorties'},
+      {n:'KK 2m',    ex:kk2,                                       note:kk2.length+' sorties'},
       {n:'KK 3m',    ex:kk3,                                       note:kk3.length+' sorties'},
+      {n:'KK 2m + 3m', ex:merge(kk2,kk3),                          note:'premier arrivé'},
       {n:'KK 5m',    ex:kk5,                                       note:kk5.length+' sorties'},
       {n:'KK 15m',   ex:kk15,                                      note:kk15.length+' sorties'},
       {n:'KK 5m + 15m', ex:merge(kk5,kk15),                        note:'premier arrivé'},
@@ -20665,7 +20668,24 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       {n:'MACD 15m + TP 300',       ex:msr15, tp:300,                      note:'plafond à +300 pts'}
     ];
 
-    const rows = VAR.map(function(v){ return {v, r: sim(entries, d, v.ex, lev, v.tp)}; });
+    btn.textContent = '⏳ Stabilité 3 semaines…';
+    await new Promise(r=>setTimeout(r,0));
+
+    // Découpage en trois semaines SÉPARÉES, non emboîtées
+    const t0 = entries[0].t, tN = entries[entries.length-1].t;
+    const cut = (tN - t0) / 3;
+    const bounds = [[t0, t0+cut], [t0+cut, t0+2*cut], [t0+2*cut, tN+1]];
+
+    const rows = VAR.map(function(v){
+      const r = sim(entries, d, v.ex, lev, v.tp);
+      const wk = bounds.map(function(b){
+        const sub = entries.filter(function(e){ return e.t >= b[0] && e.t < b[1]; });
+        if(sub.length < 5) return null;
+        return sim(sub, d, v.ex, lev, v.tp);
+      });
+      const stable = wk.every(function(x){ return x && isFinite(x.pf) && x.pf >= 1; });
+      return {v, r, wk, stable};
+    });
     btn.disabled=false; btn.textContent='▶ TESTER LES SORTIES';
 
     const ref = rows[0].r;
@@ -20676,7 +20696,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
           + ', filtre de position) · '+d.length+' bougies ('+days+' j) · levier '+lev+'x · part 10 % · frais 0,02 %/ordre<br>'
           + 'Niveaux KK : +'+upper+' / '+lower+'</div>'
           + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0F172A;color:#CBD5E1">'
-          + ['Sortie','Trades','WR','Gain moy.','Perte moy.','Ratio G/P','PF','PnL net','DD max','Durée moy.']
+          + ['Sortie','Trades','WR','Gain moy.','Perte moy.','Ratio G/P','PF','S1/S2/S3','PnL net','DD max','Durée moy.']
               .map(function(x){return '<th style="padding:7px 6px;text-align:left;white-space:nowrap">'+x+'</th>';}).join('')
           + '</tr></thead><tbody>';
 
@@ -20685,7 +20705,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const r=o.r, isRef = (i===0);
       const ratio = r.avgL ? r.avgW/r.avgL : 0;
       const better = !isRef && r.pf > ref.pf;
-      h += '<tr style="border-bottom:1px solid #1E293B;background:'+(isRef?'rgba(122,162,255,.10)':(better?'rgba(37,208,164,.07)':'transparent'))+'">'
+      const rowBg = isRef ? 'rgba(122,162,255,.10)'
+                  : (o.stable ? 'rgba(37,208,164,.16)' : (better ? 'rgba(37,208,164,.06)' : 'transparent'));
+      h += '<tr style="border-bottom:1px solid #1E293B;background:'+rowBg+'">'
         + '<td style="padding:7px 6px"><b style="color:'+(isRef?'#7AA2FF':(better?'#25D0A4':'#CBD5E1'))+'">'+o.v.n+'</b><br><span style="font-size:10px;color:#7E8CA8">'+o.v.note+'</span></td>'
         + '<td style="padding:7px 6px">'+r.n+'</td>'
         + '<td style="padding:7px 6px">'+f(r.wr,1)+' %</td>'
@@ -20693,6 +20715,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         + '<td style="padding:7px 6px;color:#FF8A80">'+f(r.avgL,3)+' $</td>'
         + '<td style="padding:7px 6px;color:'+(ratio>=1?'#25D0A4':'#F59E0B')+';font-weight:700">'+f(ratio,2)+'</td>'
         + '<td style="padding:7px 6px;color:'+(r.pf>=1.3?'#25D0A4':r.pf>=1?'#F59E0B':'#FF5252')+';font-weight:700">'+f(r.pf,2)+'</td>'
+        + '<td style="padding:7px 6px;font-size:11px">'
+        + o.wk.map(function(x){
+            if(!x) return '<span style="color:#475569">—</span>';
+            const c = (isFinite(x.pf) && x.pf>=1) ? '#25D0A4' : '#FF8A80';
+            return '<span style="color:'+c+'">'+f(x.pf,2)+'</span>';
+          }).join(' / ')
+        + (o.stable ? '<br><span style="color:#25D0A4;font-size:9px;font-weight:700">✓ STABLE</span>' : '')
+        + '</td>'
         + '<td style="padding:7px 6px;color:'+(r.net>=0?'#25D0A4':'#FF5252')+';font-weight:700">'+(r.net>=0?'+':'')+f(r.net,2)+' %</td>'
         + '<td style="padding:7px 6px;color:#FF8A80">'+f(r.maxDD,1)+' %</td>'
         + '<td style="padding:7px 6px">'+f(r.avgDur,0)+' min</td></tr>';
@@ -20701,7 +20731,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += '</tbody></table></div><div style="margin-top:11px;font-size:11px;color:#7E8CA8;line-height:1.7">'
       + 'La première ligne est la référence : sortie sur signal opposé. Les autres sont triées par profit factor.<br>'
       + '<b>Ratio G/P</b> est la colonne décisive : ton problème était une perte moyenne deux fois supérieure au gain moyen. Une sortie utile fait monter ce ratio sans effondrer le taux de réussite.<br>'
-      + 'Si aucune variante KK ne dépasse la référence, la sortie sur signal opposé reste la meilleure et il faut chercher ailleurs.</div>';
+      + '<b>S1/S2/S3</b> : profit factor sur trois semaines <b>séparées</b>. Une ligne marquée ✓ STABLE tient au-dessus de 1,0 sur les trois. C\'est le seul critère qui a résisté jusqu\'ici.<br>'
+      + 'Si aucune variante n\'est stable, le résultat global vient d\'une seule bonne période et ne se reproduira pas.</div>';
 
     box.innerHTML = h;
   }
