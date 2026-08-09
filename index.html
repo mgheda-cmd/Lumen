@@ -5633,10 +5633,12 @@ function render(){
           ctx.beginPath(); ctx.arc(x, y, 3.6, 0, Math.PI*2); ctx.fill();
           ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1; ctx.stroke();
           const px = bar.c;
+          const nSeuil = (typeof zzNumFor === 'function') ? zzNumFor(ex.i, isSell ? 1 : -1) : null;
           ctx.fillStyle = col;
           ctx.font = 'bold 8px "IBM Plex Mono",monospace';
           ctx.textAlign = 'center';
-          ctx.fillText((px >= 1000 ? px.toFixed(0) : px.toFixed(2)), x, y + (isSell ? -7 : 14));
+          ctx.fillText((nSeuil != null ? '#' + nSeuil + ' ' : '') + (px >= 1000 ? px.toFixed(0) : px.toFixed(2)),
+                       x, y + (isSell ? -7 : 14));
           ctx.textAlign = 'left';
           ctx.restore();
         }
@@ -5650,7 +5652,8 @@ function render(){
           const col = isSell ? '#FF007A' : '#FFD700';
           const anchorY = isSell ? yOf(state.data[dv.i2].h) - 10 : yOf(state.data[dv.i2].l) + 10;
           const prix = state.data[dv.i2].c;
-          const txt = (isSell ? '🔻 SORTIE ACHAT' : '🔺 SORTIE VENTE');
+          const numE = (typeof zzNumFor === 'function') ? zzNumFor(dv.i2, isSell ? 1 : -1) : null;
+          const txt = (isSell ? '🔻 SORTIE ACHAT' : '🔺 SORTIE VENTE') + (numE != null ? ' #' + numE : '');
           const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Divergence kk bis';
 
           ctx.save();
@@ -7675,6 +7678,37 @@ function drawTwoIndSub(p, s, e, cw) {
     `${curNetStr}  (Signal: ${curSigStr})`, valCol, '#000000');
 }
 
+/* Retrouve le numéro de la pastille Z.Z. qu'une sortie vient fermer :
+   la dernière entrée du sens correspondant, avant l'index de la sortie.
+   Une sortie d'achat ferme une pastille ACHAT, une sortie de vente ferme
+   une pastille VENTE. Le filtre de position est appliqué pour coller à ce
+   qui est réellement affiché. */
+let __zzEntKey = null, __zzEnt = [];
+function zzEntriesForExit(){
+  const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
+  if(!d.length) return [];
+  const key = d.length + '_' + d[d.length-1].t + '_' + state.tf;
+  if(key === __zzEntKey) return __zzEnt;
+  const base = (state.indicators && state.indicators.strat_zz) || {};
+  let sg = [];
+  try{ sg = (computeZZSignals(d, base) || []).filter(x => !x.isExit); }catch(e){ sg = []; }
+  let last = 0;
+  sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
+  __zzEnt = sg.map(function(x){
+    const i = (x.t != null && typeof idxOfTime === 'function' ? idxOfTime(x.t) : null);
+    return { i: (i != null ? i : x.i), dir: x.dir, num: x.num };
+  }).filter(function(x){ return x.i != null; });
+  __zzEntKey = key;
+  return __zzEnt;
+}
+function zzNumFor(idx, dir){
+  const arr = zzEntriesForExit();
+  for(let k = arr.length - 1; k >= 0; k--){
+    if(arr[k].i <= idx && arr[k].dir === dir && arr[k].num != null) return arr[k].num;
+  }
+  return null;
+}
+
 function drawKKBisSub(p, s, e, cw) {
   const res = getInd('kk_bis');
   if (!res || !res.net) return;
@@ -7814,7 +7848,9 @@ function drawKKBisSub(p, s, e, cw) {
       const cx = xOf(ex.i), cy = yOf(isVolB ? lvl : Math.max(-100, Math.min(100, lvl)));
       const col = isAchat ? '#FF007A' : '#FFD700';
       const motif = ex.div ? 'Divergence' : 'Seuil + pente';
-      const txt = (isAchat ? '▼ SORTIE ACHAT' : '▲ SORTIE VENTE') + ' · ' + motif;
+      const num = zzNumFor(ex.i, isAchat ? 1 : -1);
+      const txt = (isAchat ? '▼ SORTIE ACHAT' : '▲ SORTIE VENTE')
+                + (num != null ? ' #' + num : '') + ' · ' + motif;
 
       ctx.save();
       ctx.font = 'bold 9px "IBM Plex Mono",monospace';
