@@ -519,6 +519,16 @@ footer{
         <span class="srtf" data-tf="240">4H</span>
         <span class="state">on</span>
       </div>
+      <div class="ind-item" data-ind="kk_bis" id="item-kk_bis" style="background:var(--panel-2,#0F172A);border:1.5px solid #22D3EE;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(34,211,238,0.15)">
+        <span class="dot" style="background:#22D3EE;box-shadow:0 0 6px #22D3EE;flex:none"></span>
+        <span class="nm">kk bis <span class="sub">seuils adaptatifs · confirmation · délai de garde</span></span>
+        <span class="srtf mtf on" data-ind2="kk_bis" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="kk_bis" data-tf="2">2m</span>
+        <span class="srtf mtf" data-ind2="kk_bis" data-tf="3">3m</span>
+        <span class="srtf mtf" data-ind2="kk_bis" data-tf="5">5m</span>
+        <span class="srtf mtf" data-ind2="kk_bis" data-tf="15">15m</span>
+        <span class="state">off</span>
+      </div>
       <div class="ind-item on" data-ind="signal_exit_ob" id="item-signal_exit_ob" style="background:var(--panel-2,#0F172A);border:1.5px solid #C084FC;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(192,132,252,0.25)">
         <span class="dot" style="background:#C084FC;box-shadow:0 0 6px #C084FC;flex:none"></span>
         <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12px">Sortie Order Block <span style="background:#C084FC;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🎯 PASTILLE VIOLETTE ($100)</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Pastille violette de sortie dès que le prix touche ou s'approche d'un Order Block à $100 près</span></span>
@@ -3541,6 +3551,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
+    kk_bis:{on:false,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -3611,7 +3622,7 @@ function mergeConfig(c){
   if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
-    for(const k of ['rsi','macd','imp','stoch','atr','rosc','macdsr','rangeDet','rangeDet2','two_ind'])
+    for(const k of ['rsi','macd','imp','stoch','atr','rosc','macdsr','rangeDet','rangeDet2','two_ind','kk_bis'])
       if(typeof c.paneH[k]==='number'&&c.paneH[k]>=34&&c.paneH[k]<=800)
         state.paneH[k]=c.paneH[k];
   }
@@ -4455,6 +4466,46 @@ function getInd(key){
       }
       return state.cache[ckExitOb];
     }
+    if(key==='kk_bis'){
+      // Même score que le Pine, mais seuils adaptatifs et détection de sortie renforcée.
+      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
+      const src = mtf ? getMTFBars(mtf) : d;
+      if(!src||!src.length){ state.cache[ck]={net:[],signal:[],up:[],lo:[],exits:[]}; return state.cache[ck]; }
+      const base = calc.twoIndicator(src, ind);
+      const net = base.net||[], sg = base.signal||[];
+      const kM=+ind.kMult||1.2, win=+ind.rmsWin||100, arm=+ind.armBars||2, cool=+ind.cool||3;
+
+      // écart quadratique moyen glissant
+      const up=new Array(net.length).fill(null), lo=new Array(net.length).fill(null);
+      const q=[]; let acc=0;
+      for(let j=0;j<net.length;j++){
+        const v=net[j];
+        if(v!=null){ q.push(v*v); acc+=v*v; if(q.length>win){acc-=q.shift();} }
+        if(q.length>10){ const r=Math.sqrt(acc/q.length); up[j]=kM*r; lo[j]=-kM*r; }
+      }
+
+      const exits=[]; let aU=0,aD=0,last=-999;
+      for(let j=2;j<src.length;j++){
+        const n=net[j],p=net[j-1],p2=net[j-2],u=up[j],l=lo[j],si=sg[j];
+        if(n==null||p==null||p2==null||u==null) continue;
+        if(n>=u) aU++; if(n<=l) aD++;
+        if(j-last<cool) continue;
+        if(aU>=arm && n<u && n<p && p<=p2 && (si==null||n<si)){
+          exits.push({i:j,t:src[j].t,price:src[j].c,type:'SORTIE_ACHAT'}); last=j; aU=0;
+        }
+        if(aD>=arm && n>l && n>p && p>=p2 && (si==null||n>si)){
+          exits.push({i:j,t:src[j].t,price:src[j].c,type:'SORTIE_VENTE'}); last=j; aD=0;
+        }
+      }
+
+      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits};
+      else{
+        const M=a=>mapHTF(src,a,d);
+        state.cache[ck]={net:M(net),signal:M(sg),up:M(up),lo:M(lo),
+          exits:exits.map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean)};
+      }
+      return state.cache[ck];
+    }
     if(key==='two_ind'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       if(!mtf){
@@ -4686,6 +4737,7 @@ function computePanes(){
   if(vis('macdsr2')) subs.push('macdsr2');
   if(vis('rangeDet') && S('rangeDet','showSubpane')!==false) subs.push('rangeDet');
   if(vis('two_ind') && state.indicators.two_ind.showOscillator!==false) subs.push('two_ind');
+  if(vis('kk_bis') && state.indicators.kk_bis.showOscillator!==false) subs.push('kk_bis');
   // appliquer l'ordre personnalisé (les clés connues d'abord, dans l'ordre choisi)
   if(state.subOrder&&state.subOrder.length){
     const known=state.subOrder.filter(k=>subs.includes(k));
@@ -5039,7 +5091,7 @@ function render(){
     ctx.beginPath();ctx.rect(0,p.y,W,p.h);ctx.clip();
     if(p.key==='price') drawPrice(p,s,e,cw,mainBadgeStack);
     else {
-      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub};
+      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:drawKKBisSub};
       let members=(p.members||[p.key]).slice();
       // membre au premier plan -> dessiné en dernier (au-dessus)
       const front=state.subFront&&state.subFront[p.key];
@@ -7407,6 +7459,81 @@ function drawTwoIndSub(p, s, e, cw) {
   const tfTag = ({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H','1440':'1J'}[activeTf] || (activeTf + 'm'));
 
   subLabel(p, 'kk · ' + tfTag, `${curNetStr}  (Signal: ${curSigStr})`, valCol, '#000000');
+}
+
+function drawKKBisSub(p, s, e, cw) {
+  const res = getInd('kk_bis');
+  if (!res || !res.net) return;
+
+  const yOf = subYOf(p, 'kk_bis', -100, 100, true);
+  const cGold = S('kk_bis','cGold') || '#22D3EE';
+  const cPurp = S('kk_bis','cPurp') || '#F472B6';
+  const cSig  = S('kk_bis','cSig')  || '#FFFFFF';
+  const last  = state.data.length - 1;
+  // Repli sur les derniers seuils connus pour tracer les lignes fixes de fond
+  let uL = 64, lL = -64;
+  for (let i = Math.min(last, e - 1); i >= 0; i--) { if (res.up[i] != null) { uL = res.up[i]; lL = res.lo[i]; break; } }
+
+  ctx.save();
+  TwoIndicator.drawOscillator(ctx, {
+    net: res.net, signal: res.signal, s: s, e: e, xOf: xOf, yOf: yOf,
+    left: 0, right: W - AXIS_W, top: p.y, height: p.h,
+    upper: uL, lower: lL,
+    fillBg: S('kk_bis','fillBg') !== false,
+    fillAlpha: S('kk_bis','fillAlpha'),
+    showZero: S('kk_bis','showZero') !== false,
+    colors: { cGold: cGold, cPurp: cPurp, cSig: cSig,
+              cScoreUp: S('kk_bis','cScoreUp') || '#00FF00',
+              cScoreDn: S('kk_bis','cScoreDn') || '#FF0000' }
+  });
+  ctx.restore();
+
+  // Seuils ADAPTATIFS : deux courbes qui respirent avec le marché,
+  // là où l'indicateur d'origine trace deux droites fixes.
+  ctx.save();
+  ctx.setLineDash([4, 3]); ctx.lineWidth = 1.4;
+  [['up', cGold], ['lo', cPurp]].forEach(function (pair) {
+    const arr = res[pair[0]];
+    ctx.strokeStyle = pair[1]; ctx.beginPath();
+    let started = false;
+    for (let i = Math.max(0, s - 1); i < e; i++) {
+      if (arr[i] == null) { started = false; continue; }
+      const x = xOf(i), y = yOf(Math.max(-100, Math.min(100, arr[i])));
+      started ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), started = true);
+    }
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // Sorties détectées
+  if (S('kk_bis','showExits') !== false && Array.isArray(res.exits)) {
+    for (const ex of res.exits) {
+      if (ex.i == null || ex.i < s || ex.i > e) continue;
+      const isAchat = ex.type === 'SORTIE_ACHAT';
+      const lvl = isAchat ? (res.up[ex.i] != null ? res.up[ex.i] : uL)
+                          : (res.lo[ex.i] != null ? res.lo[ex.i] : lL);
+      const cx = xOf(ex.i), cy = yOf(Math.max(-100, Math.min(100, lvl)));
+      ctx.save();
+      ctx.fillStyle = isAchat ? '#FF007A' : '#FFD700';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 6); ctx.lineTo(cx + 6, cy);
+      ctx.lineTo(cx, cy + 6); ctx.lineTo(cx - 6, cy);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  const hi = hoverIndex() ?? (state.data.length - 1);
+  const nv = (res.net && res.net[hi] != null) ? res.net[hi] : null;
+  const uv = (res.up && res.up[hi] != null) ? res.up[hi] : null;
+  const tf = state.indicators.kk_bis?.tf;
+  const aTf = (!tf || tf === 'chart') ? state.tf : tf;
+  const tag = ({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H','1440':'1J'}[aTf] || (aTf + 'm'));
+  subLabel(p, 'kk bis · ' + tag + ' · seuils adaptatifs',
+    (nv != null ? nv.toFixed(1) : '—') + (uv != null ? '  (seuil ±' + uv.toFixed(1) + ')' : ''),
+    nv != null ? (nv >= 0 ? cGold : cPurp) : '#94A3B8', '#000000');
 }
 
 /* ----- axe temps ----- */
@@ -11077,6 +11204,23 @@ const SCHEMA={
   exhaustion_pro:{title:'Détecteur d\'Épuisement Optimisé (Smart Flow)',fields:[
     {k:'period',t:'num',lab:'Période d\'analyse (ATR/RSI)',min:5,max:50,ind:1},
     {k:'filterBySignal',t:'bool',lab:'Filtrer selon dernier signal (Achat ➔ Vente seule, Vente ➔ Achat seul)',ind:1,def:false},
+  ]},
+  kk_bis:{title:'kk bis — seuils adaptatifs',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'kMult',t:'num',lab:'Seuil = k × écart quadratique',min:0.2,max:4,def:1.2,ind:1},
+    {k:'rmsWin',t:'num',lab:'Fenêtre de l\'écart quadratique',min:20,max:500,def:100,ind:1},
+    {k:'armBars',t:'num',lab:'Bougies de confirmation',min:1,max:10,def:2,ind:1},
+    {k:'cool',t:'num',lab:'Délai de garde (bougies)',min:0,max:30,def:3,ind:1},
+    {k:'spacing',t:'num',lab:'Dispersion cluster',min:1,max:20,def:3,ind:1},
+    {k:'phase',t:'num',lab:'Phase PhiSmoother',min:0,max:10,def:3.7,ind:1},
+    {k:'sigLen',t:'num',lab:'Signal — longueur',min:1,max:100,def:20,ind:1},
+    {k:'postLen',t:'num',lab:'Post-lissage — longueur',min:1,max:50,def:1,ind:1},
+    {k:'showExits',t:'bool',lab:'Marqueurs de sortie',def:true},
+    {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
+    {k:'fillBg',t:'bool',lab:'Fond coloré',def:true},
+    {k:'cGold',t:'col',lab:'Couleur haute',def:'#22D3EE'},
+    {k:'cPurp',t:'col',lab:'Couleur basse',def:'#F472B6'},
+    {k:'cSig',t:'col',lab:'Couleur signal',def:'#FFFFFF'},
   ]},
   two_ind:{title:'kk',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
