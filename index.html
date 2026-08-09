@@ -16014,16 +16014,22 @@ async function runZZBacktest(skipFetch){
     const finT = d[d.length - 1].t, JOUR = 86400000;
     const debT = d[0].t;
 
-    let stabRows = '', nbOk = 0, nbTest = 0, failedPeriod = false;
+    let stabRows = '', nbOk = 0, nbTest = 0, failedPeriod = false, nbInsuff = 0;
+    const periodsTested = [];
     for (const nj of [7, 14, 30]) {
       const dep = finT - nj * JOUR;
       const dispo = (finT - Math.max(debT, dep)) / JOUR;
       if (dispo < nj * 0.8) {
-        stabRows += '<div style="flex:1;min-width:100px;border:1px solid var(--line);border-radius:6px;padding:4px;background:var(--panel-2,#0F172A)">'
-          + '<div style="font-size:10px;font-weight:800;color:var(--muted)">' + nj + 'j</div>'
-          + '<div style="font-size:9px;color:var(--muted)">hist. insuff.</div></div>';
+        // Période non testable faute d'historique. Elle n'est pas comptée comme
+        // validée : le verdict affiché ne doit mentionner que les périodes
+        // réellement mesurées.
+        nbInsuff++;
+        stabRows += '<div style="flex:1;min-width:100px;border:1px solid #F59E0B;border-radius:6px;padding:4px;background:var(--panel-2,#0F172A)">'
+          + '<div style="font-size:10px;font-weight:800;color:#F59E0B">' + nj + 'j</div>'
+          + '<div style="font-size:9px;color:#F59E0B">non testé — historique trop court</div></div>';
         continue;
       }
+      periodsTested.push(nj);
       const sous = dTF_cfg.filter(x => x.t >= dep);
       if (sous.length < 20) continue;
       const sMap = {};
@@ -16053,8 +16059,13 @@ async function runZZBacktest(skipFetch){
     }
 
     const isStable = (nbTest > 0 && !failedPeriod && nbOk === nbTest);
-    const bColor = isStable ? '#22C55E' : '#EF4444';
-    const verdictTxt = isStable ? '✓ PF ≥ 1.0 sur 7, 14, 30 jours' : '✗ Écartée : PF < 1.0 sur une sous-période';
+    const bColor = isStable ? (nbInsuff > 0 ? '#F59E0B' : '#22C55E') : '#EF4444';
+    const testedTxt = periodsTested.join(', ') + ' jour' + (periodsTested.length > 1 ? 's' : '');
+    const verdictTxt = isStable
+      ? (nbInsuff > 0
+          ? '⚠ PF ≥ 1.0 sur ' + testedTxt + ' seulement (historique trop court pour le reste)'
+          : '✓ PF ≥ 1.0 sur 7, 14 et 30 jours')
+      : '✗ Écartée : PF < 1.0 sur une sous-période';
     const html = '<div style="margin-top:6px;border:1px solid ' + bColor + ';border-radius:6px;padding:5px;background:rgba(15,23,42,0.8)">'
       + '<div style="font-weight:800;color:' + bColor + ';font-size:10px;display:flex;justify-content:space-between"><span>📊 Stabilité 7 / 14 / 30j</span><span>' + verdictTxt + '</span></div>'
       + '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">' + stabRows + '</div></div>';
