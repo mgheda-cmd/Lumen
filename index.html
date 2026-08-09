@@ -7737,7 +7737,8 @@ function drawKKBisSub(p, s, e, cw) {
     ctx.restore();
   }
 
-  // Sorties détectées
+  // Sorties détectées : pastilles nommées plutôt que losanges muets.
+  // Le texte indique ce qui a déclenché la sortie, comme les pastilles Z.Z.
   if (S('kk_bis','showExits') !== false && Array.isArray(res.exits)) {
     for (const ex of res.exits) {
       if (ex.i == null || ex.i < s || ex.i > e) continue;
@@ -7745,14 +7746,44 @@ function drawKKBisSub(p, s, e, cw) {
       const lvl = isAchat ? (res.up[ex.i] != null ? res.up[ex.i] : uL)
                           : (res.lo[ex.i] != null ? res.lo[ex.i] : lL);
       const cx = xOf(ex.i), cy = yOf(isVolB ? lvl : Math.max(-100, Math.min(100, lvl)));
+      const col = isAchat ? '#FF007A' : '#FFD700';
+      const motif = ex.div ? 'Divergence' : 'Seuil + pente';
+      const txt = (isAchat ? '▼ SORTIE ACHAT' : '▲ SORTIE VENTE') + ' · ' + motif;
+
       ctx.save();
-      ctx.fillStyle = isAchat ? '#FF007A' : '#FFD700';
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      const bw = ctx.measureText(txt).width + 12, bh = 15;
+      // la pastille se place au-dessus pour une sortie d'achat, en dessous sinon
+      const by = isAchat ? (cy - bh - 9) : (cy + 9);
+      const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, cx - bw / 2));
+
+      // tige de rattachement
+      ctx.strokeStyle = col; ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(cx, cy - 6); ctx.lineTo(cx + 6, cy);
-      ctx.lineTo(cx, cy + 6); ctx.lineTo(cx - 6, cy);
-      ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.moveTo(cx, cy); ctx.lineTo(cx, isAchat ? by + bh : by);
+      ctx.stroke();
+
+      // point d'ancrage
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1; ctx.stroke();
+
+      // pastille
+      ctx.fillStyle = 'rgba(8,12,22,.92)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      if (typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+      else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = col;
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, bx + bw / 2, by + 11);
+      ctx.textAlign = 'left';
       ctx.restore();
+
+      if (typeof labelHits !== 'undefined' && labelHits) {
+        try { labelHits.push({ x: bx, y: by, w: bw, h: bh, key: 'kk_bis' }); } catch (err) {}
+      }
     }
   }
 
@@ -21444,8 +21475,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       [TRI_DN('#25D0A4',6), 'Petit triangle vert', 'Creux local du score.'],
       [LINE('#FF007A'), 'Trait plein + DIV ▼', 'Divergence baissière : relie les deux sommets concernés. Sortie d\'achat.'],
       [LINE('#FFD700'), 'Trait plein + DIV ▲', 'Divergence haussière : relie les deux creux. Sortie de vente.'],
-      [DIAM('#FF007A'), 'Losange rose', 'Sortie d\'achat confirmée : seuil franchi, retournement de pente et passage sous la ligne de signal.'],
-      [DIAM('#FFD700'), 'Losange or', 'Sortie de vente confirmée.'],
+      [CAPS('#FF007A','▼ SORTIE ACHAT'), 'Pastille rose', 'Sortie d\'achat. Le texte donne le motif : « Seuil + pente » quand le score franchit son seuil en se retournant, « Divergence » quand le prix monte encore alors que le score baisse.'],
+      [CAPS('#FFD700','▲ SORTIE VENTE'), 'Pastille or', 'Sortie de vente, avec le même motif indiqué.'],
     ]},
     { titre:'Zones et niveaux', items:[
       ['<span style="display:inline-block;width:26px;height:13px;background:rgba(255,82,82,.28);border:1px solid #FF5252"></span>', 'Rectangle rouge pâle', 'Résistance ou Order Block vendeur.'],
