@@ -7392,11 +7392,30 @@ function drawRangeDet2Sub(p,s,e,cw){
   subLabel(p,`Range Squeeze & ADX · ${stateTxt}`,`ADX: ${val}`,labelCol);
 }
 
+/* En mode Volatilité, le Pine multiplie le score par ribbon_width/avg(max,min),
+   un rapport de l'ordre de 0,003 sur du BTC. Les valeurs tombent alors bien en
+   dessous de l'unité et deviennent invisibles sur une échelle fixe -100/+100.
+   Le Pine résout cela en passant ses hlines à `na` : l'échelle devient
+   automatique. On reproduit ce comportement. */
+function volAutoRange(res, s, e){
+  let lo = Infinity, hi = -Infinity;
+  for(let i = Math.max(0, s - 1); i < e; i++){
+    for(const v of [res.net ? res.net[i] : null, res.signal ? res.signal[i] : null]){
+      if(v != null && isFinite(v)){ if(v < lo) lo = v; if(v > hi) hi = v; }
+    }
+  }
+  if(!isFinite(lo) || !isFinite(hi) || lo === hi){ return {lo: -1, hi: 1}; }
+  const pad = (hi - lo) * 0.12 || 0.1;
+  return {lo: lo - pad, hi: hi + pad};
+}
+
 function drawTwoIndSub(p, s, e, cw) {
   const res = getInd('two_ind');
   if (!res || !res.net) return;
 
-  const yOf = subYOf(p, 'two_ind', -100, 100, true);
+  const isVol = (S('two_ind','mode') === 'Volatility');
+  const rg = isVol ? volAutoRange(res, s, e) : {lo: -100, hi: 100};
+  const yOf = subYOf(p, 'two_ind', rg.lo, rg.hi, true);
   const cGold = S('two_ind','cGold') || S('two_ind','cUp') || '#FFCC00';
   const cPurp = S('two_ind','cPurp') || S('two_ind','cDown') || '#5500CC';
   const cSig = S('two_ind','cSig') || '#9598A1';
@@ -7418,7 +7437,8 @@ function drawTwoIndSub(p, s, e, cw) {
     height: p.h,
     upper: upper,
     lower: lower,
-    fillBg: fillBg, fillAlpha: (typeof S==='function' ? S('two_ind','fillAlpha') : 85),
+    autoScale: isVol,
+    fillBg: fillBg && !isVol, fillAlpha: (typeof S==='function' ? S('two_ind','fillAlpha') : 85),
     showZero: S('two_ind','showZero') !== false,
     colors: { cGold: cGold, cPurp: cPurp, cSig: cSig, up: cGold, down: cPurp, signal: cSig }
   });
@@ -7451,21 +7471,25 @@ function drawTwoIndSub(p, s, e, cw) {
 
   const hoverI = hoverIndex() ?? (state.data.length - 1);
   const curNetVal = (res.net && res.net[hoverI] != null) ? res.net[hoverI] : null;
-  const curNetStr = curNetVal != null ? curNetVal.toFixed(1) : '—';
-  const curSigStr = (res.signal && res.signal[hoverI] != null) ? res.signal[hoverI].toFixed(1) : '—';
+  const dec = isVol ? 3 : 1;
+  const curNetStr = curNetVal != null ? curNetVal.toFixed(dec) : '—';
+  const curSigStr = (res.signal && res.signal[hoverI] != null) ? res.signal[hoverI].toFixed(dec) : '—';
   const valCol = curNetVal != null ? (curNetVal >= 0 ? cGold : cPurp) : '#94A3B8';
   const tf = state.indicators.two_ind?.tf;
   const activeTf = (!tf || tf === 'chart') ? state.tf : tf;
   const tfTag = ({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H','1440':'1J'}[activeTf] || (activeTf + 'm'));
 
-  subLabel(p, 'kk · ' + tfTag, `${curNetStr}  (Signal: ${curSigStr})`, valCol, '#000000');
+  subLabel(p, 'kk · ' + tfTag + (isVol ? ' · Volatilité (échelle auto)' : ''),
+    `${curNetStr}  (Signal: ${curSigStr})`, valCol, '#000000');
 }
 
 function drawKKBisSub(p, s, e, cw) {
   const res = getInd('kk_bis');
   if (!res || !res.net) return;
 
-  const yOf = subYOf(p, 'kk_bis', -100, 100, true);
+  const isVolB = (S('kk_bis','mode') === 'Volatility');
+  const rgB = isVolB ? volAutoRange(res, s, e) : {lo: -100, hi: 100};
+  const yOf = subYOf(p, 'kk_bis', rgB.lo, rgB.hi, true);
   const cGold = S('kk_bis','cGold') || '#22D3EE';
   const cPurp = S('kk_bis','cPurp') || '#F472B6';
   const cSig  = S('kk_bis','cSig')  || '#FFFFFF';
@@ -7479,7 +7503,8 @@ function drawKKBisSub(p, s, e, cw) {
     net: res.net, signal: res.signal, s: s, e: e, xOf: xOf, yOf: yOf,
     left: 0, right: W - AXIS_W, top: p.y, height: p.h,
     upper: uL, lower: lL,
-    fillBg: S('kk_bis','fillBg') !== false,
+    autoScale: isVolB,
+    fillBg: S('kk_bis','fillBg') !== false && !isVolB,
     fillAlpha: S('kk_bis','fillAlpha'),
     showZero: S('kk_bis','showZero') !== false,
     colors: { cGold: cGold, cPurp: cPurp, cSig: cSig,
@@ -7498,7 +7523,7 @@ function drawKKBisSub(p, s, e, cw) {
     let started = false;
     for (let i = Math.max(0, s - 1); i < e; i++) {
       if (arr[i] == null) { started = false; continue; }
-      const x = xOf(i), y = yOf(Math.max(-100, Math.min(100, arr[i])));
+      const x = xOf(i), y = yOf(isVolB ? arr[i] : Math.max(-100, Math.min(100, arr[i])));
       started ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), started = true);
     }
     ctx.stroke();
@@ -7513,7 +7538,7 @@ function drawKKBisSub(p, s, e, cw) {
       const isAchat = ex.type === 'SORTIE_ACHAT';
       const lvl = isAchat ? (res.up[ex.i] != null ? res.up[ex.i] : uL)
                           : (res.lo[ex.i] != null ? res.lo[ex.i] : lL);
-      const cx = xOf(ex.i), cy = yOf(Math.max(-100, Math.min(100, lvl)));
+      const cx = xOf(ex.i), cy = yOf(isVolB ? lvl : Math.max(-100, Math.min(100, lvl)));
       ctx.save();
       ctx.fillStyle = isAchat ? '#FF007A' : '#FFD700';
       ctx.beginPath();
