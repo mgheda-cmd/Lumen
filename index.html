@@ -3634,6 +3634,12 @@ function saveConfig(){
   saveConfigLocal();
   syncPush();
 }
+/* Copie des réglages d'usine, prise avant toute lecture du stockage local.
+   Sans elle, "Réinitialiser" n'avait aucune référence vers laquelle revenir :
+   il ne supprimait que state.style (les couleurs) et laissait intacts les
+   paramètres de calcul de state.indicators. */
+const FACTORY_INDICATORS = JSON.parse(JSON.stringify(state.indicators));
+
 function loadConfig(){
   try{mergeConfig(JSON.parse(localStorage.getItem(CFG_KEY)||'null'));}catch(e){}
 }
@@ -11205,8 +11211,26 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
 });
 document.getElementById('cfg-reset').addEventListener('click',()=>{
   if(!cfgInd)return;
+  // Couleurs
   delete state.style[cfgInd];
-  state.cache={}; saveConfig(); openCfg(cfgInd); render();
+  // Paramètres de calcul : retour aux valeurs d'usine, en conservant
+  // l'état d'activation et la sélection d'unités de temps de l'utilisateur.
+  const factory = FACTORY_INDICATORS[cfgInd];
+  if(factory){
+    const cur = state.indicators[cfgInd] || {};
+    const keepOn  = cur.on;
+    const keepTf  = cur.tf;
+    const keepTfs = cur.tfs;
+    const fresh = JSON.parse(JSON.stringify(factory));
+    if(keepOn  !== undefined) fresh.on  = keepOn;
+    if(keepTf  !== undefined) fresh.tf  = keepTf;
+    if(keepTfs !== undefined) fresh.tfs = keepTfs;
+    state.indicators[cfgInd] = fresh;
+  }
+  state.cache={}; saveConfig(); openCfg(cfgInd);
+  if(typeof applyConfigToUI==='function') applyConfigToUI();
+  render();
+  if(typeof toast==='function') toast('⟲ Réglages de « '+cfgInd+' » remis à zéro', '#00E5FF');
 });
 /* icône ⚙ sur les indicateurs paramétrables */
 menu.querySelectorAll('.ind-item').forEach(item=>{
