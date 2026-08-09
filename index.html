@@ -15486,6 +15486,10 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
   const isStrict = (strictMode !== undefined) ? !!strictMode : !!(ind.strictMode);
   const isStrictEmaHa = (strictEmaHa !== undefined) ? !!strictEmaHa : !!(ind.strictEmaHa);
   const invertSignal = (ind && ind.invertSignal !== undefined) ? !!ind.invertSignal : (state && state.indicators && state.indicators.strat_zz && state.indicators.strat_zz.invertSignal !== undefined ? !!state.indicators.strat_zz.invertSignal : true);
+  /* cloudTrigger : le signal se déclenche sur le croisement du Nuage EMA
+     (calculé sur les bougies de base, jamais décalé), les trois autres
+     conditions servant d'autorisation. Supprime l'attente de clôture HTF. */
+  const cloudTrigger = !!(ind && ind.cloudTrigger);
   const emaPeriod = ind.emaPeriod || 9;
   const haTf = ind.haTf || 5;
   const haPeriod = ind.haPeriod || 10;
@@ -15624,10 +15628,12 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
     if(isBuyMet) buy4CondCount++;
     if(isSellMet) sell4CondCount++;
 
-    const isSellMetPrev = condSellEmaHa[i-1] && condSellCloud[i-1] && condSellRosc[i-1] && condSellImp[i-1];
+    const isSellMetPrev = cloudTrigger ? condSellCloud[i-1]
+                        : (condSellEmaHa[i-1] && condSellCloud[i-1] && condSellRosc[i-1] && condSellImp[i-1]);
     const isSellTransition = isSellMet && !isSellMetPrev;
 
-    const isBuyMetPrev = condBuyEmaHa[i-1] && condBuyCloud[i-1] && condBuyRosc[i-1] && condBuyImp[i-1];
+    const isBuyMetPrev = cloudTrigger ? condBuyCloud[i-1]
+                       : (condBuyEmaHa[i-1] && condBuyCloud[i-1] && condBuyRosc[i-1] && condBuyImp[i-1]);
     const isBuyTransition = isBuyMet && !isBuyMetPrev;
 
     if(isBuyTransition) buyTransitionsCount++;
@@ -20226,6 +20232,185 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       b.textContent = '🔍 ÉCARTS';
       b.onclick = window.openZZEcarts;
       anchor.parentNode.insertBefore(b, anchor.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
+
+/* ================================================================
+   COMPARATEUR DES TROIS PISTES DE CORRECTION DU DÉCALAGE
+     A. Actuel corrigé      — strict, Impulse 15m, transition 4/4
+     B. Impulse 5m          — strict, Impulse 5m, transition 4/4
+     C. Nuage déclencheur   — strict, Impulse 15m, déclenchement sur
+                              le croisement du Nuage EMA (1m, jamais
+                              décalé), les 3 autres en autorisation
+   Pour chacune : alignement des pastilles et meilleure performance
+   trouvée, avec les mêmes filtres stricts que le BT Simple.
+   ================================================================ */
+(function(){
+
+  const TPS  = [{id:'tp200',l:'TP +200',tp:200},{id:'tp300',l:'TP +300',tp:300},
+                {id:'tp400',l:'TP +400',tp:400},{id:'tp500',l:'TP +500',tp:500},
+                {id:'past', l:'Pastille',tp:0}];
+  const SLS  = [0,100,200];
+  const LEVS = [1,5,20];
+  const TFS  = [1,5,15];
+  const RISK = 10, FEE = 0.0002, CAP = 100;
+
+  const VARIANTS = [
+    {k:'A', nom:'A · Actuel corrigé',    cfg:{},                        desc:'Impulse 15m, transition sur les 4 conditions'},
+    {k:'B', nom:'B · Impulse 5m',        cfg:{impTf:5},                 desc:'Impulse ramené en 5m'},
+    {k:'C', nom:'C · Nuage déclencheur', cfg:{cloudTrigger:true},       desc:'Entrée sur le Nuage EMA, les autres en filtre'}
+  ];
+
+  function align(d, base, extra){
+    const cfgL = Object.assign({}, base, extra, {strictMode:false, strictEmaHa:false});
+    const cfgS = Object.assign({}, base, extra, {strictMode:true,  strictEmaHa:false});
+    const L = (computeZZSignals(d, cfgL, false, false)||[]).filter(x=>!x.isExit);
+    const S = (computeZZSignals(d, cfgS, true,  false)||[]).filter(x=>!x.isExit);
+    const used = new Set();
+    let nAl=0, nDec=0, nPh=0, sumMin=0, sumPx=0, maxMin=0, cost=0;
+    L.forEach(function(l){
+      let b=-1, bd=1e9;
+      S.forEach(function(sg,k){
+        if(used.has(k) || sg.dir!==l.dir) return;
+        const dd=Math.abs(sg.i-l.i);
+        if(dd<bd && dd<=60){bd=dd;b=k;}
+      });
+      if(b<0){ nPh++; return; }
+      used.add(b);
+      const sg=S[b], dm=Math.round((sg.t-l.t)/60000);
+      if(dm===0){ nAl++; }
+      else {
+        nDec++; sumMin+=Math.abs(dm); sumPx+=Math.abs(sg.price-l.price);
+        if(Math.abs(dm)>maxMin) maxMin=Math.abs(dm);
+        cost += (sg.price - l.price) * l.dir * -1;
+      }
+    });
+    return { nL:L.length, nS:S.length, nAl, nDec, nPh,
+             avgMin: nDec?sumMin/nDec:0, avgPx: nDec?sumPx/nDec:0, maxMin,
+             cost, pctAl: L.length? nAl/L.length*100 : 0 };
+  }
+
+  async function run(){
+    const btn = document.getElementById('cmp3-run');
+    const box = document.getElementById('cmp3-res');
+    btn.disabled = true; btn.textContent = '⏳ Chargement…';
+    box.innerHTML = '<div style="padding:14px;color:#7AA2FF">Chargement de l\'historique…</div>';
+
+    const days = +(document.getElementById('cmp3-days')?.value || 22);
+    let d;
+    try{ d = await fetchBigHistory(days); }
+    catch(e){ d = (typeof state!=='undefined' && state.data) ? state.data : []; }
+    if(!d || d.length < 500){ box.innerHTML='<div style="padding:14px;color:#FF5252">Historique insuffisant.</div>'; btn.disabled=false; btn.textContent='▶ COMPARER LES TROIS PISTES'; return; }
+
+    const base = (typeof state!=='undefined' && state.indicators && state.indicators.strat_zz) || {};
+    const out = [];
+    let step = 0;
+
+    for(const V of VARIANTS){
+      btn.textContent = '⏳ ' + V.k + ' — alignement…';
+      await new Promise(r=>setTimeout(r,0));
+      const A = align(d, base, V.cfg);
+
+      let best = null, nPass = 0, nTot = 0;
+      for(const tf of TFS){
+        const dTF = (tf===1) ? d : aggregateData(d, tf, 1);
+        if(!dTF || dTF.length<100) continue;
+        const cfg = Object.assign({}, base, V.cfg, {strictMode:true, strictEmaHa:false});
+        const sg = computeZZSignals(dTF, cfg, true, false) || [];
+        const map = {}; sg.forEach(function(x){ if(!x.isExit) map[x.i]=x; });
+        for(const tp of TPS) for(const sl of SLS) for(const lev of LEVS){
+          step++;
+          if(step%25===0){ btn.textContent='⏳ '+V.k+' — '+step+' tests…'; await new Promise(r=>setTimeout(r,0)); }
+          const r = runSingleZZSim(dTF, map, tp.tp, sl, CAP, lev, FEE, RISK);
+          if(!r || r.tradesCount<30 || r.ruine || !r.losses) continue;
+          if(!isFinite(r.profitFactor) || r.profitFactor>=90) continue;
+          nTot++;
+          if(r.profitFactor<1) continue;
+          nPass++;
+          if(!best || r.profitFactor > best.r.profitFactor) best = {tf,tp,sl,lev,r};
+        }
+      }
+      out.push({V, A, best, nPass, nTot});
+    }
+
+    btn.disabled = false; btn.textContent = '▶ COMPARER LES TROIS PISTES';
+    render(out, d.length, days);
+  }
+
+  function render(out, nC, days){
+    const f=(v,n)=> (v==null||!isFinite(v))?'—':Number(v).toFixed(n==null?2:n);
+    let h = '<div style="font-size:12px;color:#7AA2FF;margin-bottom:10px">'
+          + nC + ' bougies (' + days + ' j) · part 10 % · frais 0,02 %/ordre · 135 combinaisons testées par piste</div>'
+          + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0F172A;color:#CBD5E1">'
+          + ['Piste','Alignées','Décalées','Fantômes','Décalage moy.','Max','Coût total','Configs PF≥1','Meilleur PF','Détail']
+              .map(function(x){return '<th style="padding:7px 6px;text-align:left;white-space:nowrap">'+x+'</th>';}).join('')
+          + '</tr></thead><tbody>';
+
+    out.forEach(function(o,i){
+      const A=o.A, b=o.best;
+      const alColor = A.pctAl>=90?'#25D0A4':A.pctAl>=60?'#F59E0B':'#FF5252';
+      h += '<tr style="border-bottom:1px solid #1E293B;background:'+(i%2?'rgba(255,255,255,.02)':'transparent')+'">'
+        + '<td style="padding:7px 6px"><b style="color:#00E5FF">'+o.V.nom+'</b><br><span style="font-size:10px;color:#7E8CA8">'+o.V.desc+'</span></td>'
+        + '<td style="padding:7px 6px;color:'+alColor+';font-weight:700">'+A.nAl+'<br><span style="font-size:10px">'+f(A.pctAl,0)+' %</span></td>'
+        + '<td style="padding:7px 6px;color:#F59E0B">'+A.nDec+'</td>'
+        + '<td style="padding:7px 6px;color:'+(A.nPh?'#FF5252':'#25D0A4')+'">'+A.nPh+'</td>'
+        + '<td style="padding:7px 6px">'+f(A.avgMin,1)+' min<br><span style="font-size:10px;color:#94A3B8">'+f(A.avgPx,1)+' $</span></td>'
+        + '<td style="padding:7px 6px">'+A.maxMin+' min</td>'
+        + '<td style="padding:7px 6px;color:'+(A.cost<0?'#FF5252':'#25D0A4')+';font-weight:700">'+f(A.cost,1)+' $</td>'
+        + '<td style="padding:7px 6px">'+o.nPass+' / '+o.nTot+'</td>'
+        + '<td style="padding:7px 6px;color:'+(b&&b.r.profitFactor>=1.2?'#25D0A4':'#F59E0B')+';font-weight:700">'+(b?f(b.r.profitFactor,2):'—')+'</td>'
+        + '<td style="padding:7px 6px;font-size:11px;color:#CBD5E1">'
+        + (b ? b.tf+'m · '+b.tp.l+' · SL '+(b.sl||'—')+' · '+b.lev+'x<br>'+b.r.tradesCount+' tr · WR '+f(b.r.winRate,0)+' % · DD '+f(b.r.maxDDPct,1)+' %' : 'aucune config PF ≥ 1')
+        + '</td></tr>';
+    });
+
+    h += '</tbody></table></div>'
+      + '<div style="margin-top:11px;font-size:11px;color:#7E8CA8;line-height:1.7">'
+      + '<b>Alignées</b> : pastilles corrigées tombant sur la même bougie que l\'originale. Plus c\'est haut, moins le décalage pose problème.<br>'
+      + '<b>Coût total</b> : somme des écarts de prix subis à l\'entrée, dans le sens défavorable. Négatif = perte.<br>'
+      + '<b>Configs PF ≥ 1</b> : combien de combinaisons dépassent le seuil de rentabilité, sur celles ayant au moins 30 trades.<br>'
+      + 'La meilleure piste est celle qui maximise à la fois le taux d\'alignement et le nombre de configurations rentables.</div>';
+
+    document.getElementById('cmp3-res').innerHTML = h;
+  }
+
+  window.openCmp3 = function(){
+    let ov = document.getElementById('cmp3-overlay');
+    if(ov){ ov.style.display='flex'; return; }
+    ov = document.createElement('div');
+    ov.id='cmp3-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(2,6,23,.9);z-index:99999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px';
+    ov.innerHTML = '<div style="background:#0B1220;border:1px solid #1E293B;border-radius:12px;max-width:1150px;width:100%;padding:18px;color:#E2E8F0">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      + '<div style="font-size:17px;font-weight:800;color:#00E5FF">⚖️ Comparateur des trois pistes</div>'
+      + '<button onclick="document.getElementById(\'cmp3-overlay\').style.display=\'none\'" style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;cursor:pointer">Fermer</button></div>'
+      + '<div style="background:#0F172A;border:1px solid #1E293B;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;line-height:1.8">'
+      + '<b style="color:#00E5FF">A · Actuel corrigé</b> — Impulse 15m, entrée sur transition des 4 conditions.<br>'
+      + '<b style="color:#00E5FF">B · Impulse 5m</b> — même logique, Impulse ramené en 5m pour réduire l\'attente de clôture.<br>'
+      + '<b style="color:#00E5FF">C · Nuage déclencheur</b> — entrée sur le croisement du Nuage EMA (calculé en 1m, jamais décalé), '
+      + 'les trois autres conditions devenant de simples autorisations.<br>'
+      + '<span style="color:#7E8CA8">Aucun réglage n\'est modifié : les trois variantes sont calculées en parallèle.</span>'
+      + '<div style="margin-top:9px">Historique <select id="cmp3-days" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:5px;padding:4px 7px">'
+      + '<option value="7">7 jours</option><option value="14">14 jours</option><option value="22" selected>22 jours</option></select></div></div>'
+      + '<button id="cmp3-run" onclick="cmp3Run()" style="width:100%;padding:13px;font-size:15px;font-weight:800;background:linear-gradient(135deg,#00E5FF,#8B5CF6);border:none;border-radius:8px;color:#04121C;cursor:pointer;margin-bottom:13px">▶ COMPARER LES TROIS PISTES</button>'
+      + '<div id="cmp3-res"><div style="padding:18px;text-align:center;color:#7E8CA8;font-size:13px">Lancez la comparaison. Comptez une minute.</div></div></div>';
+    document.body.appendChild(ov);
+  };
+  window.cmp3Run = function(){ run(); };
+
+  try{
+    const a = document.getElementById('ecarts-btn');
+    if(a && !document.getElementById('cmp3-btn')){
+      const b=document.createElement('button');
+      b.id='cmp3-btn'; b.className='btn';
+      b.title='Compare les trois façons de supprimer le décalage, sans rien modifier à vos réglages.';
+      b.style.cssText='font-size:11px;padding:4px 9px;background:rgba(139,92,246,.12);border:1px solid #7C3AED;color:#A78BFA;font-weight:700';
+      b.textContent='⚖️ 3 PISTES';
+      b.onclick=window.openCmp3;
+      a.parentNode.insertBefore(b, a.nextSibling);
     }
   }catch(e){}
 
