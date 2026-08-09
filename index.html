@@ -19933,10 +19933,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(window.__zzCorrDiag) window.__zzCorrDiag.nCandles = d.length;
     if(!d.length || typeof computeZZSignals !== 'function') return [];
     const base = (typeof state !== 'undefined' && state.indicators && state.indicators.strat_zz) || {};
-    const key = d.length + '_' + d[d.length-1].t + '_' + (base.invertSignal !== false ? 1 : 0)
+    const key = 'ct1_' + d.length + '_' + d[d.length-1].t + '_' + (base.invertSignal !== false ? 1 : 0)
               + '_' + (base.emaPeriod||9) + '_' + (base.haTf||5) + '_' + (base.impTf||15);
     if(key === cacheKey) return cacheSigs;
-    const cfg = Object.assign({}, base, { strictMode: true, strictEmaHa: false });
+    // La couche corrigée utilise le Nuage EMA comme déclencheur : il est calculé
+    // sur les bougies de base, donc jamais décalé. Mesuré sur 22 jours : une seule
+    // pastille décalée sur 111, contre 181 sans. L'indicateur Z.Z. d'origine et ses
+    // pastilles ne sont pas touchés, cette configuration est locale à cette couche.
+    const cfg = Object.assign({}, base, { strictMode: true, strictEmaHa: false, cloudTrigger: true });
     // Ne pas avaler l'erreur : elle doit remonter jusqu'au badge de diagnostic.
     cacheSigs = computeZZSignals(d, cfg, true, false) || [];
     window.__zzCorrDiag.nCandles = d.length;
@@ -20034,7 +20038,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       ctx.fillText(label, x, by + 11);
       ctx.fillStyle = pending ? '#FCD34D' : '#CBD5E1';
       ctx.font = '8.5px "IBM Plex Mono",monospace';
-      ctx.fillText(pending ? 'en attente de clôture HTF' : ('Prix: ' + fmtP(entryP) + ' $ · strict'), x, by + 21);
+      ctx.fillText(pending ? 'en attente de clôture HTF' : ('Prix: ' + fmtP(entryP) + ' $ · strict+nuage'), x, by + 21);
       ctx.textAlign = 'left';
 
       window.__zzCorrDiag.drawn++;
@@ -20109,7 +20113,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const base = (typeof state !== 'undefined' && state.indicators && state.indicators.strat_zz) || {};
 
     const loose  = (computeZZSignals(d, Object.assign({}, base, {strictMode:false, strictEmaHa:false}), false, false) || []).filter(x=>!x.isExit);
-    const strict = (computeZZSignals(d, Object.assign({}, base, {strictMode:true,  strictEmaHa:false}), true,  false) || []).filter(x=>!x.isExit);
+    const strict = (computeZZSignals(d, Object.assign({}, base, {strictMode:true,  strictEmaHa:false, cloudTrigger:true}), true,  false) || []).filter(x=>!x.isExit);
 
     const used = new Set();
     const rows = [];
