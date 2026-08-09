@@ -19519,7 +19519,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     let d;
     try { d = await fetchBigHistory(days); }
-    catch(e){ d = (window.state && state.data) || []; }
+    catch(e){ d = (typeof state !== 'undefined' && state.data) ? state.data : []; }
 
     if(!d || d.length < 200){
       box.innerHTML = '<div style="padding:14px;color:#FF5252">Historique insuffisant.</div>';
@@ -19527,7 +19527,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       return;
     }
 
-    const baseInd = (window.state && state.indicators && state.indicators.strat_zz) || {};
+    const baseInd = (typeof state !== 'undefined' && state.indicators && state.indicators.strat_zz) || {};
     const rows = [];
     const rejected = [];
     let done = 0;
@@ -19916,9 +19916,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   let cacheKey = null, cacheSigs = [];
 
   function correctedSignals(){
-    const d = (window.state && state.data) || [];
+    const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
+    if(window.__zzCorrDiag) window.__zzCorrDiag.nCandles = d.length;
     if(!d.length || typeof computeZZSignals !== 'function') return [];
-    const base = (state.indicators && state.indicators.strat_zz) || {};
+    const base = (typeof state !== 'undefined' && state.indicators && state.indicators.strat_zz) || {};
     const key = d.length + '_' + d[d.length-1].t + '_' + (base.invertSignal !== false ? 1 : 0)
               + '_' + (base.emaPeriod||9) + '_' + (base.haTf||5) + '_' + (base.impTf||15);
     if(key === cacheKey) return cacheSigs;
