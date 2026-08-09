@@ -4698,12 +4698,14 @@ function niceStep(range,target){
 /* Échelle verticale d'un sous-panneau : auto par défaut (recalculée à
    chaque rendu), ou fixée par l'utilisateur (molette/glisser sur son axe,
    double-clic pour revenir à auto) — même logique que le panneau prix. */
-function subYOf(p,key,lo0,hi0,padded){
+function subYOf(p,key,lo0,hi0,padded,forceAuto){
   let useKey=key;
-  if(p._sameScale && isFinite(p._forceLo) && isFinite(p._forceHi) && p._forceHi>p._forceLo){ useKey=p._groupKey; lo0=p._forceLo; hi0=p._forceHi; }
+  if(!forceAuto && p._sameScale && isFinite(p._forceLo) && isFinite(p._forceHi) && p._forceHi>p._forceLo){ useKey=p._groupKey; lo0=p._forceLo; hi0=p._forceHi; }
   const sc=state.subScale[useKey];
   let lo,hi;
-  if(!sc||sc.auto||!isFinite(sc.lo)||!isFinite(sc.hi)||(sc.hi<=sc.lo)){lo=lo0;hi=hi0;}
+  // forceAuto : le mode Volatilité produit des valeurs de l'ordre de 0,003.
+  // Toute échelle mémorisée (manuelle ou partagée) les écraserait sur zéro.
+  if(forceAuto||!sc||sc.auto||!isFinite(sc.lo)||!isFinite(sc.hi)||(sc.hi<=sc.lo)){lo=lo0;hi=hi0;}
   else{lo=sc.lo;hi=sc.hi;}
   if(!isFinite(lo)) lo = lo0;
   if(!isFinite(hi)) hi = hi0;
@@ -7415,7 +7417,7 @@ function drawTwoIndSub(p, s, e, cw) {
 
   const isVol = (S('two_ind','mode') === 'Volatility');
   const rg = isVol ? volAutoRange(res, s, e) : {lo: -100, hi: 100};
-  const yOf = subYOf(p, 'two_ind', rg.lo, rg.hi, true);
+  const yOf = subYOf(p, 'two_ind', rg.lo, rg.hi, true, isVol);
   const cGold = S('two_ind','cGold') || S('two_ind','cUp') || '#FFCC00';
   const cPurp = S('two_ind','cPurp') || S('two_ind','cDown') || '#5500CC';
   const cSig = S('two_ind','cSig') || '#9598A1';
@@ -7479,7 +7481,8 @@ function drawTwoIndSub(p, s, e, cw) {
   const activeTf = (!tf || tf === 'chart') ? state.tf : tf;
   const tfTag = ({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H','1440':'1J'}[activeTf] || (activeTf + 'm'));
 
-  subLabel(p, 'kk · ' + tfTag + (isVol ? ' · Volatilité (échelle auto)' : ''),
+  const ampTxt = isVol ? (' · Volatilité · plage ' + rg.lo.toFixed(3) + ' à ' + rg.hi.toFixed(3)) : '';
+  subLabel(p, 'kk · ' + tfTag + ampTxt,
     `${curNetStr}  (Signal: ${curSigStr})`, valCol, '#000000');
 }
 
@@ -7489,7 +7492,7 @@ function drawKKBisSub(p, s, e, cw) {
 
   const isVolB = (S('kk_bis','mode') === 'Volatility');
   const rgB = isVolB ? volAutoRange(res, s, e) : {lo: -100, hi: 100};
-  const yOf = subYOf(p, 'kk_bis', rgB.lo, rgB.hi, true);
+  const yOf = subYOf(p, 'kk_bis', rgB.lo, rgB.hi, true, isVolB);
   const cGold = S('kk_bis','cGold') || '#22D3EE';
   const cPurp = S('kk_bis','cPurp') || '#F472B6';
   const cSig  = S('kk_bis','cSig')  || '#FFFFFF';
