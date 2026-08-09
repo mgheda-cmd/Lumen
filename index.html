@@ -5399,6 +5399,8 @@ function render(){
   }
   drawWantMarks(s, e, yOf);
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf, cw);
+  // Couche supplémentaire : pastilles corrigées (mode strict). Les originales sont conservées.
+  if(vis('strat_zz') && window.__zzShowCorrected && typeof window.drawZZCorrected === 'function') window.drawZZCorrected(s, e, yOf, cw);
   // Pastilles de Backtest (Achat, Sortie Achat, Vente, Sortie Vente)
   if (window.activeBacktestSignals && window.activeBacktestSignals.length && state.showBacktestSignals !== false) {
     try{ drawBacktestSignals(window.activeBacktestSignals, s, e, yOf, cw); }catch(e){}
@@ -19891,6 +19893,153 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(0,229,255,.16);border:1px solid #00E5FF;color:#00E5FF;font-weight:700';
       b.textContent = '⚡ BT SIMPLE';
       b.onclick = window.openBtBis;
+      anchor.parentNode.insertBefore(b, anchor.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
+
+
+/* ================================================================
+   PASTILLES CORRIGÉES — couche d'affichage supplémentaire
+   Les pastilles Z.Z. d'origine restent intactes et à leur place.
+   Celle-ci trace en parallèle les mêmes signaux calculés en mode
+   STRICT (sans lookahead) : les séries 5m et 15m ne sont utilisées
+   qu'à partir de la clôture de leur bougie.
+   L'écart horizontal entre une pastille d'origine et sa version
+   corrigée est exactement l'avance indue dont bénéficiait le signal.
+   ================================================================ */
+(function(){
+
+  window.__zzShowCorrected = (localStorage.getItem('lumen_zz_corrected') === '1');
+  let cacheKey = null, cacheSigs = [];
+
+  function correctedSignals(){
+    const d = (window.state && state.data) || [];
+    if(!d.length || typeof computeZZSignals !== 'function') return [];
+    const base = (state.indicators && state.indicators.strat_zz) || {};
+    const key = d.length + '_' + d[d.length-1].t + '_' + (base.invertSignal !== false ? 1 : 0)
+              + '_' + (base.emaPeriod||9) + '_' + (base.haTf||5) + '_' + (base.impTf||15);
+    if(key === cacheKey) return cacheSigs;
+    const cfg = Object.assign({}, base, { strictMode: true, strictEmaHa: false });
+    try{ cacheSigs = computeZZSignals(d, cfg, true, false) || []; }
+    catch(e){ cacheSigs = []; }
+    cacheKey = key;
+    return cacheSigs;
+  }
+
+  /* Une pastille reste provisoire tant que la bougie HTF la plus lente
+     (Impulse 15m par défaut) qui la couvre n'a pas clôturé. */
+  function isPending(sig, d){
+    if(!d || !d.length) return false;
+    if(sig.i === d.length - 1) return true;
+    const base = (state.indicators && state.indicators.strat_zz) || {};
+    const tfMs = Math.max(base.haTf || 5, base.impTf || 15) * 60000;
+    const lastT = d[d.length-1].t;
+    const bucketEnd = Math.floor(sig.t / tfMs) * tfMs + tfMs;
+    return bucketEnd > lastT;
+  }
+
+  window.drawZZCorrected = function(s, e, yOf, cw){
+    const sigs = correctedSignals();
+    if(!sigs.length) return;
+    const d = state.data;
+    const ind = (state.indicators && state.indicators.strat_zz) || {};
+    if(ind.showEntries === false) return;
+    const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+
+    for(const sig of sigs){
+      if(sig.isExit) continue;
+      const i = (sig.t != null && typeof idxOfTime === 'function' ? idxOfTime(sig.t) : null) ?? sig.i;
+      if(i == null || i < s - 1 || i > e + 1) continue;
+      const x = xOf(i);
+      if(x < -190 || x > W - AXIS_W + 190) continue;
+
+      const pending = isPending(sig, d);
+      const isBuy   = (sig.dir === 1);
+      const entryP  = sig.price;
+      const yDot    = isBuy ? (yOf(entryP) + 46) : (yOf(entryP) - 46);
+
+      // Corrigé confirmé : violet (achat) / rose (vente). Provisoire : ambre.
+      const color  = pending ? '#F59E0B' : (isBuy ? '#8B5CF6' : '#F472B6');
+      const bgFill = pending ? 'rgba(45, 30, 5, 0.95)' : 'rgba(24, 14, 45, 0.95)';
+      const numStr = (sig.num != null ? '#' + sig.num + ' ' : '');
+      const label  = (isBuy ? '✅ ' + numStr + 'ACHAT CORRIGÉ' : '✅ ' + numStr + 'VENTE CORRIGÉE')
+                   + (pending ? ' ⏳' : '');
+
+      // Marqueur : losange, pour ne pas se confondre avec les pastilles d'origine
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, yDot - 6); ctx.lineTo(x + 6, yDot);
+      ctx.lineTo(x, yDot + 6); ctx.lineTo(x - 6, yDot);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.1; ctx.stroke();
+      ctx.restore();
+
+      const bh = 26, bw = 172;
+      const by = (typeof placeBadge === 'function')
+        ? placeBadge(x - bw/2, bw, isBuy ? (yDot + 14) : (yDot - 14 - bh), bh, isBuy ? 1 : -1)
+        : (isBuy ? yDot + 14 : yDot - 14 - bh);
+
+      ctx.save();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, isBuy ? yDot + 6 : yDot - 6);
+      ctx.lineTo(x, isBuy ? by : by + bh);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = bgFill;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+      if(pending) ctx.setLineDash([4, 3]);
+      if(typeof roundRect === 'function') roundRect(x - bw/2, by, bw, bh, 4);
+      ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore();
+
+      ctx.fillStyle = color;
+      ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x, by + 11);
+      ctx.fillStyle = pending ? '#FCD34D' : '#CBD5E1';
+      ctx.font = '8.5px "IBM Plex Mono",monospace';
+      ctx.fillText(pending ? 'en attente de clôture HTF' : ('Prix: ' + fmtP(entryP) + ' $ · strict'), x, by + 21);
+      ctx.textAlign = 'left';
+
+      if(typeof labelHits !== 'undefined'){
+        labelHits.push({x: x - bw/2, y: by, w: bw, h: bh, key: 'strat_zz'});
+      }
+    }
+  };
+
+  window.toggleZZCorrected = function(){
+    window.__zzShowCorrected = !window.__zzShowCorrected;
+    try{ localStorage.setItem('lumen_zz_corrected', window.__zzShowCorrected ? '1' : '0'); }catch(e){}
+    const b = document.getElementById('zzcorr-btn');
+    if(b){
+      b.style.background   = window.__zzShowCorrected ? 'rgba(139,92,246,.22)' : 'rgba(139,92,246,.08)';
+      b.style.borderColor  = window.__zzShowCorrected ? '#8B5CF6' : '#4C1D95';
+      b.style.color        = window.__zzShowCorrected ? '#C4B5FD' : '#6D28D9';
+      b.textContent        = window.__zzShowCorrected ? '✅ CORRIGÉ : ON' : '✅ CORRIGÉ : OFF';
+    }
+    cacheKey = null;
+    if(typeof render === 'function') render();
+  };
+
+  try{
+    const anchor = document.getElementById('btbis-btn');
+    if(anchor && !document.getElementById('zzcorr-btn')){
+      const b = document.createElement('button');
+      b.id = 'zzcorr-btn';
+      b.className = 'btn';
+      b.title = "Superpose les mêmes signaux Z.Z. calculés en mode strict (sans lookahead). "
+              + "L'écart avec les pastilles d'origine est l'avance indue dont elles bénéficiaient. "
+              + "Une pastille ambre reste provisoire tant que la bougie 15m n'a pas clôturé.";
+      b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(139,92,246,.08);border:1px solid #4C1D95;color:#6D28D9;font-weight:700';
+      b.textContent = window.__zzShowCorrected ? '✅ CORRIGÉ : ON' : '✅ CORRIGÉ : OFF';
+      b.onclick = window.toggleZZCorrected;
       anchor.parentNode.insertBefore(b, anchor.nextSibling);
     }
   }catch(e){}
