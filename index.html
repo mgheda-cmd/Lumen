@@ -19517,6 +19517,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const strict     = !!document.getElementById('btbis-strict')?.checked;
     const strictEma  = !!document.getElementById('btbis-emaha')?.checked;
     const inverse    = !!document.getElementById('btbis-inverse')?.checked;
+    const cloudTrig  = !!document.getElementById('btbis-cloud')?.checked;
     const days       = +(document.getElementById('btbis-days')?.value || 22);
 
     btn.disabled = true;
@@ -19543,7 +19544,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const dTF = (tf === 1) ? d : aggregateData(d, tf, 1);
       if(!dTF || dTF.length < 100) continue;
 
-      const indCfg = Object.assign({}, baseInd, { strictMode: strict, strictEmaHa: strictEma });
+      const indCfg = Object.assign({}, baseInd, { strictMode: strict, strictEmaHa: strictEma, cloudTrigger: cloudTrig });
       const sigs = computeZZSignals(dTF, indCfg, strict, strictEma) || [];
       let sigMap = {};
       sigs.forEach(s => { if(!s.isExit) sigMap[s.i] = s; });
@@ -19630,7 +19631,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     btn.disabled = false;
     btn.textContent = '▶ CALCULER LE TOP 10';
-    render(rows, { strict, strictEma, inverse, days, nCandles: d.length }, rejected);
+    render(rows, { strict, strictEma, inverse, cloudTrig, days, nCandles: d.length }, rejected);
   }
 
   /* ---------------- Affichage ---------------- */
@@ -19652,7 +19653,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     const modeTxt = (ctx.strict ? '🛡️ Strict' : '⚠️ Lookahead')
                   + (ctx.strictEma ? ' · EMA/HA stricte' : ' · EMA/HA souple')
-                  + (ctx.inverse ? ' · Sens INVERSÉ' : ' · Sens normal');
+                  + (ctx.inverse ? ' · Sens INVERSÉ' : ' · Sens normal')
+                  + (ctx.cloudTrig ? ' · ☁️ Nuage déclencheur' : '');
 
     if(!top.length){
       box.innerHTML = `
@@ -19855,6 +19857,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
             <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
               <input type="checkbox" id="btbis-inverse" style="width:17px;height:17px;cursor:pointer">
               <span style="color:#FFB400;font-weight:700">🔄 Sens inversé</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+              <input type="checkbox" id="btbis-cloud" style="width:17px;height:17px;cursor:pointer">
+              <span style="color:#A78BFA;font-weight:700">☁️ Nuage déclencheur</span>
+              <span style="color:#7E8CA8;font-size:11px">(supprime le décalage)</span>
             </label>
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#CBD5E1">
               Historique
