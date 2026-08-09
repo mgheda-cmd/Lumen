@@ -19430,6 +19430,359 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   if (typeof updateChips === 'function') updateChips();
   if (typeof render === 'function') render();
 }
+
+
+/* ================================================================
+   BACKTEST BIS — panneau simplifié
+   Objectif : une seule action (un bouton), peu de variables,
+   un Top 10 déjà filtré. Toutes les règles strictes sont
+   appliquées ici en dur, elles ne sont pas optionnelles :
+     - minimum 30 trades
+     - profit factor fini et >= 1.0
+     - pas de compte ruiné
+     - stabilité sur 3 semaines SEPAREES (non emboîtées)
+     - déduplication par configuration
+     - bouton argent réel bloqué si non conforme
+   ================================================================ */
+(function(){
+
+  const BUDGETS = [1, 10, 50, 300, 500];
+  const TFS     = [1, 5, 15];
+  const TPS     = [
+    { id:'tp200', label:'TP +200', tp:200, icon:'⚡' },
+    { id:'tp300', label:'TP +300', tp:300, icon:'🎯' },
+    { id:'tp400', label:'TP +400', tp:400, icon:'🚀' },
+    { id:'tp500', label:'TP +500', tp:500, icon:'🔥' },
+    { id:'pastille_only', label:'Pastille seule', tp:0, icon:'🔄' }
+  ];
+  const SLS     = [0, 100, 200];          // 0 = sortie sur pastille
+  const LEVS    = [1, 5, 20, 50];         // au-delà, l'avantage s'érode
+  const RISK    = 10;                     // part engagée fixée à 10 %
+  const FEE     = 0.0002;                 // 0,02 % par ordre
+
+  const MIN_TRADES      = 30;
+  const MIN_TRADES_WEEK = 8;
+  const BASE_CAP        = 100;            // les % ne dépendent pas du capital
+
+  function fmt(n, d){ return (n==null || !isFinite(n)) ? '—' : Number(n).toFixed(d==null?2:d); }
+
+  /* --- Découpe les bougies en 3 tranches contiguës et égales --- */
+  function thirds(arr){
+    const n = Math.floor(arr.length/3);
+    return [arr.slice(0,n), arr.slice(n,2*n), arr.slice(2*n)];
+  }
+
+  /* --- Reconstruit une sigMap pour une tranche, indices décalés --- */
+  function sliceSigMap(sigMap, offset, len, invert){
+    const out = {};
+    for(const k in sigMap){
+      const i = +k - offset;
+      if(i >= 0 && i < len){
+        const s = sigMap[k];
+        out[i] = invert ? Object.assign({}, s, { dir: -s.dir }) : s;
+      }
+    }
+    return out;
+  }
+
+  function invertMap(sigMap){
+    const out = {};
+    for(const k in sigMap){ out[k] = Object.assign({}, sigMap[k], { dir: -sigMap[k].dir }); }
+    return out;
+  }
+
+  /* ---------------- Calcul principal ---------------- */
+  async function computeTop10(){
+    const box   = document.getElementById('btbis-results');
+    const btn   = document.getElementById('btbis-run');
+    const strict     = !!document.getElementById('btbis-strict')?.checked;
+    const strictEma  = !!document.getElementById('btbis-emaha')?.checked;
+    const inverse    = !!document.getElementById('btbis-inverse')?.checked;
+    const days       = +(document.getElementById('btbis-days')?.value || 22);
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Chargement de l\'historique…';
+    box.innerHTML = '<div style="padding:14px;color:#7AA2FF">Chargement…</div>';
+
+    let d;
+    try { d = await fetchBigHistory(days); }
+    catch(e){ d = (window.state && state.data) || []; }
+
+    if(!d || d.length < 200){
+      box.innerHTML = '<div style="padding:14px;color:#FF5252">Historique insuffisant.</div>';
+      btn.disabled = false; btn.textContent = '▶ CALCULER LE TOP 10';
+      return;
+    }
+
+    const baseInd = (window.state && state.indicators && state.indicators.strat_zz) || {};
+    const rows = [];
+    let done = 0;
+    const total = TFS.length * TPS.length * SLS.length * LEVS.length;
+
+    for(const tf of TFS){
+      const dTF = (tf === 1) ? d : aggregateData(d, tf, 1);
+      if(!dTF || dTF.length < 100) continue;
+
+      const indCfg = Object.assign({}, baseInd, { strictMode: strict, strictEmaHa: strictEma });
+      const sigs = computeZZSignals(dTF, indCfg, strict, strictEma) || [];
+      let sigMap = {};
+      sigs.forEach(s => { if(!s.isExit) sigMap[s.i] = s; });
+      if(inverse) sigMap = invertMap(sigMap);
+
+      const parts = thirds(dTF);
+      const offs  = [0, parts[0].length, parts[0].length + parts[1].length];
+
+      for(const tp of TPS){
+        for(const sl of SLS){
+          for(const lev of LEVS){
+            done++;
+            if(done % 20 === 0){
+              btn.textContent = `⏳ ${done}/${total} combinaisons…`;
+              await new Promise(r => setTimeout(r, 0));
+            }
+
+            const r = runSingleZZSim(dTF, sigMap, tp.tp, sl, BASE_CAP, lev, FEE, RISK);
+            if(!r) continue;
+
+            // Filtres stricts, non négociables
+            if(r.tradesCount < MIN_TRADES) continue;
+            if(r.ruine) continue;
+            if(!r.losses || !isFinite(r.profitFactor) || r.profitFactor >= 90) continue;
+            if(r.profitFactor < 1.0) continue;
+            if(r.netPnlPct <= 0) continue;
+
+            // Stabilité : 3 semaines séparées, chacune doit tenir
+            let stable = true;
+            const weeks = [];
+            for(let w=0; w<3; w++){
+              const sub = parts[w];
+              if(!sub || sub.length < 50){ stable = false; break; }
+              const rw = runSingleZZSim(sub, sliceSigMap(sigMap, offs[w], sub.length, false),
+                                        tp.tp, sl, BASE_CAP, lev, FEE, RISK);
+              if(!rw || rw.tradesCount < MIN_TRADES_WEEK || !isFinite(rw.profitFactor) || rw.profitFactor < 1.0){
+                stable = false;
+                weeks.push(rw ? { pf: rw.profitFactor, n: rw.tradesCount, pnl: rw.netPnlPct } : null);
+                break;
+              }
+              weeks.push({ pf: rw.profitFactor, n: rw.tradesCount, pnl: rw.netPnlPct });
+            }
+            if(!stable) continue;
+
+            rows.push({
+              tf, tp, sl, lev, r, weeks,
+              key: `${tf}_${tp.id}_${sl}_${lev}`,
+              score: r.netPnlPct / (1 + r.maxDDPct/12)
+            });
+          }
+        }
+      }
+    }
+
+    btn.disabled = false;
+    btn.textContent = '▶ CALCULER LE TOP 10';
+    render(rows, { strict, strictEma, inverse, days, nCandles: d.length });
+  }
+
+  /* ---------------- Affichage ---------------- */
+  function render(rows, ctx){
+    const box = document.getElementById('btbis-results');
+
+    // Déduplication par configuration
+    const seen = new Set();
+    const uniq = rows.filter(r => seen.has(r.key) ? false : (seen.add(r.key), true));
+    uniq.sort((a,b) => b.score - a.score);
+
+    // Moitié du classement réservée à l'unité de temps 1 minute
+    const m1  = uniq.filter(r => r.tf === 1).slice(0,5);
+    const oth = uniq.filter(r => r.tf !== 1 && !m1.includes(r)).slice(0,5);
+    let top = m1.concat(oth);
+    if(top.length < 10) top = top.concat(uniq.filter(r => !top.includes(r))).slice(0,10);
+    top.sort((a,b) => b.score - a.score);
+    top = top.slice(0,10);
+
+    const modeTxt = (ctx.strict ? '🛡️ Strict' : '⚠️ Lookahead')
+                  + (ctx.strictEma ? ' · EMA/HA stricte' : ' · EMA/HA souple')
+                  + (ctx.inverse ? ' · Sens INVERSÉ' : ' · Sens normal');
+
+    if(!top.length){
+      box.innerHTML = `
+        <div style="padding:16px;border:1px solid #FF5252;border-radius:8px;background:rgba(255,82,82,.08)">
+          <div style="color:#FF5252;font-weight:700;margin-bottom:6px">Aucune configuration ne passe les filtres.</div>
+          <div style="color:#CBD5E1;font-size:12px;line-height:1.6">
+            Sur ${ctx.nCandles} bougies (${ctx.days} j), aucune combinaison n'atteint simultanément
+            30 trades, un profit factor supérieur à 1 et une tenue sur les trois semaines séparées.<br>
+            Mode testé : ${modeTxt}.<br><br>
+            C'est un résultat valide, pas une erreur. Essayez le sens inversé, ou une autre période.
+          </div>
+        </div>`;
+      return;
+    }
+
+    let html = `
+      <div style="margin-bottom:10px;font-size:12px;color:#7AA2FF">
+        ${modeTxt} · ${ctx.nCandles} bougies (${ctx.days} j) · part engagée 10 % · frais 0,02 %/ordre<br>
+        <span style="color:#25D0A4">Filtres appliqués : ≥30 trades · PF fini ≥ 1,0 · non ruiné · stable sur 3 semaines séparées · dédupliqué</span>
+      </div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#0F172A;color:#CBD5E1">
+          ${['#','UT','Sortie','SL','Levier','Budget','Trades','WR','PF','Gain','DD','S1/S2/S3','Actions']
+            .map(h=>`<th style="padding:7px 6px;text-align:left;white-space:nowrap">${h}</th>`).join('')}
+        </tr></thead><tbody>`;
+
+    top.forEach((c,i) => {
+      const bud  = BUDGETS[i % BUDGETS.length];
+      const gain = c.r.netPnlPct * bud / 100;
+      const wk   = c.weeks.map(w => w ? fmt(w.pf,2) : '—').join(' / ');
+      const conform = c.r.tradesCount >= 30 && isFinite(c.r.profitFactor) && c.r.profitFactor >= 1
+                      && c.weeks.length === 3 && c.weeks.every(w => w && w.pf >= 1);
+      const liveOk  = conform && ctx.strict;
+
+      html += `<tr style="border-bottom:1px solid #1E293B;background:${i%2?'rgba(255,255,255,.02)':'transparent'}">
+        <td style="padding:7px 6px;font-weight:700;color:#FFD700">#${i+1}</td>
+        <td style="padding:7px 6px">${c.tf}m</td>
+        <td style="padding:7px 6px;white-space:nowrap">${c.tp.icon} ${c.tp.label}</td>
+        <td style="padding:7px 6px">${c.sl || '—'}</td>
+        <td style="padding:7px 6px">${c.lev}x</td>
+        <td style="padding:7px 6px;color:#00E5FF;font-weight:700">${bud} $</td>
+        <td style="padding:7px 6px">${c.r.tradesCount}</td>
+        <td style="padding:7px 6px">${fmt(c.r.winRate,1)} %</td>
+        <td style="padding:7px 6px;color:${c.r.profitFactor>=1.2?'#25D0A4':'#FFB400'};font-weight:700">${fmt(c.r.profitFactor,2)}</td>
+        <td style="padding:7px 6px;color:#25D0A4;font-weight:700">+${fmt(gain,2)} $<br><span style="font-size:10px;opacity:.7">${fmt(c.r.netPnlPct,2)} %</span></td>
+        <td style="padding:7px 6px;color:#FF8A80">${fmt(c.r.maxDDPct,1)} %</td>
+        <td style="padding:7px 6px;font-size:11px;color:#25D0A4">${wk}</td>
+        <td style="padding:7px 6px;white-space:nowrap">
+          <button onclick="btbisApply('${c.tp.id}',${c.sl},${c.lev})"
+            style="font-size:11px;padding:3px 7px;margin:1px;background:rgba(0,229,255,.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:4px;cursor:pointer">Appliquer</button>
+          <button onclick="btbisDemo('${c.tp.id}',${c.sl},${c.lev},${bud})"
+            style="font-size:11px;padding:3px 7px;margin:1px;background:rgba(37,208,164,.15);border:1px solid #25D0A4;color:#25D0A4;border-radius:4px;cursor:pointer">Démo</button>
+          ${liveOk
+            ? `<button onclick="btbisLive('${c.tp.id}',${c.sl},${c.lev},${bud})" style="font-size:11px;padding:3px 7px;margin:1px;background:rgba(255,180,0,.18);border:1px solid #FFB400;color:#FFB400;border-radius:4px;cursor:pointer">Réel</button>`
+            : `<span title="${ctx.strict ? 'Configuration non conforme aux filtres' : 'Le mode strict est requis pour le trading réel'}" style="font-size:11px;padding:3px 7px;margin:1px;background:rgba(255,82,82,.12);border:1px solid #FF5252;color:#FF5252;border-radius:4px;display:inline-block">Réel bloqué</span>`}
+        </td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div>
+      <div style="margin-top:10px;font-size:11px;color:#7E8CA8;line-height:1.6">
+        Les colonnes S1/S2/S3 donnent le profit factor de chacune des trois semaines <b>séparées</b>.
+        Une configuration n'apparaît que si les trois dépassent 1,0.<br>
+        Le gain est proportionnel au budget : les pourcentages sont identiques quel que soit le capital de départ.
+      </div>`;
+
+    box.innerHTML = html;
+  }
+
+  /* ---------------- Actions des boutons ---------------- */
+  window.btbisApply = function(scId, sl, lev){
+    try{
+      const slEl = document.getElementById('bt-zz-sl'); if(slEl) slEl.value = sl;
+      const lvEl = document.getElementById('bt-zz-lev'); if(lvEl) lvEl.value = lev;
+      if(typeof window.applyZZCombo === 'function'){ window.applyZZCombo(scId, sl, lev); }
+      if(typeof toast === 'function') toast(`✅ Configuration appliquée : ${scId}, SL ${sl||'pastille'}, ${lev}x`, '#00E5FF');
+    }catch(e){ alert('Application impossible : ' + e.message); }
+  };
+
+  window.btbisDemo = function(scId, sl, lev, bud){
+    try{
+      const capEl = document.getElementById('bt-zz-capital'); if(capEl) capEl.value = bud;
+      if(typeof window.applyZZStrategyToDemo === 'function'){ window.applyZZStrategyToDemo(scId, sl, lev); }
+      if(typeof toast === 'function') toast(`🤖 Stratégie activée en démo (${bud} $, ${lev}x)`, '#25D0A4');
+    }catch(e){ alert('Activation démo impossible : ' + e.message); }
+  };
+
+  window.btbisLive = function(scId, sl, lev, bud){
+    const ok = confirm(
+      `⚠️ ARGENT RÉEL\n\n` +
+      `Configuration : ${scId} · SL ${sl||'pastille'} · levier ${lev}x · budget ${bud} $\n\n` +
+      `Ces chiffres viennent d'un backtest. Le slippage n'y est pas modélisé, et un profit factor proche de 1 peut devenir négatif en conditions réelles.\n\n` +
+      `Confirmer le passage en argent réel ?`);
+    if(!ok) return;
+    window.btbisApply(scId, sl, lev);
+    if(typeof openLiveExchangeModal === 'function') openLiveExchangeModal();
+    else alert('Ouvrez le panneau "Trading Direct" pour lancer la stratégie sur votre exchange.');
+  };
+
+  /* ---------------- Interface ---------------- */
+  window.openBtBis = function(){
+    let ov = document.getElementById('btbis-overlay');
+    if(ov){ ov.style.display = 'flex'; return; }
+
+    ov = document.createElement('div');
+    ov.id = 'btbis-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,.88);z-index:99999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px';
+    ov.innerHTML = `
+      <div style="background:#0B1220;border:1px solid #1E293B;border-radius:12px;max-width:1150px;width:100%;padding:18px;color:#E2E8F0;font-family:inherit">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-size:17px;font-weight:800;color:#00E5FF">⚡ Backtest Simple — Top 10</div>
+          <button onclick="document.getElementById('btbis-overlay').style.display='none'"
+            style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;cursor:pointer">Fermer</button>
+        </div>
+
+        <div style="background:#0F172A;border:1px solid #1E293B;border-radius:8px;padding:13px;margin-bottom:13px">
+          <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+              <input type="checkbox" id="btbis-strict" checked style="width:17px;height:17px;cursor:pointer">
+              <span style="color:#25D0A4;font-weight:700">🛡️ Mode strict</span>
+              <span style="color:#7E8CA8;font-size:11px">(sans lookahead)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+              <input type="checkbox" id="btbis-emaha" style="width:17px;height:17px;cursor:pointer">
+              <span style="color:#7AA2FF;font-weight:700">📐 EMA/HA stricte</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+              <input type="checkbox" id="btbis-inverse" style="width:17px;height:17px;cursor:pointer">
+              <span style="color:#FFB400;font-weight:700">🔄 Sens inversé</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#CBD5E1">
+              Historique
+              <select id="btbis-days" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:5px;padding:4px 7px">
+                <option value="7">7 jours</option>
+                <option value="14">14 jours</option>
+                <option value="22" selected>22 jours</option>
+                <option value="30">30 jours</option>
+              </select>
+            </label>
+          </div>
+          <div style="margin-top:9px;font-size:11px;color:#7E8CA8;line-height:1.6">
+            Tout le reste est fixé : part engagée 10 %, frais 0,02 % par ordre,
+            unités de temps 1m / 5m / 15m, sorties TP 200/300/400/500 et pastille,
+            stop 0 / 100 / 200, leviers 1x / 5x / 20x / 50x.
+          </div>
+        </div>
+
+        <button id="btbis-run" onclick="btbisRun()"
+          style="width:100%;padding:13px;font-size:15px;font-weight:800;background:linear-gradient(135deg,#00E5FF,#25D0A4);border:none;border-radius:8px;color:#04121C;cursor:pointer;margin-bottom:14px">
+          ▶ CALCULER LE TOP 10
+        </button>
+
+        <div id="btbis-results"><div style="padding:20px;text-align:center;color:#7E8CA8;font-size:13px">
+          Cochez vos options puis lancez le calcul.<br>
+          Seules les configurations qui passent tous les filtres seront affichées — il peut n'y en avoir aucune.
+        </div></div>
+      </div>`;
+    document.body.appendChild(ov);
+  };
+
+  window.btbisRun = function(){ computeTop10(); };
+
+  /* Bouton dans l'en-tête */
+  try{
+    const anchor = document.getElementById('force-btn');
+    if(anchor && !document.getElementById('btbis-btn')){
+      const b = document.createElement('button');
+      b.id = 'btbis-btn';
+      b.className = 'btn';
+      b.title = 'Backtest simplifié : deux cases à cocher, un bouton, un Top 10 déjà filtré';
+      b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(0,229,255,.16);border:1px solid #00E5FF;color:#00E5FF;font-weight:700';
+      b.textContent = '⚡ BT SIMPLE';
+      b.onclick = window.openBtBis;
+      anchor.parentNode.insertBefore(b, anchor.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
 </script>
 </body>
 </html>
