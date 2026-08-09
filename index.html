@@ -7701,6 +7701,22 @@ function zzEntriesForExit(){
   __zzEntKey = key;
   return __zzEnt;
 }
+/* Retrouve la pastille Z.Z. d'origine qu'une pastille corrigée reprend :
+   la plus proche dans le même sens, avant ou après. Le mode strict décale
+   les signaux de quelques bougies et possède sa propre numérotation, d'où
+   des numéros qui ne correspondaient à rien de visible. */
+function zzNumNear(idx, dir, win){
+  const arr = zzEntriesForExit();
+  win = win || 120;
+  let best = null, bd = Infinity;
+  for(let k = 0; k < arr.length; k++){
+    if(arr[k].dir !== dir || arr[k].num == null) continue;
+    const dd = Math.abs(arr[k].i - idx);
+    if(dd < bd && dd <= win){ bd = dd; best = arr[k].num; }
+  }
+  return best;
+}
+
 function zzNumFor(idx, dir){
   const arr = zzEntriesForExit();
   for(let k = arr.length - 1; k >= 0; k--){
@@ -20659,7 +20675,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       // Corrigé confirmé : violet (achat) / rose (vente). Provisoire : ambre.
       const color  = pending ? '#F59E0B' : (isBuy ? '#8B5CF6' : '#F472B6');
       const bgFill = pending ? 'rgba(45, 30, 5, 0.95)' : 'rgba(24, 14, 45, 0.95)';
-      const numStr = (sig.num != null ? '#' + sig.num + ' ' : '');
+      // Numéro repris de la pastille Z.Z. d'origine correspondante, et non
+      // la numérotation interne du mode strict.
+      const numOrig = (typeof zzNumNear === 'function') ? zzNumNear(i, sig.dir, 120) : null;
+      const numStr = (numOrig != null ? '#' + numOrig + ' ' : '');
       const label  = (isBuy ? '✅ ' + numStr + 'ACHAT CORRIGÉ' : '✅ ' + numStr + 'VENTE CORRIGÉE')
                    + (pending ? ' ⏳' : '');
 
@@ -20700,7 +20719,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       ctx.fillText(label, x, by + 11);
       ctx.fillStyle = pending ? '#FCD34D' : '#CBD5E1';
       ctx.font = '8.5px "IBM Plex Mono",monospace';
-      ctx.fillText(pending ? 'en attente de clôture HTF' : ('Prix: ' + fmtP(entryP) + ' $ · strict+nuage'), x, by + 21);
+      ctx.fillText(pending ? 'en attente de clôture HTF'
+        : ('Prix: ' + fmtP(entryP) + ' $ · ' + (numOrig != null ? 'strict+nuage' : 'sans équivalent Z.Z.')),
+        x, by + 21);
       ctx.textAlign = 'left';
 
       window.__zzCorrDiag.drawn++;
@@ -21562,6 +21583,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       [CAPS('#FF5252','⚡ #13 VENTE Z.Z.'), 'Pastille Z.Z. de vente', 'Même chose dans l\'autre sens. Un seul signal par changement de sens : les achats consécutifs sont masqués.'],
       [DIAM('#8B5CF6'), 'Losange violet — ACHAT CORRIGÉ', 'Même signal recalculé sans lookahead, avec le Nuage EMA comme déclencheur. C\'est le prix auquel tu serais réellement entré.'],
       [DIAM('#F472B6'), 'Losange rose — VENTE CORRIGÉE', 'Version corrigée d\'une vente. L\'écart avec la pastille d\'origine est l\'avance indue qu\'elle avait.'],
+      ['<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(24,14,45,.95);border:1.4px solid #8B5CF6;color:#8B5CF6;font-size:9px;font-weight:700">✅ #46 ACHAT CORRIGÉ</span>', 'Numérotation des pastilles corrigées', 'Le numéro affiché est celui de la pastille Z.Z. d\'origine qu\'elle corrige, et non une numérotation interne. Quand la mention « sans équivalent Z.Z. » apparaît, c\'est un signal que seul le mode strict détecte.'],
       [DIAM('#F59E0B'), 'Losange ambre + ⏳', 'Signal provisoire : la bougie 15m qui le produit n\'a pas encore clôturé. Il peut disparaître.'],
       [CAPS('#FF007A','🔻 SORTIE ACHAT'), 'Pastille rose', 'Divergence détectée par kk bis : le prix fait un plus haut, le score un plus bas. L\'élan s\'épuise, c\'est le moment de fermer un achat. La pastille indique le prix de sortie.'],
       [CAPS('#FFD700','🔺 SORTIE VENTE'), 'Pastille or', 'Divergence inverse : le prix fait un plus bas, le score un plus haut. Moment de fermer une vente.'],
