@@ -3551,7 +3551,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -4564,7 +4564,24 @@ function getInd(key){
       });
       exits.sort(function(a,b){return a.i-b.i;});
 
-      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs};
+      // ---------- SECONDE UNITÉ DE TEMPS ----------
+      // Même indicateur, autre échelle de temps, superposé sur le même panneau.
+      // Permet de voir d'un coup si le 5m et le 15m disent la même chose.
+      let net2=null, sg2=null;
+      const tf2raw = ind.tf2;
+      const tf2 = (tf2raw && tf2raw !== 'off') ? +tf2raw : null;
+      if(tf2 && tf2 > 0){
+        const bars2 = (tf2 === state.tf) ? d : getMTFBars(tf2);
+        if(bars2 && bars2.length > 30){
+          try{
+            const r2 = calc.twoIndicator(bars2, ind);
+            net2 = (bars2 === d) ? (r2.net||[]) : mapHTF(bars2, r2.net||[], d);
+            sg2  = (bars2 === d) ? (r2.signal||[]) : mapHTF(bars2, r2.signal||[], d);
+          }catch(e){ net2 = sg2 = null; }
+        }
+      }
+
+      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs,net2,sg2,tf2};
       else{
         const M=a=>mapHTF(src,a,d);
         const R=x=>{const gi=idxOfTime(x.t!=null?x.t:(src[x]||{}).t); return gi;};
@@ -4573,7 +4590,8 @@ function getInd(key){
           peaks:peaks.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
           troughs:troughs.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
           divs:divs.map(dv=>{const a=idxOfTime(src[dv.i1].t),b=idxOfTime(src[dv.i2].t);
-            return (a!=null&&b!=null)?Object.assign({},dv,{i1:a,i2:b}):null;}).filter(Boolean)};
+            return (a!=null&&b!=null)?Object.assign({},dv,{i1:a,i2:b}):null;}).filter(Boolean),
+          net2:net2, sg2:sg2, tf2:tf2};
       }
       return state.cache[ck];
     }
@@ -7500,7 +7518,8 @@ function drawRangeDet2Sub(p,s,e,cw){
 function volAutoRange(res, s, e){
   let lo = Infinity, hi = -Infinity;
   for(let i = Math.max(0, s - 1); i < e; i++){
-    for(const v of [res.net ? res.net[i] : null, res.signal ? res.signal[i] : null]){
+    for(const v of [res.net ? res.net[i] : null, res.signal ? res.signal[i] : null,
+                    res.net2 ? res.net2[i] : null]){
       if(v != null && isFinite(v)){ if(v < lo) lo = v; if(v > hi) hi = v; }
     }
   }
@@ -7614,6 +7633,35 @@ function drawKKBisSub(p, s, e, cw) {
   });
   ctx.restore();
 
+  // SECONDE UNITÉ DE TEMPS : ligne superposée, couleur distincte
+  if (res.net2 && res.tf2) {
+    const c2 = S('kk_bis','cLine2') || '#FF9F1C';
+    const clamp2 = v => isVolB ? v : Math.max(-100, Math.min(100, v));
+    ctx.save();
+    ctx.strokeStyle = c2; ctx.lineWidth = 2; ctx.globalAlpha = 0.95;
+    ctx.beginPath();
+    let st2 = false;
+    for (let i = Math.max(0, s - 1); i < e; i++) {
+      if (res.net2[i] == null) { st2 = false; continue; }
+      const x = xOf(i), y = yOf(clamp2(res.net2[i]));
+      st2 ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), st2 = true);
+    }
+    ctx.stroke();
+
+    if (S('kk_bis','showSig2') === true && res.sg2) {
+      ctx.strokeStyle = S('kk_bis','cSig2') || '#FFD59E';
+      ctx.lineWidth = 1; ctx.setLineDash([3, 2]);
+      ctx.beginPath(); let st3 = false;
+      for (let i = Math.max(0, s - 1); i < e; i++) {
+        if (res.sg2[i] == null) { st3 = false; continue; }
+        const x = xOf(i), y = yOf(clamp2(res.sg2[i]));
+        st3 ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), st3 = true);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
+
   // Seuils ADAPTATIFS : deux courbes qui respirent avec le marché,
   // là où l'indicateur d'origine trace deux droites fixes.
   ctx.save();
@@ -7700,8 +7748,14 @@ function drawKKBisSub(p, s, e, cw) {
   const tf = state.indicators.kk_bis?.tf;
   const aTf = (!tf || tf === 'chart') ? state.tf : tf;
   const tag = ({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H','1440':'1J'}[aTf] || (aTf + 'm'));
-  subLabel(p, 'kk bis · ' + tag + ' · seuils adaptatifs',
-    (nv != null ? nv.toFixed(1) : '—') + (uv != null ? '  (seuil ±' + uv.toFixed(1) + ')' : ''),
+  const t2 = res.tf2;
+  const t2tag = t2 ? ({'1':'1m','2':'2m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[String(t2)] || (t2 + 'm')) : null;
+  const n2 = (res.net2 && res.net2[hi] != null) ? res.net2[hi] : null;
+  const dec2 = isVolB ? 3 : 1;
+  subLabel(p, 'kk bis · ' + tag + (t2tag ? ' + ' + t2tag : '') + ' · seuils adaptatifs',
+    (nv != null ? nv.toFixed(dec2) : '—')
+      + (t2tag ? '   ' + t2tag + ': ' + (n2 != null ? n2.toFixed(dec2) : '—') : '')
+      + (uv != null ? '   (seuil ±' + uv.toFixed(dec2) + ')' : ''),
     nv != null ? (nv >= 0 ? cGold : cPurp) : '#94A3B8', '#000000');
 }
 
@@ -11376,6 +11430,10 @@ const SCHEMA={
   ]},
   kk_bis:{title:'kk bis — seuils adaptatifs',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'tf2',t:'choice',lab:'Seconde unité de temps',opts:[{v:'off',t:'Aucune'},{v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off',ind:1},
+    {k:'cLine2',t:'col',lab:'Couleur seconde ligne',def:'#FF9F1C'},
+    {k:'showSig2',t:'bool',lab:'Signal de la seconde ligne',def:false},
+    {k:'cSig2',t:'col',lab:'Couleur signal seconde ligne',def:'#FFD59E'},
     {k:'kMult',t:'num',lab:'Seuil = k × écart quadratique',min:0.2,max:4,def:1.2,ind:1},
     {k:'rmsWin',t:'num',lab:'Fenêtre de l\'écart quadratique',min:20,max:500,def:100,ind:1},
     {k:'armBars',t:'num',lab:'Bougies de confirmation',min:1,max:10,def:2,ind:1},
