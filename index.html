@@ -2352,12 +2352,17 @@ const TwoIndicator = (function (root, factory) {
       g.addColorStop(0, hexA('#800000', 0.85)); g.addColorStop(1, hexA('#800000', 0));
       ctx.fillStyle = g; ctx.fillRect(left, yT, W, Math.max(0, yUpper - yT));
 
+      // Pine : fill(center, upper, upperLevel, 0.0, alpha 100 -> alpha fill_alpha)
+      // Une transparence Pine de 85 correspond à une opacité de 0,15.
+      const FA = (o.fillAlpha != null ? o.fillAlpha : 85);
+      const OP = Math.max(0, Math.min(1, (100 - FA) / 100));
+
       g = ctx.createLinearGradient(0, yUpper, 0, y0);
-      g.addColorStop(0, hexA(GOLD, 0)); g.addColorStop(1, hexA(GOLD, 0.22));
+      g.addColorStop(0, hexA(GOLD, 0)); g.addColorStop(1, hexA(GOLD, OP));
       ctx.fillStyle = g; ctx.fillRect(left, yUpper, W, Math.max(0, y0 - yUpper));
 
       g = ctx.createLinearGradient(0, y0, 0, yLower);
-      g.addColorStop(0, hexA(PURP, 0.22)); g.addColorStop(1, hexA(PURP, 0));
+      g.addColorStop(0, hexA(PURP, OP)); g.addColorStop(1, hexA(PURP, 0));
       ctx.fillStyle = g; ctx.fillRect(left, y0, W, Math.max(0, yLower - y0));
 
       g = ctx.createLinearGradient(0, yLower, 0, yB);
@@ -2382,7 +2387,7 @@ const TwoIndicator = (function (root, factory) {
     }
 
     // Ligne de signal
-    ctx.strokeStyle = hexA(CSIG, 0.85); ctx.lineWidth = 1.2; ctx.beginPath();
+    ctx.strokeStyle = hexA(CSIG, 1); ctx.lineWidth = 1; ctx.beginPath();
     let started = false;
     for (let i = Math.max(0, s - 1); i < e; i++) {
       if (sig[i] == null) { started = false; continue; }
@@ -2391,11 +2396,16 @@ const TwoIndicator = (function (root, factory) {
     }
     ctx.stroke();
 
-    // Ligne Score
-    ctx.lineWidth = 2.4;
+    // Ligne Score — Pine : color1 = net_score > signal_value ? #00FF00 : #ff0000
+    //                       plot(net_score, "Score", color1, 3)
+    // Le vert et le rouge sont ceux du Pine ; l'or et le violet restent
+    // réservés aux zones de fond, exactement comme dans l'original.
+    const SC_UP = col.cScoreUp || '#00FF00';
+    const SC_DN = col.cScoreDn || '#FF0000';
+    ctx.lineWidth = 3;
     for (let i = Math.max(1, s - 1); i < e; i++) {
       if (net[i] == null || net[i - 1] == null) continue;
-      ctx.strokeStyle = (sig[i] != null && net[i] > sig[i]) ? GOLD : PURP;
+      ctx.strokeStyle = (sig[i] != null && net[i] > sig[i]) ? SC_UP : SC_DN;
       ctx.beginPath(); ctx.moveTo(xOf(i - 1), yOf(net[i - 1])); ctx.lineTo(xOf(i), yOf(net[i])); ctx.stroke();
     }
   }
@@ -3526,7 +3536,7 @@ const state = {
     rangeDet2:{on:true,period:14,threshold:25,showOverlay:true,showSubpane:true,cRange:'#EC4899',cHigh:'#F43F5E',cLow:'#10B981',cTrend:'#06B6D4',tf:'chart'},
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
-    two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#9598A1',upper:64,lower:-64,transitionEasing:50,fillBg:true,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
+    two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:false,invertSignal:true},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
@@ -7356,7 +7366,7 @@ function drawTwoIndSub(p, s, e, cw) {
     height: p.h,
     upper: upper,
     lower: lower,
-    fillBg: fillBg,
+    fillBg: fillBg, fillAlpha: (typeof S==='function' ? S('two_ind','fillAlpha') : 85),
     showZero: S('two_ind','showZero') !== false,
     colors: { cGold: cGold, cPurp: cPurp, cSig: cSig, up: cGold, down: cPurp, signal: cSig }
   });
