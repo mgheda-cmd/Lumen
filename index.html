@@ -21717,6 +21717,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const bar = state.data[f.i]; if(!bar) continue;
       const isBuy = (f.dir === 1);
       const x = xOf(f.i);
+      // Le marqueur se place AU-DELÀ de la pastille Z.Z. : sous la pastille
+      // d'achat, au-dessus de la pastille de vente. Le décalage initial saute
+      // par-dessus la capsule Z.Z., et placeBadge empile ensuite proprement.
+      const SAUT = 46;
       const anchorY = isBuy ? yOf(bar.l) + 6 : yOf(bar.h) - 6;
 
       const txt = '⚠ À ÉLIMINER';
@@ -21728,7 +21732,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const w2 = ctx.measureText(sub).width;
       const bw = Math.max(w1, w2) + 12, bh = 23;
 
-      let by = isBuy ? (anchorY + 8) : (anchorY - bh - 8);
+      let by = isBuy ? (anchorY + SAUT) : (anchorY - bh - SAUT);
       if(typeof placeBadge === 'function') by = placeBadge(x - bw/2, bw, by, bh, isBuy ? 1 : -1);
       const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
 
