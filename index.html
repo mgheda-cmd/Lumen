@@ -3557,7 +3557,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:false,noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:false,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -11611,6 +11611,7 @@ const SCHEMA={
     {k:'showDiv',t:'bool',lab:'Divergences prix / score',def:true},
     {k:'showDivOnPrice',t:'bool',lab:'Reporter les divergences sur le prix',def:true},
     {k:'showSeuilOnPrice',t:'bool',lab:'Reporter aussi les sorties par seuil',def:false},
+    {k:'noiseTf',t:'choice',lab:'Bruit — unité de temps du score',opts:[{v:'chart',t:'Celle du graphique'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart',ind:1},
     {k:'noiseWin',t:'num',lab:'Bruit — fenêtre d\'amplitude',min:10,max:200,def:40,ind:1},
     {k:'noiseAmp',t:'num',lab:'Bruit — amplitude minimale',min:5,max:150,def:45,ind:1},
     {k:'noiseElan',t:'num',lab:'Bruit — fraction du seuil',min:0.1,max:1,def:0.45,ind:1},
@@ -21692,14 +21693,24 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(!d.length) return null;
     const base = (state.indicators && state.indicators.strat_zz) || {};
     const kb   = (state.indicators && state.indicators.kk_bis) || {};
-    const key = d.length + '_' + d[d.length-1].t + '_' + state.tf;
+    const key = d.length + '_' + d[d.length-1].t + '_' + state.tf + '_' + (kb.noiseTf||'chart') + '_' + (kb.noiseWin||40) + '_' + (kb.noiseAmp||45) + '_' + (kb.noiseElan||0.45) + '_' + (kb.noiseGap||25);
     if(key === cacheKey && cacheRes) return cacheRes;
 
-    // Score KK sur l'unité de temps du graphique
-    let net = [];
+    // Score KK. Par défaut l'unité de temps du graphique, mais réglable :
+    // une unité plus haute lisse le score, donc l'amplitude sur la fenêtre
+    // diminue et davantage d'entrées passent pour du bruit.
+    const ntfRaw = kb.noiseTf || 'chart';
+    const ntf = (ntfRaw === 'chart') ? null : +ntfRaw;
+    let net = [], srcBars = d;
     try{
-      const r = calc.twoIndicator(d, Object.assign({}, (state.indicators||{}).two_ind || {}, {tf:'chart'}));
-      net = r && r.net ? r.net : [];
+      if(ntf && ntf !== state.tf){
+        srcBars = getMTFBars(ntf);
+        const r = calc.twoIndicator(srcBars, Object.assign({}, (state.indicators||{}).two_ind || {}, {tf:ntf}));
+        net = mapHTF(srcBars, (r && r.net) || [], d);
+      } else {
+        const r = calc.twoIndicator(d, Object.assign({}, (state.indicators||{}).two_ind || {}, {tf:'chart'}));
+        net = (r && r.net) ? r.net : [];
+      }
     }catch(e){ net = []; }
     if(!net.length) return null;
 
@@ -21755,6 +21766,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         if(B) motifs.push('sans élan');
         if(C) motifs.push(gap + ' bougies');
         flags.push({ i: i, dir: sg.dir, num: sg.num, motifs: motifs.join(' · ') });
+        // sg.num est le numéro de la pastille Z.Z. exactement visée
       }
       prevI = i;
     }
@@ -21768,7 +21780,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const R = compute();
     const btn = document.getElementById('noise-btn');
     if(!R){ if(btn) btn.textContent = '🔇 BRUIT : —'; return; }
-    if(btn) btn.textContent = '🔇 BRUIT : ' + R.flags.length + '/' + R.total;
+    if(btn){
+      const kbc = (state.indicators && state.indicators.kk_bis) || {};
+      const t = kbc.noiseTf || 'chart';
+      const tag = (t === 'chart') ? (state.tf + 'm') : ({'3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[String(t)] || t + 'm');
+      btn.textContent = '🔇 BRUIT ' + tag + ' : ' + R.flags.length + '/' + R.total;
+    }
 
     for(const f of R.flags){
       if(f.i < s || f.i > e) continue;
@@ -21781,7 +21798,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const SAUT = 46;
       const anchorY = isBuy ? yOf(bar.l) + 6 : yOf(bar.h) - 6;
 
-      const txt = '⚠ À ÉLIMINER';
+      const numTxt = (f.num != null) ? ('#' + f.num) : '';
+      const txt = '⚠ À ÉLIMINER ' + numTxt;
       const sub = f.motifs;
       ctx.save();
       ctx.font = 'bold 9px "IBM Plex Mono",monospace';
