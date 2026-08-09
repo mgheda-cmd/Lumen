@@ -3557,7 +3557,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:false,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:false,noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -5608,6 +5608,8 @@ function render(){
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf, cw);
   // Couche supplémentaire : pastilles corrigées (mode strict). Les originales sont conservées.
   if(vis('strat_zz') && window.__zzShowCorrected && typeof window.drawZZCorrected === 'function') window.drawZZCorrected(s, e, yOf, cw);
+  // Marqueurs de bruit : ajoutés au-dessus des pastilles, sans les modifier.
+  if(vis('strat_zz') && window.__noiseOn && typeof window.drawNoiseMarks === 'function') window.drawNoiseMarks(s, e, yOf);
   // Divergences kk bis reportées sur le prix : c'est là que la sortie se joue.
   if(vis('kk_bis') && S('kk_bis','showDivOnPrice') !== false){
     try{
@@ -11557,6 +11559,10 @@ const SCHEMA={
     {k:'showDiv',t:'bool',lab:'Divergences prix / score',def:true},
     {k:'showDivOnPrice',t:'bool',lab:'Reporter les divergences sur le prix',def:true},
     {k:'showSeuilOnPrice',t:'bool',lab:'Reporter aussi les sorties par seuil',def:false},
+    {k:'noiseWin',t:'num',lab:'Bruit — fenêtre d\'amplitude',min:10,max:200,def:40,ind:1},
+    {k:'noiseAmp',t:'num',lab:'Bruit — amplitude minimale',min:5,max:150,def:45,ind:1},
+    {k:'noiseElan',t:'num',lab:'Bruit — fraction du seuil',min:0.1,max:1,def:0.45,ind:1},
+    {k:'noiseGap',t:'num',lab:'Bruit — écart minimal entre entrées',min:2,max:200,def:25,ind:1},
     {k:'showPivots',t:'bool',lab:'Sommets et creux du score',def:true},
     {k:'pivotLen',t:'num',lab:'Largeur du sommet (bougies)',min:1,max:15,def:3,ind:1},
     {k:'divMinBars',t:'num',lab:'Écart minimum entre sommets',min:2,max:50,def:5,ind:1},
@@ -21523,6 +21529,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       [DIAM('#F59E0B'), 'Losange ambre + ⏳', 'Signal provisoire : la bougie 15m qui le produit n\'a pas encore clôturé. Il peut disparaître.'],
       [CAPS('#FF007A','🔻 SORTIE ACHAT'), 'Pastille rose', 'Divergence détectée par kk bis : le prix fait un plus haut, le score un plus bas. L\'élan s\'épuise, c\'est le moment de fermer un achat. La pastille indique le prix de sortie.'],
       [CAPS('#FFD700','🔺 SORTIE VENTE'), 'Pastille or', 'Divergence inverse : le prix fait un plus bas, le score un plus haut. Moment de fermer une vente.'],
+      ['<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(30,20,4,.93);border:1.4px solid #F59E0B;color:#F59E0B;font-size:9px;font-weight:700">⚠ À ÉLIMINER</span>', 'Marqueur ambre au-dessus d\'une pastille', 'L\'entrée Z.Z. tombe dans un marché sans direction. Le sous-titre donne le motif : « amplitude 32 » quand le score KK reste plat, « sans élan » quand il est loin de son seuil, « 12 bougies » quand l\'entrée précédente est trop proche. Il faut deux motifs sur trois pour être marqué. La pastille Z.Z. n\'est pas modifiée, on ajoute seulement l\'avertissement.'],
       [CIRC('#FF007A',9)+' <span style="color:#FF007A;font-size:9px;font-weight:700">64985</span>', 'Petit rond + prix', 'Sortie par seuil de kk bis, bien plus fréquente que les divergences. Masquée par défaut : à activer dans les paramètres via « Reporter aussi les sorties par seuil ». Rose ferme un achat, or ferme une vente.'],
     ]},
     { titre:'Panneau kk (indicateur d\'origine)', items:[
@@ -21593,6 +21600,179 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       b.style.cssText='font-size:11px;padding:4px 9px;background:rgba(226,232,240,.10);border:1px solid #94A3B8;color:#CBD5E1;font-weight:700';
       b.textContent='📖 LÉGENDE';
       b.onclick=window.openLegende;
+      a.parentNode.insertBefore(b, a.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
+
+/* ================================================================
+   FILTRE DE BRUIT — repérage des entrées inutiles
+   Ne touche à rien : les pastilles Z.Z. restent identiques. Un petit
+   marqueur est simplement ajouté au-dessus de celles qui, au moment
+   où elles apparaissent, tombent dans des conditions de marché sans
+   direction. Trois critères, tous calculés SANS information future :
+
+     A · AMPLITUDE FAIBLE — sur les L dernières bougies, l'écart entre
+         le plus haut et le plus bas du score KK reste sous un seuil.
+         Le marché oscille sans trancher.
+     B · ÉLAN ABSENT — au moment de l'entrée, |score| est très en
+         dessous du seuil adaptatif. Aucune impulsion n'est engagée.
+     C · ENTRÉE TROP RAPPROCHÉE — la précédente date de moins de N
+         bougies. Signe classique d'un aller-retour dans un range.
+
+   Une entrée marquée cumule au moins deux critères sur trois.
+   ================================================================ */
+(function(){
+
+  window.__noiseOn = (localStorage.getItem('lumen_noise') === '1');
+  let cacheKey = null, cacheRes = null;
+
+  function compute(){
+    const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
+    if(!d.length) return null;
+    const base = (state.indicators && state.indicators.strat_zz) || {};
+    const kb   = (state.indicators && state.indicators.kk_bis) || {};
+    const key = d.length + '_' + d[d.length-1].t + '_' + state.tf;
+    if(key === cacheKey && cacheRes) return cacheRes;
+
+    // Score KK sur l'unité de temps du graphique
+    let net = [];
+    try{
+      const r = calc.twoIndicator(d, Object.assign({}, (state.indicators||{}).two_ind || {}, {tf:'chart'}));
+      net = r && r.net ? r.net : [];
+    }catch(e){ net = []; }
+    if(!net.length) return null;
+
+    // Écart quadratique glissant, pour un seuil comparable à celui de kk bis
+    const win = +kb.rmsWin || 100, kM = +kb.kMult || 1.2;
+    const rms = new Array(net.length).fill(null);
+    const q = []; let acc = 0;
+    for(let j=0;j<net.length;j++){
+      const v = net[j];
+      if(v != null){ q.push(v*v); acc += v*v; if(q.length > win) acc -= q.shift(); }
+      if(q.length > 10) rms[j] = Math.sqrt(acc/q.length);
+    }
+
+    // Entrées Z.Z. telles qu'affichées, avec le filtre de position
+    let sigs = [];
+    try{ sigs = (computeZZSignals(d, base) || []).filter(x => !x.isExit); }catch(e){ return null; }
+    let lastDir = 0;
+    sigs = sigs.filter(function(x){ if(x.dir === lastDir) return false; lastDir = x.dir; return true; });
+
+    const L        = +kb.noiseWin   || 40;   // fenêtre d'amplitude
+    const ampSeuil = +kb.noiseAmp   || 45;   // amplitude minimale pour parler de tendance
+    const elanFrac = +kb.noiseElan  || 0.45; // fraction du seuil adaptatif
+    const gapMin   = +kb.noiseGap   || 25;   // écart minimal entre deux entrées
+
+    const flags = [];
+    let prevI = null;
+    for(const sg of sigs){
+      const i = (sg.t != null && typeof idxOfTime === 'function' ? idxOfTime(sg.t) : null) ?? sg.i;
+      if(i == null || i < 5){ prevI = i; continue; }
+
+      // A · amplitude du score sur la fenêtre
+      let mn = Infinity, mx = -Infinity;
+      for(let j = Math.max(0, i - L); j <= i; j++){
+        const v = net[j];
+        if(v != null){ if(v < mn) mn = v; if(v > mx) mx = v; }
+      }
+      const amp = (isFinite(mn) && isFinite(mx)) ? (mx - mn) : null;
+      const A = (amp != null && amp < ampSeuil);
+
+      // B · élan au moment de l'entrée
+      const seuil = rms[i] != null ? kM * rms[i] : null;
+      const nv = net[i];
+      const B = (nv != null && seuil != null && Math.abs(nv) < elanFrac * seuil);
+
+      // C · entrée trop rapprochée
+      const gap = (prevI != null) ? (i - prevI) : null;
+      const C = (gap != null && gap < gapMin);
+
+      const score = (A?1:0) + (B?1:0) + (C?1:0);
+      if(score >= 2){
+        const motifs = [];
+        if(A) motifs.push('amplitude ' + (amp != null ? amp.toFixed(0) : '?'));
+        if(B) motifs.push('sans élan');
+        if(C) motifs.push(gap + ' bougies');
+        flags.push({ i: i, dir: sg.dir, num: sg.num, motifs: motifs.join(' · ') });
+      }
+      prevI = i;
+    }
+
+    cacheKey = key;
+    cacheRes = { flags: flags, total: sigs.length };
+    return cacheRes;
+  }
+
+  window.drawNoiseMarks = function(s, e, yOf){
+    const R = compute();
+    const btn = document.getElementById('noise-btn');
+    if(!R){ if(btn) btn.textContent = '🔇 BRUIT : —'; return; }
+    if(btn) btn.textContent = '🔇 BRUIT : ' + R.flags.length + '/' + R.total;
+
+    for(const f of R.flags){
+      if(f.i < s || f.i > e) continue;
+      const bar = state.data[f.i]; if(!bar) continue;
+      const isBuy = (f.dir === 1);
+      const x = xOf(f.i);
+      const anchorY = isBuy ? yOf(bar.l) + 6 : yOf(bar.h) - 6;
+
+      const txt = '⚠ À ÉLIMINER';
+      const sub = f.motifs;
+      ctx.save();
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      const w1 = ctx.measureText(txt).width;
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      const w2 = ctx.measureText(sub).width;
+      const bw = Math.max(w1, w2) + 12, bh = 23;
+
+      let by = isBuy ? (anchorY + 8) : (anchorY - bh - 8);
+      if(typeof placeBadge === 'function') by = placeBadge(x - bw/2, bw, by, bh, isBuy ? 1 : -1);
+      const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+
+      const col = '#F59E0B';
+      ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.moveTo(x, anchorY); ctx.lineTo(x, isBuy ? by : by + bh); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(30,20,4,.93)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.4;
+      if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+      else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = col;
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, bx + bw/2, by + 10);
+      ctx.fillStyle = '#FCD34D';
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      ctx.fillText(sub, bx + bw/2, by + 19);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
+  };
+
+  window.toggleNoise = function(){
+    window.__noiseOn = !window.__noiseOn;
+    try{ localStorage.setItem('lumen_noise', window.__noiseOn ? '1':'0'); }catch(e){}
+    cacheKey = null;
+    const b = document.getElementById('noise-btn');
+    if(b && !window.__noiseOn) b.textContent = '🔇 BRUIT : OFF';
+    if(typeof render === 'function') render();
+  };
+
+  try{
+    const a = document.getElementById('leg-btn');
+    if(a && !document.getElementById('noise-btn')){
+      const b = document.createElement('button');
+      b.id = 'noise-btn'; b.className = 'btn';
+      b.title = "Marque les entrées Z.Z. qui tombent dans un marché sans direction : score KK d'amplitude faible, sans élan, ou entrées trop rapprochées. Les pastilles Z.Z. ne sont pas modifiées.";
+      b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(245,158,11,.14);border:1px solid #F59E0B;color:#FCD34D;font-weight:700';
+      b.textContent = window.__noiseOn ? '🔇 BRUIT : …' : '🔇 BRUIT : OFF';
+      b.onclick = window.toggleNoise;
       a.parentNode.insertBefore(b, a.nextSibling);
     }
   }catch(e){}
