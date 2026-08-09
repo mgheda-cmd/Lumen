@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/mexc", "destination": "/api/mexc.js" },
+    { "source": "/api/mexc/signed", "destination": "/api/mexc.js" }
+  ]
+}
