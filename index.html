@@ -19941,9 +19941,16 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     return bucketEnd > lastT;
   }
 
+  window.__zzCorrDiag = { total:0, drawn:0, err:null };
+
   window.drawZZCorrected = function(s, e, yOf, cw){
-    const sigs = correctedSignals();
-    if(!sigs.length) return;
+    let sigs = [];
+    try{ sigs = correctedSignals(); }
+    catch(err){ window.__zzCorrDiag.err = err.message; updateCorrBadge(); return; }
+    window.__zzCorrDiag.total = sigs.length;
+    window.__zzCorrDiag.drawn = 0;
+    window.__zzCorrDiag.err = null;
+    if(!sigs.length){ updateCorrBadge(); return; }
     const d = state.data;
     const ind = (state.indicators && state.indicators.strat_zz) || {};
     if(ind.showEntries === false) return;
@@ -20008,11 +20015,23 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       ctx.fillText(pending ? 'en attente de clôture HTF' : ('Prix: ' + fmtP(entryP) + ' $ · strict'), x, by + 21);
       ctx.textAlign = 'left';
 
-      if(typeof labelHits !== 'undefined'){
-        labelHits.push({x: x - bw/2, y: by, w: bw, h: bh, key: 'strat_zz'});
-      }
+      window.__zzCorrDiag.drawn++;
+
+      try{ if(typeof labelHits !== 'undefined' && labelHits) labelHits.push({x: x - bw/2, y: by, w: bw, h: bh, key: 'strat_zz'}); }catch(e){}
     }
+    updateCorrBadge();
   };
+
+  function updateCorrBadge(){
+    const b = document.getElementById('zzcorr-btn');
+    if(!b || !window.__zzShowCorrected) return;
+    const D = window.__zzCorrDiag;
+    if(D.err){ b.textContent = '✅ CORRIGÉ : ERREUR'; b.title = 'Erreur : ' + D.err; return; }
+    b.textContent = '✅ CORRIGÉ : ' + D.drawn + '/' + D.total;
+    b.title = D.total + ' signaux stricts calculés sur tout l\'historique chargé, '
+            + D.drawn + ' visibles dans la fenêtre actuelle. '
+            + (D.total === 0 ? 'Aucun signal strict : soit les conditions ne sont jamais réunies sans lookahead, soit computeZZSignals ne renvoie rien en mode strict.' : '');
+  }
 
   window.toggleZZCorrected = function(){
     window.__zzShowCorrected = !window.__zzShowCorrected;
