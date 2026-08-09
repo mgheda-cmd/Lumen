@@ -21310,6 +21310,101 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
 })();
 
+
+/* ================================================================
+   LÉGENDE — inventaire des marqueurs dessinés sur le graphique
+   ================================================================ */
+(function(){
+
+  const TRI_UP = function(c,sz){ sz=sz||9; return '<span style="display:inline-block;width:0;height:0;border-left:'+sz+'px solid transparent;border-right:'+sz+'px solid transparent;border-bottom:'+(sz*1.4)+'px solid '+c+'"></span>'; };
+  const TRI_DN = function(c,sz){ sz=sz||9; return '<span style="display:inline-block;width:0;height:0;border-left:'+sz+'px solid transparent;border-right:'+sz+'px solid transparent;border-top:'+(sz*1.4)+'px solid '+c+'"></span>'; };
+  const DIAM   = function(c,sz){ sz=sz||13; return '<span style="display:inline-block;width:'+sz+'px;height:'+sz+'px;background:'+c+';transform:rotate(45deg);border:1.5px solid #fff"></span>'; };
+  const CIRC   = function(c,sz){ sz=sz||13; return '<span style="display:inline-block;width:'+sz+'px;height:'+sz+'px;background:'+c+';border-radius:50%;border:1.5px solid #fff"></span>'; };
+  const CAPS   = function(c,t){ return '<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:rgba(10,15,25,.9);border:1.5px solid '+c+';color:'+c+';font-size:9.5px;font-weight:700;white-space:nowrap">'+t+'</span>'; };
+  const LINE   = function(c,dash){ return '<span style="display:inline-block;width:34px;height:0;border-top:'+(dash?'2px dashed ':'2.5px solid ')+c+'"></span>'; };
+
+  const SECTIONS = [
+    { titre:'Sur le graphique de prix', items:[
+      [CAPS('#25D0A4','⚡ #12 ACHAT Z.Z.'), 'Pastille Z.Z. d\'achat', 'Signal d\'entrée de l\'indicateur d\'origine. Le texte indique le déclencheur : Nuage EMA, EMA 9 / HA 5m, Range Oscillator ou Impulse MACD 15m.'],
+      [CAPS('#FF5252','⚡ #13 VENTE Z.Z.'), 'Pastille Z.Z. de vente', 'Même chose dans l\'autre sens. Un seul signal par changement de sens : les achats consécutifs sont masqués.'],
+      [DIAM('#8B5CF6'), 'Losange violet — ACHAT CORRIGÉ', 'Même signal recalculé sans lookahead, avec le Nuage EMA comme déclencheur. C\'est le prix auquel tu serais réellement entré.'],
+      [DIAM('#F472B6'), 'Losange rose — VENTE CORRIGÉE', 'Version corrigée d\'une vente. L\'écart avec la pastille d\'origine est l\'avance indue qu\'elle avait.'],
+      [DIAM('#F59E0B'), 'Losange ambre + ⏳', 'Signal provisoire : la bougie 15m qui le produit n\'a pas encore clôturé. Il peut disparaître.'],
+      [TRI_DN('#FF007A'), 'Triangle rose — SORTIE ACHAT', 'Divergence détectée par kk bis : le prix fait un plus haut, le score un plus bas. L\'élan s\'épuise, c\'est le moment de fermer un achat.'],
+      [TRI_UP('#FFD700'), 'Triangle or — SORTIE VENTE', 'Divergence inverse : le prix fait un plus bas, le score un plus haut. Moment de fermer une vente.'],
+    ]},
+    { titre:'Panneau kk (indicateur d\'origine)', items:[
+      [CIRC('#FF007A'), 'Rond rose', 'Sortie d\'achat : le score repasse sous le niveau haut après l\'avoir dépassé.'],
+      [CIRC('#FFD700'), 'Rond or', 'Sortie de vente : le score repasse au-dessus du niveau bas.'],
+      [LINE('#00FF00'), 'Ligne verte', 'Score au-dessus de sa ligne de signal.'],
+      [LINE('#FF0000'), 'Ligne rouge', 'Score sous sa ligne de signal.'],
+      [LINE('#FFFFFF'), 'Ligne blanche fine', 'Ligne de signal.'],
+    ]},
+    { titre:'Panneau kk bis', items:[
+      [LINE('#22D3EE',1), 'Pointillés cyan', 'Seuil haut adaptatif. Il se resserre en marché calme, s\'élargit en marché agité, au lieu d\'une droite fixe.'],
+      [LINE('#F472B6',1), 'Pointillés roses', 'Seuil bas adaptatif.'],
+      [TRI_UP('#FF8A80',6), 'Petit triangle rouge', 'Sommet local du score. Premier signe d\'essoufflement, plusieurs bougies avant le retour sous le seuil.'],
+      [TRI_DN('#25D0A4',6), 'Petit triangle vert', 'Creux local du score.'],
+      [LINE('#FF007A'), 'Trait plein + DIV ▼', 'Divergence baissière : relie les deux sommets concernés. Sortie d\'achat.'],
+      [LINE('#FFD700'), 'Trait plein + DIV ▲', 'Divergence haussière : relie les deux creux. Sortie de vente.'],
+      [DIAM('#FF007A'), 'Losange rose', 'Sortie d\'achat confirmée : seuil franchi, retournement de pente et passage sous la ligne de signal.'],
+      [DIAM('#FFD700'), 'Losange or', 'Sortie de vente confirmée.'],
+    ]},
+    { titre:'Zones et niveaux', items:[
+      ['<span style="display:inline-block;width:26px;height:13px;background:rgba(255,82,82,.28);border:1px solid #FF5252"></span>', 'Rectangle rouge pâle', 'Résistance ou Order Block vendeur.'],
+      ['<span style="display:inline-block;width:26px;height:13px;background:rgba(122,162,255,.28);border:1px solid #7AA2FF"></span>', 'Rectangle bleu', 'Support ou Order Block acheteur.'],
+      [LINE('#7E8CA8',1), 'Pointillés gris', 'Support ou résistance issu du MACD S/R.'],
+    ]}
+  ];
+
+  window.openLegende = function(){
+    let ov = document.getElementById('leg-overlay');
+    if(ov){ ov.style.display='flex'; return; }
+    ov = document.createElement('div');
+    ov.id='leg-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(2,6,23,.92);z-index:99999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px';
+
+    let h = '<div style="background:#0B1220;border:1px solid #1E293B;border-radius:12px;max-width:820px;width:100%;padding:18px;color:#E2E8F0">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+      + '<div style="font-size:17px;font-weight:800;color:#00E5FF">📖 Légende des marqueurs</div>'
+      + '<button onclick="document.getElementById(\'leg-overlay\').style.display=\'none\'" style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;cursor:pointer">Fermer</button></div>';
+
+    SECTIONS.forEach(function(sec){
+      h += '<div style="margin-bottom:6px;margin-top:14px;font-size:13px;font-weight:800;color:#7AA2FF;border-bottom:1px solid #1E293B;padding-bottom:5px">'+sec.titre+'</div>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+      sec.items.forEach(function(it,i){
+        h += '<tr style="border-bottom:1px solid #131c2e;background:'+(i%2?'rgba(255,255,255,.02)':'transparent')+'">'
+          + '<td style="padding:8px 10px;width:96px;text-align:center;vertical-align:middle">'+it[0]+'</td>'
+          + '<td style="padding:8px 6px;vertical-align:middle"><b style="color:#E2E8F0">'+it[1]+'</b>'
+          + '<div style="color:#94A3B8;font-size:11.5px;line-height:1.55;margin-top:2px">'+it[2]+'</div></td></tr>';
+      });
+      h += '</table>';
+    });
+
+    h += '<div style="margin-top:16px;padding:11px;border:1px solid #F59E0B;border-radius:7px;background:rgba(245,158,11,.06);font-size:11.5px;line-height:1.7;color:#CBD5E1">'
+      + '<b style="color:#F59E0B">Repère utile</b> — les <b>capsules</b> sont des entrées, les <b>losanges</b> et <b>triangles</b> des sorties. '
+      + 'Le <b>rose</b> ferme toujours un achat, l\'<b>or</b> ferme toujours une vente. '
+      + 'Tout ce qui est en <b>ambre ou en pointillés</b> n\'est pas encore confirmé.</div></div>';
+
+    ov.innerHTML = h;
+    document.body.appendChild(ov);
+  };
+
+  try{
+    const a = document.getElementById('kk-btn') || document.getElementById('cmp3-btn') || document.getElementById('btbis-btn');
+    if(a && !document.getElementById('leg-btn')){
+      const b=document.createElement('button');
+      b.id='leg-btn'; b.className='btn';
+      b.title='Que signifient les triangles, losanges et pastilles du graphique';
+      b.style.cssText='font-size:11px;padding:4px 9px;background:rgba(226,232,240,.10);border:1px solid #94A3B8;color:#CBD5E1;font-weight:700';
+      b.textContent='📖 LÉGENDE';
+      b.onclick=window.openLegende;
+      a.parentNode.insertBefore(b, a.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
 </script>
 </body>
 </html>
