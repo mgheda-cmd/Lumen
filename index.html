@@ -3557,7 +3557,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -7641,18 +7641,26 @@ function drawKKBisSub(p, s, e, cw) {
 
   // SECONDE UNITÉ DE TEMPS : ligne superposée, couleur distincte
   if (res.net2 && res.tf2) {
-    const c2 = S('kk_bis','cLine2') || '#FF9F1C';
+    // Même logique de couleur que la ligne principale : au-dessus de sa ligne
+    // de signal = haussier, en dessous = baissier. Teintes différentes pour
+    // qu'on distingue les deux unités de temps d'un coup d'œil.
+    const c2up = S('kk_bis','cLine2Up') || '#00E5FF';
+    const c2dn = S('kk_bis','cLine2Dn') || '#FF9F1C';
     const clamp2 = v => isVolB ? v : Math.max(-100, Math.min(100, v));
     ctx.save();
-    ctx.strokeStyle = c2; ctx.lineWidth = 2; ctx.globalAlpha = 0.95;
-    ctx.beginPath();
-    let st2 = false;
-    for (let i = Math.max(0, s - 1); i < e; i++) {
-      if (res.net2[i] == null) { st2 = false; continue; }
-      const x = xOf(i), y = yOf(clamp2(res.net2[i]));
-      st2 ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), st2 = true);
+    ctx.lineWidth = 2; ctx.globalAlpha = 0.95;
+    ctx.lineCap = 'round';
+    for (let i = Math.max(1, s - 1); i < e; i++) {
+      if (res.net2[i] == null || res.net2[i - 1] == null) continue;
+      const sg2v = res.sg2 ? res.sg2[i] : null;
+      ctx.strokeStyle = (sg2v != null)
+        ? (res.net2[i] > sg2v ? c2up : c2dn)
+        : (res.net2[i] >= res.net2[i - 1] ? c2up : c2dn);
+      ctx.beginPath();
+      ctx.moveTo(xOf(i - 1), yOf(clamp2(res.net2[i - 1])));
+      ctx.lineTo(xOf(i), yOf(clamp2(res.net2[i])));
+      ctx.stroke();
     }
-    ctx.stroke();
 
     if (S('kk_bis','showSig2') === true && res.sg2) {
       ctx.strokeStyle = S('kk_bis','cSig2') || '#FFD59E';
@@ -7760,7 +7768,8 @@ function drawKKBisSub(p, s, e, cw) {
   const dec2 = isVolB ? 3 : 1;
   subLabel(p, 'kk bis · ' + tag + (t2tag ? ' + ' + t2tag : '') + ' · seuils adaptatifs',
     (nv != null ? nv.toFixed(dec2) : '—')
-      + (t2tag ? '   ' + t2tag + ': ' + (n2 != null ? n2.toFixed(dec2) : '—') : '')
+      + (t2tag ? '   ' + t2tag + ': ' + (n2 != null ? n2.toFixed(dec2) : '—')
+                 + (n2 != null && res.sg2 && res.sg2[hi] != null ? (n2 > res.sg2[hi] ? ' ▲' : ' ▼') : '') : '')
       + (uv != null ? '   (seuil ±' + uv.toFixed(dec2) + ')' : ''),
     nv != null ? (nv >= 0 ? cGold : cPurp) : '#94A3B8', '#000000');
 }
@@ -11437,7 +11446,8 @@ const SCHEMA={
   kk_bis:{title:'kk bis — seuils adaptatifs',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'tf2',t:'choice',lab:'Seconde unité de temps',opts:[{v:'off',t:'Aucune'},{v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off',ind:1},
-    {k:'cLine2',t:'col',lab:'Couleur seconde ligne',def:'#FF9F1C'},
+    {k:'cLine2Up',t:'col',lab:'2ᵉ ligne — haussier',def:'#00E5FF'},
+    {k:'cLine2Dn',t:'col',lab:'2ᵉ ligne — baissier',def:'#FF9F1C'},
     {k:'showSig2',t:'bool',lab:'Signal de la seconde ligne',def:false},
     {k:'cSig2',t:'col',lab:'Couleur signal seconde ligne',def:'#FFD59E'},
     {k:'kMult',t:'num',lab:'Seuil = k × écart quadratique',min:0.2,max:4,def:1.2,ind:1},
@@ -21426,6 +21436,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       [LINE('#FFFFFF'), 'Ligne blanche fine', 'Ligne de signal.'],
     ]},
     { titre:'Panneau kk bis', items:[
+      [LINE('#00E5FF'), '2ᵉ ligne cyan', 'Seconde unité de temps, au-dessus de sa ligne de signal. Le mouvement de fond est haussier.'],
+      [LINE('#FF9F1C'), '2ᵉ ligne orange', 'Seconde unité de temps, sous sa ligne de signal. Mouvement de fond baissier. Quand les deux unités passent au même code couleur, le retournement est confirmé.'],
       [LINE('#22D3EE',1), 'Pointillés cyan', 'Seuil haut adaptatif. Il se resserre en marché calme, s\'élargit en marché agité, au lieu d\'une droite fixe.'],
       [LINE('#F472B6',1), 'Pointillés roses', 'Seuil bas adaptatif.'],
       [TRI_UP('#FF8A80',6), 'Petit triangle rouge', 'Sommet local du score. Premier signe d\'essoufflement, plusieurs bougies avant le retour sous le seuil.'],
