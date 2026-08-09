@@ -117,14 +117,23 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 }
 .gear:hover{color:var(--accent)}
 #cfg-back{
-  position:fixed;inset:0;background:rgba(6,10,20,.72);z-index:200;
+  position:fixed;inset:0;background:transparent;z-index:200;
   display:none;align-items:center;justify-content:center;padding:16px;
+  pointer-events:none;                 /* le graphique reste visible et utilisable */
 }
+#cfg-back > #cfg-box{ pointer-events:auto; }
 #cfg-back.open{display:flex}
 #cfg-box{
   background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
   width:min(560px,96vw);max-height:85vh;overflow:auto;
-  box-shadow:0 24px 60px rgba(0,0,0,.6);
+  box-shadow:0 24px 60px rgba(0,0,0,.75);
+  position:relative;                    /* déplacé par transform */
+  touch-action:none;
+}
+#cfg-head{ cursor:grab; user-select:none; }
+#cfg-head:active{ cursor:grabbing; }
+#cfg-head::before{
+  content:'⠿'; color:var(--muted); font-size:15px; margin-right:2px; opacity:.7;
 }
 #cfg-head{
   display:flex;align-items:center;gap:10px;padding:14px 16px;
@@ -11789,6 +11798,66 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
   if(Date.now() - _cfgOpenTime < 400) return;
   if(e.target.id==='cfg-back')document.getElementById('cfg-back').classList.remove('open');
 });
+/* Panneau de paramètres déplaçable : on le pousse de côté pour voir
+   l'effet des réglages sur le graphique pendant qu'on les modifie.
+   La position est mémorisée d'une ouverture à l'autre. */
+(function(){
+  const box = document.getElementById('cfg-box');
+  const head = document.getElementById('cfg-head');
+  if(!box || !head) return;
+  let dx = 0, dy = 0, sx = 0, sy = 0, dragging = false;
+
+  try{
+    const sv = JSON.parse(localStorage.getItem('lumen_cfg_pos') || 'null');
+    if(sv && isFinite(sv.x) && isFinite(sv.y)){ dx = sv.x; dy = sv.y; apply(); }
+  }catch(e){}
+
+  function apply(){ box.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; }
+
+  function clamp(){
+    const r = box.getBoundingClientRect();
+    // on garde toujours au moins l'en-tête accessible à l'écran
+    if(r.left > window.innerWidth - 80)  dx -= (r.left - (window.innerWidth - 80));
+    if(r.right < 80)                     dx += (80 - r.right);
+    if(r.top < 0)                        dy += -r.top;
+    if(r.top > window.innerHeight - 60)  dy -= (r.top - (window.innerHeight - 60));
+  }
+
+  function start(e){
+    if(e.target.closest('button')) return;
+    dragging = true;
+    const p = e.touches ? e.touches[0] : e;
+    sx = p.clientX - dx; sy = p.clientY - dy;
+    e.preventDefault();
+  }
+  function move(e){
+    if(!dragging) return;
+    const p = e.touches ? e.touches[0] : e;
+    dx = p.clientX - sx; dy = p.clientY - sy;
+    apply();
+    e.preventDefault();
+  }
+  function end(){
+    if(!dragging) return;
+    dragging = false;
+    clamp(); apply();
+    try{ localStorage.setItem('lumen_cfg_pos', JSON.stringify({x:dx, y:dy})); }catch(e){}
+  }
+
+  head.addEventListener('mousedown', start);
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  head.addEventListener('touchstart', start, {passive:false});
+  window.addEventListener('touchmove', move, {passive:false});
+  window.addEventListener('touchend', end);
+
+  // double-clic sur l'en-tête : recentrer
+  head.addEventListener('dblclick', function(){
+    dx = 0; dy = 0; apply();
+    try{ localStorage.removeItem('lumen_cfg_pos'); }catch(e){}
+  });
+})();
+
 document.getElementById('cfg-reset').addEventListener('click',()=>{
   if(!cfgInd)return;
   // Couleurs
