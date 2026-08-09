@@ -527,7 +527,13 @@ footer{
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="3">3m</span>
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="5">5m</span>
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="15">15m</span>
-        <span class="state">off</span>
+        <span class="sub" style="opacity:.7;margin-left:8px;font-size:9px">2ᵉ ligne</span>
+        <span class="srtf" data-kkbis2="off" title="Aucune seconde ligne">—</span>
+        <span class="srtf" data-kkbis2="3" title="Seconde ligne en 3m">3m</span>
+        <span class="srtf" data-kkbis2="5" title="Seconde ligne en 5m">5m</span>
+        <span class="srtf" data-kkbis2="15" title="Seconde ligne en 15m">15m</span>
+        <span class="srtf" data-kkbis2="60" title="Seconde ligne en 1H">1H</span>
+        <span class="state">on</span>
       </div>
       <div class="ind-item on" data-ind="signal_exit_ob" id="item-signal_exit_ob" style="background:var(--panel-2,#0F172A);border:1.5px solid #C084FC;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(192,132,252,0.25)">
         <span class="dot" style="background:#C084FC;box-shadow:0 0 6px #C084FC;flex:none"></span>
@@ -11641,6 +11647,27 @@ document.getElementById('cfg-reset').addEventListener('click',()=>{
   render();
   if(typeof toast==='function') toast('⟲ Réglages de « '+cfgInd+' » remis à zéro', '#00E5FF');
 });
+/* Choix rapide de la seconde unité de temps de kk bis */
+try{
+  menu.querySelectorAll('[data-kkbis2]').forEach(function(el){
+    el.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      const v = el.dataset.kkbis2;
+      if(state.indicators.kk_bis) state.indicators.kk_bis.tf2 = v;
+      menu.querySelectorAll('[data-kkbis2]').forEach(function(x){
+        x.classList.toggle('on', x.dataset.kkbis2 === v);
+      });
+      state.cache = {};
+      saveConfig();
+      render();
+    });
+  });
+  const cur = String((state.indicators.kk_bis && state.indicators.kk_bis.tf2) || 'off');
+  menu.querySelectorAll('[data-kkbis2]').forEach(function(x){
+    x.classList.toggle('on', x.dataset.kkbis2 === cur);
+  });
+}catch(e){}
+
 /* icône ⚙ sur les indicateurs paramétrables */
 menu.querySelectorAll('.ind-item').forEach(item=>{
   const k=item.dataset.ind;
