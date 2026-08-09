@@ -19527,6 +19527,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     const baseInd = (window.state && state.indicators && state.indicators.strat_zz) || {};
     const rows = [];
+    const rejected = [];
     let done = 0;
     const total = TFS.length * TPS.length * SLS.length * LEVS.length;
 
@@ -19555,33 +19556,63 @@ function updateActiveBacktestSignals(tradesList, stratName) {
             const r = runSingleZZSim(dTF, sigMap, tp.tp, sl, BASE_CAP, lev, FEE, RISK);
             if(!r) continue;
 
+            const key = `${tf}_${tp.id}_${sl}_${lev}`;
+            const base = { tf, tp, sl, lev, r, key };
+
             // Filtres stricts, non négociables
-            if(r.tradesCount < MIN_TRADES) continue;
-            if(r.ruine) continue;
-            if(!r.losses || !isFinite(r.profitFactor) || r.profitFactor >= 90) continue;
-            if(r.profitFactor < 1.0) continue;
-            if(r.netPnlPct <= 0) continue;
+            if(r.tradesCount < MIN_TRADES){
+              rejected.push(Object.assign({}, base, { why:'trades', detail:`${r.tradesCount} trades (minimum 30)`, weeks:[] }));
+              continue;
+            }
+            if(r.ruine){
+              rejected.push(Object.assign({}, base, { why:'ruine', detail:'compte ruiné', weeks:[] }));
+              continue;
+            }
+            if(!r.losses || !isFinite(r.profitFactor) || r.profitFactor >= 90){
+              rejected.push(Object.assign({}, base, { why:'pf_inf', detail:'profit factor infini ou aberrant', weeks:[] }));
+              continue;
+            }
+            if(r.profitFactor < 1.0){
+              rejected.push(Object.assign({}, base, { why:'pf', detail:`PF global ${r.profitFactor.toFixed(2)} (< 1,00)`, weeks:[] }));
+              continue;
+            }
+            if(r.netPnlPct <= 0){
+              rejected.push(Object.assign({}, base, { why:'pnl', detail:`PnL ${r.netPnlPct.toFixed(2)} % (≤ 0)`, weeks:[] }));
+              continue;
+            }
 
             // Stabilité : 3 semaines séparées, chacune doit tenir
-            let stable = true;
+            let stable = true, failWeek = -1, failReason = '';
             const weeks = [];
             for(let w=0; w<3; w++){
               const sub = parts[w];
-              if(!sub || sub.length < 50){ stable = false; break; }
+              if(!sub || sub.length < 50){ stable = false; failWeek = w+1; failReason = 'tranche trop courte'; break; }
               const rw = runSingleZZSim(sub, sliceSigMap(sigMap, offs[w], sub.length, false),
                                         tp.tp, sl, BASE_CAP, lev, FEE, RISK);
-              if(!rw || rw.tradesCount < MIN_TRADES_WEEK || !isFinite(rw.profitFactor) || rw.profitFactor < 1.0){
-                stable = false;
-                weeks.push(rw ? { pf: rw.profitFactor, n: rw.tradesCount, pnl: rw.netPnlPct } : null);
+              const wk = rw ? { pf: rw.profitFactor, n: rw.tradesCount, pnl: rw.netPnlPct } : null;
+              weeks.push(wk);
+              if(!rw || rw.tradesCount < MIN_TRADES_WEEK){
+                stable = false; failWeek = w+1;
+                failReason = rw ? `${rw.tradesCount} trades (minimum ${MIN_TRADES_WEEK})` : 'aucun trade';
                 break;
               }
-              weeks.push({ pf: rw.profitFactor, n: rw.tradesCount, pnl: rw.netPnlPct });
+              if(!isFinite(rw.profitFactor) || rw.profitFactor < 1.0){
+                stable = false; failWeek = w+1;
+                failReason = `PF ${isFinite(rw.profitFactor) ? rw.profitFactor.toFixed(2) : '∞'} (< 1,00)`;
+                break;
+              }
             }
-            if(!stable) continue;
+            if(!stable){
+              rejected.push(Object.assign({}, base, {
+                why:'semaine', weeks,
+                detail:`semaine ${failWeek} : ${failReason}`,
+                nearMiss: true
+              }));
+              continue;
+            }
 
             rows.push({
-              tf, tp, sl, lev, r, weeks,
-              key: `${tf}_${tp.id}_${sl}_${lev}`,
+              tf, tp, sl, lev, r, weeks, key,
               score: r.netPnlPct / (1 + r.maxDDPct/12)
             });
           }
@@ -19591,11 +19622,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     btn.disabled = false;
     btn.textContent = '▶ CALCULER LE TOP 10';
-    render(rows, { strict, strictEma, inverse, days, nCandles: d.length });
+    render(rows, { strict, strictEma, inverse, days, nCandles: d.length }, rejected);
   }
 
   /* ---------------- Affichage ---------------- */
-  function render(rows, ctx){
+  function render(rows, ctx, rejected){
     const box = document.getElementById('btbis-results');
 
     // Déduplication par configuration
@@ -19623,9 +19654,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
             Sur ${ctx.nCandles} bougies (${ctx.days} j), aucune combinaison n'atteint simultanément
             30 trades, un profit factor supérieur à 1 et une tenue sur les trois semaines séparées.<br>
             Mode testé : ${modeTxt}.<br><br>
-            C'est un résultat valide, pas une erreur. Essayez le sens inversé, ou une autre période.
+            C'est un résultat valide, pas une erreur.
           </div>
-        </div>`;
+        </div>` + diagnostic(rejected, ctx);
       return;
     }
 
@@ -19681,7 +19712,79 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         Le gain est proportionnel au budget : les pourcentages sont identiques quel que soit le capital de départ.
       </div>`;
 
-    box.innerHTML = html;
+    box.innerHTML = html + diagnostic(rejected, ctx);
+  }
+
+  /* ---------------- Diagnostic des rejets ---------------- */
+  function diagnostic(rejected, ctx){
+    if(!rejected || !rejected.length) return '';
+
+    // Répartition par motif de rejet
+    const counts = {};
+    rejected.forEach(x => { counts[x.why] = (counts[x.why]||0) + 1; });
+    const labels = {
+      trades:'moins de 30 trades', ruine:'compte ruiné', pf_inf:'PF infini',
+      pf:'PF global < 1,00', pnl:'PnL ≤ 0', semaine:'a échoué sur une semaine'
+    };
+    const repart = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])
+      .map(k => `<span style="display:inline-block;margin:2px 8px 2px 0;padding:2px 8px;border-radius:4px;background:rgba(148,163,184,.14);border:1px solid #334155;font-size:11px">${labels[k]||k} : <b>${counts[k]}</b></span>`).join('');
+
+    // Les plus proches du seuil : celles qui ont passé le PF global
+    // et n'ont buté que sur la stabilité hebdomadaire.
+    const near = rejected.filter(x => x.why === 'semaine' && x.r.profitFactor >= 1)
+                         .sort((a,b) => b.r.profitFactor - a.r.profitFactor)
+                         .slice(0,10);
+
+    let rowsHtml = '';
+    if(near.length){
+      rowsHtml = `
+        <div style="overflow-x:auto;margin-top:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px">
+          <thead><tr style="background:#0F172A;color:#CBD5E1">
+            ${['UT','Sortie','SL','Levier','Trades','WR','PF global','DD','S1','S2','S3','Motif du rejet']
+              .map(h=>`<th style="padding:6px 5px;text-align:left;white-space:nowrap">${h}</th>`).join('')}
+          </tr></thead><tbody>`;
+      near.forEach((c,i) => {
+        const w = n => {
+          const x = c.weeks[n];
+          if(!x) return '<span style="color:#475569">—</span>';
+          const col = (isFinite(x.pf) && x.pf >= 1) ? '#25D0A4' : '#FF8A80';
+          return `<span style="color:${col}">${isFinite(x.pf)?x.pf.toFixed(2):'∞'}<br><span style="font-size:9px;opacity:.7">${x.n} tr</span></span>`;
+        };
+        rowsHtml += `<tr style="border-bottom:1px solid #1E293B;background:${i%2?'rgba(255,255,255,.02)':'transparent'}">
+          <td style="padding:6px 5px">${c.tf}m</td>
+          <td style="padding:6px 5px;white-space:nowrap">${c.tp.icon} ${c.tp.label}</td>
+          <td style="padding:6px 5px">${c.sl||'—'}</td>
+          <td style="padding:6px 5px">${c.lev}x</td>
+          <td style="padding:6px 5px">${c.r.tradesCount}</td>
+          <td style="padding:6px 5px">${fmt(c.r.winRate,1)} %</td>
+          <td style="padding:6px 5px;color:#FFB400;font-weight:700">${fmt(c.r.profitFactor,2)}</td>
+          <td style="padding:6px 5px;color:#FF8A80">${fmt(c.r.maxDDPct,1)} %</td>
+          <td style="padding:6px 5px">${w(0)}</td>
+          <td style="padding:6px 5px">${w(1)}</td>
+          <td style="padding:6px 5px">${w(2)}</td>
+          <td style="padding:6px 5px;color:#FF8A80;font-size:11px">${c.detail}</td>
+        </tr>`;
+      });
+      rowsHtml += '</tbody></table></div>';
+    }
+
+    return `
+      <div style="margin-top:14px;padding:14px;border:1px solid #F59E0B;border-radius:8px;background:rgba(245,158,11,.06)">
+        <div style="color:#F59E0B;font-weight:700;margin-bottom:8px">🔬 Diagnostic — ${rejected.length} combinaisons rejetées</div>
+        <div style="margin-bottom:10px">${repart}</div>
+        ${near.length
+          ? `<div style="font-size:12px;color:#CBD5E1;margin-bottom:4px">
+               Les ${near.length} plus proches du seuil : profit factor global supérieur à 1, mais au moins une semaine en dessous.
+             </div>${rowsHtml}
+             <div style="margin-top:9px;font-size:11px;color:#7E8CA8;line-height:1.6">
+               S1, S2 et S3 sont les trois semaines <b>séparées</b>. Si une seule colonne est systématiquement rouge,
+               c'est un régime de marché défavorable sur cette période, pas un défaut de la configuration.
+               Si les colonnes rouges changent d'une ligne à l'autre, c'est que le signal n'a pas d'avantage régulier.<br>
+               Ces configurations restent bloquées pour le trading réel.
+             </div>`
+          : `<div style="font-size:12px;color:#CBD5E1">Aucune combinaison n'a atteint un profit factor global supérieur à 1. L'obstacle n'est pas la régularité, c'est le signal lui-même.</div>`}
+      </div>`;
   }
 
   /* ---------------- Actions des boutons ---------------- */
