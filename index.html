@@ -2149,16 +2149,29 @@ const TwoIndicator = (function (root, factory) {
     return out;
   }
 
-  // Moyenne mobile simple (SMA) sur un tableau.
+  // Moyenne mobile simple (SMA), transcrite du Pine :
+  //   sum = ta.cum(source)
+  //   bar_index < length-1  ->  sum / (bar_index + 1)
+  //   sinon                 ->  (sum - sum[length]) / length
+  // Contrairement à une SMA classique, elle produit une valeur dès la
+  // première bougie au lieu d'attendre d'avoir la fenêtre complète.
   function sma(src, len) {
-    const out = new Array(src.length).fill(null);
-    let sum = 0, q = [];
-    for (let i = 0; i < src.length; i++) {
+    const n = src.length;
+    const out = new Array(n).fill(null);
+    const cum = new Array(n).fill(null);
+    let acc = 0;
+    for (let i = 0; i < n; i++) {
       const v = src[i];
-      if (v == null) continue;
-      q.push(v); sum += v;
-      if (q.length > len) sum -= q.shift();
-      if (q.length === len) out[i] = sum / len;
+      if (v == null) { cum[i] = i > 0 ? cum[i - 1] : null; continue; }
+      acc += v; cum[i] = acc;
+    }
+    for (let i = 0; i < n; i++) {
+      if (cum[i] == null) continue;
+      if (i < len - 1) out[i] = cum[i] / (i + 1);
+      else {
+        const prev = (i - len >= 0) ? cum[i - len] : 0;
+        out[i] = (cum[i] - prev) / len;
+      }
     }
     return out;
   }
@@ -2271,10 +2284,19 @@ const TwoIndicator = (function (root, factory) {
       raw[t] = nv;
     }
 
-    const net = filter(raw, postLen, phase, postF);
-    const sma2net = net.map((v, i) =>
-      (v == null || net[i - 1] == null) ? (v == null ? null : v) : (v + net[i - 1]) / 2);
-    const signal = sigLen < 2 ? new Array(n).fill(null) : filter(sma2net, sigLen, phase, sigF);
+    // Le Pine fige la phase à 3.7 pour le post-lissage et pour le signal :
+    //   filter(net_score * ribbon_rank, post_smooth_len, 3.7, post_smooth_filt)
+    //   filter(ta.sma(net_score, 2),    signal_length,   3.7, signal_filter)
+    // Le réglage de phase de l'utilisateur ne s'applique qu'au cluster.
+    const PINE_PHASE = 3.7;
+    const net = filter(raw, postLen, PINE_PHASE, postF);
+
+    // ta.sma(x, 2) vaut na tant que la bougie précédente est absente.
+    const sma2net = net.map(function (v, i) {
+      if (v == null || i === 0 || net[i - 1] == null) return null;
+      return (v + net[i - 1]) / 2;
+    });
+    const signal = sigLen < 2 ? new Array(n).fill(null) : filter(sma2net, sigLen, PINE_PHASE, sigF);
 
     let ssWma;
     if (ssLen <= 2) ssWma = closes.slice();
