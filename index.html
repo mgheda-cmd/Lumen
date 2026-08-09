@@ -5617,20 +5617,56 @@ function render(){
           if(dv.i2 < s || dv.i2 > e) continue;
           const x = xOf(dv.i2);
           const isSell = (dv.dir === 1);
-          const py = isSell ? yOf(state.data[dv.i2].h) - 16 : yOf(state.data[dv.i2].l) + 16;
+          const col = isSell ? '#FF007A' : '#FFD700';
+          const anchorY = isSell ? yOf(state.data[dv.i2].h) - 10 : yOf(state.data[dv.i2].l) + 10;
+          const prix = state.data[dv.i2].c;
+          const txt = (isSell ? '🔻 SORTIE ACHAT' : '🔺 SORTIE VENTE');
+          const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Divergence kk bis';
+
           ctx.save();
-          ctx.fillStyle = isSell ? '#FF007A' : '#FFD700';
+          ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+          const w1 = ctx.measureText(txt).width;
+          ctx.font = '8.5px "IBM Plex Mono",monospace';
+          const w2 = ctx.measureText(sub).width;
+          const bw = Math.max(w1, w2) + 14, bh = 26;
+
+          let by = isSell ? (anchorY - bh - 10) : (anchorY + 10);
+          if(typeof placeBadge === 'function'){
+            by = placeBadge(x - bw/2, bw, by, bh, isSell ? -1 : 1);
+          }
+          const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+
+          // tige de rattachement
+          ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.setLineDash([3,2]);
           ctx.beginPath();
-          if(isSell){ ctx.moveTo(x, py + 9); ctx.lineTo(x + 7, py - 3); ctx.lineTo(x - 7, py - 3); }
-          else      { ctx.moveTo(x, py - 9); ctx.lineTo(x + 7, py + 3); ctx.lineTo(x - 7, py + 3); }
-          ctx.closePath(); ctx.fill();
-          ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.3; ctx.stroke();
-          ctx.fillStyle = isSell ? '#FF007A' : '#FFD700';
-          ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+          ctx.moveTo(x, anchorY); ctx.lineTo(x, isSell ? by + bh : by);
+          ctx.stroke(); ctx.setLineDash([]);
+
+          // point d'ancrage
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(x, anchorY, 4, 0, Math.PI*2); ctx.fill();
+          ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.2; ctx.stroke();
+
+          // pastille
+          ctx.fillStyle = 'rgba(8,12,22,.93)';
+          ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+          if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+          else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+          ctx.fill(); ctx.stroke();
+
+          ctx.fillStyle = col;
+          ctx.font = 'bold 10px "IBM Plex Mono",monospace';
           ctx.textAlign = 'center';
-          ctx.fillText(isSell ? 'SORTIE ACHAT' : 'SORTIE VENTE', x, py + (isSell ? -8 : 20));
+          ctx.fillText(txt, bx + bw/2, by + 11);
+          ctx.fillStyle = '#CBD5E1';
+          ctx.font = '8.5px "IBM Plex Mono",monospace';
+          ctx.fillText(sub, bx + bw/2, by + 21);
           ctx.textAlign = 'left';
           ctx.restore();
+
+          if(typeof labelHits !== 'undefined' && labelHits){
+            try{ labelHits.push({x:bx, y:by, w:bw, h:bh, key:'kk_bis'}); }catch(err){}
+          }
         }
       }
     }catch(err){}
@@ -21456,8 +21492,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       [DIAM('#8B5CF6'), 'Losange violet — ACHAT CORRIGÉ', 'Même signal recalculé sans lookahead, avec le Nuage EMA comme déclencheur. C\'est le prix auquel tu serais réellement entré.'],
       [DIAM('#F472B6'), 'Losange rose — VENTE CORRIGÉE', 'Version corrigée d\'une vente. L\'écart avec la pastille d\'origine est l\'avance indue qu\'elle avait.'],
       [DIAM('#F59E0B'), 'Losange ambre + ⏳', 'Signal provisoire : la bougie 15m qui le produit n\'a pas encore clôturé. Il peut disparaître.'],
-      [TRI_DN('#FF007A'), 'Triangle rose — SORTIE ACHAT', 'Divergence détectée par kk bis : le prix fait un plus haut, le score un plus bas. L\'élan s\'épuise, c\'est le moment de fermer un achat.'],
-      [TRI_UP('#FFD700'), 'Triangle or — SORTIE VENTE', 'Divergence inverse : le prix fait un plus bas, le score un plus haut. Moment de fermer une vente.'],
+      [CAPS('#FF007A','🔻 SORTIE ACHAT'), 'Pastille rose', 'Divergence détectée par kk bis : le prix fait un plus haut, le score un plus bas. L\'élan s\'épuise, c\'est le moment de fermer un achat. La pastille indique le prix de sortie.'],
+      [CAPS('#FFD700','🔺 SORTIE VENTE'), 'Pastille or', 'Divergence inverse : le prix fait un plus bas, le score un plus haut. Moment de fermer une vente.'],
     ]},
     { titre:'Panneau kk (indicateur d\'origine)', items:[
       [CIRC('#FF007A'), 'Rond rose', 'Sortie d\'achat : le score repasse sous le niveau haut après l\'avoir dépassé.'],
