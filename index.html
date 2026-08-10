@@ -17067,12 +17067,12 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
 
     if(cImp != null){
       /* Condition 4 — Impulse MACD 15m
-         Vert clair (0) et vert foncé (1) : achat, sans regarder l'histogramme.
-         Rouge (3) : vente, sans regarder l'histogramme.
-         Jaune (2) : l'Impulse histo décide du sens. Sous zéro c'est un jaune
-         baissier, au-dessus c'est un jaune haussier. On lit la valeur telle
-         qu'elle est au moment où les trois autres conditions s'alignent, sans
-         attendre la clôture de la bougie 15 minutes. */
+         Vert clair (0) et vert foncé (1) : achat.
+         Rouge (3) : vente.
+         Jaune (2) : dépend de yellowMode — 'sell' pour l'ancienne règle où le
+         jaune vendait toujours, 'msr' pour la nouvelle où le MACD S/R 15m
+         tranche. La couleur est lue telle qu'elle est au moment où les trois
+         autres conditions s'alignent, sans attendre la clôture de la bougie. */
       if(cImp === 2){
         /* JAUNE — l'Impulse ne tranche pas de lui-même. C'est le MACD S/R 15m
            qui donne le sens : au-dessus de son signal le jaune est haussier,
@@ -17096,6 +17096,17 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         condBuyImp[i]  = (cImp === 0 || cImp === 1);
         condSellImp[i] = (cImp === 3);
       }
+    } else {
+      /* AUCUNE COULEUR — l'Impulse ne dessine rien à cet endroit, il n'a pas
+         encore de valeur. Auparavant la condition restait vraie dans les deux
+         sens et ne filtrait donc rien du tout. C'est désormais le MACD S/R 15m
+         qui tranche : au-dessus de son signal on autorise l'achat, en dessous
+         la vente. S'il n'a pas de valeur non plus, on retombe sur l'ancien
+         comportement permissif. */
+      const mdN = msr15_dir ? msr15_dir[i] : null;
+      if(mdN === 1){        condBuyImp[i] = true;  condSellImp[i] = false; }
+      else if(mdN === -1){  condBuyImp[i] = false; condSellImp[i] = true;  }
+      else {                condBuyImp[i] = true;  condSellImp[i] = true;  }
     }
   }
   const pendingRuns = [];   // configurations à 3/4, pour l'affichage anticipé
