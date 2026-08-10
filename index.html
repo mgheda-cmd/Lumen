@@ -5986,7 +5986,9 @@ function render(){
             const cxx = xOf(cx.i);
             const cay = monte ? yOf(bar.l) + 7 : yOf(bar.h) - 7;
             const ctxt = monte ? '▲ POTENTIEL ACHAT' : '▼ POTENTIEL VENTE';
-            const csub = (bar.c >= 1000 ? bar.c.toFixed(1) : bar.c.toFixed(2)) + ' $ · croisement kk bis';
+            const ci2 = window.__kkCrossInfo || {};
+            const tag2 = (ci2.courte && ci2.longue) ? (ci2.courte + 'm × ' + ci2.longue + 'm') : 'kk bis';
+            const csub = (bar.c >= 1000 ? bar.c.toFixed(1) : bar.c.toFixed(2)) + ' $ · croisement ' + tag2;
 
             ctx.save();
             ctx.font = 'bold 9px "IBM Plex Mono",monospace';
@@ -8503,8 +8505,21 @@ function drawKKBisSub(p, s, e, cw) {
      pour pouvoir être reportés sur le graphique de prix. */
   window.__kkCross = [];
   if (res.net2 && res.tf2 && S('kk_bis','showCross') !== false) {
-    for (let i = 1; i < res.net.length; i++) {
-      const p1 = res.net[i-1], p2 = res.net[i], q1 = res.net2[i-1], q2 = res.net2[i];
+    /* C'est toujours la PLUS COURTE qui croise la plus longue, quel que soit
+       l'ordre dans lequel les deux unités ont été choisies. Si la seconde
+       ligne est plus rapide que la principale, on inverse les rôles : le
+       timing doit venir de l'unité la plus fine. */
+    const tfP = (S('kk_bis','tf') === 'chart' || !S('kk_bis','tf')) ? state.tf : +S('kk_bis','tf');
+    const tfS = +res.tf2;
+    const inverser = (tfS < tfP);                  // la seconde est plus courte
+    const courte = inverser ? res.net2 : res.net;
+    const longue = inverser ? res.net  : res.net2;
+    window.__kkCrossInfo = {
+      courte: inverser ? tfS : tfP,
+      longue: inverser ? tfP : tfS
+    };
+    for (let i = 1; i < courte.length; i++) {
+      const p1 = courte[i-1], p2 = courte[i], q1 = longue[i-1], q2 = longue[i];
       if (p1 == null || p2 == null || q1 == null || q2 == null) continue;
       const av = p1 - q1, ap = p2 - q2;
       if (av === 0 || (av > 0) === (ap > 0)) continue;
@@ -8513,6 +8528,8 @@ function drawKKBisSub(p, s, e, cw) {
   }
 
   const crossList = [];
+  const tfPane = (S('kk_bis','tf') === 'chart' || !S('kk_bis','tf')) ? state.tf : +S('kk_bis','tf');
+  const inverserPane = res.tf2 ? (+res.tf2 < tfPane) : false;
   if (res.net2 && res.tf2 && S('kk_bis','showCross') !== false) {
     const clampC = v => isVolB ? v : Math.max(-100, Math.min(100, v));
     for (let i = Math.max(1, s); i < e; i++) {
@@ -8522,9 +8539,9 @@ function drawKKBisSub(p, s, e, cw) {
       const avant = a1 - b1, apres = a2 - b2;
       if (avant === 0 || (avant > 0) === (apres > 0)) continue;   // pas de croisement
 
-      const monte = (apres > 0);            // la principale passe au-dessus
+      // la plus courte passe au-dessus de la plus longue
+      const monte = inverserPane ? (apres < 0) : (apres > 0);
       const col = monte ? '#00FF00' : '#FF0000';
-      // mémorisé pour être reporté sur le graphique de prix
       crossList.push({ i: i, monte: monte });
       const x = xOf(i);
       const y = yOf(clampC(a2));
