@@ -17096,18 +17096,10 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         condBuyImp[i]  = (cImp === 0 || cImp === 1);
         condSellImp[i] = (cImp === 3);
       }
-    } else {
-      /* AUCUNE COULEUR — l'Impulse ne dessine rien à cet endroit, il n'a pas
-         encore de valeur. Auparavant la condition restait vraie dans les deux
-         sens et ne filtrait donc rien du tout. C'est désormais le MACD S/R 15m
-         qui tranche : au-dessus de son signal on autorise l'achat, en dessous
-         la vente. S'il n'a pas de valeur non plus, on retombe sur l'ancien
-         comportement permissif. */
-      const mdN = msr15_dir ? msr15_dir[i] : null;
-      if(mdN === 1){        condBuyImp[i] = true;  condSellImp[i] = false; }
-      else if(mdN === -1){  condBuyImp[i] = false; condSellImp[i] = true;  }
-      else {                condBuyImp[i] = true;  condSellImp[i] = true;  }
     }
+    /* AUCUNE COULEUR — l'Impulse n'a pas de valeur à cet endroit. Les deux
+       conditions gardent leur valeur d'initialisation, c'est-à-dire vraie
+       dans les deux sens. Comportement d'origine, volontairement conservé. */
   }
   const pendingRuns = [];   // configurations à 3/4, pour l'affichage anticipé
 
