@@ -5985,46 +5985,40 @@ function render(){
             const ccol = monte ? '#00C853' : '#D50000';
             const cxx = xOf(cx.i);
             const cay = monte ? yOf(bar.l) + 7 : yOf(bar.h) - 7;
-            const ctxt = monte ? '▲ POTENTIEL ACHAT' : '▼ POTENTIEL VENTE';
+            const ctxt = monte ? '▲ POT. ACHAT' : '▼ POT. VENTE';
             const ci2 = window.__kkCrossInfo || {};
-            const tag2 = (ci2.courte && ci2.longue) ? (ci2.courte + 'm × ' + ci2.longue + 'm') : 'kk bis';
-            const csub = (bar.c >= 1000 ? bar.c.toFixed(1) : bar.c.toFixed(2)) + ' $ · croisement ' + tag2;
+            const tag2 = (ci2.courte && ci2.longue) ? (ci2.courte + '×' + ci2.longue) : '';
 
+            // Étiquette compacte sur une seule ligne, pour ne pas encombrer
             ctx.save();
-            ctx.font = 'bold 9px "IBM Plex Mono",monospace';
-            const u1 = ctx.measureText(ctxt).width;
-            ctx.font = '7.5px "IBM Plex Mono",monospace';
-            const u2 = ctx.measureText(csub).width;
-            const cbw = Math.max(u1, u2) + 11, cbh = 21;
+            ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
+            const cbw = ctx.measureText(ctxt + (tag2 ? ' ' + tag2 : '')).width + 8, cbh = 12;
 
-            let cby = monte ? (cay + 10) : (cay - cbh - 10);
+            let cby = monte ? (cay + 7) : (cay - cbh - 7);
             if(typeof placeBadge === 'function') cby = placeBadge(cxx - cbw/2, cbw, cby, cbh, monte ? 1 : -1);
             const cbx = Math.max(2, Math.min(W - AXIS_W - cbw - 2, cxx - cbw/2));
 
-            ctx.strokeStyle = ccol; ctx.lineWidth = 1.2; ctx.setLineDash([3,2]);
+            ctx.strokeStyle = ccol; ctx.lineWidth = .9; ctx.setLineDash([2,2]);
             ctx.beginPath(); ctx.moveTo(cxx, cay); ctx.lineTo(cxx, monte ? cby : cby + cbh); ctx.stroke();
             ctx.setLineDash([]);
 
             ctx.fillStyle = ccol;
             ctx.beginPath();
-            if(monte){ ctx.moveTo(cxx, cay - 7); ctx.lineTo(cxx + 5, cay); ctx.lineTo(cxx - 5, cay); }
-            else     { ctx.moveTo(cxx, cay + 7); ctx.lineTo(cxx + 5, cay); ctx.lineTo(cxx - 5, cay); }
+            if(monte){ ctx.moveTo(cxx, cay - 5); ctx.lineTo(cxx + 3.5, cay); ctx.lineTo(cxx - 3.5, cay); }
+            else     { ctx.moveTo(cxx, cay + 5); ctx.lineTo(cxx + 3.5, cay); ctx.lineTo(cxx - 3.5, cay); }
             ctx.closePath(); ctx.fill();
-            ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.1; ctx.stroke();
+            ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = .9; ctx.stroke();
 
-            ctx.fillStyle = 'rgba(8,12,22,.93)';
-            ctx.strokeStyle = ccol; ctx.lineWidth = 1.5;
-            if(typeof roundRect === 'function') roundRect(cbx, cby, cbw, cbh, 4);
+            ctx.fillStyle = 'rgba(8,12,22,.90)';
+            ctx.strokeStyle = ccol; ctx.lineWidth = 1.1;
+            if(typeof roundRect === 'function') roundRect(cbx, cby, cbw, cbh, 3);
             else { ctx.beginPath(); ctx.rect(cbx, cby, cbw, cbh); }
             ctx.fill(); ctx.stroke();
 
             ctx.fillStyle = ccol;
-            ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+            ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(ctxt, cbx + cbw/2, cby + 9);
-            ctx.fillStyle = '#94A3B8';
-            ctx.font = '7.5px "IBM Plex Mono",monospace';
-            ctx.fillText(csub, cbx + cbw/2, cby + 17);
+            ctx.fillText(ctxt + (tag2 ? ' ' + tag2 : ''), cbx + cbw/2, cby + 8.5);
             ctx.textAlign = 'left';
             ctx.restore();
 
