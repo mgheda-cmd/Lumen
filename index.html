@@ -4461,9 +4461,13 @@ function mtfCollect2(tfs,fn){
   for(const [tf,name] of list){
     if(!tfs[tf])continue;
     if(+tf===state.tf){out.push(...fn(state.data,name,tf));continue;}
-    ensureMTF(+tf);
-    const bars=mtfStore.data[+tf];
-    if(bars)out.push(...fn(bars,name,tf));
+    /* getMTFBars plutôt que mtfStore directement : le magasin est alimenté
+       de façon asynchrone et ne conserve qu'un nombre limité de bougies.
+       Au premier rendu il est vide, donc aucun événement n'était produit et
+       la structure BOS / CHoCH ne s'affichait jamais. getMTFBars complète
+       par agrégation des bougies de base. */
+    const bars = (typeof getMTFBars === 'function') ? getMTFBars(+tf) : mtfStore.data[+tf];
+    if(bars && bars.length) out.push(...fn(bars,name,tf));
   }
   return out;
 }
