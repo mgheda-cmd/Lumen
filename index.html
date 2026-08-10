@@ -3833,7 +3833,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false},
+    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'msr'},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
@@ -5893,6 +5893,8 @@ function render(){
   if(vis('strat_zz') && window.__noiseOn && typeof window.drawNoiseMarks === 'function') window.drawNoiseMarks(s, e, yOf);
   // Pastilles inversées, pour vérification visuelle du sens contraire
   if(vis('strat_zz') && window.__invOn && typeof window.drawInverses === 'function') window.drawInverses(s, e, yOf);
+  // Couche de comparaison : entrées calculées avec l'ancienne règle du jaune
+  if(vis('strat_zz') && window.__ancienOn && typeof window.drawZZAncien === 'function') window.drawZZAncien(s, e, yOf);
   // Pastilles kk bis reportées sur le prix (Sorties par Seuil, Divergences, Sommets & Creux)
   if(vis('kk_bis')){
     try{
@@ -16986,6 +16988,18 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
   const imp5_sh = (imp5 && imp5.sh) ? ((baseTf === haTf) ? imp5.sh : (isStrict ? mapHTF_strict(bars5, imp5.sh, d, haTf * 60000) : mapHTF(bars5, imp5.sh, d))) : null;
 
   const msr15 = calc.macdSR(bars15, 12, 26, 9);
+  /* Direction du MACD S/R 15m : la ligne au-dessus de son signal = haussier,
+     en dessous = baissier. Sert à trancher le sens quand l'Impulse est jaune. */
+  let msr15_dir = null;
+  if(msr15 && msr15.macd && msr15.sg){
+    const dirArr = msr15.macd.map(function(v, k){
+      const sv = msr15.sg[k];
+      if(v == null || sv == null) return null;
+      return (v > sv) ? 1 : -1;
+    });
+    msr15_dir = (baseTf === impTf) ? dirArr
+      : (isStrict ? mapHTF_strict(bars15, dirArr, d, impTf * 60000) : mapHTF(bars15, dirArr, d));
+  }
   const msr15_redDot = new Array(d.length).fill(false);
   const msr15_greenDot = new Array(d.length).fill(false);
   if (msr15 && msr15.levels) {
@@ -17060,10 +17074,24 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
          qu'elle est au moment où les trois autres conditions s'alignent, sans
          attendre la clôture de la bougie 15 minutes. */
       if(cImp === 2){
-        // JAUNE : neutre. L'Impulse ne tranche pas, il ne bloque rien non plus.
-        // Ce sont alors les trois premières conditions qui décident seules.
-        condBuyImp[i]  = true;
-        condSellImp[i] = true;
+        /* JAUNE — l'Impulse ne tranche pas de lui-même. C'est le MACD S/R 15m
+           qui donne le sens : au-dessus de son signal le jaune est haussier,
+           en dessous il est baissier. Si le MACD S/R n'a pas encore de valeur,
+           le jaune reste neutre et les trois premières conditions décident. */
+        const yMode = (ind && ind.yellowMode) ? ind.yellowMode : 'msr';
+        if(yMode === 'sell'){
+          // ancienne interprétation : le jaune vendait toujours
+          condBuyImp[i]  = false;
+          condSellImp[i] = true;
+        } else if(yMode === 'neutre'){
+          condBuyImp[i]  = true;
+          condSellImp[i] = true;
+        } else {
+          const md = msr15_dir ? msr15_dir[i] : null;
+          if(md === 1){        condBuyImp[i] = true;  condSellImp[i] = false; }
+          else if(md === -1){  condBuyImp[i] = false; condSellImp[i] = true;  }
+          else {               condBuyImp[i] = true;  condSellImp[i] = true;  }
+        }
       } else {
         condBuyImp[i]  = (cImp === 0 || cImp === 1);
         condSellImp[i] = (cImp === 3);
@@ -22923,6 +22951,115 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 })();
+
+/* ================================================================
+   PASTILLES ANCIENNE RÈGLE — couche de comparaison
+   Recalcule les entrées Z.Z. avec l'interprétation précédente du
+   jaune : l'Impulse jaune vendait toujours, sans consulter ni
+   l'histogramme ni le MACD S/R. Affichées en gris ardoise, à côté
+   des pastilles actuelles, pour comparer les deux règles.
+   Les conditions actuelles ne sont pas touchées.
+   ================================================================ */
+(function(){
+
+  window.__ancienOn = (localStorage.getItem('lumen_ancien') === '1');
+  let ck = null, cs = [];
+
+  function signaux(){
+    const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
+    if(!d.length || typeof computeZZSignals !== 'function') return [];
+    const base = (state.indicators && state.indicators.strat_zz) || {};
+    const key = d.length + '_' + d[d.length-1].t + '_' + state.tf;
+    if(key === ck) return cs;
+    let sg = [];
+    try{
+      const cfg = Object.assign({}, base, { yellowMode: 'sell' });
+      sg = (computeZZSignals(d, cfg) || []).filter(x => !x.isExit);
+    }catch(e){ return []; }
+    let last = 0;
+    sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
+    cs = sg; ck = key;
+    return cs;
+  }
+
+  window.drawZZAncien = function(s, e, yOf){
+    const list = signaux();
+    const btn = document.getElementById('ancien-btn');
+    if(btn) btn.textContent = '🕰 ANCIEN : ' + list.length;
+    if(!list.length) return;
+
+    const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+
+    for(const sg of list){
+      const i = (sg.t != null && typeof idxOfTime === 'function' ? idxOfTime(sg.t) : null) ?? sg.i;
+      if(i == null || i < s - 1 || i > e + 1) continue;
+      const bar = state.data[i]; if(!bar) continue;
+      const isBuy = (sg.dir === 1);
+      const col = isBuy ? '#94A3B8' : '#CBD5E1';
+      const x = xOf(i);
+      const anchorY = isBuy ? yOf(bar.l) + 6 : yOf(bar.h) - 6;
+      const num = (sg.num != null) ? ('#' + sg.num + ' ') : '';
+      const txt = '🕰 ' + num + (isBuy ? 'ACHAT (ancien)' : 'VENTE (ancien)');
+      const sub = fmtP(sg.price) + ' $ · jaune = vente';
+
+      ctx.save();
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      const w1 = ctx.measureText(txt).width;
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      const w2 = ctx.measureText(sub).width;
+      const bw = Math.max(w1, w2) + 12, bh = 22;
+
+      const SAUT = 84;   // au-delà des pastilles actuelles
+      let by = isBuy ? (anchorY + SAUT) : (anchorY - bh - SAUT);
+      if(typeof placeBadge === 'function') by = placeBadge(x - bw/2, bw, by, bh, isBuy ? 1 : -1);
+      const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+
+      ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.moveTo(x, anchorY); ctx.lineTo(x, isBuy ? by : by + bh); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(15,23,42,.92)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.setLineDash([4,2]);
+      if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+      else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+      ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+
+      ctx.fillStyle = col;
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, bx + bw/2, by + 10);
+      ctx.fillStyle = '#7E8CA8';
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      ctx.fillText(sub, bx + bw/2, by + 18);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
+  };
+
+  window.toggleAncien = function(){
+    window.__ancienOn = !window.__ancienOn;
+    try{ localStorage.setItem('lumen_ancien', window.__ancienOn ? '1':'0'); }catch(e){}
+    ck = null;
+    const b = document.getElementById('ancien-btn');
+    if(b && !window.__ancienOn) b.textContent = '🕰 ANCIEN : OFF';
+    if(typeof render === 'function') render();
+  };
+
+  try{
+    const a = document.getElementById('inv-btn') || document.getElementById('noise-btn');
+    if(a && !document.getElementById('ancien-btn')){
+      const b = document.createElement('button');
+      b.id = 'ancien-btn'; b.className = 'btn';
+      b.title = "Superpose les entrées Z.Z. calculées avec l'ancienne règle du jaune (l'Impulse jaune vendait toujours), pour comparer avec la règle actuelle.";
+      b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(148,163,184,.14);border:1px solid #94A3B8;color:#CBD5E1;font-weight:700';
+      b.textContent = window.__ancienOn ? '🕰 ANCIEN : …' : '🕰 ANCIEN : OFF';
+      b.onclick = window.toggleAncien;
+      a.parentNode.insertBefore(b, a.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
 </script>
 </body>
 </html>
