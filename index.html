@@ -23407,19 +23407,39 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         const x1 = xOf(Math.max(p.a, s - 1));
         const x2 = xOf(Math.min(p.b, e + 1));
         const w = Math.max(2, x2 - x1);
+
+        /* La bande épouse les bougies de la plage au lieu de traverser tout
+           le panneau : on prend le plus haut et le plus bas de la période,
+           puis on déborde d'une marge proportionnelle à sa hauteur. */
+        let hi = -Infinity, lo = Infinity;
+        for(let k = Math.max(0, p.a); k <= Math.min(p.b, state.data.length - 1); k++){
+          const b = state.data[k]; if(!b) continue;
+          if(b.h > hi) hi = b.h;
+          if(b.l < lo) lo = b.l;
+        }
+        if(!isFinite(hi) || !isFinite(lo)) continue;
+
+        let yHaut = yOf(hi), yBas = yOf(lo);
+        const marge = Math.max(10, Math.min(38, (yBas - yHaut) * 0.28));
+        yHaut -= marge; yBas += marge;
+        // sans jamais sortir du panneau de prix
+        yHaut = Math.max(top, yHaut);
+        yBas  = Math.min(top + hauteur, yBas);
+        const hb = Math.max(6, yBas - yHaut);
+
         ctx.save();
         ctx.fillStyle = u.fond;
-        ctx.fillRect(x1, top, w, hauteur);
+        ctx.fillRect(x1, yHaut, w, hb);
         ctx.strokeStyle = u.bord; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
-        ctx.beginPath();
-        ctx.moveTo(x1, top); ctx.lineTo(x1, top + hauteur);
-        ctx.moveTo(x2, top); ctx.lineTo(x2, top + hauteur);
-        ctx.stroke(); ctx.setLineDash([]);
+        ctx.strokeRect(x1, yHaut, w, hb);
+        ctx.setLineDash([]);
+
         if(w > 62){
           const txt = '🟰 ' + u.nom + ' · ' + p.n + ' b' + (p.encours ? ' · en cours' : '');
           ctx.font = 'bold 9px "IBM Plex Mono",monospace';
           const tw = ctx.measureText(txt).width;
-          const bx = x1 + (w - tw) / 2, by = top + 6 + rang * 17;
+          const bx = x1 + (w - tw) / 2;
+          const by = Math.max(top + 2, yHaut - 16 - rang * 16);
           ctx.fillStyle = 'rgba(15,23,42,.85)';
           if(typeof roundRect === 'function') roundRect(bx - 5, by, tw + 10, 14, 3);
           else { ctx.beginPath(); ctx.rect(bx - 5, by, tw + 10, 14); }
