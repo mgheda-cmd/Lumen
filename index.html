@@ -23338,13 +23338,21 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   let ck = null, cs = null;
 
   // Du plus court au plus long : du gris le plus foncé au plus clair
+  /* Chaque unité a sa teinte, son style de trait et son côté d'étiquette.
+     Trois repères se cumulent pour les distinguer d'un coup d'œil :
+     la couleur, le motif du trait, et la position du liseré. */
   const UTS = [
-    { tf:'3',  nom:'3m',  fond:'rgba(51,65,85,.26)',    bord:'rgba(51,65,85,.75)' },
-    { tf:'5',  nom:'5m',  fond:'rgba(71,85,105,.21)',   bord:'rgba(71,85,105,.70)' },
-    { tf:'15', nom:'15m', fond:'rgba(148,163,184,.14)', bord:'rgba(148,163,184,.60)' },
-    { tf:'30', nom:'30m', fond:'rgba(186,197,211,.11)', bord:'rgba(186,197,211,.55)' },
-    { tf:'60', nom:'1H',  fond:'rgba(212,220,231,.09)', bord:'rgba(212,220,231,.50)' }
+    { tf:'3',  nom:'3m',  teinte:'#F97316', dash:[1,2],  bordL:2.5, cote:'gauche' },
+    { tf:'5',  nom:'5m',  teinte:'#8B5CF6', dash:[3,2],  bordL:2.2, cote:'gauche' },
+    { tf:'15', nom:'15m', teinte:'#0EA5E9', dash:[6,3],  bordL:1.8, cote:'droite' },
+    { tf:'30', nom:'30m', teinte:'#10B981', dash:[9,4],  bordL:1.6, cote:'droite' },
+    { tf:'60', nom:'1H',  teinte:'#EAB308', dash:[],     bordL:1.4, cote:'droite' }
   ];
+  function hexRgba(hex, a){
+    const h = hex.replace('#','');
+    const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
 
   function conf(){
     const k = (state.indicators && state.indicators.kk_bis) || {};
@@ -23428,24 +23436,39 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         const hb = Math.max(6, yBas - yHaut);
 
         ctx.save();
-        ctx.fillStyle = u.fond;
+        // fond très léger, la couleur suffit à identifier l'unité
+        ctx.fillStyle = hexRgba(u.teinte, 0.09);
         ctx.fillRect(x1, yHaut, w, hb);
-        ctx.strokeStyle = u.bord; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+
+        // contour au motif propre à l'unité
+        ctx.strokeStyle = hexRgba(u.teinte, 0.62);
+        ctx.lineWidth = 1;
+        ctx.setLineDash(u.dash.length ? u.dash : []);
         ctx.strokeRect(x1, yHaut, w, hb);
         ctx.setLineDash([]);
 
-        if(w > 62){
-          const txt = '🟰 ' + u.nom + ' · ' + p.n + ' b' + (p.encours ? ' · en cours' : '');
-          ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+        // liseré épais sur un côté : gauche pour les unités courtes,
+        // droite pour les longues. Deux bandes imbriquées restent lisibles.
+        ctx.strokeStyle = u.teinte;
+        ctx.lineWidth = u.bordL;
+        ctx.beginPath();
+        if(u.cote === 'gauche'){ ctx.moveTo(x1 + u.bordL/2, yHaut); ctx.lineTo(x1 + u.bordL/2, yHaut + hb); }
+        else                   { ctx.moveTo(x2 - u.bordL/2, yHaut); ctx.lineTo(x2 - u.bordL/2, yHaut + hb); }
+        ctx.stroke();
+
+        if(w > 46){
+          const txt = u.nom + ' · ' + p.n + 'b' + (p.encours ? ' ⏳' : '');
+          ctx.font = 'bold 8.5px "IBM Plex Mono",monospace';
           const tw = ctx.measureText(txt).width;
-          const bx = x1 + (w - tw) / 2;
-          const by = Math.max(top + 2, yHaut - 16 - rang * 16);
-          ctx.fillStyle = 'rgba(15,23,42,.85)';
-          if(typeof roundRect === 'function') roundRect(bx - 5, by, tw + 10, 14, 3);
-          else { ctx.beginPath(); ctx.rect(bx - 5, by, tw + 10, 14); }
+          // étiquette collée au bord de sa propre bande, du côté du liseré
+          const bx = (u.cote === 'gauche') ? (x1 + 4) : (x2 - tw - 12);
+          const by = Math.max(top + 2, yHaut + 3);
+          ctx.fillStyle = hexRgba(u.teinte, 0.92);
+          if(typeof roundRect === 'function') roundRect(bx - 3, by, tw + 8, 13, 3);
+          else { ctx.beginPath(); ctx.rect(bx - 3, by, tw + 8, 13); }
           ctx.fill();
-          ctx.fillStyle = '#E2E8F0'; ctx.textAlign = 'left';
-          ctx.fillText(txt, bx, by + 10);
+          ctx.fillStyle = '#0B1220'; ctx.textAlign = 'left';
+          ctx.fillText(txt, bx + 1, by + 9.5);
         }
         ctx.restore();
       }
@@ -23470,14 +23493,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     UTS.forEach(function(u){
       h += '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer">'
         + '<input type="checkbox" data-rtf="' + u.tf + '"' + (tfs[u.tf] ? ' checked' : '') + ' style="width:16px;height:16px">'
-        + '<span style="display:inline-block;width:26px;height:12px;background:' + u.fond.replace(/[\d.]+\)$/,'0.9)') + ';border:1px solid ' + u.bord + ';border-radius:2px"></span>'
+        + '<span style="display:inline-block;width:30px;height:12px;background:' + hexRgba(u.teinte, .22) + ';border:1px solid ' + u.teinte + ';border-left:3px solid ' + u.teinte + ';border-radius:2px"></span>'
         + '<span>' + u.nom + '</span></label>';
     });
     h += '<div style="margin-top:9px;display:flex;gap:7px">'
       + '<button id="rangeimp-onoff" style="flex:1;padding:5px;border-radius:5px;border:1px solid #94A3B8;background:transparent;color:#CBD5E1;cursor:pointer">'
       + (window.__rangeImpOn ? 'Masquer' : 'Afficher') + '</button>'
       + '<button id="rangeimp-close" style="padding:5px 10px;border-radius:5px;border:1px solid #475569;background:transparent;color:#94A3B8;cursor:pointer">Fermer</button></div>'
-      + '<div style="margin-top:7px;font-size:10px;color:#7E8CA8;line-height:1.5">Plus l\'unité est courte, plus le gris est foncé.</div>';
+      + '<div style="margin-top:7px;font-size:10px;color:#7E8CA8;line-height:1.5">Chaque unité a sa couleur, son motif de trait et son côté d\'étiquette.</div>';
     pop.innerHTML = h;
     document.body.appendChild(pop);
 
