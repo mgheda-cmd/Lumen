@@ -17059,11 +17059,11 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
          baissier, au-dessus c'est un jaune haussier. On lit la valeur telle
          qu'elle est au moment où les trois autres conditions s'alignent, sans
          attendre la clôture de la bougie 15 minutes. */
-      const h15 = imp15_histo ? imp15_histo[i] : null;
       if(cImp === 2){
-        const baissier = (h15 != null) ? (h15 < 0) : true;   // repli : jaune baissier
-        condBuyImp[i]  = !baissier;
-        condSellImp[i] = baissier;
+        // JAUNE : neutre. L'Impulse ne tranche pas, il ne bloque rien non plus.
+        // Ce sont alors les trois premières conditions qui décident seules.
+        condBuyImp[i]  = true;
+        condSellImp[i] = true;
       } else {
         condBuyImp[i]  = (cImp === 0 || cImp === 1);
         condSellImp[i] = (cImp === 3);
