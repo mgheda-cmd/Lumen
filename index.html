@@ -3833,7 +3833,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true},
+    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:true},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
@@ -17052,6 +17052,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
       condSellImp[i] = (cImp === 2 || cImp === 3);
     }
   }
+  const pendingRuns = [];   // configurations à 3/4, pour l'affichage anticipé
 
   let buyTransitionsCount = 0;
   let sellTransitionsCount = 0;
@@ -17075,6 +17076,24 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
 
     if(isBuyTransition) buyTransitionsCount++;
     if(isSellTransition) sellTransitionsCount++;
+
+    /* ANTICIPATION — trois conditions sur quatre réunies.
+       Le signal n'est pas encore valide, mais la configuration se met en
+       place. On note laquelle manque, pour l'afficher en orange clignotant.
+       Rien n'est ajouté aux signaux réels : cette liste est séparée. */
+    {
+      const bA = [condBuyEmaHa[i], condBuyCloud[i], condBuyRosc[i], condBuyImp[i]];
+      const sA = [condSellEmaHa[i], condSellCloud[i], condSellRosc[i], condSellImp[i]];
+      const NOMS = ['EMA 9 / HA', 'Nuage EMA', 'Range Osc', 'Impulse 15m'];
+      const nB = bA.filter(Boolean).length, nS = sA.filter(Boolean).length;
+      if(nB === 3){
+        pendingRuns.push({ i, t: d[i].t, dir: invertSignal ? -1 : 1,
+          manque: NOMS.filter((_, k) => !bA[k]).join(', ') });
+      } else if(nS === 3){
+        pendingRuns.push({ i, t: d[i].t, dir: invertSignal ? 1 : -1,
+          manque: NOMS.filter((_, k) => !sA[k]).join(', ') });
+      }
+    }
 
     const impGapAbove0 = (imp5_sh && imp5_sh[i] != null && imp5_sh[i] > 0);
     const impGapBelow0 = (imp5_sh && imp5_sh[i] != null && imp5_sh[i] < 0);
@@ -17256,6 +17275,27 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
   signals.sellTransitionsCount = sellTransitionsCount;
   signals.totalTransitionsCount = buyTransitionsCount + sellTransitionsCount;
   signals.isStrictEmaHaUsed = isStrictEmaHa;
+
+  /* On ne garde qu'un marqueur par plage continue de configuration à 3/4,
+     et seulement si elle n'a pas immédiatement abouti à un vrai signal :
+     sinon la pastille définitive dit déjà tout. */
+  const sigIdx = new Set(signals.filter(x => !x.isExit).map(x => x.i));
+  const runs = [];
+  let cur = null;
+  for(const p of pendingRuns){
+    if(cur && p.i === cur.fin + 1 && p.dir === cur.dir){ cur.fin = p.i; cur.manque = p.manque; }
+    else { if(cur) runs.push(cur); cur = { debut: p.i, fin: p.i, dir: p.dir, t: p.t, manque: p.manque }; }
+  }
+  if(cur) runs.push(cur);
+
+  signals.pending = runs.filter(function(r){
+    // abouti dans les 3 bougies qui suivent : inutile de l'annoncer
+    for(let k = r.fin; k <= r.fin + 3; k++) if(sigIdx.has(k)) return false;
+    return true;
+  }).map(function(r){
+    return { i: r.fin, t: d[r.fin] ? d[r.fin].t : r.t, dir: r.dir,
+             manque: r.manque, duree: r.fin - r.debut + 1 };
+  });
 
   return signals;
 }
@@ -20584,6 +20624,61 @@ if(modalTable){
 function drawZZSignals(signals, s, e, yOf, cw) {
   if (!Array.isArray(signals) || !signals.length) return;
 
+  /* ANTICIPATIONS — configurations à 3 conditions sur 4. La pastille
+     clignote en orange et nomme la condition manquante. Dès que la
+     quatrième arrive, un vrai signal Z.Z. prend le relais avec sa
+     couleur définitive. Ce sont des repères, pas des entrées. */
+  const pending = signals.pending;
+  if (Array.isArray(pending) && S('strat_zz','showPending') !== false) {
+    for (const p of pending) {
+      const pi = (p.t != null && typeof idxOfTime === 'function' ? idxOfTime(p.t) : null) ?? p.i;
+      if (pi == null || pi < s - 1 || pi > e + 1) continue;
+      const bar = state.data[pi]; if (!bar) continue;
+      const isBuy = (p.dir === 1);
+      const px = xOf(pi);
+      const col = '#F59E0B';
+      const anchorY = isBuy ? yOf(bar.l) + 6 : yOf(bar.h) - 6;
+      const txt = isBuy ? '⏳ POTENTIEL ACHAT' : '⏳ POTENTIEL VENTE';
+      const sub = 'manque : ' + (p.manque || '?');
+
+      const puls = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(Date.now() / 190));
+      if (typeof __zzPulse === 'function') __zzPulse();
+
+      ctx.save();
+      ctx.globalAlpha = puls;
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      const q1 = ctx.measureText(txt).width;
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      const q2 = ctx.measureText(sub).width;
+      const pbw = Math.max(q1, q2) + 12, pbh = 22;
+
+      let pby = isBuy ? (anchorY + 8) : (anchorY - pbh - 8);
+      if (typeof placeBadge === 'function') pby = placeBadge(px - pbw/2, pbw, pby, pbh, isBuy ? 1 : -1);
+      const pbx = Math.max(2, Math.min(W - AXIS_W - pbw - 2, px - pbw/2));
+
+      ctx.strokeStyle = col; ctx.lineWidth = 1.1; ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.moveTo(px, anchorY); ctx.lineTo(px, isBuy ? pby : pby + pbh); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(48,30,4,.92)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      if (typeof roundRect === 'function') roundRect(pbx, pby, pbw, pbh, 4);
+      else { ctx.beginPath(); ctx.rect(pbx, pby, pbw, pbh); }
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = col;
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, pbx + pbw/2, pby + 10);
+      ctx.fillStyle = '#FCD34D';
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      ctx.fillText(sub, pbx + pbw/2, pby + 18);
+      ctx.textAlign = 'left';
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+  }
+
   /* Filtre de position : un seul signal par changement de sens.
      Tant qu'un achat est en cours, les achats suivants sont masqués ; il faut
      une vente pour rouvrir dans l'autre sens. C'est le comportement du moteur
@@ -22421,7 +22516,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   const SECTIONS = [
     { titre:'Sur le graphique de prix', items:[
       [CAPS('#25D0A4','⚡ #12 ACHAT Z.Z.'), 'Pastille Z.Z. d\'achat', 'Signal d\'entrée de l\'indicateur d\'origine. Le texte indique le déclencheur : Nuage EMA, EMA 9 / HA 5m, Range Oscillator ou Impulse MACD 15m.'],
-      [CAPS('#F59E0B','⏳ #11 POTENTIEL ACHAT'), 'Pastille orange clignotante', 'Le signal repose sur des conditions dont la donnée 5m ou 15m n\'existe pas encore : elles valaient « vrai » par défaut, pas par mesure. Le sous-titre indique ce qui manque. Dès que l\'historique remonte assez loin, la pastille prend sa couleur définitive — verte pour un achat, rouge pour une vente — ou disparaît si les conditions ne sont finalement pas réunies.'],
+      [CAPS('#F59E0B','⏳ POTENTIEL ACHAT'), 'Pastille orange clignotante', 'Trois conditions sur quatre sont réunies. Le sous-titre nomme celle qui manque — EMA 9 / HA, Nuage EMA, Range Osc ou Impulse 15m. Dès que la quatrième arrive, une vraie pastille Z.Z. prend le relais, verte pour un achat, rouge pour une vente. Si la configuration se défait, la pastille orange disparaît sans rien laisser.'],
+      [CAPS('#F59E0B','⏳ #11 POTENTIEL ACHAT'), 'Pastille orange numérotée', 'Le signal repose sur des conditions dont la donnée 5m ou 15m n\'existe pas encore : elles valaient « vrai » par défaut, pas par mesure. Le sous-titre indique ce qui manque. Dès que l\'historique remonte assez loin, la pastille prend sa couleur définitive — verte pour un achat, rouge pour une vente — ou disparaît si les conditions ne sont finalement pas réunies.'],
       [CAPS('#FF5252','⚡ #13 VENTE Z.Z.'), 'Pastille Z.Z. de vente', 'Même chose dans l\'autre sens. Un seul signal par changement de sens : les achats consécutifs sont masqués.'],
       [DIAM('#8B5CF6'), 'Losange violet — ACHAT CORRIGÉ', 'Même signal recalculé sans lookahead, avec le Nuage EMA comme déclencheur. C\'est le prix auquel tu serais réellement entré.'],
       [DIAM('#F472B6'), 'Losange rose — VENTE CORRIGÉE', 'Version corrigée d\'une vente. L\'écart avec la pastille d\'origine est l\'avance indue qu\'elle avait.'],
