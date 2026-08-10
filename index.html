@@ -3837,7 +3837,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,rangeImpTfs:{'3':false,'5':true,'15':true,'30':false,'60':false},rangeImpMin:3,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false,showCross:true},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,rangeImpTfs:{'3':false,'5':true,'15':true,'30':false,'60':false},rangeImpMin:3,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false,showCross:true,showCrossOnPrice:true},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -5970,6 +5970,64 @@ function render(){
 
             if(typeof labelHits !== 'undefined' && labelHits){
               try{ labelHits.push({x:bx, y:by, w:bw, h:bh, key:'kk_bis'}); }catch(err){}
+            }
+          }
+        }
+
+        // 3. Croisements des deux unités de temps reportés sur le prix.
+        //    La ligne principale traverse la seconde : les deux échelles
+        //    basculent ensemble. Vers le haut potentiel achat, vers le bas vente.
+        if(Array.isArray(window.__kkCross) && S('kk_bis','showCrossOnPrice') !== false){
+          for(const cx of window.__kkCross){
+            if(cx.i < s || cx.i > e) continue;
+            const bar = state.data[cx.i]; if(!bar) continue;
+            const monte = cx.monte;
+            const ccol = monte ? '#00C853' : '#D50000';
+            const cxx = xOf(cx.i);
+            const cay = monte ? yOf(bar.l) + 7 : yOf(bar.h) - 7;
+            const ctxt = monte ? '▲ POTENTIEL ACHAT' : '▼ POTENTIEL VENTE';
+            const csub = (bar.c >= 1000 ? bar.c.toFixed(1) : bar.c.toFixed(2)) + ' $ · croisement kk bis';
+
+            ctx.save();
+            ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+            const u1 = ctx.measureText(ctxt).width;
+            ctx.font = '7.5px "IBM Plex Mono",monospace';
+            const u2 = ctx.measureText(csub).width;
+            const cbw = Math.max(u1, u2) + 11, cbh = 21;
+
+            let cby = monte ? (cay + 10) : (cay - cbh - 10);
+            if(typeof placeBadge === 'function') cby = placeBadge(cxx - cbw/2, cbw, cby, cbh, monte ? 1 : -1);
+            const cbx = Math.max(2, Math.min(W - AXIS_W - cbw - 2, cxx - cbw/2));
+
+            ctx.strokeStyle = ccol; ctx.lineWidth = 1.2; ctx.setLineDash([3,2]);
+            ctx.beginPath(); ctx.moveTo(cxx, cay); ctx.lineTo(cxx, monte ? cby : cby + cbh); ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = ccol;
+            ctx.beginPath();
+            if(monte){ ctx.moveTo(cxx, cay - 7); ctx.lineTo(cxx + 5, cay); ctx.lineTo(cxx - 5, cay); }
+            else     { ctx.moveTo(cxx, cay + 7); ctx.lineTo(cxx + 5, cay); ctx.lineTo(cxx - 5, cay); }
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.1; ctx.stroke();
+
+            ctx.fillStyle = 'rgba(8,12,22,.93)';
+            ctx.strokeStyle = ccol; ctx.lineWidth = 1.5;
+            if(typeof roundRect === 'function') roundRect(cbx, cby, cbw, cbh, 4);
+            else { ctx.beginPath(); ctx.rect(cbx, cby, cbw, cbh); }
+            ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = ccol;
+            ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(ctxt, cbx + cbw/2, cby + 9);
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = '7.5px "IBM Plex Mono",monospace';
+            ctx.fillText(csub, cbx + cbw/2, cby + 17);
+            ctx.textAlign = 'left';
+            ctx.restore();
+
+            if(typeof labelHits !== 'undefined' && labelHits){
+              try{ labelHits.push({x:cbx, y:cby, w:cbw, h:cbh, key:'kk_bis'}); }catch(err){}
             }
           }
         }
@@ -12362,6 +12420,7 @@ const SCHEMA={
     {k:'cLine2Dn',t:'col',lab:'2ᵉ ligne — baissier',def:'#FF9F1C'},
     {k:'showSig2',t:'bool',lab:'Signal de la seconde ligne',def:false},
     {k:'showCross',t:'bool',lab:'Croisements entre les deux lignes',def:true},
+    {k:'showCrossOnPrice',t:'bool',lab:'Reporter les croisements sur le prix',def:true},
     {k:'cSig2',t:'col',lab:'Couleur signal seconde ligne',def:'#FFD59E'},
     {k:'kMult',t:'num',lab:'Seuil = k × écart quadratique',min:0.2,max:4,def:1.2,ind:1},
     {k:'rmsWin',t:'num',lab:'Fenêtre de l\'écart quadratique',min:20,max:500,def:100,ind:1},
