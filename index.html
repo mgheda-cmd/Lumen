@@ -8548,6 +8548,20 @@ function drawKKBisSub(p, s, e, cw) {
     nv != null ? (nv >= 0 ? cGold : cPurp) : '#94A3B8', '#000000');
 }
 
+/* Clignotement des pastilles potentielles : un rafraîchissement léger
+   n'est déclenché que tant qu'il en reste à l'écran. */
+let __zzPulseTimer = null, __zzPulseSeen = 0;
+function __zzPulse(){
+  __zzPulseSeen = Date.now();
+  if(__zzPulseTimer) return;
+  __zzPulseTimer = setInterval(function(){
+    if(Date.now() - __zzPulseSeen > 2000){
+      clearInterval(__zzPulseTimer); __zzPulseTimer = null; return;
+    }
+    if(typeof render === 'function') render();
+  }, 160);
+}
+
 /* ----- axe temps ----- */
 function drawTimeAxis(s,e){
   ctx.fillStyle=css('--panel');
@@ -17160,7 +17174,15 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         price: d[i].c,
         trigger: triggerName + (invertSignal ? ' (Inversé)' : ''),
         isInverted: invertSignal,
-        isTemp: (i === d.length - 1)
+        isTemp: (i === d.length - 1),
+        // Une donnée 5m ou 15m manquait à cette bougie : la condition
+        // correspondante valait « vrai » par défaut, pas par mesure.
+        // Le signal est donc potentiel tant que l'historique ne remonte
+        // pas assez loin pour l'alimenter.
+        potential: ((roscMapped ? roscMapped[i] == null : true) ||
+                    (imp15_col  ? imp15_col[i]  == null : true)),
+        missing: [(roscMapped && roscMapped[i] != null) ? null : 'Range Osc 5m',
+                  (imp15_col && imp15_col[i] != null) ? null : 'Impulse 15m'].filter(Boolean).join(' + ')
       });
       currentPosition = targetSellPos;
       entryPrice = d[i].c;
@@ -17202,7 +17224,11 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         price: d[i].c,
         trigger: triggerName + (invertSignal ? ' (Inversé)' : ''),
         isInverted: invertSignal,
-        isTemp: (i === d.length - 1)
+        isTemp: (i === d.length - 1),
+        potential: ((roscMapped ? roscMapped[i] == null : true) ||
+                    (imp15_col  ? imp15_col[i]  == null : true)),
+        missing: [(roscMapped && roscMapped[i] != null) ? null : 'Range Osc 5m',
+                  (imp15_col && imp15_col[i] != null) ? null : 'Impulse 15m'].filter(Boolean).join(' + ')
       });
       currentPosition = targetBuyPos;
       entryPrice = d[i].c;
@@ -20659,6 +20685,23 @@ function drawZZSignals(signals, s, e, yOf, cw) {
         textColor = isBuy ? '#10B981' : '#EF4444'; // Vert si Long (Achat), Rouge si Short (Vente)
       }
 
+      /* ÉTAT POTENTIEL — la pastille repose sur des conditions dont la donnée
+         5m ou 15m n'existe pas encore : elles valent « vrai » par défaut, pas
+         par mesure. Elle clignote en orange tant que ce n'est pas confirmé,
+         et prend sa couleur définitive dès que l'historique remonte assez
+         loin pour alimenter ces conditions. */
+      const isPotentiel = !!sig.potential;
+      if (isPotentiel) {
+        color = '#F59E0B';
+        bgFill = 'rgba(48, 30, 4, 0.95)';
+        textColor = '#F59E0B';
+        mainText = isBuy ? ('⏳ ' + numStr + 'POTENTIEL ACHAT') : ('⏳ ' + numStr + 'POTENTIEL VENTE');
+        // pulsation : opacité entre 0,45 et 1 sur un cycle de 1,2 s
+        const puls = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(Date.now() / 190));
+        ctx.globalAlpha = puls;
+        if (typeof __zzPulse === 'function') __zzPulse();
+      }
+
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.moveTo(x, yDot - 6); ctx.lineTo(x + 6, yDot); ctx.lineTo(x, yDot + 6); ctx.lineTo(x - 6, yDot); ctx.closePath();
@@ -20685,9 +20728,13 @@ function drawZZSignals(signals, s, e, yOf, cw) {
 
       ctx.fillStyle = textColor; ctx.font = 'bold 10.5px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
       ctx.fillText(mainText, x, by + 12);
-      ctx.fillStyle = '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
-      ctx.fillText('Prix: ' + fmtP(entryP) + ' $  |  ' + (sig.trigger || 'Alignement Z.Z.').substring(0, 20), x, by + 24);
+      ctx.fillStyle = isPotentiel ? '#FCD34D' : '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
+      ctx.fillText(isPotentiel
+        ? ('en attente : ' + (sig.missing || 'données HTF'))
+        : ('Prix: ' + fmtP(entryP) + ' $  |  ' + (sig.trigger || 'Alignement Z.Z.').substring(0, 20)),
+        x, by + 24);
       ctx.textAlign = 'left';
+      if (isPotentiel) ctx.globalAlpha = 1;
 
       if (typeof labelHits !== 'undefined') {
         labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'strat_zz'});
@@ -22368,6 +22415,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   const SECTIONS = [
     { titre:'Sur le graphique de prix', items:[
       [CAPS('#25D0A4','⚡ #12 ACHAT Z.Z.'), 'Pastille Z.Z. d\'achat', 'Signal d\'entrée de l\'indicateur d\'origine. Le texte indique le déclencheur : Nuage EMA, EMA 9 / HA 5m, Range Oscillator ou Impulse MACD 15m.'],
+      [CAPS('#F59E0B','⏳ #11 POTENTIEL ACHAT'), 'Pastille orange clignotante', 'Le signal repose sur des conditions dont la donnée 5m ou 15m n\'existe pas encore : elles valaient « vrai » par défaut, pas par mesure. Le sous-titre indique ce qui manque. Dès que l\'historique remonte assez loin, la pastille prend sa couleur définitive — verte pour un achat, rouge pour une vente — ou disparaît si les conditions ne sont finalement pas réunies.'],
       [CAPS('#FF5252','⚡ #13 VENTE Z.Z.'), 'Pastille Z.Z. de vente', 'Même chose dans l\'autre sens. Un seul signal par changement de sens : les achats consécutifs sont masqués.'],
       [DIAM('#8B5CF6'), 'Losange violet — ACHAT CORRIGÉ', 'Même signal recalculé sans lookahead, avec le Nuage EMA comme déclencheur. C\'est le prix auquel tu serais réellement entré.'],
       [DIAM('#F472B6'), 'Losange rose — VENTE CORRIGÉE', 'Version corrigée d\'une vente. L\'écart avec la pastille d\'origine est l\'avance indue qu\'elle avait.'],
