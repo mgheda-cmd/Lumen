@@ -5627,6 +5627,8 @@ function render(){
   if(vis('strat_zz') && window.__zzShowCorrected && typeof window.drawZZCorrected === 'function') window.drawZZCorrected(s, e, yOf, cw);
   // Marqueurs de bruit : ajoutés au-dessus des pastilles, sans les modifier.
   if(vis('strat_zz') && window.__noiseOn && typeof window.drawNoiseMarks === 'function') window.drawNoiseMarks(s, e, yOf);
+  // Pastilles inversées, pour vérification visuelle du sens contraire
+  if(vis('strat_zz') && window.__invOn && typeof window.drawInverses === 'function') window.drawInverses(s, e, yOf);
   // Divergences kk bis reportées sur le prix : c'est là que la sortie se joue.
   if(vis('kk_bis') && S('kk_bis','showDivOnPrice') !== false){
     try{
@@ -21662,6 +21664,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     { titre:'Sur le graphique de prix', items:[
       [CAPS('#25D0A4','⚡ #12 ACHAT Z.Z.'), 'Pastille Z.Z. d\'achat', 'Signal d\'entrée de l\'indicateur d\'origine. Le texte indique le déclencheur : Nuage EMA, EMA 9 / HA 5m, Range Oscillator ou Impulse MACD 15m.'],
       [CAPS('#FF5252','⚡ #13 VENTE Z.Z.'), 'Pastille Z.Z. de vente', 'Même chose dans l\'autre sens. Un seul signal par changement de sens : les achats consécutifs sont masqués.'],
+      ['<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(4,18,34,.93);border:1.4px solid #2E9BFF;color:#2E9BFF;font-size:9px;font-weight:700">🔵 ACHAT INVERSÉ</span>', 'Pastille bleue', 'Le même signal Z.Z. avec achat et vente échangés, pour vérifier à l\'œil ce que donne le sens contraire. Le bleu foncé marque un achat inversé (issu d\'une vente d\'origine), le bleu clair une vente inversée. Bouton 🔵 INVERSÉ.'],
       [DIAM('#8B5CF6'), 'Losange violet — ACHAT CORRIGÉ', 'Même signal recalculé sans lookahead, avec le Nuage EMA comme déclencheur. C\'est le prix auquel tu serais réellement entré.'],
       [DIAM('#F472B6'), 'Losange rose — VENTE CORRIGÉE', 'Version corrigée d\'une vente. L\'écart avec la pastille d\'origine est l\'avance indue qu\'elle avait.'],
       ['<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(24,14,45,.95);border:1.4px solid #8B5CF6;color:#8B5CF6;font-size:9px;font-weight:700">✅ #46 ACHAT CORRIGÉ</span>', 'Numérotation des pastilles corrigées', 'Le numéro affiché est celui de la pastille Z.Z. d\'origine qu\'elle corrige, et non une numérotation interne. Quand la mention « sans équivalent Z.Z. » apparaît, c\'est un signal que seul le mode strict détecte.'],
@@ -21933,6 +21936,129 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(245,158,11,.14);border:1px solid #F59E0B;color:#FCD34D;font-weight:700';
       b.textContent = window.__noiseOn ? '🔇 BRUIT : …' : '🔇 BRUIT : OFF';
       b.onclick = window.toggleNoise;
+      a.parentNode.insertBefore(b, a.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
+
+/* ================================================================
+   PASTILLES INVERSÉES — vérification visuelle du sens contraire
+   Le même signal Z.Z., mais achat et vente échangés. Rien n'est
+   recalculé : on reprend exactement les entrées affichées et on
+   retourne leur direction. Sert à juger à l'œil si l'inversion,
+   qui donnait 65 % de réussite en mesure, tombe au bon endroit.
+   Les pastilles Z.Z. d'origine ne sont pas touchées.
+   ================================================================ */
+(function(){
+
+  window.__invOn = (localStorage.getItem('lumen_inv') === '1');
+  let ck = null, cs = [];
+
+  function signaux(){
+    const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
+    if(!d.length || typeof computeZZSignals !== 'function') return [];
+    const key = d.length + '_' + d[d.length-1].t + '_' + state.tf;
+    if(key === ck) return cs;
+    const base = (state.indicators && state.indicators.strat_zz) || {};
+    let sg = [];
+    try{ sg = (computeZZSignals(d, base) || []).filter(x => !x.isExit); }catch(e){ return []; }
+    // filtre de position, comme à l'affichage
+    let last = 0;
+    sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
+    cs = sg; ck = key;
+    return cs;
+  }
+
+  window.drawInverses = function(s, e, yOf){
+    const list = signaux();
+    const btn = document.getElementById('inv-btn');
+    if(btn) btn.textContent = '🔵 INVERSÉ : ' + list.length;
+    if(!list.length) return;
+
+    const BLEU_A = '#2E9BFF';   // achat inversé (venait d'une vente)
+    const BLEU_V = '#7DD3FC';   // vente inversée (venait d'un achat)
+    const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+
+    for(const sg of list){
+      const i = (sg.t != null && typeof idxOfTime === 'function' ? idxOfTime(sg.t) : null) ?? sg.i;
+      if(i == null || i < s - 1 || i > e + 1) continue;
+      const bar = state.data[i]; if(!bar) continue;
+
+      // sens inversé : un achat d'origine devient une vente
+      const invBuy = (sg.dir === -1);
+      const col = invBuy ? BLEU_A : BLEU_V;
+      const x = xOf(i);
+      const anchorY = invBuy ? yOf(bar.l) + 6 : yOf(bar.h) - 6;
+      const num = (sg.num != null) ? ('#' + sg.num + ' ') : '';
+      const txt = (invBuy ? '🔵 ' + num + 'ACHAT INVERSÉ' : '🔵 ' + num + 'VENTE INVERSÉE');
+      const sub = 'Prix: ' + fmtP(sg.price) + ' $ · sens contraire';
+
+      ctx.save();
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      const w1 = ctx.measureText(txt).width;
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      const w2 = ctx.measureText(sub).width;
+      const bw = Math.max(w1, w2) + 12, bh = 24;
+
+      const SAUT = 24;
+      let by = invBuy ? (anchorY + SAUT) : (anchorY - bh - SAUT);
+      if(typeof placeBadge === 'function') by = placeBadge(x - bw/2, bw, by, bh, invBuy ? 1 : -1);
+      const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+
+      ctx.strokeStyle = col; ctx.lineWidth = 1.1; ctx.setLineDash([3,2]);
+      ctx.beginPath(); ctx.moveTo(x, anchorY); ctx.lineTo(x, invBuy ? by : by + bh); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // triangle d'orientation
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      if(invBuy){ ctx.moveTo(x, anchorY + 7); ctx.lineTo(x + 5, anchorY); ctx.lineTo(x - 5, anchorY); }
+      else      { ctx.moveTo(x, anchorY - 7); ctx.lineTo(x + 5, anchorY); ctx.lineTo(x - 5, anchorY); }
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1; ctx.stroke();
+
+      ctx.fillStyle = 'rgba(4,18,34,.93)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+      else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = col;
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, bx + bw/2, by + 10);
+      ctx.fillStyle = '#BAE6FD';
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      ctx.fillText(sub, bx + bw/2, by + 19);
+      ctx.textAlign = 'left';
+      ctx.restore();
+
+      if(typeof labelHits !== 'undefined' && labelHits){
+        try{ labelHits.push({x:bx, y:by, w:bw, h:bh, key:'strat_zz'}); }catch(err){}
+      }
+    }
+  };
+
+  window.toggleInverses = function(){
+    window.__invOn = !window.__invOn;
+    try{ localStorage.setItem('lumen_inv', window.__invOn ? '1':'0'); }catch(e){}
+    ck = null;
+    const b = document.getElementById('inv-btn');
+    if(b && !window.__invOn) b.textContent = '🔵 INVERSÉ : OFF';
+    if(typeof render === 'function') render();
+  };
+
+  try{
+    const a = document.getElementById('noise-btn') || document.getElementById('leg-btn');
+    if(a && !document.getElementById('inv-btn')){
+      const b = document.createElement('button');
+      b.id = 'inv-btn'; b.className = 'btn';
+      b.title = "Affiche les mêmes entrées Z.Z. avec achat et vente échangés, en bleu. Les pastilles d'origine restent en place.";
+      b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(46,155,255,.14);border:1px solid #2E9BFF;color:#7DD3FC;font-weight:700';
+      b.textContent = window.__invOn ? '🔵 INVERSÉ : …' : '🔵 INVERSÉ : OFF';
+      b.onclick = window.toggleInverses;
       a.parentNode.insertBefore(b, a.nextSibling);
     }
   }catch(e){}
