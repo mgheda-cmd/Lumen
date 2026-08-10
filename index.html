@@ -5906,6 +5906,8 @@ function render(){
   if(vis('strat_zz') && window.__invOn && typeof window.drawInverses === 'function') window.drawInverses(s, e, yOf);
   // Couche de comparaison : entrées calculées avec la nouvelle règle du jaune
   if(vis('strat_zz') && window.__nouvOn && typeof window.drawZZNouveau === 'function') window.drawZZNouveau(s, e, yOf);
+  // Couche de comparaison : mêmes conditions sans le Range Oscillator
+  if(vis('strat_zz') && window.__noRoscOn && typeof window.drawZZNoRosc === 'function') window.drawZZNoRosc(s, e, yOf);
   // Pastilles kk bis reportées sur le prix (Sorties par Seuil, Divergences, Sommets & Creux)
   if(vis('kk_bis')){
     try{
@@ -17208,7 +17210,13 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
       condBuyCloud[i]  = (fc > sc);
     }
 
-    if(r != null){
+    if(ind && ind.skipRosc){
+      /* Range Oscillator neutralisé : la condition reste vraie dans les deux
+         sens, les trois autres décident seules. Sert à mesurer si cet
+         oscillateur retarde réellement les entrées. */
+      condSellRosc[i] = true;
+      condBuyRosc[i]  = true;
+    } else if(r != null){
       condSellRosc[i] = (r < 0);
       condBuyRosc[i]  = (r > 0);
     }
@@ -23482,6 +23490,114 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(148,163,184,.14);border:1px solid #94A3B8;color:#CBD5E1;font-weight:700';
       b.textContent = window.__rangeImpOn ? '🟰 RANGE : …' : '🟰 RANGE : OFF';
       b.onclick = window.openRangeImpMenu;
+      a.parentNode.insertBefore(b, a.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
+
+/* ================================================================
+   PASTILLES SANS RANGE OSCILLATEUR — couche de comparaison
+   Mêmes conditions Z.Z., mais le Range Oscillator 50 en 5 minutes est
+   neutralisé : il n'autorise ni ne bloque, les trois autres conditions
+   décident seules. Permet de voir si cet oscillateur retarde vraiment
+   les entrées. Affichée en magenta.
+   Les pastilles Z.Z. ne sont pas touchées.
+   ================================================================ */
+(function(){
+
+  window.__noRoscOn = (localStorage.getItem('lumen_norosc') === '1');
+  let ck = null, cs = [];
+
+  function signaux(){
+    const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
+    if(!d.length || typeof computeZZSignals !== 'function') return [];
+    const base = (state.indicators && state.indicators.strat_zz) || {};
+    const key = d.length + '_' + d[d.length-1].t + '_' + state.tf;
+    if(key === ck) return cs;
+    let sg = [];
+    try{
+      const cfg = Object.assign({}, base, { skipRosc: true });
+      sg = (computeZZSignals(d, cfg) || []).filter(x => !x.isExit);
+    }catch(e){ return []; }
+    let last = 0;
+    sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
+    cs = sg; ck = key;
+    return cs;
+  }
+
+  window.drawZZNoRosc = function(s, e, yOf){
+    const list = signaux();
+    const btn = document.getElementById('norosc-btn');
+    if(btn) btn.textContent = '🟣 SANS ROSC : ' + list.length;
+    if(!list.length) return;
+    const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+
+    for(const sg of list){
+      const i = (sg.t != null && typeof idxOfTime === 'function' ? idxOfTime(sg.t) : null) ?? sg.i;
+      if(i == null || i < s - 1 || i > e + 1) continue;
+      const bar = state.data[i]; if(!bar) continue;
+      const isBuy = (sg.dir === 1);
+      const col = isBuy ? '#D946EF' : '#F0ABFC';
+      const x = xOf(i);
+      const anchorY = isBuy ? yOf(bar.l) + 6 : yOf(bar.h) - 6;
+      const num = (sg.num != null) ? ('#' + sg.num + ' ') : '';
+      const txt = '🟣 ' + num + (isBuy ? 'ACHAT sans ROSC' : 'VENTE sans ROSC');
+      const sub = fmtP(sg.price) + ' $ · 3 conditions';
+
+      ctx.save();
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      const w1 = ctx.measureText(txt).width;
+      ctx.font = '7.5px "IBM Plex Mono",monospace';
+      const w2 = ctx.measureText(sub).width;
+      const bw = Math.max(w1, w2) + 11, bh = 20;
+
+      const SAUT = 112;   // au-delà des autres couches
+      let by = isBuy ? (anchorY + SAUT) : (anchorY - bh - SAUT);
+      if(typeof placeBadge === 'function') by = placeBadge(x - bw/2, bw, by, bh, isBuy ? 1 : -1);
+      const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+
+      ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.moveTo(x, anchorY); ctx.lineTo(x, isBuy ? by : by + bh); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(30,8,34,.92)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.4;
+      if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+      else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = col;
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, bx + bw/2, by + 9);
+      ctx.fillStyle = '#E9D5FF';
+      ctx.font = '7.5px "IBM Plex Mono",monospace';
+      ctx.fillText(sub, bx + bw/2, by + 17);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
+  };
+
+  window.toggleNoRosc = function(){
+    window.__noRoscOn = !window.__noRoscOn;
+    try{ localStorage.setItem('lumen_norosc', window.__noRoscOn ? '1':'0'); }catch(e){}
+    ck = null;
+    const b = document.getElementById('norosc-btn');
+    if(b && !window.__noRoscOn) b.textContent = '🟣 SANS ROSC : OFF';
+    if(typeof render === 'function') render();
+  };
+
+  try{
+    const a = document.getElementById('nouv-btn') || document.getElementById('inv-btn');
+    if(a && !document.getElementById('norosc-btn')){
+      const b = document.createElement('button');
+      b.id = 'norosc-btn'; b.className = 'btn';
+      b.title = "Mêmes conditions Z.Z. mais sans le Range Oscillator : les trois autres décident seules. Pour voir si cet oscillateur retarde les entrées.";
+      b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(217,70,239,.14);border:1px solid #D946EF;color:#F0ABFC;font-weight:700';
+      b.textContent = window.__noRoscOn ? '🟣 SANS ROSC : …' : '🟣 SANS ROSC : OFF';
+      b.onclick = window.toggleNoRosc;
       a.parentNode.insertBefore(b, a.nextSibling);
     }
   }catch(e){}
