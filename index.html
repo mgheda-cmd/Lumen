@@ -372,7 +372,7 @@ footer{
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px solid rgba(255,255,255,0.12);margin-top:2px;width:100%">
           <button id="btn-toggle-zz-entries" onclick="toggleZZEntries()" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles d'Entrée Achat et Vente">⚡ Entrées: ON</button>
-          <button id="btn-toggle-zz-exits" onclick="toggleZZExits()" style="background:rgba(255,255,255,0.08);border:1px solid #94A3B8;color:#94A3B8;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles de Sortie Achat et Vente">🎯 Sorties: OFF</button>
+          <button id="btn-toggle-zz-exits" onclick="toggleZZExits()" style="background:rgba(236,72,153,0.25);border:1px solid #EC4899;color:#EC4899;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles de Sortie Achat et Vente">🎯 Sorties: ON</button>
           <button id="btn-toggle-zz-invert" onclick="toggleZZInvert()" style="background:rgba(251,191,36,0.3);border:1px solid #FBBF24;color:#FBBF24;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Inverser les signaux Achat/Vente (Pastilles Jaunes d'Or)">🟡 Inversé: ON</button>
           <button id="btn-bt-strat-zz" onclick="openZZBacktestModal()" style="background:linear-gradient(135deg,#10B981,#059669);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(16,185,129,0.3);margin-left:auto" title="Lancer le Backtest Pastilles & Sortie Déplacement de Prix (200, 300, 400, 500 pts)">🚀 Backtest</button>
           <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
@@ -594,6 +594,11 @@ footer{
         <span class="state">off</span>
       </div>
       <h4>Smart Money Concepts</h4>
+      <div class="ind-item on" data-ind="smc_lite" id="item-smc_lite" style="background:var(--panel-2,#0F172A);border:1.5px solid #00FFFF;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,255,255,0.2)">
+        <span class="dot" style="background:#00FFFF;box-shadow:0 0 6px #00FFFF;flex:none"></span>
+        <span class="name">FluidTrades - SMC Lite <span class="desc">Supply/Demand & BOS</span></span>
+        <span class="state">on</span>
+      </div>
       <div class="ind-item" data-ind="fvg">
         <span class="dot" style="background:#1E6EFF"></span>
         <span class="name">FVG MTF <span class="desc">% acheteur / vendeur</span></span>
@@ -2543,6 +2548,221 @@ const calc = {
     }
     return out.slice(-40);
   },
+  smcLite(d, ind) {
+    if (!d || !d.length) return { supplyBoxes: [], demandBoxes: [], supplyBos: [], demandBos: [], paLabels: [], zigzagPoints: [] };
+
+    ind = ind || {};
+    const swingLength = Math.max(1, Math.min(50, ind.swingLen || 10));
+    const keepHist = Math.max(5, Math.min(50, ind.keepHist || 20));
+    const boxWidth = ind.boxWidth != null ? ind.boxWidth : 2.5;
+    const showZigzag = !!ind.showZigzag;
+    const showPaLabels = !!ind.showPaLabels;
+
+    const n = d.length;
+
+    // ATR 50
+    const atrPeriod = 50;
+    const tr = new Float64Array(n);
+    tr[0] = d[0].h - d[0].l;
+    for (let i = 1; i < n; i++) {
+      const h = d[i].h, l = d[i].l, pc = d[i - 1].c;
+      tr[i] = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+    }
+
+    const atr = new Float64Array(n);
+    let sumTR = 0;
+    for (let i = 0; i < Math.min(atrPeriod, n); i++) sumTR += tr[i];
+    const initAtr = sumTR / Math.min(atrPeriod, n);
+    for (let i = 0; i < Math.min(atrPeriod, n); i++) atr[i] = initAtr;
+    for (let i = atrPeriod; i < n; i++) {
+      atr[i] = (atr[i - 1] * (atrPeriod - 1) + tr[i]) / atrPeriod;
+    }
+
+    const f_array_add_pop = (arr, val) => {
+      arr.unshift(val);
+      if (arr.length > 5) arr.pop();
+    };
+
+    const f_check_overlapping = (newPoi, boxArray, curAtr) => {
+      const atrThreshold = curAtr * 2;
+      for (let i = 0; i < boxArray.length; i++) {
+        const b = boxArray[i];
+        const poi = (b.top + b.bottom) / 2;
+        const upperBoundary = poi + atrThreshold;
+        const lowerBoundary = poi - atrThreshold;
+        if (newPoi >= lowerBoundary && newPoi <= upperBoundary) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const swingHighValues = [];
+    const swingLowValues = [];
+    const swingHighBns = [];
+    const swingLowBns = [];
+
+    const currentSupplyBox = [];
+    const currentDemandBox = [];
+
+    const supplyBos = [];
+    const demandBos = [];
+
+    const paLabels = [];
+    const zigzagPoints = [];
+
+    for (let i = swingLength * 2; i < n; i++) {
+      const pIdx = i - swingLength;
+      const barAtr = atr[i];
+      const atrBuffer = barAtr * (boxWidth / 10);
+
+      // Pivot High
+      let isPivotHigh = true;
+      const pHighVal = d[pIdx].h;
+      for (let j = pIdx - swingLength; j <= pIdx + swingLength; j++) {
+        if (j !== pIdx && d[j].h >= pHighVal) {
+          isPivotHigh = false;
+          break;
+        }
+      }
+
+      // Pivot Low
+      let isPivotLow = true;
+      const pLowVal = d[pIdx].l;
+      for (let j = pIdx - swingLength; j <= pIdx + swingLength; j++) {
+        if (j !== pIdx && d[j].l <= pLowVal) {
+          isPivotLow = false;
+          break;
+        }
+      }
+
+      if (isPivotHigh) {
+        f_array_add_pop(swingHighValues, pHighVal);
+        f_array_add_pop(swingHighBns, pIdx);
+
+        if (showPaLabels) {
+          let labelText = 'HH';
+          if (swingHighValues.length > 1 && swingHighValues[0] < swingHighValues[1]) {
+            labelText = 'LH';
+          }
+          paLabels.push({
+            idx: pIdx,
+            t: d[pIdx].t,
+            y: pHighVal,
+            text: labelText,
+            type: 'high'
+          });
+        }
+
+        const boxTop = pHighVal;
+        const boxBottom = boxTop - atrBuffer;
+        const poi = (boxTop + boxBottom) / 2;
+
+        if (f_check_overlapping(poi, currentSupplyBox, barAtr)) {
+          if (currentSupplyBox.length >= keepHist) {
+            currentSupplyBox.pop();
+          }
+          currentSupplyBox.unshift({
+            left: pIdx,
+            tLeft: d[pIdx].t,
+            top: boxTop,
+            bottom: boxBottom,
+            poi: poi,
+            type: 'supply'
+          });
+        }
+
+        if (showZigzag) {
+          zigzagPoints.push({ idx: pIdx, t: d[pIdx].t, y: pHighVal, type: 'high' });
+        }
+      } else if (isPivotLow) {
+        f_array_add_pop(swingLowValues, pLowVal);
+        f_array_add_pop(swingLowBns, pIdx);
+
+        if (showPaLabels) {
+          let labelText = 'HL';
+          if (swingLowValues.length > 1 && swingLowValues[0] < swingLowValues[1]) {
+            labelText = 'LL';
+          }
+          paLabels.push({
+            idx: pIdx,
+            t: d[pIdx].t,
+            y: pLowVal,
+            text: labelText,
+            type: 'low'
+          });
+        }
+
+        const boxBottom = pLowVal;
+        const boxTop = boxBottom + atrBuffer;
+        const poi = (boxTop + boxBottom) / 2;
+
+        if (f_check_overlapping(poi, currentDemandBox, barAtr)) {
+          if (currentDemandBox.length >= keepHist) {
+            currentDemandBox.pop();
+          }
+          currentDemandBox.unshift({
+            left: pIdx,
+            tLeft: d[pIdx].t,
+            top: boxTop,
+            bottom: boxBottom,
+            poi: poi,
+            type: 'demand'
+          });
+        }
+
+        if (showZigzag) {
+          zigzagPoints.push({ idx: pIdx, t: d[pIdx].t, y: pLowVal, type: 'low' });
+        }
+      }
+
+      // Supply to BOS
+      const curClose = d[i].c;
+      for (let k = currentSupplyBox.length - 1; k >= 0; k--) {
+        const box = currentSupplyBox[k];
+        if (curClose >= box.top) {
+          supplyBos.push({
+            left: box.left,
+            tLeft: box.tLeft,
+            right: i,
+            tRight: d[i].t,
+            top: box.top,
+            bottom: box.bottom,
+            mid: (box.top + box.bottom) / 2,
+            type: 'supply_bos'
+          });
+          currentSupplyBox.splice(k, 1);
+        }
+      }
+
+      // Demand to BOS
+      for (let k = currentDemandBox.length - 1; k >= 0; k--) {
+        const box = currentDemandBox[k];
+        if (curClose <= box.bottom) {
+          demandBos.push({
+            left: box.left,
+            tLeft: box.tLeft,
+            right: i,
+            tRight: d[i].t,
+            top: box.top,
+            bottom: box.bottom,
+            mid: (box.top + box.bottom) / 2,
+            type: 'demand_bos'
+          });
+          currentDemandBox.splice(k, 1);
+        }
+      }
+    }
+
+    return {
+      supplyBoxes: currentSupplyBox,
+      demandBoxes: currentDemandBox,
+      supplyBos: supplyBos.slice(-20),
+      demandBos: demandBos.slice(-20),
+      paLabels: paLabels.slice(-50),
+      zigzagPoints: zigzagPoints
+    };
+  },
   obOne(bars,name,tf){
     const L=5,N=bars.length,atr=this.atr(bars,14);
     const {H:pivH,Lo:pivL}=this.pivots(bars,L);
@@ -3172,7 +3392,10 @@ const calc = {
   },
   lrc(d,len,mult,mult1){
     const n=d.length; if(!n)return null;
-    len=Math.max(5,Math.min(len||100,n));
+    len=Math.max(10,Math.min(len||100,n));
+    const m2 = S('lrc', 'devlen') ?? (mult != null ? mult : 2.0);
+    const m1 = mult1 != null ? mult1 : 1.0;
+
     const s0=n-len;
     let sx=0,sy=0,sxy=0,sxx=0,syy=0;
     for(let k=0;k<len;k++){
@@ -3181,26 +3404,59 @@ const calc = {
     }
     const den=(len*sxx-sx*sx)||1;
     const b=(len*sxy-sx*sy)/den, a=(sy-b*sx)/len;
+
     let se=0;
-    for(let k=0;k<len;k++){const e=d[s0+k].c-(a+b*k);se+=e*e;}
+    for(let k=0;k<len;k++){
+      const regVal = a + b * k;
+      const e = d[s0+k].c - regVal;
+      se += e * e;
+    }
     const dev=Math.sqrt(se/len);
 
-    const m2 = mult != null ? mult : 2.0;
-    const m1 = mult1 != null ? mult1 : 1.0;
+    // Pente précédente (slope[1]) pour déterminer la direction des flèches
+    let prevB = b;
+    if (n > len + 1) {
+      const ps0 = s0 - 1;
+      let psx = 0, psy = 0, psxy = 0, psxx = 0;
+      for (let k = 0; k < len; k++) {
+        const x = k, y = d[ps0 + k].c;
+        psx += x; psy += y; psxy += x * y; psxx += x * x;
+      }
+      const pden = (len * psxx - psx * psx) || 1;
+      prevB = (len * psxy - psx * psy) / pden;
+    }
+
+    // Calcul des coordonnées du canal
+    const y1_ = a;
+    const y2_ = a + b * (len - 1);
+    const lastClose = d[n - 1].c;
+    const upperBound = y2_ + dev * m2;
+    const lowerBound = y2_ - dev * m2;
+
+    // Détection de rupture de canal (outofchannel)
+    let outofchannel = -1;
+    if (b > 0 && lastClose < lowerBound) {
+      outofchannel = 0; // Canal haussier brisé vers le bas
+    } else if (b < 0 && lastClose > upperBound) {
+      outofchannel = 2; // Canal baissier brisé vers le haut
+    }
+
+    let brokenChannel = null;
+    if (outofchannel !== -1) {
+      brokenChannel = { s0, y1_, y2_, dev, devlen: m2, b, type: outofchannel };
+    }
 
     // Coefficient de détermination R^2
     const numR = (len*sxy - sx*sy);
     const denR = Math.sqrt(((len*sxx - sx*sx)||1) * ((len*syy - sy*sy)||1));
     const r2 = denR !== 0 ? Math.pow(Math.max(-1, Math.min(1, numR / denR)), 2) : 0;
 
-    // Variation relative du canal sur la période
-    const pStart = a;
-    const pEnd = a + b * (len - 1);
+    const pStart = y1_;
+    const pEnd = y2_;
     const pctChange = pStart ? ((pEnd - pStart) / pStart) * 100 : 0;
-
     const tStart = d[s0] ? d[s0].t : null;
 
-    return { s0, tStart, len, a, b, dev, dev1: dev * m1, dev2: dev * m2, mult: m2, mult1: m1, r2, pctChange, pStart, pEnd };
+    return { s0, tStart, len, a, b, prevB, dev, devlen: m2, dev1: dev * m1, dev2: dev * m2, mult: m2, mult1: m1, r2, pctChange, pStart, pEnd, y1_, y2_, outofchannel, brokenChannel };
   },
   rangeOsc(d,len,smooth){
     len=len||50; smooth=smooth||2;
@@ -3546,9 +3802,10 @@ const state = {
     sha:{on:true,period:10,tf:'chart',mode:'lisse'},
     sha2:{on:false,period:10,tf:'15',mode:'lisse'},
     sha3:{on:false,period:10,tf:'60',mode:'lisse'},
+    smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showZigzag:false,showPaLabels:false,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:true,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
-    lrc:{on:false,tf:'chart',period:100,mult:2.0,mult1:1.0,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,extend:true,cLine:'#9BE6FF',cBand:'#9BE6FF'},
+    lrc:{on:false,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF'},
     sr:{on:true,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     bos:{on:false,after1529:false,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
@@ -3570,11 +3827,11 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:false,invertSignal:true},
+    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:false,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -4661,6 +4918,7 @@ function getInd(key){
     }
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
+    if(key==='smc_lite') state.cache[ck] = calc.smcLite(d, ind);
     if(key==='fvg')state.cache[ck]=mtfCollect2(ind.tfs,(b,n)=>calc.fvgOne(b,n));
     if(key==='ob')state.cache[ck]=mtfCollect2(ind.tfs,(b,n,t)=>calc.obOne(b,n,t));
     if(key==='bos')state.cache[ck]=mtfCollect2(ind.tfs,(b,n,t)=>calc.bosOne(b,n,t));
@@ -5629,95 +5887,246 @@ function render(){
   if(vis('strat_zz') && window.__noiseOn && typeof window.drawNoiseMarks === 'function') window.drawNoiseMarks(s, e, yOf);
   // Pastilles inversées, pour vérification visuelle du sens contraire
   if(vis('strat_zz') && window.__invOn && typeof window.drawInverses === 'function') window.drawInverses(s, e, yOf);
-  // Divergences kk bis reportées sur le prix : c'est là que la sortie se joue.
-  if(vis('kk_bis') && S('kk_bis','showDivOnPrice') !== false){
+  // Pastilles kk bis reportées sur le prix (Sorties par Seuil, Divergences, Sommets & Creux)
+  if(vis('kk_bis')){
     try{
       const kb = getInd('kk_bis');
+      if(kb){
+        // 1. Sorties par seuil (Pastilles Jaunes SORTIE VENTE et Roses SORTIE ACHAT)
+        if(Array.isArray(kb.exits) && S('kk_bis','showSeuilOnPrice') !== false && S('kk_bis','showExits') !== false){
+          for(const ex of kb.exits){
+            if(ex.div) continue; // Les divergences ont leur propre boucle ci-dessous
+            const ci = (ex.t != null ? idxOfTime(ex.t) : null) ?? ex.i;
+            if(ci == null || ci < s || ci > e) continue;
+            const isSell = (ex.type === 'SORTIE_ACHAT');
+            const col = isSell ? '#FF007A' : '#FFD700'; // Jaune #FFD700 pour SORTIE VENTE
+            const bar = state.data[ci]; if(!bar) continue;
+            const x = xOf(ci);
+            const anchorY = isSell ? yOf(bar.h) - 8 : yOf(bar.l) + 8;
+            const prix = bar.c;
+            const numE = (typeof zzNumFor === 'function') ? zzNumFor(ci, isSell ? 1 : -1) : null;
+            const txt = (isSell ? '🔻 SORTIE ACHAT' : '🔺 SORTIE VENTE') + (numE != null ? ' #' + numE : '');
+            const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Seuil + pente';
 
-      // Sorties par seuil : marqueur discret, elles sont bien plus nombreuses
-      // que les divergences et noieraient les pastilles Z.Z. si on les
-      // traitait de la même façon.
-      if(kb && Array.isArray(kb.exits) && S('kk_bis','showSeuilOnPrice') === true){
-        for(const ex of kb.exits){
-          if(ex.div) continue;                       // les divergences ont leur propre pastille
-          if(ex.i == null || ex.i < s || ex.i > e) continue;
-          const isSell = (ex.type === 'SORTIE_ACHAT');
-          const col = isSell ? '#FF007A' : '#FFD700';
-          const bar = state.data[ex.i]; if(!bar) continue;
-          const x = xOf(ex.i);
-          const y = isSell ? yOf(bar.h) - 9 : yOf(bar.l) + 9;
-          ctx.save();
-          ctx.globalAlpha = 0.9;
-          ctx.fillStyle = col;
-          ctx.beginPath(); ctx.arc(x, y, 3.6, 0, Math.PI*2); ctx.fill();
-          ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1; ctx.stroke();
-          const px = bar.c;
-          const nSeuil = (typeof zzNumFor === 'function') ? zzNumFor(ex.i, isSell ? 1 : -1) : null;
-          ctx.fillStyle = col;
-          ctx.font = 'bold 8px "IBM Plex Mono",monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText((nSeuil != null ? '#' + nSeuil + ' ' : '') + (px >= 1000 ? px.toFixed(0) : px.toFixed(2)),
-                       x, y + (isSell ? -7 : 14));
-          ctx.textAlign = 'left';
-          ctx.restore();
-        }
-      }
+            ctx.save();
+            ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+            const w1 = ctx.measureText(txt).width;
+            ctx.font = '8.5px "IBM Plex Mono",monospace';
+            const w2 = ctx.measureText(sub).width;
+            const bw = Math.max(w1, w2) + 14, bh = 26;
 
-      if(kb && Array.isArray(kb.divs)){
-        for(const dv of kb.divs){
-          if(dv.i2 < s || dv.i2 > e) continue;
-          const x = xOf(dv.i2);
-          const isSell = (dv.dir === 1);
-          const col = isSell ? '#FF007A' : '#FFD700';
-          const anchorY = isSell ? yOf(state.data[dv.i2].h) - 10 : yOf(state.data[dv.i2].l) + 10;
-          const prix = state.data[dv.i2].c;
-          const numE = (typeof zzNumFor === 'function') ? zzNumFor(dv.i2, isSell ? 1 : -1) : null;
-          const txt = (isSell ? '🔻 SORTIE ACHAT' : '🔺 SORTIE VENTE') + (numE != null ? ' #' + numE : '');
-          const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Divergence kk bis';
+            let by = isSell ? (anchorY - bh - 10) : (anchorY + 10);
+            if(typeof placeBadge === 'function'){
+              by = placeBadge(x - bw/2, bw, by, bh, isSell ? -1 : 1);
+            }
+            const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
 
-          ctx.save();
-          ctx.font = 'bold 10px "IBM Plex Mono",monospace';
-          const w1 = ctx.measureText(txt).width;
-          ctx.font = '8.5px "IBM Plex Mono",monospace';
-          const w2 = ctx.measureText(sub).width;
-          const bw = Math.max(w1, w2) + 14, bh = 26;
+            // tige de rattachement
+            ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.setLineDash([3,2]);
+            ctx.beginPath();
+            ctx.moveTo(x, anchorY); ctx.lineTo(x, isSell ? by + bh : by);
+            ctx.stroke(); ctx.setLineDash([]);
 
-          let by = isSell ? (anchorY - bh - 10) : (anchorY + 10);
-          if(typeof placeBadge === 'function'){
-            by = placeBadge(x - bw/2, bw, by, bh, isSell ? -1 : 1);
+            // point d'ancrage
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(x, anchorY, 4, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.2; ctx.stroke();
+
+            // pastille
+            ctx.fillStyle = 'rgba(8,12,22,.93)';
+            ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+            if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+            else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+            ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = col;
+            ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(txt, bx + bw/2, by + 11);
+            ctx.fillStyle = '#CBD5E1';
+            ctx.font = '8.5px "IBM Plex Mono",monospace';
+            ctx.fillText(sub, bx + bw/2, by + 21);
+            ctx.textAlign = 'left';
+            ctx.restore();
+
+            if(typeof labelHits !== 'undefined' && labelHits){
+              try{ labelHits.push({x:bx, y:by, w:bw, h:bh, key:'kk_bis'}); }catch(err){}
+            }
           }
-          const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+        }
 
-          // tige de rattachement
-          ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.setLineDash([3,2]);
-          ctx.beginPath();
-          ctx.moveTo(x, anchorY); ctx.lineTo(x, isSell ? by + bh : by);
-          ctx.stroke(); ctx.setLineDash([]);
+        // 2. Divergences reportées sur le prix
+        if(Array.isArray(kb.divs) && S('kk_bis','showDivOnPrice') !== false){
+          for(const dv of kb.divs){
+            const ci = (dv.t != null ? idxOfTime(dv.t) : null) ?? dv.i2;
+            if(ci == null || ci < s || ci > e) continue;
+            const x = xOf(ci);
+            const isSell = (dv.dir === 1);
+            const col = isSell ? '#FF007A' : '#FFD700'; // Jaune pour sortie Vente
+            const bar = state.data[ci]; if(!bar) continue;
+            const anchorY = isSell ? yOf(bar.h) - 10 : yOf(bar.l) + 10;
+            const prix = bar.c;
+            const numE = (typeof zzNumFor === 'function') ? zzNumFor(ci, isSell ? 1 : -1) : null;
+            const txt = (isSell ? '🔻 SORTIE ACHAT' : '🔺 SORTIE VENTE') + (numE != null ? ' #' + numE : '');
+            const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Divergence kk bis';
 
-          // point d'ancrage
-          ctx.fillStyle = col;
-          ctx.beginPath(); ctx.arc(x, anchorY, 4, 0, Math.PI*2); ctx.fill();
-          ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.2; ctx.stroke();
+            ctx.save();
+            ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+            const w1 = ctx.measureText(txt).width;
+            ctx.font = '8.5px "IBM Plex Mono",monospace';
+            const w2 = ctx.measureText(sub).width;
+            const bw = Math.max(w1, w2) + 14, bh = 26;
 
-          // pastille
-          ctx.fillStyle = 'rgba(8,12,22,.93)';
-          ctx.strokeStyle = col; ctx.lineWidth = 1.6;
-          if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
-          else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
-          ctx.fill(); ctx.stroke();
+            let by = isSell ? (anchorY - bh - 10) : (anchorY + 10);
+            if(typeof placeBadge === 'function'){
+              by = placeBadge(x - bw/2, bw, by, bh, isSell ? -1 : 1);
+            }
+            const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
 
-          ctx.fillStyle = col;
-          ctx.font = 'bold 10px "IBM Plex Mono",monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText(txt, bx + bw/2, by + 11);
-          ctx.fillStyle = '#CBD5E1';
-          ctx.font = '8.5px "IBM Plex Mono",monospace';
-          ctx.fillText(sub, bx + bw/2, by + 21);
-          ctx.textAlign = 'left';
-          ctx.restore();
+            // tige de rattachement
+            ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.setLineDash([3,2]);
+            ctx.beginPath();
+            ctx.moveTo(x, anchorY); ctx.lineTo(x, isSell ? by + bh : by);
+            ctx.stroke(); ctx.setLineDash([]);
 
-          if(typeof labelHits !== 'undefined' && labelHits){
-            try{ labelHits.push({x:bx, y:by, w:bw, h:bh, key:'kk_bis'}); }catch(err){}
+            // point d'ancrage
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(x, anchorY, 4, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.2; ctx.stroke();
+
+            // pastille
+            ctx.fillStyle = 'rgba(8,12,22,.93)';
+            ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+            if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+            else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+            ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = col;
+            ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(txt, bx + bw/2, by + 11);
+            ctx.fillStyle = '#CBD5E1';
+            ctx.font = '8.5px "IBM Plex Mono",monospace';
+            ctx.fillText(sub, bx + bw/2, by + 21);
+            ctx.textAlign = 'left';
+            ctx.restore();
+
+            if(typeof labelHits !== 'undefined' && labelHits){
+              try{ labelHits.push({x:bx, y:by, w:bw, h:bh, key:'kk_bis'}); }catch(err){}
+            }
+          }
+        }
+
+        // 3. Sommets (triangles orange) et Creux (triangles vert) du score kk bis sur le prix
+        if(S('kk_bis','showPivotsOnPrice') !== false){
+          // Sommets (Orange #FF9F1C)
+          if(Array.isArray(kb.peaks)){
+            for(const pk of kb.peaks){
+              const idx = (typeof pk === 'object' && pk.t != null) ? idxOfTime(pk.t) : ((typeof pk === 'number') ? pk : (pk?.i ?? pk));
+              if(idx == null || idx < s || idx > e) continue;
+              const bar = state.data[idx]; if(!bar) continue;
+              const x = xOf(idx);
+              const anchorY = yOf(bar.h) - 8;
+              const prix = bar.c;
+              const col = '#FF9F1C'; // Orange
+              const txt = '🟧 SOMMET (kk bis)';
+              const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Pivot Score';
+
+              ctx.save();
+              ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+              const w1 = ctx.measureText(txt).width;
+              ctx.font = '8.5px "IBM Plex Mono",monospace';
+              const w2 = ctx.measureText(sub).width;
+              const bw = Math.max(w1, w2) + 12, bh = 24;
+
+              let by = anchorY - bh - 8;
+              if(typeof placeBadge === 'function'){
+                by = placeBadge(x - bw/2, bw, by, bh, -1);
+              }
+              const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+
+              ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([2,2]);
+              ctx.beginPath(); ctx.moveTo(x, anchorY); ctx.lineTo(x, by + bh); ctx.stroke(); ctx.setLineDash([]);
+
+              ctx.fillStyle = col;
+              ctx.beginPath(); ctx.arc(x, anchorY, 3.5, 0, Math.PI*2); ctx.fill();
+              ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1; ctx.stroke();
+
+              ctx.fillStyle = 'rgba(8,12,22,.92)';
+              ctx.strokeStyle = col; ctx.lineWidth = 1.4;
+              if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+              else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+              ctx.fill(); ctx.stroke();
+
+              ctx.fillStyle = col;
+              ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+              ctx.textAlign = 'center';
+              ctx.fillText(txt, bx + bw/2, by + 10);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = '8.5px "IBM Plex Mono",monospace';
+              ctx.fillText(sub, bx + bw/2, by + 19);
+              ctx.textAlign = 'left';
+              ctx.restore();
+
+              if(typeof labelHits !== 'undefined' && labelHits){
+                try{ labelHits.push({x:bx, y:by, w:bw, h:bh, key:'kk_bis'}); }catch(err){}
+              }
+            }
+          }
+
+          // Creux (Vert #25D0A4)
+          if(Array.isArray(kb.troughs)){
+            for(const tr of kb.troughs){
+              const idx = (typeof tr === 'object' && tr.t != null) ? idxOfTime(tr.t) : ((typeof tr === 'number') ? tr : (tr?.i ?? tr));
+              if(idx == null || idx < s || idx > e) continue;
+              const bar = state.data[idx]; if(!bar) continue;
+              const x = xOf(idx);
+              const anchorY = yOf(bar.l) + 8;
+              const prix = bar.c;
+              const col = '#25D0A4'; // Vert
+              const txt = '🟩 CREUX (kk bis)';
+              const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Pivot Score';
+
+              ctx.save();
+              ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+              const w1 = ctx.measureText(txt).width;
+              ctx.font = '8.5px "IBM Plex Mono",monospace';
+              const w2 = ctx.measureText(sub).width;
+              const bw = Math.max(w1, w2) + 12, bh = 24;
+
+              let by = anchorY + 8;
+              if(typeof placeBadge === 'function'){
+                by = placeBadge(x - bw/2, bw, by, bh, 1);
+              }
+              const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+
+              ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([2,2]);
+              ctx.beginPath(); ctx.moveTo(x, anchorY); ctx.lineTo(x, by); ctx.stroke(); ctx.setLineDash([]);
+
+              ctx.fillStyle = col;
+              ctx.beginPath(); ctx.arc(x, anchorY, 3.5, 0, Math.PI*2); ctx.fill();
+              ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1; ctx.stroke();
+
+              ctx.fillStyle = 'rgba(8,12,22,.92)';
+              ctx.strokeStyle = col; ctx.lineWidth = 1.4;
+              if(typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+              else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+              ctx.fill(); ctx.stroke();
+
+              ctx.fillStyle = col;
+              ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+              ctx.textAlign = 'center';
+              ctx.fillText(txt, bx + bw/2, by + 10);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = '8.5px "IBM Plex Mono",monospace';
+              ctx.fillText(sub, bx + bw/2, by + 19);
+              ctx.textAlign = 'left';
+              ctx.restore();
+
+              if(typeof labelHits !== 'undefined' && labelHits){
+                try{ labelHits.push({x:bx, y:by, w:bw, h:bh, key:'kk_bis'}); }catch(err){}
+              }
+            }
           }
         }
       }
@@ -5913,6 +6322,7 @@ function drawPrice(p,s,e,cw,sharedXStack){
   // Order Blocks MTF : zones par UT, étiquetées, les mitigées disparaissent
   if(vis('rangeDet') && S('rangeDet','showOverlay')!==false) drawRangeDetOverlay(getInd('rangeDet'),s,e,yOf,cw,p);
   if(vis('rangeDet2') && S('rangeDet2','showOverlay')!==false) drawRangeDet2Overlay(getInd('rangeDet2'),s,e,yOf,cw,p);
+  if(vis('smc_lite')) drawSmcLite(getInd('smc_lite'),s,e,yOf,cw,p);
   if(vis('ob')){const _ob=getInd('ob');drawOBMTF(_ob,s,e,yOf,cw,p);alertNewOB(_ob);}
   // FVG enrichie MTF : moitiés % acheteur/vendeur, bleu/violet, MITIGATED
   if(vis('fvg')) drawFVGMTF(getInd('fvg'),s,e,yOf,cw,p,'fvg');
@@ -6250,6 +6660,198 @@ function drawPrice(p,s,e,cw,sharedXStack){
   }
 
   if(typeof checkAllAlerts === 'function') checkAllAlerts();
+}
+
+function drawSmcLite(data, s, e, yOf, cw, p) {
+  if (!data) return;
+  const cSupplyRaw = S('smc_lite', 'cSupply') || '#E2E8F0';
+  const cSupplyOutline = S('smc_lite', 'cSupplyOutline') || '#A0AEC0';
+  const cDemandRaw = S('smc_lite', 'cDemand') || '#00E5FF';
+  const cDemandOutline = S('smc_lite', 'cDemandOutline') || '#22D3EE';
+  const cBos = S('smc_lite', 'cBos') || '#FFFFFF';
+  const cPoi = S('smc_lite', 'cPoi') || '#FFD700';
+  const cPa = S('smc_lite', 'cPa') || '#FFFFFF';
+  const cZigzag = S('smc_lite', 'cZigzag') || '#00E5FF';
+
+  const cSupply = hexA(cSupplyRaw, 0.25);
+  const cDemand = hexA(cDemandRaw, 0.25);
+
+  const showZigzag = S('smc_lite', 'showZigzag');
+  const showPaLabels = S('smc_lite', 'showPaLabels');
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, p.y, W - AXIS_W, p.h);
+  ctx.clip();
+
+  // 1. Draw Supply Boxes
+  if (data.supplyBoxes && data.supplyBoxes.length) {
+    for (const box of data.supplyBoxes) {
+      let x0 = xOf(box.left);
+      if (box.tLeft != null) {
+        const zi = idxOfTime(box.tLeft);
+        if (zi != null) x0 = xOf(zi);
+      }
+      const x1 = W - AXIS_W + 100;
+      const yTop = yOf(box.top);
+      const yBot = yOf(box.bottom);
+      const yPoi = yOf(box.poi);
+      const hBox = Math.abs(yBot - yTop);
+
+      // Fill
+      ctx.fillStyle = cSupply;
+      ctx.fillRect(x0, Math.min(yTop, yBot), x1 - x0, Math.max(2, hBox));
+
+      // Outline
+      ctx.strokeStyle = cSupplyOutline;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x0, Math.min(yTop, yBot), x1 - x0, Math.max(2, hBox));
+
+      // POI line
+      ctx.strokeStyle = hexA(cPoi, 0.5);
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x0, yPoi);
+      ctx.lineTo(x1, yPoi);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Text "SUPPLY"
+      ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+      ctx.fillStyle = cPoi;
+      ctx.textAlign = 'center';
+      const labelX = Math.max(x0 + 40, (x0 + Math.min(W - AXIS_W, x1)) / 2);
+      ctx.fillText('SUPPLY', labelX, Math.min(yTop, yBot) + Math.max(12, hBox / 2 + 3));
+
+      // Text "POI"
+      ctx.textAlign = 'left';
+      ctx.fillText('POI', x0 + 6, yPoi - 2);
+    }
+  }
+
+  // 2. Draw Demand Boxes
+  if (data.demandBoxes && data.demandBoxes.length) {
+    for (const box of data.demandBoxes) {
+      let x0 = xOf(box.left);
+      if (box.tLeft != null) {
+        const zi = idxOfTime(box.tLeft);
+        if (zi != null) x0 = xOf(zi);
+      }
+      const x1 = W - AXIS_W + 100;
+      const yTop = yOf(box.top);
+      const yBot = yOf(box.bottom);
+      const yPoi = yOf(box.poi);
+      const hBox = Math.abs(yBot - yTop);
+
+      // Fill
+      ctx.fillStyle = cDemand;
+      ctx.fillRect(x0, Math.min(yTop, yBot), x1 - x0, Math.max(2, hBox));
+
+      // Outline
+      ctx.strokeStyle = cDemandOutline;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x0, Math.min(yTop, yBot), x1 - x0, Math.max(2, hBox));
+
+      // POI line
+      ctx.strokeStyle = hexA(cPoi, 0.5);
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x0, yPoi);
+      ctx.lineTo(x1, yPoi);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Text "DEMAND"
+      ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+      ctx.fillStyle = cPoi;
+      ctx.textAlign = 'center';
+      const labelX = Math.max(x0 + 40, (x0 + Math.min(W - AXIS_W, x1)) / 2);
+      ctx.fillText('DEMAND', labelX, Math.min(yTop, yBot) + Math.max(12, hBox / 2 + 3));
+
+      // Text "POI"
+      ctx.textAlign = 'left';
+      ctx.fillText('POI', x0 + 6, yPoi - 2);
+    }
+  }
+
+  // 3. Draw BOS Lines
+  const allBos = (data.supplyBos || []).concat(data.demandBos || []);
+  if (allBos.length) {
+    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+    ctx.textAlign = 'center';
+
+    for (const b of allBos) {
+      let x0 = xOf(b.left);
+      if (b.tLeft != null) {
+        const zi = idxOfTime(b.tLeft);
+        if (zi != null) x0 = xOf(zi);
+      }
+      let x1 = xOf(b.right);
+      if (b.tRight != null) {
+        const zi = idxOfTime(b.tRight);
+        if (zi != null) x1 = xOf(zi);
+      }
+      const yMid = yOf(b.mid);
+
+      ctx.strokeStyle = hexA(cBos, 0.85);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x0, yMid);
+      ctx.lineTo(x1, yMid);
+      ctx.stroke();
+
+      // BOS Badge
+      const textW = ctx.measureText('BOS').width + 8;
+      const midX = (x0 + x1) / 2;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(midX - textW / 2, yMid - 7, textW, 14);
+      ctx.strokeStyle = cBos;
+      ctx.strokeRect(midX - textW / 2, yMid - 7, textW, 14);
+
+      ctx.fillStyle = cBos;
+      ctx.fillText('BOS', midX, yMid + 3.5);
+    }
+  }
+
+  // 4. Draw Price Action Labels (HH, LH, HL, LL)
+  if (data.paLabels && data.paLabels.length && showPaLabels) {
+    ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+    ctx.textAlign = 'center';
+    for (const lbl of data.paLabels) {
+      let x = xOf(lbl.idx);
+      if (lbl.t != null) {
+        const zi = idxOfTime(lbl.t);
+        if (zi != null) x = xOf(zi);
+      }
+      const y = yOf(lbl.y);
+      const isHigh = lbl.type === 'high';
+      const yOffset = isHigh ? -10 : 14;
+
+      ctx.fillStyle = cPa;
+      ctx.fillText(lbl.text, x, y + yOffset);
+    }
+  }
+
+  // 5. Draw Zig Zag lines
+  if (data.zigzagPoints && data.zigzagPoints.length > 1 && showZigzag) {
+    ctx.strokeStyle = cZigzag;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (let i = 0; i < data.zigzagPoints.length; i++) {
+      const pt = data.zigzagPoints[i];
+      let x = xOf(pt.idx);
+      if (pt.t != null) {
+        const zi = idxOfTime(pt.t);
+        if (zi != null) x = xOf(zi);
+      }
+      const y = yOf(pt.y);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  ctx.restore();
 }
 
 function drawOBMTF(zones,s,e,yOf,cw,p){
@@ -7063,18 +7665,18 @@ function subLabel(p,txt,val,color,titleColor){
   if(mk && p.key!=='price'){
     const aw=14, ah=13, ay=yy-11;
     const col=(IND_META[mk]&&IND_META[mk].color)||'rgba(200,212,235,.9)';
-    [['▲','up'],['▼','down']].forEach((b,bi)=>{
+    [['▲','up'],['▼','down'],['✕','close_ind']].forEach((b,bi)=>{
       const ax=5+bi*(aw+2);
-      ctx.fillStyle='rgba(90,105,140,.20)';
+      ctx.fillStyle=(b[1]==='close_ind')?'rgba(244,91,125,.20)':'rgba(90,105,140,.20)';
       roundRect(ax,ay,aw,ah,3); ctx.fill();
-      ctx.fillStyle=col;
+      ctx.fillStyle=(b[1]==='close_ind')?'rgba(244,91,125,.95)':col;
       ctx.font='9px system-ui'; ctx.textAlign='center';
       ctx.fillText(b[0],ax+aw/2,ay+ah-3);
       paneCtrls.push({x:ax,y:ay,w:aw,h:ah,key:mk,act:b[1]});
     });
     ctx.textAlign='left';
     ctx.font='11px "IBM Plex Mono",monospace';
-    x0=5+2*(aw+2)+6;
+    x0=5+3*(aw+2)+6;
   }
   ctx.fillStyle=titleColor || css('--text');
   ctx.fillText(txt,x0,yy);
@@ -7710,9 +8312,13 @@ function zzEntriesForExit(){
   if(key === __zzEntKey) return __zzEnt;
   const base = (state.indicators && state.indicators.strat_zz) || {};
   let sg = [];
-  try{ sg = (computeZZSignals(d, base) || []).filter(x => !x.isExit); }catch(e){ sg = []; }
+  try{ sg = (computeZZSignals(d, base) || []); }catch(e){ sg = []; }
   let last = 0;
-  sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
+  sg = sg.filter(function(x){
+    if(x.isExit){ last = 0; return false; }
+    if(x.dir === last) return false;
+    last = x.dir; return true;
+  });
   __zzEnt = sg.map(function(x){
     const i = (x.t != null && typeof idxOfTime === 'function' ? idxOfTime(x.t) : null);
     return { i: (i != null ? i : x.i), dir: x.dir, num: x.num };
@@ -8017,6 +8623,7 @@ const IND_META={
   rosc2:{label:p=>'Range Osc ② '+p,color:'#2FA0C0'},
   macdsr:{label:()=>'MACD S/R'+((state.indicators.macdsr.tf&&state.indicators.macdsr.tf!=='chart')?' '+({'15':'15m','60':'1H','240':'4H'}[state.indicators.macdsr.tf]||''):''),color:'#4A90FF'},
   macdsr2:{label:()=>'MACD S/R ②',color:'#8A6BFF'},
+  smc_lite:{label:()=>'FluidTrades - SMC Lite',color:'#00FFFF'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
   fvgm:{label:()=>'FVG MTF '+(state.indicators.fvgm.tf!=='auto'
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.fvgm.tf]||'')
@@ -8404,6 +9011,28 @@ function applyPaneCtrl(key,act){
     }
     saveConfig(); render(); return;
   }
+  if(act==='close_ind'){
+    if(state.indicators && state.indicators[key]){
+      state.indicators[key].on=false;
+      state.indicators[key].hidden=false;
+    }
+    if(typeof syncMenu==='function')syncMenu();
+    if(typeof updateChips==='function')updateChips();
+    saveConfig(); render(); return;
+  }
+  if(act==='close'){
+    const pane=(state.lastPanes||[]).find(q=>q.key===key || (q.members||[]).includes(key));
+    const mm=pane?(pane.members||[pane.key]):[key];
+    for(const k of mm){
+      if(state.indicators && state.indicators[k]){
+        state.indicators[k].on=false;
+        state.indicators[k].hidden=false;
+      }
+    }
+    if(typeof syncMenu==='function')syncMenu();
+    if(typeof updateChips==='function')updateChips();
+    saveConfig(); render(); return;
+  }
   const i=cur.indexOf(key); if(i<0)return;
   if(act==='up'&&i>0){ [cur[i-1],cur[i]]=[cur[i],cur[i-1]]; state.subMergeUp[key]=false; }
   else if(act==='down'&&i<cur.length-1){ [cur[i+1],cur[i]]=[cur[i],cur[i+1]]; }
@@ -8756,7 +9385,7 @@ function toggleZZEntries() {
 
 function toggleZZExits() {
   if (!state.indicators.strat_zz) return;
-  const cur = state.indicators.strat_zz.showExits === true;
+  const cur = state.indicators.strat_zz.showExits !== false;
   state.indicators.strat_zz.showExits = !cur;
   saveConfig();
   syncMenu();
@@ -8782,7 +9411,7 @@ function updateZZToggleButtons() {
   const ind = state.indicators && state.indicators.strat_zz;
   if (!ind) return;
   const showE = ind.showEntries !== false;
-  const showX = ind.showExits === true;
+  const showX = ind.showExits !== false;
   const showInv = ind.invertSignal !== false;
 
   if (btnEntries) {
@@ -11270,6 +11899,21 @@ setInterval(tickCountdown,1000);
 
 /* ---------- Paramètres par indicateur (couleurs, affichage) ---------- */
 const SCHEMA={
+  smc_lite:{title:'FluidTrades - SMC Lite',fields:[
+    {k:'swingLen',t:'num',lab:'Longueur Swing (Swing High/Low Length)',min:1,max:50,def:10,ind:1},
+    {k:'keepHist',t:'num',lab:'Historique conservé (History To Keep)',min:5,max:50,def:20,ind:1},
+    {k:'boxWidth',t:'num',lab:'Largeur zone (Supply/Demand Box Width)',min:1,max:10,step:0.5,def:2.5,ind:1},
+    {k:'showZigzag',t:'bool',lab:'Afficher Zig Zag',def:false},
+    {k:'showPaLabels',t:'bool',lab:'Afficher étiquettes Price Action (HH/LH/HL/LL)',def:false},
+    {k:'cSupply',t:'col',lab:'Couleur Supply Zone',def:'#E2E8F0'},
+    {k:'cSupplyOutline',t:'col',lab:'Contour Supply Zone',def:'#A0AEC0'},
+    {k:'cDemand',t:'col',lab:'Couleur Demand Zone',def:'#00E5FF'},
+    {k:'cDemandOutline',t:'col',lab:'Contour Demand Zone',def:'#22D3EE'},
+    {k:'cBos',t:'col',lab:'Couleur Étiquette BOS',def:'#FFFFFF'},
+    {k:'cPoi',t:'col',lab:'Couleur Étiquette POI',def:'#FFD700'},
+    {k:'cPa',t:'col',lab:'Couleur Étiquette Price Action',def:'#FFFFFF'},
+    {k:'cZigzag',t:'col',lab:'Couleur Zig Zag',def:'#00E5FF'},
+  ]},
   imp:{title:'Impulse MACD',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'cSigUp',t:'col',lab:'Signal qui monte',def:'#1A1A1A'},
@@ -11436,19 +12080,21 @@ const SCHEMA={
     {k:'cLine',t:'col',lab:'Couleur',def:'#6AA9FF'},
     {k:'showFill',t:'bool',lab:'Remplissage',def:true},
   ]},
-  lrc:{title:'Canal de Régression Linéaire (1σ & 2σ)',fields:[
+  lrc:{title:'Canal de Régression Linéaire (Linear Regression Channel)',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
-    {k:'period',t:'num',lab:'Longueur (bars)',min:5,max:500,def:100,ind:1},
-    {k:'mult',t:'num',lab:'Écart-type Externe (2σ)',min:0.5,max:5,def:2,step:0.1,ind:1},
-    {k:'mult1',t:'num',lab:'Écart-type Interne (1σ)',min:0.1,max:3,def:1,step:0.1,ind:1},
-    {k:'colorMode',t:'choice',lab:'Coloration dynamique',opts:[{v:'dynamic',t:'Dynamique (Vert/Rouge)'},{v:'custom',t:'Couleur fixe'}]},
-    {k:'cLine',t:'col',lab:'Ligne médiane (fixe)',def:'#9BE6FF'},
-    {k:'cBand',t:'col',lab:'Couleur bandes (fixe)',def:'#9BE6FF'},
+    {k:'period',t:'num',lab:'Longueur (Length)',min:10,max:500,def:100,ind:1},
+    {k:'devlen',t:'num',lab:'Écart-type / Déviation (Deviation)',min:0.1,max:5,def:2.0,step:0.1,ind:1},
+    {k:'extendit',t:'bool',lab:'Prolonger les lignes (Extend Lines)',def:true},
+    {k:'showfibo',t:'bool',lab:'Niveaux Fibonacci (0.236, 0.382, 0.618, 0.786)',def:false},
+    {k:'showbroken',t:'bool',lab:'Afficher canal brisé (Show Broken Channel)',def:true},
+    {k:'upcol',t:'col',lab:'Couleur Hausse (Up Trend)',def:'#00FF00'},
+    {k:'dncol',t:'col',lab:'Couleur Baisse (Down Trend)',def:'#FF0000'},
+    {k:'brokencol',t:'col',lab:'Couleur Canal Brisé (Broken Channel)',def:'#3B82F6'},
+    {k:'widt',t:'num',lab:'Épaisseur des lignes (Line Width)',min:1,max:5,def:2},
+    {k:'mult1',t:'num',lab:'Bande interne (1σ)',min:0.1,max:3,def:1,step:0.1,ind:1},
     {k:'showInnerBands',t:'bool',lab:'Lignes internes (1σ)',def:true},
-    {k:'showBands',t:'bool',lab:'Lignes externes (2σ)',def:true},
     {k:'showFill',t:'bool',lab:'Remplissage canal',def:true},
     {k:'showStats',t:'bool',lab:'Afficher badge R² & Pente',def:true},
-    {k:'extend',t:'bool',lab:'Prolonger à droite',def:true},
   ]},
   sess:{title:'Session 15:29 (Londres)',fields:[
     {k:'hour',t:'num',lab:'Heure (Londres)',min:0,max:23,ind:1},
@@ -11504,7 +12150,7 @@ const SCHEMA={
   ]},
   strat_zz:{title:'Indicateur Z. Z. (Pastilles Confluence)',fields:[
     {k:'showEntries',t:'bool',lab:'Afficher les pastilles d\'Entrée (⚡ ACHAT / VENTE)',def:true},
-    {k:'showExits',t:'bool',lab:'Afficher les pastilles de Sortie (🎯 SORTIE ACHAT / SORTIE VENTE)',def:false},
+    {k:'showExits',t:'bool',lab:'Afficher les pastilles de Sortie (🎯 SORTIE ACHAT / SORTIE VENTE)',def:true},
     {k:'emaPeriod',t:'num',lab:'Période EMA',min:2,max:200,ind:1},
     {k:'haTf',t:'num',lab:'UT Heikin Ashi (minutes)',min:1,max:240,ind:1},
     {k:'haPeriod',t:'num',lab:'Lissage HA',min:2,max:50,ind:1},
@@ -11629,7 +12275,8 @@ const SCHEMA={
     {k:'showExits',t:'bool',lab:'Marqueurs de sortie',def:true},
     {k:'showDiv',t:'bool',lab:'Divergences prix / score',def:true},
     {k:'showDivOnPrice',t:'bool',lab:'Reporter les divergences sur le prix',def:true},
-    {k:'showSeuilOnPrice',t:'bool',lab:'Reporter aussi les sorties par seuil',def:false},
+    {k:'showSeuilOnPrice',t:'bool',lab:'Reporter les sorties par seuil sur le prix (Pastilles Vente/Achat)',def:true},
+    {k:'showPivotsOnPrice',t:'bool',lab:'Reporter les sommets et creux (triangles) sur le prix',def:true},
     {k:'noiseTf',t:'choice',lab:'Bruit — unité de temps du score',opts:[{v:'chart',t:'Celle du graphique'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart',ind:1},
     {k:'noiseWin',t:'num',lab:'Bruit — fenêtre d\'amplitude',min:10,max:200,def:40,ind:1},
     {k:'noiseAmp',t:'num',lab:'Bruit — amplitude minimale',min:5,max:150,def:45,ind:1},
@@ -11696,6 +12343,7 @@ const SCHEMA={
 function S(ind,key){
   if(key==='mode')return state.indicators[ind]?.mode||'lisse';
   if(key==='showExits')return state.indicators[ind]?.showExits !== false;
+  if(state.style[ind] && state.style[ind][key] !== undefined) return state.style[ind][key];
   if(state.indicators[ind] && state.indicators[ind][key] !== undefined) return state.indicators[ind][key];
   const st=state.style[ind];
   if(st&&st[key]!==undefined)return st[key];
@@ -11704,8 +12352,19 @@ function S(ind,key){
   return f?f.def:undefined;
 }
 function hexA(hex,a){
+  if(!hex) return `rgba(136,136,136,${a})`;
+  if(hex.startsWith('rgba') || hex.startsWith('rgb')){
+    return hex.replace(/rgba?\(([^)]+)\)/, (m, p) => {
+      const parts = p.split(',');
+      if (parts.length >= 3) {
+        return `rgba(${parts[0].trim()},${parts[1].trim()},${parts[2].trim()},${a})`;
+      }
+      return m;
+    });
+  }
   const h=(hex||'#888888').replace('#','');
   const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);
+  if(isNaN(n)) return `rgba(136,136,136,${a})`;
   return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
 }
 let cfgInd=null;
@@ -11731,7 +12390,7 @@ function openCfg(ind){
         `</div></div>`;
     if(f.t==='tf'){
       const cur=state.indicators[ind].tf||'chart';
-      const opts=[['chart','UT'],['3','3m'],['5','5m'],['15','15m'],['60','1H'],['240','4H']];
+      const opts=[['chart','UT'],['3','3m'],['5','5m'],['15','15m'],['20','20m'],['30','30m'],['60','1H'],['240','4H']];
       return `<div class="cfg-row"><label>Unité de temps</label>
         <div style="display:flex;gap:4px;flex-wrap:wrap">`+
         opts.map(o=>`<button class="cfg-tf ${cur===o[0]?'on':''}" data-tf="${o[0]}">${o[1]}</button>`).join('')+
@@ -11766,19 +12425,24 @@ function openCfg(ind){
     state.indicators[ind].tf=el.dataset.tf;
     state.cache={}; saveConfig(); render();
   }));
-  body.querySelectorAll('input[type=number]').forEach(el=>
-    el.addEventListener('change',()=>{
+  body.querySelectorAll('input[type=number]').forEach(el=>{
+    const update = ()=>{
       const f=sc.fields.find(x=>x.k===el.dataset.f);
-      let v=Math.max(f.min,Math.min(f.max,parseFloat(el.value)||f.def||f.min));
-      el.value=v;
-      if(f.ind){
+      if(!f) return;
+      let v=parseFloat(el.value);
+      if(isNaN(v)) return;
+      v=Math.max(f.min,Math.min(f.max,v));
+      if(f.ind || state.indicators[ind]){
         state.indicators[ind][f.k]=v;
         const inp=menu.querySelector(`.ind-item[data-ind="${ind}"] input[type=number]`);
         if(inp)inp.value=v;
         state.cache={};
-      }else setStyle(ind,f.k,v,true);
-      saveConfig(); render();
-    }));
+      }
+      setStyle(ind,f.k,v,true);
+    };
+    el.addEventListener('change', update);
+    el.addEventListener('input', update);
+  });
   const cfgBtBtn = document.getElementById('cfg-btn-bt-ema-ha');
   if(cfgBtBtn){
     cfgBtBtn.addEventListener('click', ()=>{
@@ -11792,21 +12456,25 @@ function setStyle(ind,key,val,recalc){
   if(!state.style[ind])state.style[ind]={};
   state.style[ind][key]=val;
   if(state.indicators[ind]){
-    const f=(SCHEMA[ind]||{fields:[]}).fields.find(x=>x.k===key);
-    if(f&&f.ind){
-      state.indicators[ind][key]=val;
-    }
+    state.indicators[ind][key]=val;
   }
   if(recalc)state.cache={};
   saveConfig(); syncMenu(); updateChips(); render();
 }
-document.getElementById('cfg-close').addEventListener('click',()=>
-  document.getElementById('cfg-back').classList.remove('open'));
-document.getElementById('cfg-ok').addEventListener('click',()=>
-  document.getElementById('cfg-back').classList.remove('open'));
+document.getElementById('cfg-close').addEventListener('click',()=>{
+  document.getElementById('cfg-back').classList.remove('open');
+  saveConfig(); render();
+});
+document.getElementById('cfg-ok').addEventListener('click',()=>{
+  document.getElementById('cfg-back').classList.remove('open');
+  saveConfig(); render();
+});
 document.getElementById('cfg-back').addEventListener('click',e=>{
   if(Date.now() - _cfgOpenTime < 400) return;
-  if(e.target.id==='cfg-back')document.getElementById('cfg-back').classList.remove('open');
+  if(e.target.id==='cfg-back'){
+    document.getElementById('cfg-back').classList.remove('open');
+    saveConfig(); render();
+  }
 });
 /* Panneau de paramètres déplaçable : on le pousse de côté pour voir
    l'effet des réglages sur le graphique pendant qu'on les modifie.
@@ -13489,7 +14157,20 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
     const confl = showCapsule ? confluenceOf(sig) : [];
     const isConfl = confl.length > 0;
     if (isConfl) _blinkAny = true;
-    const bw = 150, bh = isConfl ? 40 : 28;
+
+    const titleTxt = sig.label || (isAchatExit ? 'SORTIE ACHAT 🎯' : 'SORTIE VENTE 🎯');
+    const motifTxt = sig.motif || 'Seuil + pente';
+    const subTxt = 'Prix: ' + fmtP(sig.price) + ' $  |  ' + motifTxt;
+
+    ctx.save();
+    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+    const w1 = ctx.measureText(titleTxt).width;
+    ctx.font = '8.5px "IBM Plex Mono",monospace';
+    const w2 = ctx.measureText(subTxt).width;
+    ctx.restore();
+
+    const bw = Math.max(160, Math.max(w1, w2) + 18);
+    const bh = isConfl ? 42 : 28;
     const dotY = isAchatExit ? yWick - 25 : yWick + 25;
     const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
     const by = showCapsule ? placeBadge(bx, bw, isAchatExit ? (dotY - 65 - offsetY) : (dotY + 40 + offsetY), bh, isAchatExit ? -1 : 1) : dotY;
@@ -13537,11 +14218,11 @@ function drawExitSignalsKK(exits, s, e, yOf, cw, sharedXStack) {
       ctx.fillStyle = textColor;
       ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(sig.label, bx + bw / 2, by + 11);
+      ctx.fillText(titleTxt, bx + bw / 2, by + 11);
 
-      ctx.fillStyle = '#E2E8F0';
+      ctx.fillStyle = '#CBD5E1';
       ctx.font = '8.5px "IBM Plex Mono",monospace';
-      ctx.fillText('Prix: ' + fmtP(sig.price) + ' $', bx + bw / 2, by + 21);
+      ctx.fillText(subTxt, bx + bw / 2, by + 21);
 
       if (isConfl) {
         ctx.fillStyle = _blinkOn ? '#FFFFFF' : color;
@@ -13976,14 +14657,21 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   const tStart = L.tStart != null ? L.tStart : (d[L.s0] ? d[L.s0].t : (d[0] ? d[0].t : 0));
 
   const iStart = L.htfBars ? (idxOfTime(tStart) ?? 0) : L.s0;
-  const iEnd = S('lrc', 'extend')
+  const isExtend = S('lrc', 'extendit') !== false && S('lrc', 'extend') !== false;
+  const iEnd = isExtend
     ? Math.max(d.length - 1, Math.ceil(state.view.start + state.view.count))
     : (L.htfBars ? (idxOfTime(L.htfBars[L.htfBars.length - 1].t) ?? (d.length - 1)) : (d.length - 1));
 
   const x0 = xOf(iStart);
   const x1 = xOf(iEnd);
 
-  // Price level helpers (works continuously across MTF)
+  // Configuration des couleurs et de l'épaisseur d'après le Pine Script
+  const upcol = S('lrc', 'upcol') || '#00FF00';
+  const dncol = S('lrc', 'dncol') || '#FF0000';
+  const brokencol = S('lrc', 'brokencol') || '#3B82F6';
+  const widt = S('lrc', 'widt') || 2;
+
+  // Calcul du prix le long de la droite de régression
   const priceAt = idx => {
     let t;
     if (idx < d.length) {
@@ -13995,7 +14683,8 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     const k_eff = (t - tStart) / mtfMs;
     return L.a + L.b * k_eff;
   };
-  const dev2 = L.dev2 ?? (L.dev * (S('lrc', 'mult') || 2.0));
+
+  const dev2 = L.dev2 ?? (L.dev * (S('lrc', 'devlen') || S('lrc', 'mult') || 2.0));
   const dev1 = L.dev1 ?? (L.dev * (S('lrc', 'mult1') || 1.0));
 
   const yMid0 = yOf(priceAt(iStart)), yMid1 = yOf(priceAt(iEnd));
@@ -14004,110 +14693,98 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   const yUp10 = yOf(priceAt(iStart) + dev1), yUp11 = yOf(priceAt(iEnd) + dev1);
   const yLo10 = yOf(priceAt(iStart) - dev1), yLo11 = yOf(priceAt(iEnd) - dev1);
 
-  // Color determination
-  const colorMode = S('lrc', 'colorMode') || 'dynamic';
-  let cMid, cUp, cLo, fillUp, fillLo;
+  // Couleur du canal selon la pente
+  const isUp = L.b > 0;
+  const isDn = L.b < 0;
+  const activeColor = isUp ? upcol : (isDn ? dncol : brokencol);
+  const fillUp = hexA(activeColor, 0.07);
+  const fillLo = hexA(activeColor, 0.07);
 
-  if (colorMode === 'custom') {
-    cMid = S('lrc', 'cLine') || '#9BE6FF';
-    cUp = S('lrc', 'cBand') || '#9BE6FF';
-    cLo = S('lrc', 'cBand') || '#9BE6FF';
-    fillUp = hexA(cUp, 0.08);
-    fillLo = hexA(cLo, 0.08);
-  } else {
-    // Dynamic colors based on slope L.b
-    if (L.b > 0.000001) {
-      // Bullish Trend (Vert Émeraude / Cyan)
-      cMid = '#10B981';
-      cUp = '#00E5FF';
-      cLo = '#059669';
-      fillUp = 'rgba(0, 229, 255, 0.07)';
-      fillLo = 'rgba(16, 185, 129, 0.07)';
-    } else if (L.b < -0.000001) {
-      // Bearish Trend (Rouge / Orange / Rose)
-      cMid = '#FF495C';
-      cUp = '#F97316';
-      cLo = '#EF4444';
-      fillUp = 'rgba(249, 115, 22, 0.07)';
-      fillLo = 'rgba(239, 68, 68, 0.07)';
-    } else {
-      // Flat / Range
-      cMid = '#38BDF8';
-      cUp = '#818CF8';
-      cLo = '#38BDF8';
-      fillUp = 'rgba(56, 189, 248, 0.06)';
-      fillLo = 'rgba(99, 102, 241, 0.06)';
-    }
-  }
-
-  const showBands = S('lrc', 'showBands') !== false;
+  const showBands = true;
   const showInnerBands = S('lrc', 'showInnerBands') !== false;
   const showFill = S('lrc', 'showFill') !== false;
   const showStats = S('lrc', 'showStats') !== false;
+  const showBroken = S('lrc', 'showbroken') !== false;
+  const showFibo = S('lrc', 'showfibo') === true;
 
   ctx.save();
 
-  // 1. Fill areas
+  // 1. Remplissage du canal
   if (showFill && showBands) {
-    // Upper band fill (between Upper Outer & Median)
     ctx.beginPath();
     ctx.moveTo(x0, yUp20);
     ctx.lineTo(x1, yUp21);
-    ctx.lineTo(x1, yMid1);
-    ctx.lineTo(x0, yMid0);
-    ctx.closePath();
-    ctx.fillStyle = fillUp;
-    ctx.fill();
-
-    // Lower band fill (between Median & Lower Outer)
-    ctx.beginPath();
-    ctx.moveTo(x0, yMid0);
-    ctx.lineTo(x1, yMid1);
     ctx.lineTo(x1, yLo21);
     ctx.lineTo(x0, yLo20);
     ctx.closePath();
-    ctx.fillStyle = fillLo;
+    ctx.fillStyle = fillUp;
     ctx.fill();
   }
 
-  // 2. Draw Outer Bands (2.0σ)
-  if (showBands) {
-    ctx.lineWidth = 1.6;
-
-    // Upper Outer Band
-    ctx.strokeStyle = cUp;
-    ctx.shadowColor = cUp;
-    ctx.shadowBlur = 4;
+  // 2. Affichage du canal brisé (Show Broken Channel)
+  if (showBroken && L.brokenChannel) {
+    const bk = L.brokenChannel;
+    const bkY1 = yOf(bk.y1_ + (bk.type === 2 ? bk.dev * bk.devlen : -bk.dev * bk.devlen));
+    const bkY2 = yOf(bk.y2_ + (bk.type === 2 ? bk.dev * bk.devlen : -bk.dev * bk.devlen));
+    ctx.strokeStyle = brokencol;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
-    ctx.moveTo(x0, yUp20);
-    ctx.lineTo(x1, yUp21);
+    ctx.moveTo(x0, bkY1);
+    ctx.lineTo(xOf(d.length - 1), bkY2);
     ctx.stroke();
-
-    // Lower Outer Band
-    ctx.strokeStyle = cLo;
-    ctx.shadowColor = cLo;
-    ctx.beginPath();
-    ctx.moveTo(x0, yLo20);
-    ctx.lineTo(x1, yLo21);
-    ctx.stroke();
-
-    ctx.shadowBlur = 0;
+    ctx.setLineDash([]);
   }
 
-  // 3. Draw Inner Bands (1.0σ)
-  if (showInnerBands && showBands) {
-    ctx.lineWidth = 1.0;
+  // 3. Niveaux de Fibonacci (0.236, 0.382, 0.618, 0.786)
+  if (showFibo) {
+    const fibRatios = [0.236, 0.382, 0.618, 0.786];
+    const rangeHeight = 2 * dev2;
+    ctx.strokeStyle = activeColor;
+    ctx.lineWidth = Math.max(1, widt - 1);
+    ctx.setLineDash([2, 3]);
+    for (const r of fibRatios) {
+      const fibP0 = (priceAt(iStart) - dev2) + rangeHeight * r;
+      const fibP1 = (priceAt(iEnd) - dev2) + rangeHeight * r;
+      const fibY0 = yOf(fibP0), fibY1 = yOf(fibP1);
+      ctx.beginPath();
+      ctx.moveTo(x0, fibY0);
+      ctx.lineTo(x1, fibY1);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  // 4. Bandes externes du canal (2σ) - Lignes pointillées/tirets
+  ctx.lineWidth = widt;
+  ctx.strokeStyle = activeColor;
+  ctx.setLineDash([6, 4]);
+
+  // Bande Supérieure
+  ctx.beginPath();
+  ctx.moveTo(x0, yUp20);
+  ctx.lineTo(x1, yUp21);
+  ctx.stroke();
+
+  // Bande Inférieure
+  ctx.beginPath();
+  ctx.moveTo(x0, yLo20);
+  ctx.lineTo(x1, yLo21);
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+
+  // 5. Lignes internes (1σ)
+  if (showInnerBands) {
+    ctx.lineWidth = Math.max(1, widt - 1);
+    ctx.strokeStyle = hexA(activeColor, 0.65);
     ctx.setLineDash([4, 4]);
 
-    // Upper Inner Band
-    ctx.strokeStyle = hexA(cUp, 0.65);
     ctx.beginPath();
     ctx.moveTo(x0, yUp10);
     ctx.lineTo(x1, yUp11);
     ctx.stroke();
 
-    // Lower Inner Band
-    ctx.strokeStyle = hexA(cLo, 0.65);
     ctx.beginPath();
     ctx.moveTo(x0, yLo10);
     ctx.lineTo(x1, yLo11);
@@ -14116,18 +14793,46 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.setLineDash([]);
   }
 
-  // 4. Draw Median Line (Trend line)
-  ctx.lineWidth = 2.2;
-  ctx.strokeStyle = cMid;
-  ctx.shadowColor = cMid;
-  ctx.shadowBlur = 6;
+  // 6. Ligne médiane (Pente de régression linreg) - Ligne continue
+  ctx.lineWidth = widt + 0.5;
+  ctx.strokeStyle = activeColor;
+  ctx.shadowColor = activeColor;
+  ctx.shadowBlur = 4;
   ctx.beginPath();
   ctx.moveTo(x0, yMid0);
   ctx.lineTo(x1, yMid1);
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // 5. Touch / Breakout Highlights on chart bars in LRC window
+  // 7. Étiquette d'orientation latérale (Side Label sidelab) au début du canal (x0)
+  if (x0 >= -50 && x0 <= W - AXIS_W) {
+    const prevB = L.prevB ?? L.b;
+    let arrowTxt = '⇒';
+    if (isUp) {
+      arrowTxt = L.b > prevB ? '⇑' : '⇗';
+    } else if (isDn) {
+      arrowTxt = L.b < prevB ? '⇓' : '⇘';
+    }
+
+    const sideY = isUp ? yLo20 + 12 : (isDn ? yUp20 - 12 : yMid0);
+    const sideLabelTxt = 'S ' + arrowTxt;
+
+    ctx.font = 'bold 11px "IBM Plex Mono",monospace';
+    const sideW = ctx.measureText(sideLabelTxt).width + 12;
+    const sideH = 20;
+    const sideBx = Math.max(4, x0 - sideW / 2);
+    const sideBy = Math.max(p.y + 4, Math.min(p.y + p.h - sideH - 4, sideY - sideH / 2));
+
+    ctx.fillStyle = activeColor;
+    roundRect(sideBx, sideBy, sideW, sideH, 4);
+    ctx.fill();
+
+    ctx.fillStyle = '#0F172A';
+    ctx.textAlign = 'center';
+    ctx.fillText(sideLabelTxt, sideBx + sideW / 2, sideBy + 13);
+  }
+
+  // 8. Points de contact / Cassures sur les bougies
   const endCheckIdx = Math.min(d.length - 1, e + 1);
   const startCheckIdx = Math.max(iStart, s - 1);
 
@@ -14141,31 +14846,25 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     const bx = xOf(i);
     if (bx < -20 || bx > W - AXIS_W + 20) continue;
 
-    // Upper Band Touch / Breakout
     if (candle.h >= upperP) {
       const cy = yOf(candle.h);
-      ctx.fillStyle = cUp;
-      ctx.beginPath();
-      ctx.arc(bx, cy - 3, 3, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = activeColor;
+      ctx.beginPath(); ctx.arc(bx, cy - 3, 3, 0, Math.PI * 2); ctx.fill();
     }
-    // Lower Band Touch / Breakout
     if (candle.l <= lowerP) {
       const cy = yOf(candle.l);
-      ctx.fillStyle = cLo;
-      ctx.beginPath();
-      ctx.arc(bx, cy + 3, 3, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = activeColor;
+      ctx.beginPath(); ctx.arc(bx, cy + 3, 3, 0, Math.PI * 2); ctx.fill();
     }
   }
 
-  // 6. Stats Badge at the right end of median line
+  // 9. Badge de statistiques à l'extrémité droite
   if (showStats && x1 >= 50 && x1 <= W - AXIS_W + 50) {
     const r2Pct = (L.r2 * 100).toFixed(1);
     const pctTxt = (L.pctChange >= 0 ? '+' : '') + L.pctChange.toFixed(2) + '%';
-    const slopeIcon = L.b > 0.000001 ? '↗' : L.b < -0.000001 ? '↘' : '→';
+    const slopeIcon = isUp ? '↗' : isDn ? '↘' : '→';
     const tfTxt = L.tf ? ` (${L.tf})` : '';
-    const badgeTxt = `Régression (${L.len})${tfTxt} ${slopeIcon} ${pctTxt} · R²: ${r2Pct}% · ±$${fmt(L.dev)}`;
+    const badgeTxt = `Régression Linéaire (${L.len})${tfTxt} ${slopeIcon} ${pctTxt} · R²: ${r2Pct}% · ±$${fmt(L.dev * (S('lrc', 'devlen') || 2.0))}`;
 
     ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
     const txtWidth = ctx.measureText(badgeTxt).width;
@@ -14179,7 +14878,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     }
 
     ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
-    ctx.strokeStyle = cMid;
+    ctx.strokeStyle = activeColor;
     ctx.lineWidth = 1.2;
     roundRect(bx, by, bw, bh, 5);
     ctx.fill();
@@ -16334,18 +17033,12 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
     }
   }
 
-  const _finT = d[d.length - 1].t;
-  const _depT = Math.floor((_finT - 20 * 86400000) / 86400000) * 86400000;
-  let _i0 = 1;
-  while(_i0 < d.length - 1 && d[_i0].t < _depT) _i0++;
-  if(_i0 > d.length - 200) _i0 = 1;
-
   let buyTransitionsCount = 0;
   let sellTransitionsCount = 0;
   let buy4CondCount = 0;
   let sell4CondCount = 0;
 
-  for(let i = _i0; i < d.length; i++){
+  for(let i = 1; i < d.length; i++){
     const isSellMet = condSellEmaHa[i] && condSellCloud[i] && condSellRosc[i] && condSellImp[i];
     const isBuyMet  = condBuyEmaHa[i] && condBuyCloud[i] && condBuyRosc[i] && condBuyImp[i];
 
@@ -16371,9 +17064,12 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
     const exitSellCond = impGapAbove0 && redDot15;
     const exitBuyCond = impGapBelow0 && greenDot15;
 
+    const isBuyOppositeTrans = invertSignal ? isBuyTransition : isSellTransition;
+    const isSellOppositeTrans = invertSignal ? isSellTransition : isBuyTransition;
+
     // 1. Sortie d'une position Achat (BUY) si ouverte
     if (currentPosition === 'buy' && entryIdx != null && i > entryIdx) {
-      if (exitBuyCond || isSellTransition) {
+      if (exitBuyCond || isBuyOppositeTrans) {
         const exitPrice = d[i].c;
         const pnlPct = entryPrice ? ((exitPrice - entryPrice) / entryPrice) * 100 : 0;
         const tradeCap = ind.capital || 100;
@@ -16391,7 +17087,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
           entryPrice: entryPrice,
           pnlPct: pnlPct,
           pnlDollar: pnlDollar,
-          trigger: isSellTransition ? 'Signal Inverse (Vente Z.Z.)' : 'Impulse 5m < 0 + MACD S/R 15m Pt Vert',
+          trigger: isBuyOppositeTrans ? 'Signal Inverse (Vente Z.Z.)' : 'Impulse 5m < 0 + MACD S/R 15m Pt Vert',
           isTemp: (i === d.length - 1)
         });
         currentPosition = null;
@@ -16401,7 +17097,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
     }
     // 2. Sortie d'une position Vente (SELL) si ouverte
     else if (currentPosition === 'sell' && entryIdx != null && i > entryIdx) {
-      if (exitSellCond || isBuyTransition) {
+      if (exitSellCond || isSellOppositeTrans) {
         const exitPrice = d[i].c;
         const pnlPct = entryPrice ? ((entryPrice - exitPrice) / entryPrice) * 100 : 0;
         const tradeCap = ind.capital || 100;
@@ -16419,7 +17115,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
           entryPrice: entryPrice,
           pnlPct: pnlPct,
           pnlDollar: pnlDollar,
-          trigger: isBuyTransition ? 'Signal Inverse (Achat Z.Z.)' : 'Impulse 5m > 0 + MACD S/R 15m Pt Rouge',
+          trigger: isSellOppositeTrans ? 'Signal Inverse (Achat Z.Z.)' : 'Impulse 5m > 0 + MACD S/R 15m Pt Rouge',
           isTemp: (i === d.length - 1)
         });
         currentPosition = null;
@@ -16429,7 +17125,8 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
     }
 
     // 3. Déclenchement d'entrée en position
-    if (isSellTransition && !exitSellCond) {
+    const targetSellPos = invertSignal ? 'buy' : 'sell';
+    if (isSellTransition && !exitSellCond && currentPosition !== targetSellPos) {
       const wasEmaHa = condSellEmaHa[i-1];
       const wasCloud = condSellCloud[i-1];
       const wasRosc  = condSellRosc[i-1];
@@ -16465,11 +17162,13 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         isInverted: invertSignal,
         isTemp: (i === d.length - 1)
       });
-      currentPosition = invertSignal ? 'buy' : 'sell';
+      currentPosition = targetSellPos;
       entryPrice = d[i].c;
       entryIdx = i;
     }
-    if (isBuyTransition && !exitBuyCond) {
+
+    const targetBuyPos = invertSignal ? 'sell' : 'buy';
+    if (isBuyTransition && !exitBuyCond && currentPosition !== targetBuyPos) {
       const wasEmaHa = condBuyEmaHa[i-1];
       const wasCloud = condBuyCloud[i-1];
       const wasRosc  = condBuyRosc[i-1];
@@ -16505,7 +17204,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         isInverted: invertSignal,
         isTemp: (i === d.length - 1)
       });
-      currentPosition = invertSignal ? 'sell' : 'buy';
+      currentPosition = targetBuyPos;
       entryPrice = d[i].c;
       entryIdx = i;
     }
@@ -19862,7 +20561,10 @@ function drawZZSignals(signals, s, e, yOf, cw) {
   {
     let lastDir = 0;
     signals = signals.filter(function(sg){
-      if (sg.isExit) return true;
+      if (sg.isExit) {
+        lastDir = 0;
+        return true;
+      }
       if (sg.dir === lastDir) return false;
       lastDir = sg.dir;
       return true;
@@ -19873,7 +20575,7 @@ function drawZZSignals(signals, s, e, yOf, cw) {
   const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
   const ind = state.indicators && state.indicators.strat_zz;
   const showEntries = ind ? (ind.showEntries !== false) : true;
-  const showExits = ind ? (ind.showExits === true) : false;
+  const showExits = ind ? (ind.showExits !== false) : true;
 
   for (const sig of signals) {
     if (sig.isExit && !showExits) continue;
@@ -20694,7 +21396,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
        exécutées. */
     let lastDir = 0, nDropped = 0;
     cacheSigs = raw.filter(function(sg){
-      if(sg.isExit) return true;
+      if(sg.isExit){
+        lastDir = 0;
+        return true;
+      }
       if(sg.dir === lastDir){ nDropped++; return false; }
       lastDir = sg.dir;
       return true;
@@ -21442,7 +22147,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const raw = computeZZSignals(dEnt, Object.assign({}, base, {strictMode:useStrict, strictEmaHa:false}), useStrict, false) || [];
     let last = 0;
     const entries = raw.filter(function(x){
-      if(x.isExit) return false;
+      if(x.isExit){ last = 0; return false; }
       if(x.dir === last) return false;
       last = x.dir; return true;
     }).map(function(x){ return {t:x.t, price:x.price, dir:x.dir}; });
@@ -21664,7 +22369,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     { titre:'Sur le graphique de prix', items:[
       [CAPS('#25D0A4','⚡ #12 ACHAT Z.Z.'), 'Pastille Z.Z. d\'achat', 'Signal d\'entrée de l\'indicateur d\'origine. Le texte indique le déclencheur : Nuage EMA, EMA 9 / HA 5m, Range Oscillator ou Impulse MACD 15m.'],
       [CAPS('#FF5252','⚡ #13 VENTE Z.Z.'), 'Pastille Z.Z. de vente', 'Même chose dans l\'autre sens. Un seul signal par changement de sens : les achats consécutifs sont masqués.'],
-      ['<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(4,18,34,.93);border:1.4px solid #2E9BFF;color:#2E9BFF;font-size:9px;font-weight:700">🔵 ACHAT INVERSÉ</span>', 'Pastille bleue', 'Le même signal Z.Z. avec achat et vente échangés, pour vérifier à l\'œil ce que donne le sens contraire. Le bleu foncé marque un achat inversé (issu d\'une vente d\'origine), le bleu clair une vente inversée. Bouton 🔵 INVERSÉ.'],
       [DIAM('#8B5CF6'), 'Losange violet — ACHAT CORRIGÉ', 'Même signal recalculé sans lookahead, avec le Nuage EMA comme déclencheur. C\'est le prix auquel tu serais réellement entré.'],
       [DIAM('#F472B6'), 'Losange rose — VENTE CORRIGÉE', 'Version corrigée d\'une vente. L\'écart avec la pastille d\'origine est l\'avance indue qu\'elle avait.'],
       ['<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(24,14,45,.95);border:1.4px solid #8B5CF6;color:#8B5CF6;font-size:9px;font-weight:700">✅ #46 ACHAT CORRIGÉ</span>', 'Numérotation des pastilles corrigées', 'Le numéro affiché est celui de la pastille Z.Z. d\'origine qu\'elle corrige, et non une numérotation interne. Quand la mention « sans équivalent Z.Z. » apparaît, c\'est un signal que seul le mode strict détecte.'],
@@ -21809,9 +22513,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     // Entrées Z.Z. telles qu'affichées, avec le filtre de position
     let sigs = [];
-    try{ sigs = (computeZZSignals(d, base) || []).filter(x => !x.isExit); }catch(e){ return null; }
+    try{ sigs = (computeZZSignals(d, base) || []); }catch(e){ return null; }
     let lastDir = 0;
-    sigs = sigs.filter(function(x){ if(x.dir === lastDir) return false; lastDir = x.dir; return true; });
+    sigs = sigs.filter(function(x){
+      if(x.isExit){ lastDir = 0; return false; }
+      if(x.dir === lastDir) return false;
+      lastDir = x.dir; return true;
+    });
 
     const L        = +kb.noiseWin   || 40;   // fenêtre d'amplitude
     const ampSeuil = +kb.noiseAmp   || 45;   // amplitude minimale pour parler de tendance
@@ -22064,7 +22772,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 })();
-
 </script>
 </body>
 </html>
