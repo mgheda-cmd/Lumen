@@ -3833,7 +3833,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:true},
+    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
@@ -20786,22 +20786,9 @@ function drawZZSignals(signals, s, e, yOf, cw) {
         textColor = isBuy ? '#10B981' : '#EF4444'; // Vert si Long (Achat), Rouge si Short (Vente)
       }
 
-      /* ÉTAT POTENTIEL — la pastille repose sur des conditions dont la donnée
-         5m ou 15m n'existe pas encore : elles valent « vrai » par défaut, pas
-         par mesure. Elle clignote en orange tant que ce n'est pas confirmé,
-         et prend sa couleur définitive dès que l'historique remonte assez
-         loin pour alimenter ces conditions. */
-      const isPotentiel = !!sig.potential;
-      if (isPotentiel) {
-        color = '#F59E0B';
-        bgFill = 'rgba(48, 30, 4, 0.95)';
-        textColor = '#F59E0B';
-        mainText = isBuy ? ('⏳ ' + numStr + 'POTENTIEL ACHAT') : ('⏳ ' + numStr + 'POTENTIEL VENTE');
-        // pulsation : opacité entre 0,45 et 1 sur un cycle de 1,2 s
-        const puls = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(Date.now() / 190));
-        ctx.globalAlpha = puls;
-        if (typeof __zzPulse === 'function') __zzPulse();
-      }
+      // Les pastilles Z.Z. gardent leur couleur définitive : vert pour un
+      // achat, rouge pour une vente. Aucun clignotement.
+      const isPotentiel = false;
 
       ctx.fillStyle = color;
       ctx.beginPath();
@@ -20829,13 +20816,9 @@ function drawZZSignals(signals, s, e, yOf, cw) {
 
       ctx.fillStyle = textColor; ctx.font = 'bold 10.5px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
       ctx.fillText(mainText, x, by + 12);
-      ctx.fillStyle = isPotentiel ? '#FCD34D' : '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
-      ctx.fillText(isPotentiel
-        ? ('en attente : ' + (sig.missing || 'données HTF'))
-        : ('Prix: ' + fmtP(entryP) + ' $  |  ' + (sig.trigger || 'Alignement Z.Z.').substring(0, 20)),
-        x, by + 24);
+      ctx.fillStyle = '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
+      ctx.fillText('Prix: ' + fmtP(entryP) + ' $  |  ' + (sig.trigger || 'Alignement Z.Z.').substring(0, 20), x, by + 24);
       ctx.textAlign = 'left';
-      if (isPotentiel) ctx.globalAlpha = 1;
 
       if (typeof labelHits !== 'undefined') {
         labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'strat_zz'});
