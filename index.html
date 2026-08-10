@@ -11945,8 +11945,8 @@ const SCHEMA={
     {k:'c1',t:'col',lab:'Haussier',def:'#1B8F72'},
     {k:'c2',t:'col',lab:'Neutre',def:'#F2C14E'},
     {k:'c3',t:'col',lab:'Baissier',def:'#F45B7D'},
-    {k:'showDiff',t:'bool',lab:'Histogramme écart',def:true},
-    {k:'cDiff',t:'col',lab:'Couleur écart',def:'#7AA2FF'},
+    {k:'showDiff',t:'bool',lab:'Impulse histo',def:true},
+    {k:'cDiff',t:'col',lab:'Couleur Impulse histo',def:'#7AA2FF'},
     {k:'showSig',t:'bool',lab:'Ligne de signal',def:true},
     {k:'cSig',t:'col',lab:'Couleur signal',def:'#E7EDF8'},
     {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
@@ -11962,8 +11962,8 @@ const SCHEMA={
     {k:'c1',t:'col',lab:'Haussier',def:'#1B8F72'},
     {k:'c2',t:'col',lab:'Neutre',def:'#F2C14E'},
     {k:'c3',t:'col',lab:'Baissier',def:'#F45B7D'},
-    {k:'showDiff',t:'bool',lab:'Histogramme écart',def:true},
-    {k:'cDiff',t:'col',lab:'Couleur écart',def:'#7AA2FF'},
+    {k:'showDiff',t:'bool',lab:'Impulse histo',def:true},
+    {k:'cDiff',t:'col',lab:'Couleur Impulse histo',def:'#7AA2FF'},
     {k:'showSig',t:'bool',lab:'Ligne de signal',def:true},
     {k:'cSig',t:'col',lab:'Couleur signal',def:'#E7EDF8'},
     {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
@@ -16970,10 +16970,14 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
   // 5. Impulse MACD 15m & 5m
   const bars15 = (baseTf === impTf) ? d : (baseTf > impTf ? d : aggregateData(d, impTf, baseTf));
   let imp15_col = null;
+  let imp15_histo = null;   // Impulse histo 15m : md - signal
   if(bars15 && bars15.length >= 2){
     const imp15 = calc.impmacd(bars15, impPeriod, 9);
     if(imp15 && imp15.col){
       imp15_col = (baseTf === impTf) ? imp15.col : (isStrict ? mapHTF_strict(bars15, imp15.col, d, impTf * 60000) : mapHTF(bars15, imp15.col, d));
+    }
+    if(imp15 && imp15.sh){
+      imp15_histo = (baseTf === impTf) ? imp15.sh : (isStrict ? mapHTF_strict(bars15, imp15.sh, d, impTf * 60000) : mapHTF(bars15, imp15.sh, d));
     }
   }
 
@@ -17048,8 +17052,22 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
     }
 
     if(cImp != null){
-      condBuyImp[i]  = (cImp === 0 || cImp === 1);
-      condSellImp[i] = (cImp === 2 || cImp === 3);
+      /* Condition 4 — Impulse MACD 15m
+         Vert clair (0) et vert foncé (1) : achat, sans regarder l'histogramme.
+         Rouge (3) : vente, sans regarder l'histogramme.
+         Jaune (2) : l'Impulse histo décide du sens. Sous zéro c'est un jaune
+         baissier, au-dessus c'est un jaune haussier. On lit la valeur telle
+         qu'elle est au moment où les trois autres conditions s'alignent, sans
+         attendre la clôture de la bougie 15 minutes. */
+      const h15 = imp15_histo ? imp15_histo[i] : null;
+      if(cImp === 2){
+        const baissier = (h15 != null) ? (h15 < 0) : true;   // repli : jaune baissier
+        condBuyImp[i]  = !baissier;
+        condSellImp[i] = baissier;
+      } else {
+        condBuyImp[i]  = (cImp === 0 || cImp === 1);
+        condSellImp[i] = (cImp === 3);
+      }
     }
   }
   const pendingRuns = [];   // configurations à 3/4, pour l'affichage anticipé
