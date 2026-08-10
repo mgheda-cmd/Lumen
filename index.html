@@ -3837,7 +3837,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,rangeImpTf:'15',rangeImpMin:3,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,rangeImpTfs:{'3':false,'5':true,'15':true,'30':false,'60':false},rangeImpMin:3,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -12306,7 +12306,6 @@ const SCHEMA={
     {k:'showDivOnPrice',t:'bool',lab:'Reporter les divergences sur le prix',def:true},
     {k:'showSeuilOnPrice',t:'bool',lab:'Reporter les sorties par seuil sur le prix (Pastilles Vente/Achat)',def:true},
     {k:'showPivotsOnPrice',t:'bool',lab:'Reporter les sommets et creux (triangles) sur le prix',def:true},
-    {k:'rangeImpTf',t:'choice',lab:'Range Impulse — unité de temps',opts:[{v:'chart',t:'Celle du graphique'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},{v:'60',t:'1H'}],def:'15',ind:1},
     {k:'rangeImpMin',t:'num',lab:'Range Impulse — durée minimale',min:1,max:50,def:3,ind:1},
     {k:'noiseTf',t:'choice',lab:'Bruit — unité de temps du score',opts:[{v:'chart',t:'Celle du graphique'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart',ind:1},
     {k:'noiseWin',t:'num',lab:'Bruit — fenêtre d\'amplitude',min:10,max:200,def:40,ind:1},
@@ -23168,117 +23167,160 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
 
 /* ================================================================
-   DÉTECTEUR DE RANGE PAR IMPULSE PLAT
+   DÉTECTEUR DE RANGE PAR IMPULSE PLAT — plusieurs unités de temps
    L'Impulse MACD calcule md = 0 exactement lorsque sa ZLEMA reste
-   à l'intérieur du canal SMMA haut/bas. Aucune barre n'est alors
-   dessinée : c'est la ligne noire plate. Cet état signale l'absence
-   d'impulsion, donc un marché sans direction.
-   Ce module surligne ces plages sur le graphique de prix.
+   à l'intérieur du canal SMMA. Aucune barre n'est dessinée : c'est
+   la ligne noire plate, signe d'absence d'impulsion.
+   Chaque unité de temps a sa propre teinte de gris : plus l'unité
+   est courte, plus le gris est foncé.
    ================================================================ */
 (function(){
 
   window.__rangeImpOn = (localStorage.getItem('lumen_rangeimp') === '1');
   let ck = null, cs = null;
 
-  function cfg(){
+  // Du plus court au plus long : du gris le plus foncé au plus clair
+  const UTS = [
+    { tf:'3',  nom:'3m',  fond:'rgba(51,65,85,.26)',    bord:'rgba(51,65,85,.75)' },
+    { tf:'5',  nom:'5m',  fond:'rgba(71,85,105,.21)',   bord:'rgba(71,85,105,.70)' },
+    { tf:'15', nom:'15m', fond:'rgba(148,163,184,.14)', bord:'rgba(148,163,184,.60)' },
+    { tf:'30', nom:'30m', fond:'rgba(186,197,211,.11)', bord:'rgba(186,197,211,.55)' },
+    { tf:'60', nom:'1H',  fond:'rgba(212,220,231,.09)', bord:'rgba(212,220,231,.50)' }
+  ];
+
+  function conf(){
     const k = (state.indicators && state.indicators.kk_bis) || {};
     return {
-      tf:  (k.rangeImpTf != null) ? k.rangeImpTf : '15',
-      len: +k.rangeImpMin || 3,        // durée minimale, en bougies de l'unité choisie
+      tfs: k.rangeImpTfs || {'5':true,'15':true},
+      len: +k.rangeImpMin || 3,
       per: +((state.indicators.strat_zz || {}).impPeriod) || 34
     };
+  }
+
+  function plagesPour(tfNum, len, per, d){
+    const bars = (tfNum === state.tf) ? d : getMTFBars(tfNum);
+    if(!bars || bars.length < 40) return [];
+    let m;
+    try{ m = calc.impmacd(bars, per, 9); }catch(e){ return []; }
+    if(!m || !m.md) return [];
+    const out = [];
+    let deb = null;
+    for(let j = 0; j < bars.length; j++){
+      const plat = (m.md[j] != null && m.md[j] === 0);
+      if(plat){ if(deb === null) deb = j; }
+      else if(deb !== null){
+        if(j - deb >= len) out.push({ t0: bars[deb].t, t1: bars[j-1].t, n: j - deb });
+        deb = null;
+      }
+    }
+    if(deb !== null && bars.length - deb >= len)
+      out.push({ t0: bars[deb].t, t1: bars[bars.length-1].t, n: bars.length - deb, encours: true });
+    return out.map(function(p){
+      const a = idxOfTime(p.t0), b = idxOfTime(p.t1);
+      return (a != null && b != null) ? { a:a, b:b, n:p.n, encours:!!p.encours } : null;
+    }).filter(Boolean);
   }
 
   function calcul(){
     const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
     if(!d.length) return null;
-    const c = cfg();
-    const key = d.length + '_' + d[d.length-1].t + '_' + state.tf + '_' + c.tf + '_' + c.len + '_' + c.per;
+    const c = conf();
+    const actifs = UTS.filter(function(u){ return !!c.tfs[u.tf]; });
+    const key = d.length + '_' + d[d.length-1].t + '_' + state.tf + '_' + c.len + '_' + c.per
+              + '_' + actifs.map(function(u){return u.tf;}).join(',');
     if(key === ck && cs) return cs;
-
-    const tfNum = (c.tf === 'chart') ? state.tf : +c.tf;
-    const bars = (tfNum === state.tf) ? d : getMTFBars(tfNum);
-    if(!bars || bars.length < 40) return null;
-
-    let m;
-    try{ m = calc.impmacd(bars, c.per, 9); }catch(e){ return null; }
-    if(!m || !m.md) return null;
-
-    // plages continues où md vaut zéro
-    const plages = [];
-    let deb = null;
-    for(let j = 0; j < bars.length; j++){
-      const v = m.md[j];
-      const plat = (v != null && v === 0);
-      if(plat){ if(deb === null) deb = j; }
-      else if(deb !== null){
-        if(j - deb >= c.len) plages.push({ t0: bars[deb].t, t1: bars[j-1].t, n: j - deb });
-        deb = null;
-      }
-    }
-    if(deb !== null && bars.length - deb >= c.len){
-      plages.push({ t0: bars[deb].t, t1: bars[bars.length-1].t, n: bars.length - deb, encours: true });
-    }
-
-    // conversion en index du graphique de base
-    const out = plages.map(function(p){
-      const a = idxOfTime(p.t0), b = idxOfTime(p.t1);
-      return (a != null && b != null) ? { a: a, b: b, n: p.n, encours: !!p.encours } : null;
-    }).filter(Boolean);
-
-    ck = key; cs = { plages: out, tf: tfNum, total: out.length };
+    const res = actifs.map(function(u){
+      return Object.assign({}, u, { plages: plagesPour(+u.tf, c.len, c.per, d) });
+    });
+    ck = key; cs = res;
     return cs;
   }
 
   window.drawRangeImp = function(s, e, yOf, top, hauteur){
     const R = calcul();
     const btn = document.getElementById('rangeimp-btn');
-    if(!R){ if(btn) btn.textContent = '🟰 RANGE : —'; return; }
-    const tag = (R.tf === state.tf) ? (state.tf + 'm')
-      : ({'3':'3m','5':'5m','15':'15m','20':'20m','30':'30m','60':'1H','240':'4H'}[String(R.tf)] || R.tf + 'm');
-    if(btn) btn.textContent = '🟰 RANGE ' + tag + ' : ' + R.total;
+    if(!R || !R.length){ if(btn) btn.textContent = '🟰 RANGE : aucune UT'; return; }
+    if(btn) btn.textContent = '🟰 RANGE ' + R.map(function(u){ return u.nom + ':' + u.plages.length; }).join(' · ');
 
-    for(const p of R.plages){
-      if(p.b < s || p.a > e) continue;
-      const x1 = xOf(Math.max(p.a, s - 1));
-      const x2 = xOf(Math.min(p.b, e + 1));
-      const w = Math.max(2, x2 - x1);
-
-      ctx.save();
-      // bande hachurée discrète, pour ne pas masquer les bougies
-      ctx.fillStyle = 'rgba(148,163,184,.13)';
-      ctx.fillRect(x1, top, w, hauteur);
-      ctx.strokeStyle = 'rgba(148,163,184,.55)';
-      ctx.lineWidth = 1; ctx.setLineDash([4,3]);
-      ctx.beginPath();
-      ctx.moveTo(x1, top); ctx.lineTo(x1, top + hauteur);
-      ctx.moveTo(x2, top); ctx.lineTo(x2, top + hauteur);
-      ctx.stroke(); ctx.setLineDash([]);
-
-      if(w > 54){
-        const txt = '🟰 RANGE ' + p.n + ' bougies' + (p.encours ? ' · en cours' : '');
-        ctx.font = 'bold 9px "IBM Plex Mono",monospace';
-        const tw = ctx.measureText(txt).width;
-        const bx = x1 + (w - tw) / 2, by = top + 6;
-        ctx.fillStyle = 'rgba(15,23,42,.85)';
-        if(typeof roundRect === 'function') roundRect(bx - 5, by, tw + 10, 14, 3);
-        else { ctx.beginPath(); ctx.rect(bx - 5, by, tw + 10, 14); }
-        ctx.fill();
-        ctx.fillStyle = '#CBD5E1';
-        ctx.textAlign = 'left';
-        ctx.fillText(txt, bx, by + 10);
+    // du plus long au plus court, pour que les gris foncés restent visibles
+    R.slice().reverse().forEach(function(u, rang){
+      for(const p of u.plages){
+        if(p.b < s || p.a > e) continue;
+        const x1 = xOf(Math.max(p.a, s - 1));
+        const x2 = xOf(Math.min(p.b, e + 1));
+        const w = Math.max(2, x2 - x1);
+        ctx.save();
+        ctx.fillStyle = u.fond;
+        ctx.fillRect(x1, top, w, hauteur);
+        ctx.strokeStyle = u.bord; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+        ctx.beginPath();
+        ctx.moveTo(x1, top); ctx.lineTo(x1, top + hauteur);
+        ctx.moveTo(x2, top); ctx.lineTo(x2, top + hauteur);
+        ctx.stroke(); ctx.setLineDash([]);
+        if(w > 62){
+          const txt = '🟰 ' + u.nom + ' · ' + p.n + ' b' + (p.encours ? ' · en cours' : '');
+          ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+          const tw = ctx.measureText(txt).width;
+          const bx = x1 + (w - tw) / 2, by = top + 6 + rang * 17;
+          ctx.fillStyle = 'rgba(15,23,42,.85)';
+          if(typeof roundRect === 'function') roundRect(bx - 5, by, tw + 10, 14, 3);
+          else { ctx.beginPath(); ctx.rect(bx - 5, by, tw + 10, 14); }
+          ctx.fill();
+          ctx.fillStyle = '#E2E8F0'; ctx.textAlign = 'left';
+          ctx.fillText(txt, bx, by + 10);
+        }
+        ctx.restore();
       }
-      ctx.restore();
-    }
+    });
   };
 
-  window.toggleRangeImp = function(){
-    window.__rangeImpOn = !window.__rangeImpOn;
-    try{ localStorage.setItem('lumen_rangeimp', window.__rangeImpOn ? '1':'0'); }catch(e){}
-    ck = null;
+  /* Le bouton ouvre un petit sélecteur : on coche les unités à superposer. */
+  window.openRangeImpMenu = function(){
+    let pop = document.getElementById('rangeimp-pop');
+    if(pop){ pop.remove(); return; }
+    const k = state.indicators.kk_bis || {};
+    const tfs = k.rangeImpTfs || {};
+    pop = document.createElement('div');
+    pop.id = 'rangeimp-pop';
+    pop.style.cssText = 'position:fixed;z-index:99999;background:#0B1220;border:1px solid #334155;border-radius:9px;padding:11px 13px;box-shadow:0 12px 34px rgba(0,0,0,.6);color:#E2E8F0;font-size:12px;min-width:210px';
     const b = document.getElementById('rangeimp-btn');
-    if(b && !window.__rangeImpOn) b.textContent = '🟰 RANGE : OFF';
-    if(typeof render === 'function') render();
+    const r = b ? b.getBoundingClientRect() : {left:80, bottom:60};
+    pop.style.left = Math.max(6, Math.min(window.innerWidth - 230, r.left)) + 'px';
+    pop.style.top  = (r.bottom + 6) + 'px';
+
+    let h = '<div style="font-weight:800;color:#CBD5E1;margin-bottom:8px">Unités à superposer</div>';
+    UTS.forEach(function(u){
+      h += '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer">'
+        + '<input type="checkbox" data-rtf="' + u.tf + '"' + (tfs[u.tf] ? ' checked' : '') + ' style="width:16px;height:16px">'
+        + '<span style="display:inline-block;width:26px;height:12px;background:' + u.fond.replace(/[\d.]+\)$/,'0.9)') + ';border:1px solid ' + u.bord + ';border-radius:2px"></span>'
+        + '<span>' + u.nom + '</span></label>';
+    });
+    h += '<div style="margin-top:9px;display:flex;gap:7px">'
+      + '<button id="rangeimp-onoff" style="flex:1;padding:5px;border-radius:5px;border:1px solid #94A3B8;background:transparent;color:#CBD5E1;cursor:pointer">'
+      + (window.__rangeImpOn ? 'Masquer' : 'Afficher') + '</button>'
+      + '<button id="rangeimp-close" style="padding:5px 10px;border-radius:5px;border:1px solid #475569;background:transparent;color:#94A3B8;cursor:pointer">Fermer</button></div>'
+      + '<div style="margin-top:7px;font-size:10px;color:#7E8CA8;line-height:1.5">Plus l\'unité est courte, plus le gris est foncé.</div>';
+    pop.innerHTML = h;
+    document.body.appendChild(pop);
+
+    pop.querySelectorAll('[data-rtf]').forEach(function(el){
+      el.addEventListener('change', function(){
+        if(!state.indicators.kk_bis.rangeImpTfs) state.indicators.kk_bis.rangeImpTfs = {};
+        state.indicators.kk_bis.rangeImpTfs[el.dataset.rtf] = el.checked;
+        ck = null;
+        if(!window.__rangeImpOn){ window.__rangeImpOn = true; try{ localStorage.setItem('lumen_rangeimp','1'); }catch(e){} }
+        saveConfig(); render();
+      });
+    });
+    document.getElementById('rangeimp-onoff').onclick = function(){
+      window.__rangeImpOn = !window.__rangeImpOn;
+      try{ localStorage.setItem('lumen_rangeimp', window.__rangeImpOn ? '1':'0'); }catch(e){}
+      this.textContent = window.__rangeImpOn ? 'Masquer' : 'Afficher';
+      const bb = document.getElementById('rangeimp-btn');
+      if(bb && !window.__rangeImpOn) bb.textContent = '🟰 RANGE : OFF';
+      ck = null; render();
+    };
+    document.getElementById('rangeimp-close').onclick = function(){ pop.remove(); };
   };
 
   try{
@@ -23286,10 +23328,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(a && !document.getElementById('rangeimp-btn')){
       const b = document.createElement('button');
       b.id = 'rangeimp-btn'; b.className = 'btn';
-      b.title = "Surligne les plages où l'Impulse MACD vaut exactement zéro : sa ZLEMA reste dans le canal, aucune impulsion, marché sans direction.";
+      b.title = "Surligne les plages où l'Impulse MACD vaut exactement zéro. Cliquez pour choisir les unités de temps à superposer.";
       b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(148,163,184,.14);border:1px solid #94A3B8;color:#CBD5E1;font-weight:700';
       b.textContent = window.__rangeImpOn ? '🟰 RANGE : …' : '🟰 RANGE : OFF';
-      b.onclick = window.toggleRangeImp;
+      b.onclick = window.openRangeImpMenu;
       a.parentNode.insertBefore(b, a.nextSibling);
     }
   }catch(e){}
