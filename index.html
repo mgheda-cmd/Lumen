@@ -8441,6 +8441,20 @@ function drawKKBisSub(p, s, e, cw) {
      Quand la ligne principale traverse la seconde, les deux échelles de
      temps basculent ensemble. Par le bas vers le haut c'est un potentiel
      achat, par le haut vers le bas un potentiel vente. */
+  /* Croisements des deux unités de temps, calculés sur tout l'historique
+     pour pouvoir être reportés sur le graphique de prix. */
+  window.__kkCross = [];
+  if (res.net2 && res.tf2 && S('kk_bis','showCross') !== false) {
+    for (let i = 1; i < res.net.length; i++) {
+      const p1 = res.net[i-1], p2 = res.net[i], q1 = res.net2[i-1], q2 = res.net2[i];
+      if (p1 == null || p2 == null || q1 == null || q2 == null) continue;
+      const av = p1 - q1, ap = p2 - q2;
+      if (av === 0 || (av > 0) === (ap > 0)) continue;
+      window.__kkCross.push({ i: i, monte: (ap > 0), price: state.data[i] ? state.data[i].c : null });
+    }
+  }
+
+  const crossList = [];
   if (res.net2 && res.tf2 && S('kk_bis','showCross') !== false) {
     const clampC = v => isVolB ? v : Math.max(-100, Math.min(100, v));
     for (let i = Math.max(1, s); i < e; i++) {
@@ -8452,6 +8466,8 @@ function drawKKBisSub(p, s, e, cw) {
 
       const monte = (apres > 0);            // la principale passe au-dessus
       const col = monte ? '#00FF00' : '#FF0000';
+      // mémorisé pour être reporté sur le graphique de prix
+      crossList.push({ i: i, monte: monte });
       const x = xOf(i);
       const y = yOf(clampC(a2));
       const txt = monte ? '▲ POTENTIEL ACHAT' : '▼ POTENTIEL VENTE';
