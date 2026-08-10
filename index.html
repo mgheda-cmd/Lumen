@@ -17096,10 +17096,18 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         condBuyImp[i]  = (cImp === 0 || cImp === 1);
         condSellImp[i] = (cImp === 3);
       }
+    } else {
+      /* AUCUNE COULEUR — l'Impulse ne dessine rien ici.
+         Règle d'origine (yellowMode 'sell') : les conditions restent vraies
+         dans les deux sens, la condition 4 ne filtre rien.
+         Nouvelle règle ('msr') : le MACD S/R 15m tranche, comme pour le jaune. */
+      const yModeN = (ind && ind.yellowMode) ? ind.yellowMode : 'sell';
+      if(yModeN === 'msr'){
+        const mdN = msr15_dir ? msr15_dir[i] : null;
+        if(mdN === 1){        condBuyImp[i] = true;  condSellImp[i] = false; }
+        else if(mdN === -1){  condBuyImp[i] = false; condSellImp[i] = true;  }
+      }
     }
-    /* AUCUNE COULEUR — l'Impulse n'a pas de valeur à cet endroit. Les deux
-       conditions gardent leur valeur d'initialisation, c'est-à-dire vraie
-       dans les deux sens. Comportement d'origine, volontairement conservé. */
   }
   const pendingRuns = [];   // configurations à 3/4, pour l'affichage anticipé
 
@@ -22978,8 +22986,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(key === ck) return cs;
     let sg = [];
     try{
-      const cfg = Object.assign({}, base, { yellowMode: 'msr' });
-      sg = (computeZZSignals(d, cfg) || []).filter(x => !x.isExit);
+      // Nouvelles conditions : EMA/HA stricte + le MACD S/R tranche
+      // le jaune et l'absence de couleur de l'Impulse.
+      const cfg = Object.assign({}, base, { yellowMode: 'msr', strictEmaHa: true });
+      sg = (computeZZSignals(d, cfg, undefined, true) || []).filter(x => !x.isExit);
     }catch(e){ return []; }
     let last = 0;
     sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
