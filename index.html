@@ -23075,6 +23075,88 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
 })();
 
+
+/* ================================================================
+   MENU DES INDICATEURS — actifs regroupés en haut
+   À chaque ouverture, les indicateurs allumés sont remontés dans une
+   section « Actifs », les éteints redescendent dans « Disponibles ».
+   Les éléments d'origine sont déplacés, pas recréés : leurs
+   gestionnaires de clic et leurs pastilles d'unité de temps restent
+   intacts. Les titres de sections d'origine sont conservés et masqués
+   quand ils se retrouvent vides.
+   ================================================================ */
+(function(){
+
+  const menu = document.getElementById('ind-menu');
+  const btn  = document.getElementById('btn-ind');
+  if(!menu || !btn) return;
+
+  let secActifs = null, secDispo = null;
+
+  function creerSections(){
+    if(secActifs) return;
+    const mk = function(titre, couleur){
+      const h = document.createElement('h4');
+      h.textContent = titre;
+      h.style.cssText = 'color:' + couleur + ';margin-top:10px';
+      const box = document.createElement('div');
+      box.className = 'ind-tri-box';
+      return { h: h, box: box };
+    };
+    secActifs = mk('● Actifs', '#25D0A4');
+    secDispo  = mk('○ Disponibles', '#7E8CA8');
+    // insérés en tête du menu, avant tout le reste
+    const premier = menu.firstElementChild;
+    menu.insertBefore(secActifs.h, premier);
+    menu.insertBefore(secActifs.box, premier);
+    menu.insertBefore(secDispo.h, premier);
+    menu.insertBefore(secDispo.box, premier);
+  }
+
+  function trier(){
+    creerSections();
+    const items = Array.prototype.slice.call(menu.querySelectorAll('.ind-item'));
+    if(!items.length) return;
+
+    // mémoriser la place d'origine, pour que l'ordre reste stable
+    items.forEach(function(el, k){ if(el.dataset.ordre == null) el.dataset.ordre = k; });
+    items.sort(function(a, b){ return (+a.dataset.ordre) - (+b.dataset.ordre); });
+
+    let nOn = 0, nOff = 0;
+    items.forEach(function(el){
+      const actif = el.classList.contains('on');
+      (actif ? secActifs.box : secDispo.box).appendChild(el);
+      actif ? nOn++ : nOff++;
+    });
+
+    secActifs.h.textContent = '● Actifs (' + nOn + ')';
+    secDispo.h.textContent  = '○ Disponibles (' + nOff + ')';
+    secActifs.h.style.display = nOn ? '' : 'none';
+    secDispo.h.style.display  = nOff ? '' : 'none';
+
+    // masquer les intitulés de sections devenus vides
+    Array.prototype.slice.call(menu.querySelectorAll('h4')).forEach(function(h){
+      if(h === secActifs.h || h === secDispo.h) return;
+      let n = h.nextElementSibling, vide = true;
+      while(n && n.tagName !== 'H4'){
+        if(n.classList && n.classList.contains('ind-item')){ vide = false; break; }
+        n = n.nextElementSibling;
+      }
+      h.style.display = vide ? 'none' : '';
+    });
+  }
+
+  // au clic sur le bouton, puis après chaque bascule d'indicateur
+  btn.addEventListener('click', function(){ setTimeout(trier, 0); });
+  menu.addEventListener('click', function(ev){
+    if(ev.target.closest('.ind-item')) setTimeout(trier, 30);
+  });
+  setTimeout(trier, 400);
+
+  window.trierIndicateurs = trier;
+
+})();
+
 </script>
 </body>
 </html>
