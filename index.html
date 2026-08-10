@@ -3837,7 +3837,7 @@ const state = {
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
-    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,rangeImpTfs:{'3':false,'5':true,'15':true,'30':false,'60':false},rangeImpMin:3,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false},
+    kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,rangeImpTfs:{'3':false,'5':true,'15':true,'30':false,'60':false},rangeImpMin:3,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false,showCross:true},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -6044,15 +6044,16 @@ function render(){
               const anchorY = yOf(bar.h) - 8;
               const prix = bar.c;
               const col = '#FF9F1C'; // Orange
-              const txt = '🟧 SOMMET (kk bis)';
-              const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Pivot Score';
+              // Format compact : mêmes informations, moitié moins encombrant
+              const txt = '🟧 SOMMET';
+              const sub = (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $ · pivot';
 
               ctx.save();
-              ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+              ctx.font = 'bold 8px "IBM Plex Mono",monospace';
               const w1 = ctx.measureText(txt).width;
-              ctx.font = '8.5px "IBM Plex Mono",monospace';
+              ctx.font = '7px "IBM Plex Mono",monospace';
               const w2 = ctx.measureText(sub).width;
-              const bw = Math.max(w1, w2) + 12, bh = 24;
+              const bw = Math.max(w1, w2) + 8, bh = 17;
 
               let by = anchorY - bh - 8;
               if(typeof placeBadge === 'function'){
@@ -6099,15 +6100,15 @@ function render(){
               const anchorY = yOf(bar.l) + 8;
               const prix = bar.c;
               const col = '#25D0A4'; // Vert
-              const txt = '🟩 CREUX (kk bis)';
-              const sub = 'Prix: ' + (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $  |  Pivot Score';
+              const txt = '🟩 CREUX';
+              const sub = (prix >= 1000 ? prix.toFixed(1) : prix.toFixed(2)) + ' $ · pivot';
 
               ctx.save();
-              ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+              ctx.font = 'bold 8px "IBM Plex Mono",monospace';
               const w1 = ctx.measureText(txt).width;
-              ctx.font = '8.5px "IBM Plex Mono",monospace';
+              ctx.font = '7px "IBM Plex Mono",monospace';
               const w2 = ctx.measureText(sub).width;
-              const bw = Math.max(w1, w2) + 12, bh = 24;
+              const bw = Math.max(w1, w2) + 8, bh = 17;
 
               let by = anchorY + 8;
               if(typeof placeBadge === 'function'){
@@ -8430,6 +8431,54 @@ function drawKKBisSub(p, s, e, cw) {
       ctx.stroke(); ctx.setLineDash([]);
     }
     ctx.restore();
+  }
+
+  /* CROISEMENTS DES DEUX UNITÉS DE TEMPS
+     Quand la ligne principale traverse la seconde, les deux échelles de
+     temps basculent ensemble. Par le bas vers le haut c'est un potentiel
+     achat, par le haut vers le bas un potentiel vente. */
+  if (res.net2 && res.tf2 && S('kk_bis','showCross') !== false) {
+    const clampC = v => isVolB ? v : Math.max(-100, Math.min(100, v));
+    for (let i = Math.max(1, s); i < e; i++) {
+      const a1 = res.net[i - 1], a2 = res.net[i];
+      const b1 = res.net2[i - 1], b2 = res.net2[i];
+      if (a1 == null || a2 == null || b1 == null || b2 == null) continue;
+      const avant = a1 - b1, apres = a2 - b2;
+      if (avant === 0 || (avant > 0) === (apres > 0)) continue;   // pas de croisement
+
+      const monte = (apres > 0);            // la principale passe au-dessus
+      const col = monte ? '#00FF00' : '#FF0000';
+      const x = xOf(i);
+      const y = yOf(clampC(a2));
+      const txt = monte ? '▲ POTENTIEL ACHAT' : '▼ POTENTIEL VENTE';
+
+      ctx.save();
+      ctx.font = 'bold 8px "IBM Plex Mono",monospace';
+      const bw = ctx.measureText(txt).width + 9, bh = 14;
+      let by = monte ? (y + 10) : (y - bh - 10);
+      const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw / 2));
+
+      // marqueur au point de croisement
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.2; ctx.stroke();
+
+      ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, monte ? by : by + bh); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(8,12,22,.92)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.3;
+      if (typeof roundRect === 'function') roundRect(bx, by, bw, bh, 3);
+      else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = col;
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, bx + bw / 2, by + 10);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
   }
 
   // Seuils ADAPTATIFS : deux courbes qui respirent avec le marché,
@@ -12292,6 +12341,7 @@ const SCHEMA={
     {k:'cLine2Up',t:'col',lab:'2ᵉ ligne — haussier',def:'#00E5FF'},
     {k:'cLine2Dn',t:'col',lab:'2ᵉ ligne — baissier',def:'#FF9F1C'},
     {k:'showSig2',t:'bool',lab:'Signal de la seconde ligne',def:false},
+    {k:'showCross',t:'bool',lab:'Croisements entre les deux lignes',def:true},
     {k:'cSig2',t:'col',lab:'Couleur signal seconde ligne',def:'#FFD59E'},
     {k:'kMult',t:'num',lab:'Seuil = k × écart quadratique',min:0.2,max:4,def:1.2,ind:1},
     {k:'rmsWin',t:'num',lab:'Fenêtre de l\'écart quadratique',min:20,max:500,def:100,ind:1},
