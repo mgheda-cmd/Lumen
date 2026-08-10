@@ -23139,6 +23139,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     secActifs.h.textContent = '● Actifs (' + nOn + ')';
     secDispo.h.textContent  = '○ Disponibles (' + nOff + ')';
+    secActifs.h.title = 'Le classement est mis à jour à chaque ouverture du menu';
     secActifs.h.style.display = nOn ? '' : 'none';
     secDispo.h.style.display  = nOff ? '' : 'none';
 
@@ -23154,12 +23155,21 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     });
   }
 
-  // au clic sur le bouton, puis après chaque bascule d'indicateur
-  btn.addEventListener('click', function(){ setTimeout(trier, 0); });
-  menu.addEventListener('click', function(ev){
-    if(ev.target.closest('.ind-item')) setTimeout(trier, 30);
+  /* Le tri n'a lieu qu'à l'OUVERTURE du menu. Basculer un indicateur ne le
+     déplace donc plus sous le doigt : il reste où il est tant que le menu
+     est ouvert, ce qui permet de l'éteindre puis de le rallumer sans le
+     chercher. Le classement se met à jour à la prochaine ouverture. */
+  let ouvert = false;
+  btn.addEventListener('click', function(){
+    // le menu vient de s'ouvrir : on trie. Il se ferme : on ne touche à rien.
+    setTimeout(function(){
+      const visible = menu.classList.contains('open')
+                   || getComputedStyle(menu).display !== 'none';
+      if(visible && !ouvert) trier();
+      ouvert = visible;
+    }, 0);
   });
-  setTimeout(trier, 400);
+  setTimeout(function(){ trier(); ouvert = false; }, 400);
 
   window.trierIndicateurs = trier;
 
