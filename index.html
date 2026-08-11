@@ -15163,7 +15163,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     const sideY = isUp ? yLo20 + 12 : (isDn ? yUp20 - 12 : yMid0);
     // Unité de temps du canal, pour distinguer les deux tunnels superposés
     const tfTxt = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
-    const sideLabelTxt = 'S ' + arrowTxt + ' ' + tfTxt;
+    const sideLabelTxt = 'S ' + arrowTxt;
 
     ctx.font = 'bold 11px "IBM Plex Mono",monospace';
     const sideW = ctx.measureText(sideLabelTxt).width + 12;
@@ -15178,6 +15178,25 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.fillStyle = '#0F172A';
     ctx.textAlign = 'center';
     ctx.fillText(sideLabelTxt, sideBx + sideW / 2, sideBy + 13);
+
+    /* Pastille d'unité de temps accolée au badge S, en couleurs inversées
+       pour qu'on la distingue immédiatement. */
+    {
+      const utTxt = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
+      ctx.font = 'bold 11px "IBM Plex Mono",monospace';
+      const utW = ctx.measureText(utTxt).width + 12;
+      const utX = sideBx + sideW + 3;
+      ctx.fillStyle = '#0F172A';
+      roundRect(utX, sideBy, utW, sideH, 4);
+      ctx.fill();
+      ctx.strokeStyle = activeColor; ctx.lineWidth = 1.4;
+      roundRect(utX, sideBy, utW, sideH, 4);
+      ctx.stroke();
+      ctx.fillStyle = activeColor;
+      ctx.textAlign = 'center';
+      ctx.fillText(utTxt, utX + utW / 2, sideBy + 13);
+      ctx.textAlign = 'left';
+    }
   }
 
   // 8. Points de contact / Cassures sur les bougies
@@ -24654,6 +24673,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
 /* Affichage des données brutes d'une position MEXC, pour identifier
    sans deviner les noms de champs réellement renvoyés par l'API. */
+window.__LUMEN_BUILD = 'B-1108-1530';   // repère de version, visible dans la console
+console.log('%c[Lumen] version ' + window.__LUMEN_BUILD, 'color:#00E5FF;font-weight:700');
+
 window.showMexcRaw = function(){
   const p = (window.__mexcRawPositions || [])[0];
   const box = document.getElementById('mexc-positions-container');
