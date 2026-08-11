@@ -1305,21 +1305,21 @@ footer{
 </div>
 
 <!-- MODAL LANCEMENT EN DIRECT SUR EXCHANGE EN ARGENT RÉEL -->
-<div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(6,10,20,0.88);z-index:10000;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(4px)">
-  <div style="background:var(--panel,#0A111F);border:2px solid #FFD700;border-radius:16px;max-width:720px;width:100%;max-height:92vh;overflow:auto;padding:20px;box-shadow:0 16px 50px rgba(255,215,0,0.3)">
+<div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(6,10,20,0.88);z-index:10000;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(6px)">
+  <div style="background:var(--panel,#0A111F);border:2px solid #00E5FF;border-radius:16px;max-width:820px;width:100%;max-height:92vh;overflow:auto;padding:20px;box-shadow:0 16px 50px rgba(0,229,255,0.25)">
     
     <!-- Modal Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid rgba(255,215,0,0.25);padding-bottom:12px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0F172A;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;box-shadow:0 0 14px rgba(255,215,0,0.5)">
-          🚀
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid rgba(0,229,255,0.25);padding-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#00E5FF,#10B981);color:#0F172A;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;box-shadow:0 0 16px rgba(0,229,255,0.5)">
+          🟢
         </div>
         <div>
-          <div style="font-weight:900;color:#FFD700;font-size:16px;letter-spacing:0.3px">
-            Lancement en Direct sur Exchange (Argent Réel)
+          <div style="font-weight:900;color:#00E5FF;font-size:17px;letter-spacing:0.3px">
+            Compte MEXC Direct & Trading en Réel
           </div>
           <div style="font-size:11.5px;color:#CBD5E1;margin-top:2px">
-            Exécution automatisée en temps réel des pastilles Z.Z. sur votre compte de trading
+            Soldes réels, positions ouvertes, exécution manuelle instantanée & bot automatique
           </div>
         </div>
       </div>
@@ -1339,184 +1339,297 @@ footer{
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <div id="modal-top-push-container" style="display:flex;align-items:center;gap:6px"></div>
           <button onclick="stopLiveExchangeTrading()" style="background:#DC2626;color:#FFF;border:none;border-radius:6px;padding:7px 14px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(220,38,38,0.5)">
-            🛑 Stopper le Trading Direct
+            🛑 Stopper le Bot Auto
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Guide Access & Authorizations -->
-    <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:12px 14px;margin-bottom:16px">
-      <div style="font-weight:800;font-size:12.5px;color:#FFD700;margin-bottom:6px;display:flex;align-items:center;gap:6px">
-        <span>🔑 ACCÈS & AUTORISATIONS REQUISES SUR VOTRE EXCHANGE</span>
-      </div>
-      <div style="font-size:11.5px;color:#E2E8F0;line-height:1.55">
-        Pour automatiser vos trades en argent réel, générez une <b>Clé API</b> depuis les paramètres de votre Exchange :
-        <ul style="margin:6px 0 6px 18px;padding:0;list-style-type:disc">
-          <li><b>Permissions nécessaires :</b> Cocher <span style="color:#10B981;font-weight:bold">Activer le Trading Spot / Futures (Lecture + Exécution d'Ordres)</span>.</li>
-          <li><b>SÉCURITÉ CRITIQUE :</b> <span style="color:#FF5252;font-weight:bold">DESACTIVER ABSOLUMENT LES RETRAITS (No Withdrawals)</span>. L'application ne demandera jamais de pouvoir transférer vos fonds.</li>
-          <li><b>Adresses IP autorisées (Whitelisting) :</b> Vous pouvez restreindre la clé à l'IP du bot ou la laisser libre.</li>
-        </ul>
-      </div>
+    <!-- Navigation Tabs Bar -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px;overflow-x:auto">
+      <button class="mexc-tab-btn active" id="mexc-tab-btn-account" onclick="switchMexcTab('account')" style="background:rgba(0,229,255,0.15);color:#00E5FF;border:1px solid #00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+        💼 Compte & Soldes
+      </button>
+      <button class="mexc-tab-btn" id="mexc-tab-btn-trade" onclick="switchMexcTab('trade')" style="background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+        ⚡ Passer un Trade Réel
+      </button>
+      <button class="mexc-tab-btn" id="mexc-tab-btn-bot" onclick="switchMexcTab('bot')" style="background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+        🤖 Bot Auto Stratégie
+      </button>
+      <button class="mexc-tab-btn" id="mexc-tab-btn-config" onclick="switchMexcTab('config')" style="background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+        🔑 Clés & API
+      </button>
+      <button class="mexc-tab-btn" id="mexc-tab-btn-logs" onclick="switchMexcTab('logs')" style="background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+        📋 Journal Ordres
+      </button>
     </div>
 
-    <!-- Exchange Form Setup -->
-    <div style="background:rgba(16,185,129,0.1);border:1px solid #10B981;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11.5px;color:#10B981;line-height:1.4">
-      🔒 <b>Sécurité Maximale :</b> Les clés API MEXC sont conservées exclusivement dans les variables d'environnement de votre microservice. Aucune clé ni secret API ne transite dans le navigateur ni dans les requêtes HTTP.
-    </div>
+    <!-- TAB 1: SOLDE & POSITIONS OUVERTES -->
+    <div id="mexc-tab-account" class="mexc-tab-content">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-weight:800;font-size:13px;color:#00E5FF">📊 Aperçu des Soldes MEXC Réels</span>
+        <button onclick="fetchMexcAccountAndPositions()" style="background:rgba(0,229,255,0.12);border:1px solid #00E5FF;color:#00E5FF;border-radius:6px;padding:5px 12px;font-weight:700;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:4px">
+          🔄 Rafraîchir les Soldes & Positions
+        </button>
+      </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px;background:rgba(15,23,42,0.6);padding:14px;border-radius:10px;border:1px solid var(--line)">
-      <label style="font-size:11px;color:#CBD5E1;font-weight:bold;grid-column:1/-1">1. Sélectionnez votre Exchange
-        <select id="live-ex-name" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid #FFD700;border-radius:6px;color:#FFD700;padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
-          <option value="MEXC" selected>MEXC Global (Futures V1 & Spot V3)</option>
-          <option value="Bybit">Bybit (USDT Perpetual)</option>
-          <option value="Binance">Binance (Futures & Spot)</option>
-          <option value="Bitget">Bitget Futures</option>
-          <option value="OKX">OKX Trading</option>
-          <option value="KuCoin">KuCoin Futures</option>
-        </select>
-      </label>
-
-      <label style="font-size:11px;color:#CBD5E1;font-weight:bold;grid-column:1/-1">2. URL Microservice de Signature (Vercel / Netlify / Workers / Serveur)
-        <input type="text" id="live-ex-serviceurl" value="https://mexc-signer.vercel.app/api/mexc" placeholder="https://mexc-signer.vercel.app/api/mexc ou /api/mexc/signed" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent);border-radius:6px;color:#00E5FF;padding:8px;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px">
-        <span style="font-size:10px;color:var(--muted);font-weight:normal;display:block;margin-top:3px">💡 Utilise <code>/api/mexc/signed</code> (serveur intégré) ou l'URL de votre microservice Vercel/Worker déployé.</span>
-      </label>
-
-      <label style="font-size:11px;color:#CBD5E1;font-weight:bold;grid-column:1/-1">3. Jeton d'Accès Lumen (En-tête 'X-Lumen-Token')
-        <div style="position:relative;margin-top:4px;display:flex;align-items:center">
-          <input type="text" id="live-ex-token" placeholder="Saisissez votre LUMEN_ACCESS_TOKEN" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent,#00E5FF);border-radius:6px;color:#00E5FF;padding:9px 80px 9px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:bold" oninput="this.value=this.value.replace(/^['&quot;]|['&quot;]$/g,'')" onblur="this.value=this.value.trim().replace(/^['&quot;]|['&quot;]$/g,'')">
-          <button type="button" onclick="toggleTokenVisibility()" id="live-ex-token-toggle" style="position:absolute;right:6px;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.4);border-radius:4px;color:#00E5FF;cursor:pointer;font-size:11px;padding:4px 8px;line-height:1;display:flex;align-items:center;gap:4px;font-weight:bold" title="Masquer / Afficher le jeton">👁️ <span id="live-ex-token-toggle-label">Clair</span></button>
+      <!-- Balance Cards Grid -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px">
+        <div style="background:rgba(15,23,42,0.8);border:1px solid #10B981;border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:#94A3B8;font-weight:700">MEXC FUTURES (Contrats)</div>
+          <div id="mexc-stat-futures-avail" style="font-size:20px;font-weight:900;color:#10B981;margin-top:4px">-- USDT</div>
+          <div style="font-size:10.5px;color:#CBD5E1;margin-top:2px">Equity Total: <b id="mexc-stat-futures-equity" style="color:#FFF">--</b></div>
         </div>
-        <span style="font-size:10px;color:var(--muted);font-weight:normal;display:block;margin-top:4px">🔑 Votre mot de passe s'affiche en clair pour vérifier les caractères. Cliquez sur <b>👁️ Clair</b> pour masquer/afficher.</span>
-      </label>
-    </div>
 
-    <!-- DYNAMIC CAPITAL ADJUSTMENT (FEATURE REQUESTED) -->
-    <div style="background:linear-gradient(135deg, rgba(16,185,129,0.18), rgba(0,229,255,0.12));border:1.5px solid #10B981;border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:0 4px 14px rgba(16,185,129,0.15)">
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <input type="checkbox" id="live-ex-autocapital" checked style="width:18px;height:18px;margin-top:2px;accent-color:#10B981;cursor:pointer">
-        <div>
-          <label for="live-ex-autocapital" style="font-weight:900;font-size:13px;color:#10B981;cursor:pointer">
-            🔄 AJUSTER AUTOMATIQUEMENT LE CAPITAL AVANT DE LANCER CHAQUE TRADE
-          </label>
-          <div style="font-size:11.5px;color:var(--text);margin-top:4px;line-height:1.5">
-            Interroge en temps réel le solde net disponible (<b>Wallet Balance / Available Funds</b>) sur l'exchange immédiatement <b>avant l'ouverture de chaque position</b>.
-            <div style="background:rgba(15,23,42,0.6);border-radius:6px;padding:8px;margin-top:6px;color:#E2E8F0;font-size:11px;border-left:3px solid #10B981">
-              💡 <b>Prise en compte dynamique des retraits & dépôts :</b> Si vous retirez des gains de votre compte ou y rajoutez des fonds entre deux trades, la taille du contrat (Position Size) s'adaptera instantanément sur votre nouveau solde exact sans aucune intervention manuelle.
-            </div>
+        <div style="background:rgba(15,23,42,0.8);border:1px solid #38BDF8;border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:#94A3B8;font-weight:700">MEXC SPOT V3 (Libre)</div>
+          <div id="mexc-stat-spot-usdt" style="font-size:20px;font-weight:900;color:#38BDF8;margin-top:4px">-- USDT</div>
+          <div style="font-size:10.5px;color:#CBD5E1;margin-top:2px">Disponible pour transfert Spot -&gt; Futures</div>
+        </div>
+
+        <div style="background:rgba(15,23,42,0.8);border:1px solid #FFD700;border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:#94A3B8;font-weight:700">MARGE ENGAGÉE EN POSITION</div>
+          <div id="mexc-stat-futures-margin" style="font-size:20px;font-weight:900;color:#FFD700;margin-top:4px">-- USDT</div>
+          <div style="font-size:10.5px;color:#CBD5E1;margin-top:2px">Contrats actifs sur le compte</div>
+        </div>
+      </div>
+
+      <!-- Open Positions Section -->
+      <div style="background:rgba(15,23,42,0.6);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-weight:800;font-size:13px;color:#FFD700;display:flex;align-items:center;gap:6px">
+            <span>⚡ POSITIONS OUVERTES SUR MEXC FUTURES</span>
+            <span id="mexc-pos-count-badge" style="background:#FFD700;color:#0F172A;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:900">0</span>
+          </div>
+          <button onclick="closeAllMexcPositions()" style="background:rgba(239,68,68,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:6px;padding:4px 10px;font-weight:800;font-size:10.5px;cursor:pointer">
+            🛑 TOUT FERMER AU MARCHÉ
+          </button>
+        </div>
+
+        <div id="mexc-positions-container" style="min-height:80px">
+          <div style="text-align:center;color:var(--muted);font-size:12px;padding:16px">
+            Cliquez sur <b>"Rafraîchir"</b> pour charger vos positions actives depuis MEXC Futures.
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Risk & Allocation Parameters -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;background:rgba(15,23,42,0.6);padding:12px;border-radius:10px;border:1px solid var(--line)">
-      <label style="font-size:10.5px;color:var(--muted)">Mode Stratégie
-        <select id="live-ex-mode" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:#10B981;padding:6px;margin-top:3px;font-weight:bold">
-          <option value="tp200">Pastilles Z.Z. (TP +200 pts)</option>
-          <option value="tp300" selected>Pastilles Z.Z. (TP +300 pts)</option>
-          <option value="tp400">Pastilles Z.Z. (TP +400 pts)</option>
-          <option value="tp500">Pastilles Z.Z. (TP +500 pts)</option>
-          <option value="pastille_only">Pastilles Z.Z. (Pastille Inverse)</option>
-        </select>
-      </label>
-
-      <label style="font-size:10.5px;color:var(--muted)">Direction des Trades (Filtre)
-        <select id="live-ex-dir" style="width:100%;background:var(--panel-2);border:1.5px solid #00E5FF;border-radius:6px;color:#00E5FF;padding:6px;margin-top:3px;font-weight:bold">
-          <option value="both" selected>🔄 Longs & Shorts (Les deux)</option>
-          <option value="long_only">🟢 LONG Uniquement (Achats)</option>
-          <option value="short_only">🔴 SHORT Uniquement (Ventes)</option>
-        </select>
-      </label>
-
-      <label style="font-size:10.5px;color:var(--muted)">Allocation Portefeuille
-        <select id="live-ex-alloc" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:#FFF;padding:6px;margin-top:3px;font-weight:bold">
-          <option value="100" selected>100% du solde disponible</option>
-          <option value="75">75% du solde disponible</option>
-          <option value="50">50% du solde disponible</option>
-          <option value="25">25% du solde disponible</option>
-          <option value="20">20% du solde disponible</option>
-          <option value="10">10% du solde disponible</option>
-        </select>
-      </label>
-
-      <label style="font-size:10.5px;color:var(--muted)">Levier Exchange
-        <select id="live-ex-lev" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:#FFD700;padding:6px;margin-top:3px;font-weight:bold">
-          <option value="1">1x (Spot)</option>
-          <option value="2">2x</option>
-          <option value="5">5x</option>
-          <option value="10">10x</option>
-          <option value="20">20x</option>
-          <option value="50">50x</option>
-          <option value="100">100x</option>
-          <option value="200" selected>200x 🔥</option>
-        </select>
-      </label>
-
-      <label style="font-size:10.5px;color:var(--muted)">Stop Loss Sécurité
-        <select id="live-ex-sl" style="width:100%;background:var(--panel-2);border:1px solid #FF5252;border-radius:6px;color:#FF5252;padding:6px;margin-top:3px;font-weight:bold">
-          <option value="0">Pastille inverse (Aucun SL fixe)</option>
-          <option value="10">🛑 SL -10 pts</option>
-          <option value="20">🛑 SL -20 pts</option>
-          <option value="50">🛑 SL -50 pts</option>
-          <option value="75">🛑 SL -75 pts</option>
-          <option value="100" selected>🛑 SL -100 pts</option>
-          <option value="150">🛑 SL -150 pts</option>
-          <option value="200">🛑 SL -200 pts</option>
-        </select>
-      </label>
-
-      <label style="font-size:10.5px;color:var(--muted)">💵 Budget d'Entrée par Trade
-        <select id="live-ex-trade-budget" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1.5px solid #38BDF8;border-radius:6px;color:#38BDF8;padding:6px;margin-top:3px;font-weight:bold">
-          <option value="1" selected>💵 1 USDT (Micro-Budget Micro-Trade)</option>
-          <option value="2">💵 2 USDT</option>
-          <option value="3">💵 3 USDT</option>
-          <option value="5">💵 5 USDT</option>
-          <option value="10">💵 10 USDT</option>
-          <option value="15">💵 15 USDT</option>
-          <option value="20">💵 20 USDT</option>
-          <option value="25">💵 25 USDT</option>
-          <option value="50">💵 50 USDT</option>
-          <option value="100">💵 100 USDT</option>
-        </select>
-      </label>
-
-      <label style="font-size:10.5px;color:var(--muted)">🛡️ Plafond Max de Sécurité (Notionnel Position)
-        <select id="live-ex-maxusdt" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1.5px solid #10B981;border-radius:6px;color:#10B981;padding:6px;margin-top:3px;font-weight:bold">
-          <option value="200">🛡️ Plafond Max 200 USDT (Position 1$ x 200x)</option>
-          <option value="500" selected>🛡️ Plafond Max 500 USDT (Sécurité standard)</option>
-          <option value="1000">🛡️ Plafond Max 1000 USDT</option>
-          <option value="2000">🛡️ Plafond Max 2000 USDT</option>
-          <option value="5000">🛡️ Plafond Max 5000 USDT</option>
-          <option value="10000">🛡️ Plafond Max 10 000 USDT</option>
-          <option value="999999">🛡️ Illimité (Sans Plafond)</option>
-        </select>
-      </label>
-    </div>
-
-    <!-- Live Position Notional Calculator & Safety Alert Banner -->
-    <div id="live-ex-calc-box" style="margin-bottom:14px;background:rgba(15,23,42,0.85);border:1.5px solid #38BDF8;border-radius:10px;padding:12px 14px;font-family:'Space Grotesk',sans-serif">
-      <div style="font-size:12px;font-weight:800;color:#38BDF8;display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <span>🧮 CALCULATEUR DE POSITION & DE PLAFOND EN DIRECT</span>
-        <span id="live-calc-badge" style="background:#38BDF8;color:#0F172A;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:900">NOTIONNEL</span>
+    <!-- TAB 2: PASSER UN TRADE EN RÉEL -->
+    <div id="mexc-tab-trade" class="mexc-tab-content" style="display:none">
+      <div style="background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.3);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="font-weight:800;font-size:13px;color:#00E5FF;margin-bottom:4px">🚀 MODULE D'EXÉCUTION DIRECTE DE TRADE SUR MEXC FUTURES</div>
+        <div style="font-size:11px;color:#CBD5E1">Saisissez la paire, le sens, le levier et la marge souhaitée pour envoyer un ordre réel directement sur votre compte.</div>
       </div>
-      <div id="live-calc-content" style="font-size:11.5px;color:#E2E8F0;margin-top:8px;line-height:1.6">
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;background:rgba(15,23,42,0.8);padding:14px;border-radius:10px;border:1px solid var(--line);margin-bottom:14px">
+        
+        <!-- Symbol Selection -->
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">1. Symbole / Paire Futures
+          <select id="mexc-trade-symbol" onchange="updateMexcTradeCalc()" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid #00E5FF;border-radius:6px;color:#00E5FF;padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
+            <option value="BTC_USDT" selected>BTC_USDT (Bitcoin Futures)</option>
+            <option value="ETH_USDT">ETH_USDT (Ethereum Futures)</option>
+            <option value="SOL_USDT">SOL_USDT (Solana Futures)</option>
+            <option value="XRP_USDT">XRP_USDT (Ripple Futures)</option>
+            <option value="DOGE_USDT">DOGE_USDT (Dogecoin Futures)</option>
+            <option value="ADA_USDT">ADA_USDT (Cardano Futures)</option>
+            <option value="PEPE_USDT">PEPE_USDT (Pepe Futures)</option>
+          </select>
+        </label>
+
+        <!-- Direction Toggle -->
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">2. Sens du Trade
+          <select id="mexc-trade-side" onchange="updateMexcTradeCalc()" style="width:100%;background:var(--panel-2,#0F172A);border:1.5px solid #10B981;border-radius:6px;color:#10B981;padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
+            <option value="1" selected>🟢 ACHAT / LONG (Ouvrir Position Longue)</option>
+            <option value="3">🔴 VENTE / SHORT (Ouvrir Position Courte)</option>
+          </select>
+        </label>
+
+        <!-- Order Type -->
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">3. Type d'Ordre
+          <select id="mexc-trade-type" onchange="toggleMexcLimitPriceInput()" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:#FFF;padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
+            <option value="5" selected>⚡ Au Marché (Market Instantané)</option>
+            <option value="1">🎯 Limite (Prix Spécifique)</option>
+          </select>
+        </label>
+
+        <!-- Limit Price (Hidden by default) -->
+        <label id="mexc-trade-price-box" style="font-size:11px;color:#CBD5E1;font-weight:bold;display:none">Prix Limite (USDT)
+          <input type="number" id="mexc-trade-price" placeholder="Prix d'entrée" oninput="updateMexcTradeCalc()" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid #FFD700;border-radius:6px;color:#FFD700;padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
+        </label>
+
+        <!-- Leverage Selector -->
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">4. Levier Exchange
+          <select id="mexc-trade-lev" onchange="updateMexcTradeCalc()" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid #FFD700;border-radius:6px;color:#FFD700;padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
+            <option value="10">10x</option>
+            <option value="20">20x</option>
+            <option value="50">50x</option>
+            <option value="100">100x</option>
+            <option value="200" selected>200x 🔥</option>
+          </select>
+        </label>
+
+        <!-- Trade Budget USDT -->
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold;grid-column:1/-1">5. Marge à Engager (USDT)
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+            <input type="number" id="mexc-trade-budget" value="10" min="1" step="1" oninput="updateMexcTradeCalc()" style="flex:1;background:var(--panel-2,#0F172A);border:1.5px solid #38BDF8;border-radius:6px;color:#38BDF8;padding:8px;font-weight:bold;font-size:13px">
+            <button type="button" onclick="setMexcBudget(5)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">5$</button>
+            <button type="button" onclick="setMexcBudget(10)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">10$</button>
+            <button type="button" onclick="setMexcBudget(25)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">25$</button>
+            <button type="button" onclick="setMexcBudget(50)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">50$</button>
+            <button type="button" onclick="setMexcBudget(100)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">100$</button>
+          </div>
+        </label>
+      </div>
+
+      <!-- Order Preview Summary -->
+      <div id="mexc-trade-preview-box" style="background:rgba(15,23,42,0.9);border:1.5px solid #10B981;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:11.5px;color:#E2E8F0;line-height:1.5">
         <!-- Rempli dynamiquement -->
       </div>
+
+      <!-- Execution Submit Button -->
+      <button onclick="submitMexcManualTrade()" style="width:100%;background:linear-gradient(135deg,#10B981,#059669);color:#FFF;border:none;border-radius:10px;padding:12px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 4px 18px rgba(16,185,129,0.4);transition:all 0.2s ease">
+        🚀 ENVOYER L'ORDRE RÉEL SUR MEXC FUTURES
+      </button>
+
+      <!-- Feedback box -->
+      <div id="mexc-manual-trade-result" style="display:none;margin-top:12px;padding:12px;border-radius:8px;font-size:11.5px;font-family:'IBM Plex Mono',monospace"></div>
     </div>
 
-    <!-- Test Connection Feedback Container -->
-    <div id="live-ex-test-result" style="display:none;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:11.5px;font-family:'IBM Plex Mono',monospace"></div>
+    <!-- TAB 3: BOT TRADING AUTO -->
+    <div id="mexc-tab-bot" class="mexc-tab-content" style="display:none">
+      <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="font-weight:800;font-size:12.5px;color:#FFD700;margin-bottom:4px">🤖 ROBOT D'EXÉCUTION AUTOMATIQUE EN TEMPS RÉEL</div>
+        <div style="font-size:11px;color:#E2E8F0">Le robot écoute les signaux en direct sur le graphique et exécute automatiquement les ordres sur MEXC selon vos paramètres ci-dessous.</div>
+      </div>
 
-    <!-- Action Buttons -->
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button onclick="testLiveExchangeConnection()" style="background:rgba(255,255,255,0.08);border:1px solid #FFD700;color:#FFD700;border-radius:8px;padding:10px 16px;font-weight:800;font-size:12px;cursor:pointer">
-        🧪 Tester la Connexion & Synchroniser Solde
+      <!-- DYNAMIC CAPITAL ADJUSTMENT -->
+      <div style="background:linear-gradient(135deg, rgba(16,185,129,0.18), rgba(0,229,255,0.12));border:1.5px solid #10B981;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <input type="checkbox" id="live-ex-autocapital" checked style="width:18px;height:18px;margin-top:2px;accent-color:#10B981;cursor:pointer">
+          <div>
+            <label for="live-ex-autocapital" style="font-weight:900;font-size:12.5px;color:#10B981;cursor:pointer">
+              🔄 AJUSTER AUTOMATIQUEMENT LE CAPITAL AVANT CHAQUE TRADE
+            </label>
+            <div style="font-size:11px;color:var(--text);margin-top:2px">
+              Prend en compte votre solde exact disponible en temps réel sur MEXC avant chaque prise de position.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk & Allocation Parameters -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;background:rgba(15,23,42,0.6);padding:12px;border-radius:10px;border:1px solid var(--line)">
+        <label style="font-size:10.5px;color:var(--muted)">Mode Stratégie
+          <select id="live-ex-mode" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:#10B981;padding:6px;margin-top:3px;font-weight:bold">
+            <option value="tp200">Pastilles Z.Z. (TP +200 pts)</option>
+            <option value="tp300" selected>Pastilles Z.Z. (TP +300 pts)</option>
+            <option value="tp400">Pastilles Z.Z. (TP +400 pts)</option>
+            <option value="tp500">Pastilles Z.Z. (TP +500 pts)</option>
+            <option value="pastille_only">Pastilles Z.Z. (Pastille Inverse)</option>
+          </select>
+        </label>
+
+        <label style="font-size:10.5px;color:var(--muted)">Direction
+          <select id="live-ex-dir" style="width:100%;background:var(--panel-2);border:1.5px solid #00E5FF;border-radius:6px;color:#00E5FF;padding:6px;margin-top:3px;font-weight:bold">
+            <option value="both" selected>🔄 Longs &amp; Shorts</option>
+            <option value="long_only">🟢 LONG Uniquement</option>
+            <option value="short_only">🔴 SHORT Uniquement</option>
+          </select>
+        </label>
+
+        <label style="font-size:10.5px;color:var(--muted)">Levier Bot
+          <select id="live-ex-lev" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:#FFD700;padding:6px;margin-top:3px;font-weight:bold">
+            <option value="10">10x</option>
+            <option value="20">20x</option>
+            <option value="50">50x</option>
+            <option value="100">100x</option>
+            <option value="200" selected>200x 🔥</option>
+          </select>
+        </label>
+
+        <label style="font-size:10.5px;color:var(--muted)">Stop Loss
+          <select id="live-ex-sl" style="width:100%;background:var(--panel-2);border:1px solid #FF5252;border-radius:6px;color:#FF5252;padding:6px;margin-top:3px;font-weight:bold">
+            <option value="0">Pastille inverse (Pas de SL fixe)</option>
+            <option value="50">🛑 SL -50 pts</option>
+            <option value="100" selected>🛑 SL -100 pts</option>
+            <option value="150">🛑 SL -150 pts</option>
+          </select>
+        </label>
+
+        <label style="font-size:10.5px;color:var(--muted)">💵 Budget par Trade
+          <select id="live-ex-trade-budget" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1.5px solid #38BDF8;border-radius:6px;color:#38BDF8;padding:6px;margin-top:3px;font-weight:bold">
+            <option value="1">💵 1 USDT</option>
+            <option value="5">💵 5 USDT</option>
+            <option value="10" selected>💵 10 USDT</option>
+            <option value="25">💵 25 USDT</option>
+            <option value="50">💵 50 USDT</option>
+            <option value="100">💵 100 USDT</option>
+          </select>
+        </label>
+
+        <label style="font-size:10.5px;color:var(--muted)">🛡️ Plafond Max Notionnel
+          <select id="live-ex-maxusdt" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1.5px solid #10B981;border-radius:6px;color:#10B981;padding:6px;margin-top:3px;font-weight:bold">
+            <option value="500" selected>🛡️ Max 500 USDT</option>
+            <option value="1000">🛡️ Max 1000 USDT</option>
+            <option value="2000">🛡️ Max 2000 USDT</option>
+            <option value="5000">🛡️ Max 5000 USDT</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+        <button onclick="startLiveExchangeTrading()" style="flex:1;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0F172A;border:none;border-radius:8px;padding:11px 18px;font-weight:900;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(255,215,0,0.4)">
+          🔴 CONFIRMER &amp; DÉMARRER LE BOT AUTO RÉEL 🚀
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 4: CONFIGURATION CLÉS & API -->
+    <div id="mexc-tab-config" class="mexc-tab-content" style="display:none">
+      <div style="background:rgba(16,185,129,0.1);border:1px solid #10B981;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11.5px;color:#10B981;line-height:1.4">
+        🔒 <b>Sécurité :</b> Vos clés API MEXC sont conservées dans les variables d'environnement de votre microservice. Le jeton X-Lumen-Token authentifie vos requêtes.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px;background:rgba(15,23,42,0.6);padding:14px;border-radius:10px;border:1px solid var(--line)">
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">1. Exchange Cible
+          <select id="live-ex-name" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid #FFD700;border-radius:6px;color:#FFD700;padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
+            <option value="MEXC" selected>MEXC Global (Futures V1 &amp; Spot V3)</option>
+          </select>
+        </label>
+
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">2. URL Microservice de Signature
+          <input type="text" id="live-ex-serviceurl" value="/api/mexc/signed" placeholder="/api/mexc/signed ou https://mexc-signer.vercel.app/api/mexc" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent);border-radius:6px;color:#00E5FF;padding:8px;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+          <span style="font-size:10px;color:var(--muted);font-weight:normal;display:block;margin-top:3px">💡 Utilisez <code>/api/mexc/signed</code> pour le serveur intégré ou votre URL Vercel.</span>
+        </label>
+
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">3. Jeton d'Accès Lumen ('X-Lumen-Token')
+          <div style="position:relative;margin-top:4px;display:flex;align-items:center">
+            <input type="text" id="live-ex-token" placeholder="Saisissez votre LUMEN_ACCESS_TOKEN" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent,#00E5FF);border-radius:6px;color:#00E5FF;padding:9px 80px 9px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:bold" oninput="this.value=this.value.replace(/^['&quot;]|['&quot;]$/g,'')" onblur="this.value=this.value.trim().replace(/^['&quot;]|['&quot;]$/g,'')">
+            <button type="button" onclick="toggleTokenVisibility()" id="live-ex-token-toggle" style="position:absolute;right:6px;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.4);border-radius:4px;color:#00E5FF;cursor:pointer;font-size:11px;padding:4px 8px;font-weight:bold" title="Masquer / Afficher">👁️ <span id="live-ex-token-toggle-label">Clair</span></button>
+          </div>
+        </label>
+      </div>
+
+      <button onclick="testLiveExchangeConnection()" style="width:100%;background:rgba(255,215,0,0.15);border:1px solid #FFD700;color:#FFD700;border-radius:8px;padding:10px 16px;font-weight:800;font-size:12px;cursor:pointer">
+        🧪 Tester la Connexion &amp; Synchroniser le Compte
       </button>
 
-      <button onclick="startLiveExchangeTrading()" style="flex:1;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0F172A;border:none;border-radius:8px;padding:11px 18px;font-weight:900;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(255,215,0,0.4);transition:all 0.2s ease">
-        🔴 CONFIRMER & DÉMARRER LE TRADING EN ARGENT RÉEL 🚀
-      </button>
+      <div id="live-ex-test-result" style="display:none;margin-top:12px;padding:10px 12px;border-radius:8px;font-size:11.5px;font-family:'IBM Plex Mono',monospace"></div>
+    </div>
+
+    <!-- TAB 5: JOURNAL DES ORDRES -->
+    <div id="mexc-tab-logs" class="mexc-tab-content" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-weight:800;font-size:13px;color:#00E5FF">📋 Historique &amp; Logs des Ordres MEXC</span>
+        <button onclick="viewMexcOrderLogs()" style="background:rgba(0,229,255,0.12);border:1px solid #00E5FF;color:#00E5FF;border-radius:6px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer">
+          🔄 Actualiser les Logs
+        </button>
+      </div>
+
+      <div id="mexc-logs-container" style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:12px;max-height:280px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E2E8F0">
+        <div style="text-align:center;color:var(--muted);padding:12px">Aucun ordre enregistré pour la session actuelle.</div>
+      </div>
     </div>
 
   </div>
@@ -1545,7 +1658,7 @@ footer{
 </div>
 
   <div class="ind-wrap">
-    <button class="btn" id="gmail-import-btn" title="Importer un indicateur depuis Gmail" style="border-color:#EA4335;color:#EA4335;background:rgba(234,67,53,0.08);display:inline-flex;align-items:center;gap:4px;font-weight:700">📧 Gmail Import</button>
+    <button class="btn" id="mexc-live-btn" onclick="openLiveExchangeModal()" title="Compte MEXC Direct & Trading en Réel" style="border-color:#00E5FF;color:#00E5FF;background:rgba(0,229,255,0.12);display:inline-flex;align-items:center;gap:6px;font-weight:800;box-shadow:0 0 10px rgba(0,229,255,0.2)">🟢 Compte MEXC Direct</button>
   </div>
 
   <div class="ind-wrap">
@@ -6594,7 +6707,7 @@ function drawPrice(p,s,e,cw,sharedXStack){
     const t2 = S('lrc','tf2');
     if(t2 && t2 !== 'off'){
       try{
-        const ind = state.indicators.lrc;
+        const ind = state.indicators.lrc || {};
         const tf2n = (t2 === 'chart') ? state.tf : +t2;
         const bars2 = (tf2n === state.tf) ? d : getMTFBars(tf2n);
         if(bars2 && bars2.length){
@@ -12541,12 +12654,12 @@ const SCHEMA={
 function S(ind,key){
   if(key==='mode')return state.indicators[ind]?.mode||'lisse';
   if(key==='showExits')return state.indicators[ind]?.showExits !== false;
-  if(state.style[ind] && state.style[ind][key] !== undefined) return state.style[ind][key];
-  if(state.indicators[ind] && state.indicators[ind][key] !== undefined) return state.indicators[ind][key];
+  if(state.style[ind] && state.style[ind][key] !== undefined && state.style[ind][key] !== null) return state.style[ind][key];
+  if(state.indicators[ind] && state.indicators[ind][key] !== undefined && state.indicators[ind][key] !== null) return state.indicators[ind][key];
   const st=state.style[ind];
-  if(st&&st[key]!==undefined)return st[key];
+  if(st&&st[key]!==undefined&&st[key]!==null)return st[key];
   const f=(SCHEMA[ind]||{fields:[]}).fields.find(x=>x.k===key);
-  if(f&&f.ind)return state.indicators[ind]?.[f.k];
+  if(f&&f.ind&&state.indicators[ind]?.[f.k]!==undefined&&state.indicators[ind]?.[f.k]!==null)return state.indicators[ind][f.k];
   return f?f.def:undefined;
 }
 function hexA(hex,a){
@@ -12569,6 +12682,7 @@ let cfgInd=null;
 let _cfgOpenTime=0;
 function openCfg(ind){
   const sc=SCHEMA[ind]; if(!sc)return;
+  if(!state.indicators[ind]) state.indicators[ind] = {};
   _cfgOpenTime=Date.now();
   cfgInd=ind;
   document.getElementById('cfg-title').textContent=sc.title;
@@ -12580,22 +12694,23 @@ function openCfg(ind){
         <div class="cfg-sw ${v?'on':''}" data-f="${f.k}"></div></div>`;
     if(f.t==='col')
       return `<div class="cfg-row"><label>${f.lab}</label>
-        <input type="color" value="${v}" data-f="${f.k}"></div>`;
+        <input type="color" value="${v||f.def||'#ffffff'}" data-f="${f.k}"></div>`;
     if(f.t==='choice')
       return `<div class="cfg-row"><label>${f.lab}</label>
-        <div style="display:flex;gap:4px">`+
-        f.opts.map(o=>`<button class="cfg-choice ${v===o.v?'on':''}" data-f="${f.k}" data-v="${o.v}">${o.t}</button>`).join('')+
+        <div style="display:flex;gap:4px;flex-wrap:wrap">`+
+        f.opts.map(o=>`<button class="cfg-choice ${(v===o.v||(!v&&o.v===f.def))?'on':''}" data-f="${f.k}" data-v="${o.v}">${o.t}</button>`).join('')+
         `</div></div>`;
     if(f.t==='tf'){
-      const cur=state.indicators[ind].tf||'chart';
+      const cur=(state.indicators[ind]&&state.indicators[ind].tf)||'chart';
       const opts=[['chart','UT'],['3','3m'],['5','5m'],['15','15m'],['20','20m'],['30','30m'],['60','1H'],['240','4H']];
       return `<div class="cfg-row"><label>Unité de temps</label>
         <div style="display:flex;gap:4px;flex-wrap:wrap">`+
         opts.map(o=>`<button class="cfg-tf ${cur===o[0]?'on':''}" data-tf="${o[0]}">${o[1]}</button>`).join('')+
         `</div></div>`;
     }
+    const numVal = (v !== undefined && v !== null && !isNaN(v)) ? v : (f.def ?? 0);
     return `<div class="cfg-row"><label>${f.lab}</label>
-      <input type="number" value="${v}" min="${f.min}" max="${f.max}" step="${(f.max<=1||String(f.def).includes('.')||String(f.min).includes('.'))?0.05:1}" data-f="${f.k}"></div>`;
+      <input type="number" value="${numVal}" min="${f.min}" max="${f.max}" step="${(f.max<=1||String(f.def).includes('.')||String(f.min).includes('.'))?0.05:1}" data-f="${f.k}"></div>`;
   }).join('');
   if(ind==='signal_ema_ha'){
     body.innerHTML+=`<div style="margin-top:16px;padding-top:12px;border-top:1px dashed rgba(0,229,255,0.4)">
@@ -14863,6 +14978,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   const x0 = xOf(iStart);
   const x1 = xOf(iEnd);
 
+  // Configuration des couleurs et de l'épaisseur d'après le Pine Script
   /* Second tunnel : mêmes calculs, teintes propres et trait plus fin pour
      qu'on distingue les deux horizons sur le même graphique. */
   const estSecond = !!L.__second;
@@ -19871,7 +19987,359 @@ window.selectZZBtLev = function(l) {
   runZZBacktest(true);
 };
 
-/* ===== GESTION Lancement en Direct sur Exchange (Argent Réel) ===== */
+/* ===== GESTION ONGLET & HUBS MEXC DIRECT ===== */
+window.switchMexcTab = function(tabName) {
+  document.querySelectorAll('.mexc-tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--line)';
+  });
+
+  const activeBtn = document.getElementById('mexc-tab-btn-' + tabName);
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    activeBtn.style.background = 'rgba(0,229,255,0.15)';
+    activeBtn.style.color = '#00E5FF';
+    activeBtn.style.borderColor = '#00E5FF';
+  }
+
+  document.querySelectorAll('.mexc-tab-content').forEach(content => {
+    content.style.display = 'none';
+  });
+
+  const activeContent = document.getElementById('mexc-tab-' + tabName);
+  if (activeContent) {
+    activeContent.style.display = 'block';
+  }
+
+  if (tabName === 'account') {
+    fetchMexcAccountAndPositions();
+  } else if (tabName === 'trade') {
+    updateMexcTradeCalc();
+  } else if (tabName === 'logs') {
+    renderMexcLogsInTab();
+  }
+};
+
+window.setMexcBudget = function(amt) {
+  const el = document.getElementById('mexc-trade-budget');
+  if (el) {
+    el.value = String(amt);
+    updateMexcTradeCalc();
+  }
+};
+
+window.toggleMexcLimitPriceInput = function() {
+  const typeEl = document.getElementById('mexc-trade-type');
+  const priceBox = document.getElementById('mexc-trade-price-box');
+  if (typeEl && priceBox) {
+    priceBox.style.display = (typeEl.value === '1') ? 'block' : 'none';
+  }
+  updateMexcTradeCalc();
+};
+
+window.updateMexcTradeCalc = async function() {
+  const symbol = document.getElementById('mexc-trade-symbol')?.value || 'BTC_USDT';
+  const side = document.getElementById('mexc-trade-side')?.value || '1';
+  const lev = Number(document.getElementById('mexc-trade-lev')?.value || 200);
+  const budget = Number(document.getElementById('mexc-trade-budget')?.value || 10);
+  const previewBox = document.getElementById('mexc-trade-preview-box');
+
+  if (!previewBox) return;
+
+  const currentPx = livePrice(symbol) || 65000;
+  const contractSize = (await window.getContractSize(symbol)) || 0.0001;
+  const targetNotional = budget * lev;
+  const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
+  const estNotional = calcVol * contractSize * currentPx;
+  const estMargin = lev > 0 ? estNotional / lev : estNotional;
+
+  const isLong = (side === '1');
+  const sideColor = isLong ? '#10B981' : '#EF4444';
+  const sideName = isLong ? '🟢 ACHAT / LONG (Open Long)' : '🔴 VENTE / SHORT (Open Short)';
+
+  previewBox.innerHTML = `
+    <div style="font-weight:900;color:${sideColor};margin-bottom:6px">
+      Aperçu de l'Ordre : <span style="color:#FFF">${symbol}</span> — ${sideName}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
+      <div>• Marge Demandée : <b style="color:#38BDF8">${budget} USDT</b></div>
+      <div>• Levier Appliqué : <b style="color:#FFD700">${lev}x</b></div>
+      <div>• Prix Estimé : <b style="color:#FFF">$${currentPx.toFixed(2)}</b></div>
+      <div>• Taille Contrat : <b style="color:#FFF">${contractSize}</b></div>
+      <div>• Volume à Commander : <b style="color:#00E5FF;font-size:12.5px">${calcVol} contrat(s)</b></div>
+      <div>• Notionnel Total : <b style="color:#10B981">$${estNotional.toFixed(2)} USDT</b></div>
+    </div>
+  `;
+};
+
+window.submitMexcManualTrade = async function() {
+  const symbol = document.getElementById('mexc-trade-symbol')?.value || 'BTC_USDT';
+  const side = Number(document.getElementById('mexc-trade-side')?.value || 1);
+  const type = Number(document.getElementById('mexc-trade-type')?.value || 5);
+  const priceInput = document.getElementById('mexc-trade-price')?.value;
+  const lev = Number(document.getElementById('mexc-trade-lev')?.value || 200);
+  const budget = Number(document.getElementById('mexc-trade-budget')?.value || 10);
+  const resEl = document.getElementById('mexc-manual-trade-result');
+
+  const currentPx = (type === 1 && priceInput) ? Number(priceInput) : (livePrice(symbol) || 0);
+  if (!currentPx) {
+    toast('❌ Prix du marché non disponible pour le symbole choisi.', '#FF5252');
+    return;
+  }
+
+  const contractSize = await window.getContractSize(symbol);
+  if (!contractSize) {
+    toast(`❌ Taille de contrat introuvable pour ${symbol}`, '#FF5252');
+    return;
+  }
+
+  const targetNotional = budget * lev;
+  const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
+  const actionTxt = side === 1 ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
+
+  if (!confirm(`🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?\n\n• Action : ${actionTxt}\n• Symbole : ${symbol}\n• Levier : ${lev}x\n• Marge Engagee : $${budget} USDT\n• Volume : ${calcVol} contrat(s)\n• Prix : $${currentPx.toFixed(2)}`)) {
+    return;
+  }
+
+  if (resEl) {
+    resEl.style.display = 'block';
+    resEl.style.background = 'rgba(255,215,0,0.12)';
+    resEl.style.border = '1px solid #FFD700';
+    resEl.style.color = '#FFD700';
+    resEl.innerHTML = '⏳ Transmission de l\'ordre manuel à MEXC Futures...';
+  }
+
+  const res = await window.sendRealMexcFuturesOrder({
+    symbol,
+    side,
+    type,
+    price: currentPx,
+    vol: calcVol,
+    leverage: lev,
+    tradeBudget: budget,
+    openType: 1
+  });
+
+  if (resEl) {
+    if (res && res.success) {
+      resEl.style.background = 'rgba(16,185,129,0.15)';
+      resEl.style.border = '1px solid #10B981';
+      resEl.style.color = '#10B981';
+      resEl.innerHTML = `✅ <b>ORDRE RÉEL EXÉCUTÉ SUR MEXC FUTURES !</b><br>Symbole: ${symbol} | Side: ${actionTxt} | Contrats: ${calcVol} | Levier: ${lev}x`;
+      fetchMexcAccountAndPositions();
+    } else {
+      resEl.style.background = 'rgba(239,68,68,0.15)';
+      resEl.style.border = '1px solid #FF5252';
+      resEl.style.color = '#FF5252';
+      resEl.innerHTML = `❌ <b>REJET MEXC :</b> ${res.error || 'Erreur inconnue'}`;
+    }
+  }
+};
+
+window.fetchMexcAccountAndPositions = async function() {
+  const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+  const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
+  const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
+  const lumenToken = serviceConfig.lumenToken || botConfig.lumenToken || '';
+
+  const availEl = document.getElementById('mexc-stat-futures-avail');
+  const equityEl = document.getElementById('mexc-stat-futures-equity');
+  const spotEl = document.getElementById('mexc-stat-spot-usdt');
+  const marginEl = document.getElementById('mexc-stat-futures-margin');
+  const posContainer = document.getElementById('mexc-positions-container');
+  const badgeEl = document.getElementById('mexc-pos-count-badge');
+
+  if (availEl) availEl.innerHTML = '⏳ Chargement...';
+  if (spotEl) spotEl.innerHTML = '⏳ Chargement...';
+
+  try {
+    const assetsResp = await fetch(serviceUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
+      body: JSON.stringify({ endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
+    });
+    const assetsRes = await assetsResp.json();
+
+    if (assetsRes && assetsRes.success && assetsRes.data) {
+      const resData = assetsRes.data.data ?? assetsRes.data;
+      const assetArr = Array.isArray(resData) ? resData : (resData ? [resData] : []);
+      const usdt = assetArr.find(a => a.currency === 'USDT' || a.symbol === 'USDT' || a.asset === 'USDT') || assetArr[0];
+      if (usdt) {
+        const avail = parseFloat(usdt.availableBalance ?? usdt.cashBalance ?? 0).toFixed(2);
+        const equity = parseFloat(usdt.equity ?? usdt.amount ?? 0).toFixed(2);
+        const posMargin = parseFloat(usdt.positionMargin ?? usdt.frozenBalance ?? 0).toFixed(2);
+        if (availEl) availEl.innerHTML = `<b style="color:#10B981">${avail} USDT</b>`;
+        if (equityEl) equityEl.innerHTML = `${equity} USDT`;
+        if (marginEl) marginEl.innerHTML = `${posMargin} USDT`;
+      }
+    }
+
+    const spotResp = await fetch(serviceUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
+      body: JSON.stringify({ endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
+    });
+    const spotRes = await spotResp.json();
+    if (spotRes && spotRes.success && spotRes.data) {
+      const balances = spotRes.data.balances || spotRes.data.data?.balances || [];
+      const usdtSpot = balances.find(b => b.asset === 'USDT');
+      if (usdtSpot && spotEl) {
+        spotEl.innerHTML = `${parseFloat(usdtSpot.free || '0').toFixed(2)} USDT`;
+      }
+    }
+
+    const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
+    if (badgeEl) badgeEl.textContent = String(posList.length);
+
+    if (!posContainer) return;
+
+    if (!posList || posList.length === 0) {
+      posContainer.innerHTML = `
+        <div style="text-align:center;color:#10B981;font-size:12px;padding:16px;background:rgba(16,185,129,0.06);border-radius:8px">
+          ✅ Aucune position ouverte sur votre compte MEXC Futures pour le moment.
+        </div>
+      `;
+      return;
+    }
+
+    let posRows = '';
+    posList.forEach(p => {
+      const isLong = p.positionType === 1;
+      const sideTag = isLong ? '<span style="color:#10B981;font-weight:900">🟢 LONG</span>' : '<span style="color:#EF4444;font-weight:900">🔴 SHORT</span>';
+      const vol = p.holdVol || p.vol || 0;
+      const openPrice = parseFloat(p.openPrice || 0).toFixed(2);
+      const fairPrice = parseFloat(p.fairPrice || openPrice).toFixed(2);
+      const margin = parseFloat(p.im || p.positionMargin || 0).toFixed(2);
+      const pnl = parseFloat(p.unrealisedPnl || 0);
+      const pnlColor = pnl >= 0 ? '#10B981' : '#EF4444';
+      const pnlSign = pnl >= 0 ? '+' : '';
+
+      posRows += `
+        <tr style="border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px">
+          <td style="padding:8px;font-weight:bold;color:#00E5FF">${p.symbol}</td>
+          <td style="padding:8px">${sideTag} (${p.leverage || 200}x)</td>
+          <td style="padding:8px;font-weight:bold">${vol} contrat(s)</td>
+          <td style="padding:8px">$${openPrice}</td>
+          <td style="padding:8px">$${fairPrice}</td>
+          <td style="padding:8px;color:#FFD700">${margin} $</td>
+          <td style="padding:8px;font-weight:bold;color:${pnlColor}">${pnlSign}${pnl.toFixed(2)} USDT</td>
+          <td style="padding:8px;text-align:right">
+            <button onclick="closeMexcPosition('${p.symbol}', ${p.positionType}, ${vol})" style="background:rgba(239,68,68,0.2);border:1px solid #FF5252;color:#FF5252;padding:4px 8px;border-radius:4px;font-weight:bold;font-size:10px;cursor:pointer">
+              ✕ Fermer
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    posContainer.innerHTML = `
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;text-align:left">
+          <thead>
+            <tr style="border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px">
+              <th style="padding:6px 8px">SYMBOLE</th>
+              <th style="padding:6px 8px">SENS</th>
+              <th style="padding:6px 8px">CONTRATS</th>
+              <th style="padding:6px 8px">PRIX ENTRÉE</th>
+              <th style="padding:6px 8px">PRIX REPÈRE</th>
+              <th style="padding:6px 8px">MARGE</th>
+              <th style="padding:6px 8px">PnL NON RÉALISÉ</th>
+              <th style="padding:6px 8px;text-align:right">ACTION</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${posRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+  } catch(e) {
+    console.error('Erreur fetchMexcAccountAndPositions:', e);
+    if (availEl) availEl.innerHTML = '<span style="color:#FF5252">Erreur</span>';
+  }
+};
+
+window.closeMexcPosition = async function(symbol, positionType, vol) {
+  const isLong = (positionType === 1);
+  const closeSide = isLong ? 2 : 4;
+  const actionName = isLong ? 'FERMER LONG' : 'FERMER SHORT';
+
+  if (!confirm(`🛑 FERMER LA POSITION ${actionName} sur ${symbol} (${vol} contrats) AU MARCHÉ ?`)) {
+    return;
+  }
+
+  toast(`⏳ Clôture de la position ${symbol} au marché...`, '#00E5FF');
+  const res = await window.sendRealMexcFuturesOrder({
+    symbol,
+    side: closeSide,
+    vol,
+    price: livePrice(symbol) || 0,
+    openType: 1
+  });
+
+  if (res && res.success) {
+    toast(`✅ Position ${symbol} fermée avec succès !`, '#10B981');
+    fetchMexcAccountAndPositions();
+  }
+};
+
+window.closeAllMexcPositions = async function() {
+  const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+  const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
+  const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
+  const lumenToken = serviceConfig.lumenToken || botConfig.lumenToken || '';
+
+  const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
+  if (!posList || posList.length === 0) {
+    toast('ℹ️ Aucune position ouverte à fermer.', '#00E5FF');
+    return;
+  }
+
+  if (!confirm(`🛑 ÊTES-VOUS SÛR DE VOULOIR FERMER TOUTES LES ${posList.length} POSITIONS MEXC AU MARCHÉ ?`)) {
+    return;
+  }
+
+  for (const pos of posList) {
+    await window.closeMexcPosition(pos.symbol, pos.positionType, pos.holdVol || pos.vol || 1);
+  }
+};
+
+window.renderMexcLogsInTab = function() {
+  const container = document.getElementById('mexc-logs-container');
+  if (!container) return;
+
+  const clientLogs = window.__mexcClientLogs || [];
+  if (clientLogs.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px">Aucun ordre enregistré pour cette session.</div>';
+    return;
+  }
+
+  let html = '';
+  clientLogs.forEach(l => {
+    const dateStr = new Date(l.timestamp).toLocaleTimeString();
+    const isSuccess = l.status === 'SUCCESS';
+    const statusColor = isSuccess ? '#10B981' : '#EF4444';
+    html += `
+      <div style="border-bottom:1px solid var(--line);padding:6px 0">
+        <div style="display:flex;justify-content:space-between;font-weight:bold">
+          <span style="color:#00E5FF">[${dateStr}] ${l.params?.symbol || 'ORDER'}</span>
+          <span style="color:${statusColor}">${l.status}</span>
+        </div>
+        <div style="color:var(--muted);font-size:10px;margin-top:2px">
+          ${l.params?.sideLabel || ''} | Vol: ${l.params?.vol || 1} | Levier: ${l.params?.leverage || 200}x | Margin: ${l.params?.margin ? l.params.margin.toFixed(2) + ' $' : ''}
+        </div>
+        ${l.rejectionReason ? `<div style="color:#FF5252;font-size:10px;margin-top:2px">🛡️ ${l.rejectionReason}</div>` : ''}
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+};
+
+
 window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride, tradeBudgetOverride) {
   const modal = document.getElementById('live-exchange-modal');
   if (!modal) return;
@@ -19919,6 +20387,12 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
   modal.style.display = 'flex';
   if (typeof window.recalcLiveModalNotional === 'function') {
     window.recalcLiveModalNotional();
+  }
+  if (typeof window.fetchMexcAccountAndPositions === 'function') {
+    window.fetchMexcAccountAndPositions();
+  }
+  if (typeof window.fetchMexcAccountAndPositions === 'function') {
+    window.fetchMexcAccountAndPositions();
   }
 };
 
