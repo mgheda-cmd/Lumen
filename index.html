@@ -15015,7 +15015,9 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     }
 
     const sideY = isUp ? yLo20 + 12 : (isDn ? yUp20 - 12 : yMid0);
-    const sideLabelTxt = 'S ' + arrowTxt;
+    // Unité de temps du canal, pour distinguer les deux tunnels superposés
+    const tfTxt = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
+    const sideLabelTxt = 'S ' + arrowTxt + ' ' + tfTxt;
 
     ctx.font = 'bold 11px "IBM Plex Mono",monospace';
     const sideW = ctx.measureText(sideLabelTxt).width + 12;
