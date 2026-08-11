@@ -15131,22 +15131,30 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   {
     const tfChip = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
     ctx.save();
-    ctx.font = 'bold 9px "IBM Plex Mono",monospace';
-    const cw2 = ctx.measureText(tfChip).width + 10, ch2 = 14;
+    ctx.font = 'bold 11px "IBM Plex Mono",monospace';
+    const cw2 = ctx.measureText(tfChip).width + 13, ch2 = 17;
     const cbx = 6;
     const pente = (x1 !== x0) ? (yMid1 - yMid0) / (x1 - x0) : 0;
     const yGauche = yMid0 + pente * (cbx - x0);
     const hautPan = (p && p.y != null) ? p.y : 0;
     const basPan  = (p && p.y != null && p.h != null) ? (p.y + p.h) : (typeof H !== 'undefined' ? H : 600);
     const cby = Math.max(hautPan + 2, Math.min(basPan - ch2 - 2, yGauche - ch2 / 2));
-    ctx.fillStyle = activeColor;
-    if (typeof roundRect === 'function') roundRect(cbx, cby, cw2, ch2, 3);
-    else { ctx.beginPath(); ctx.rect(cbx, cby, cw2, ch2); }
+    /* Rectangle tracé directement : roundRect laisse un chemin ouvert,
+       ce qui brouillait le texte dessiné ensuite. Fond blanc, texte noir. */
+    ctx.beginPath();
+    ctx.rect(cbx, cby, cw2, ch2);
+    ctx.fillStyle = '#FFFFFF';
     ctx.fill();
-    ctx.strokeStyle = '#0B1220'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = '#0B1220';
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = activeColor;
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
-    ctx.fillText(tfChip, cbx + cw2 / 2, cby + 10);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tfChip, cbx + cw2 / 2, cby + ch2 / 2 + 0.5);
+    ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     ctx.restore();
   }
