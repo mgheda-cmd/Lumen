@@ -20239,8 +20239,14 @@ window.fetchMexcAccountAndPositions = async function() {
       const isLong = p.positionType === 1;
       const sideTag = isLong ? '<span style="color:#10B981;font-weight:900">🟢 LONG</span>' : '<span style="color:#EF4444;font-weight:900">🔴 SHORT</span>';
       const vol = p.holdVol || p.vol || 0;
-      const openPrice = parseFloat(p.openPrice || 0).toFixed(2);
-      const fairPrice = parseFloat(p.fairPrice || openPrice).toFixed(2);
+      /* MEXC nomme ces champs différemment selon les versions.
+         Le repli sur 0 donnait des prix à zéro : on essaie toutes les
+         variantes connues avant d'abandonner. */
+      const openN = parseFloat(p.openAvgPrice ?? p.openPrice ?? p.holdAvgPrice ?? p.costOpenPrice ?? 0);
+      const fairN = parseFloat(p.fairPrice ?? p.markPrice ?? p.lastPrice ?? p.indexPrice ?? openN ?? 0);
+      const decP = (openN > 0 && openN < 1) ? 6 : 2;
+      const openPrice = openN > 0 ? openN.toFixed(decP) : '—';
+      const fairPrice = fairN > 0 ? fairN.toFixed(decP) : '—';
       const marginN = parseFloat(p.im ?? p.positionMargin ?? p.oim ?? 0);
       const margin = marginN.toFixed(2);
       const pnl = parseFloat(p.unrealisedPnl || 0);
@@ -20251,7 +20257,7 @@ window.fetchMexcAccountAndPositions = async function() {
          Les noms varient selon les versions de l'API, d'où les alternatives. */
       const lev = parseFloat(p.leverage || 200);
       const csz = parseFloat(p.contractSize || window.__csz?.[p.symbol] || 0.0001);
-      const notionnel = (parseFloat(vol) * csz * parseFloat(fairPrice)) || 0;
+      const notionnel = (parseFloat(vol) * csz * (fairN || openN)) || 0;
 
       // Frais : ouverture réellement prélevée, et estimation de la fermeture
       const feeOpen  = parseFloat(p.openFee ?? p.fee ?? p.takerFee ?? 0);
@@ -20274,11 +20280,11 @@ window.fetchMexcAccountAndPositions = async function() {
 
       posRows += `
         <tr style="border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px">
-          <td style="padding:8px;font-weight:bold;color:#00E5FF">${p.symbol}</td>
-          <td style="padding:8px">${sideTag} (${p.leverage || 200}x)</td>
-          <td style="padding:8px;font-weight:bold">${vol} contrat(s)</td>
-          <td style="padding:8px">$${openPrice}</td>
-          <td style="padding:8px">$${fairPrice}</td>
+          <td style="padding:8px;font-weight:900;color:#00E5FF;font-size:12px">${p.symbol}</td>
+          <td style="padding:8px;font-weight:800">${sideTag} <span style="color:#FACC15">${p.leverage || 200}x</span></td>
+          <td style="padding:8px;font-weight:800;color:#E2E8F0">${vol} <span style="color:#94A3B8;font-weight:400">ct</span></td>
+          <td style="padding:8px;font-weight:800;color:#F8FAFC">${openPrice === '—' ? '—' : '$' + openPrice}</td>
+          <td style="padding:8px;font-weight:800;color:#7DD3FC">${fairPrice === '—' ? '—' : '$' + fairPrice}</td>
           <td style="padding:8px;color:#FF9F1C">${liq > 0 ? '$' + liq.toFixed(2) : '—'}</td>
           <td style="padding:8px;color:#FFD700">${margin} $</td>
           <td style="padding:8px;font-weight:bold;color:${pnlColor}">${pnlSign}${pnl.toFixed(2)}<br><span style="font-size:9.5px;color:${roeColor}">${roe >= 0 ? '+' : ''}${roe.toFixed(2)} %</span></td>
@@ -20291,7 +20297,7 @@ window.fetchMexcAccountAndPositions = async function() {
           </td>
         </tr>
         <tr style="border-bottom:1px solid var(--line)">
-          <td colspan="10" style="padding:2px 8px 9px 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">
+          <td colspan="11" style="padding:2px 8px 9px 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94A3B8;background:rgba(15,23,42,.35)">
             Notionnel <b style="color:#CBD5E1">${notionnel.toFixed(2)} USDT</b> ·
             Taille contrat <b style="color:#CBD5E1">${csz}</b> ·
             Marge <b style="color:#CBD5E1">${modeMarge}</b> ·
@@ -20308,7 +20314,7 @@ window.fetchMexcAccountAndPositions = async function() {
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;text-align:left">
           <thead>
-            <tr style="border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px">
+            <tr style="border-bottom:1.5px solid #334155;color:#CBD5E1;font-size:10.5px;font-weight:800;background:rgba(15,23,42,.6)">
               <th style="padding:6px 8px">SYMBOLE</th>
               <th style="padding:6px 8px">SENS</th>
               <th style="padding:6px 8px">CONTRATS</th>
