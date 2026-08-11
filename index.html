@@ -15184,20 +15184,28 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
        pour qu'on la distingue immédiatement. */
     {
       const utTxt = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
-      ctx.font = 'bold 11px "IBM Plex Mono",monospace';
-      const utW = ctx.measureText(utTxt).width + 12;
+      ctx.font = 'bold 12px "IBM Plex Mono",monospace';
+      const utW = ctx.measureText(utTxt).width + 14;
       const utX = sideBx + sideW + 3;
-      /* Fond clair et texte sombre : la version précédente peignait du
-         texte foncé sur un fond foncé, la pastille paraissait noire. */
-      ctx.fillStyle = '#F8FAFC';
-      roundRect(utX, sideBy, utW, sideH, 4);
+
+      /* Rectangle dessiné directement, sans roundRect : cette fonction laisse
+         un chemin ouvert, et l'enchaînement fill puis stroke sur deux appels
+         successifs brouillait le texte tracé ensuite. */
+      ctx.beginPath();
+      ctx.rect(utX, sideBy, utW, sideH);
+      ctx.fillStyle = '#FFFFFF';
       ctx.fill();
-      ctx.strokeStyle = activeColor; ctx.lineWidth = 1.6;
-      roundRect(utX, sideBy, utW, sideH, 4);
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = activeColor;
       ctx.stroke();
-      ctx.fillStyle = '#0B1220';
+      ctx.closePath();
+
+      // texte noir, tracé après fermeture complète du chemin
+      ctx.fillStyle = '#000000';
       ctx.textAlign = 'center';
-      ctx.fillText(utTxt, utX + utW / 2, sideBy + 13);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(utTxt, utX + utW / 2, sideBy + sideH / 2 + 0.5);
+      ctx.textBaseline = 'alphabetic';
       ctx.textAlign = 'left';
     }
   }
