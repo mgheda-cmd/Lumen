@@ -1368,6 +1368,7 @@ footer{
     <div id="mexc-tab-account" class="mexc-tab-content">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <span style="font-weight:800;font-size:13px;color:#00E5FF">📊 Aperçu des Soldes MEXC Réels</span>
+        <span id="mexc-build-tag" style="font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:#64748B;border:1px solid #334155;border-radius:4px;padding:1px 6px" title="Version du fichier reellement chargee par le navigateur">version —</span>
         <button onclick="fetchMexcAccountAndPositions()" style="background:rgba(0,229,255,0.12);border:1px solid #00E5FF;color:#00E5FF;border-radius:6px;padding:5px 12px;font-weight:700;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:4px">
           🔄 Rafraîchir les Soldes & Positions
         </button>
@@ -24673,7 +24674,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
 /* Affichage des données brutes d'une position MEXC, pour identifier
    sans deviner les noms de champs réellement renvoyés par l'API. */
-window.__LUMEN_BUILD = 'B-1108-1530';   // repère de version, visible dans la console
+window.__LUMEN_BUILD = 'B-1108-1545';
+setTimeout(function(){
+  const el = document.getElementById('mexc-build-tag');
+  if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
+}, 900);   // repère de version, visible dans la console
 console.log('%c[Lumen] version ' + window.__LUMEN_BUILD, 'color:#00E5FF;font-weight:700');
 
 window.showMexcRaw = function(){
