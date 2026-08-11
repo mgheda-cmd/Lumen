@@ -15201,6 +15201,14 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
        pour qu'on la distingue immédiatement. */
     {
       const utTxt = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
+      ctx.save();
+      /* Même réinitialisation que la pastille de gauche : le badge S est
+         dessiné avec une ombre portée qui rendait ce texte invisible. */
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
+      if ('filter' in ctx) ctx.filter = 'none';
       ctx.font = 'bold 12px "IBM Plex Mono",monospace';
       const utW = ctx.measureText(utTxt).width + 14;
       const utX = sideBx + sideW + 3;
@@ -15224,6 +15232,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
       ctx.fillText(utTxt, utX + utW / 2, sideBy + sideH / 2 + 0.5);
       ctx.textBaseline = 'alphabetic';
       ctx.textAlign = 'left';
+      ctx.restore();
     }
   }
 
