@@ -15126,13 +15126,19 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
      de showStats. C'est elle qui identifie le tunnel à coup sûr. */
   {
     const tfChip = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
-    const cx = Math.min(W - AXIS_W - 6, Math.max(6, x1));
-    const cy = yMid1;
+    /* Accrochée au bord GAUCHE de la zone visible, sur la médiane : le canal
+       est souvent prolongé à droite hors de l'écran, une pastille placée à
+       son extrémité ne serait jamais visible. */
     ctx.save();
     ctx.font = 'bold 9px "IBM Plex Mono",monospace';
     const cw2 = ctx.measureText(tfChip).width + 10, ch2 = 14;
-    const cbx = Math.max(2, Math.min(W - AXIS_W - cw2 - 2, cx - cw2 - 4));
-    const cby = Math.max((p && p.y != null ? p.y + 2 : 2), cy - ch2 / 2);
+    const cbx = 6;
+    // hauteur de la médiane au bord gauche de l'écran
+    const pente = (x1 !== x0) ? (yMid1 - yMid0) / (x1 - x0) : 0;
+    const yGauche = yMid0 + pente * (cbx - x0);
+    const hautPan = (p && p.y != null) ? p.y : 0;
+    const basPan  = (p && p.y != null && p.h != null) ? (p.y + p.h) : H;
+    const cby = Math.max(hautPan + 2, Math.min(basPan - ch2 - 2, yGauche - ch2 / 2));
     ctx.fillStyle = activeColor;
     if (typeof roundRect === 'function') roundRect(cbx, cby, cw2, ch2, 3);
     else { ctx.beginPath(); ctx.rect(cbx, cby, cw2, ch2); }
