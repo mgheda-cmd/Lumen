@@ -3811,7 +3811,7 @@ const state = {
     smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showZigzag:false,showPaLabels:false,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:true,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
-    lrc:{on:false,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF'},
+    lrc:{on:false,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF',tf2:'off',cLine2:'#FF9F1C',cBand2:'#FF9F1C',fill2:false},
     sr:{on:true,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     bos:{on:false,after1529:false,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
@@ -6586,6 +6586,28 @@ function drawPrice(p,s,e,cw,sharedXStack){
     const L=getInd('lrc');
     if(L){
       drawLinearRegressionChannel(L, d, s, e, yOf, p);
+    }
+    /* Second tunnel, sur une autre unité de temps. Même calcul, mêmes
+       réglages de période et de multiplicateurs, seules l'unité et les
+       couleurs changent. Permet de comparer deux horizons sur le même
+       graphique, comme les deux lignes de kk bis. */
+    const t2 = S('lrc','tf2');
+    if(t2 && t2 !== 'off'){
+      try{
+        const ind = state.indicators.lrc;
+        const tf2n = (t2 === 'chart') ? state.tf : +t2;
+        const bars2 = (tf2n === state.tf) ? d : getMTFBars(tf2n);
+        if(bars2 && bars2.length){
+          const L2 = calc.lrc(bars2, ind.period, S('lrc','mult'), S('lrc','mult1'));
+          if(L2){
+            L2.tf = tfLabel(tf2n);
+            L2.mtf = tf2n;
+            if(tf2n !== state.tf) L2.htfBars = bars2;
+            L2.__second = true;
+            drawLinearRegressionChannel(L2, d, s, e, yOf, p);
+          }
+        }
+      }catch(err){}
     }
   }
   if(vis('ema2'))plotLine(getInd('ema2'),s,e,yOf,S('ema2','cLine'),1.4);
@@ -12250,6 +12272,10 @@ const SCHEMA={
     {k:'showFill',t:'bool',lab:'Remplissage',def:true},
   ]},
   lrc:{title:'Canal de Régression Linéaire (Linear Regression Channel)',fields:[
+    {k:'tf2',t:'choice',lab:'Second tunnel — unité de temps',opts:[{v:'off',t:'Aucun'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'30',t:'30m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off',ind:1},
+    {k:'cLine2',t:'col',lab:'Second tunnel — couleur haute',def:'#FF9F1C'},
+    {k:'cBand2',t:'col',lab:'Second tunnel — couleur basse',def:'#FF9F1C'},
+    {k:'fill2',t:'bool',lab:'Second tunnel — remplissage',def:false},
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'period',t:'num',lab:'Longueur (Length)',min:10,max:500,def:100,ind:1},
     {k:'devlen',t:'num',lab:'Écart-type / Déviation (Deviation)',min:0.1,max:5,def:2.0,step:0.1,ind:1},
@@ -14837,11 +14863,13 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   const x0 = xOf(iStart);
   const x1 = xOf(iEnd);
 
-  // Configuration des couleurs et de l'épaisseur d'après le Pine Script
-  const upcol = S('lrc', 'upcol') || '#00FF00';
-  const dncol = S('lrc', 'dncol') || '#FF0000';
-  const brokencol = S('lrc', 'brokencol') || '#3B82F6';
-  const widt = S('lrc', 'widt') || 2;
+  /* Second tunnel : mêmes calculs, teintes propres et trait plus fin pour
+     qu'on distingue les deux horizons sur le même graphique. */
+  const estSecond = !!L.__second;
+  const upcol = estSecond ? (S('lrc','cLine2') || '#FF9F1C') : (S('lrc', 'upcol') || '#00FF00');
+  const dncol = estSecond ? (S('lrc','cBand2') || '#FF9F1C') : (S('lrc', 'dncol') || '#FF0000');
+  const brokencol = estSecond ? (S('lrc','cLine2') || '#FF9F1C') : (S('lrc', 'brokencol') || '#3B82F6');
+  const widt = estSecond ? Math.max(1, (S('lrc', 'widt') || 2) - 1) : (S('lrc', 'widt') || 2);
 
   // Calcul du prix le long de la droite de régression
   const priceAt = idx => {
@@ -14874,7 +14902,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
 
   const showBands = true;
   const showInnerBands = S('lrc', 'showInnerBands') !== false;
-  const showFill = S('lrc', 'showFill') !== false;
+  const showFill = (S('lrc', 'showFill') !== false && (!estSecond || S('lrc','fill2') === true));
   const showStats = S('lrc', 'showStats') !== false;
   const showBroken = S('lrc', 'showbroken') !== false;
   const showFibo = S('lrc', 'showfibo') === true;
