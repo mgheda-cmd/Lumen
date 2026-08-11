@@ -20241,10 +20241,36 @@ window.fetchMexcAccountAndPositions = async function() {
       const vol = p.holdVol || p.vol || 0;
       const openPrice = parseFloat(p.openPrice || 0).toFixed(2);
       const fairPrice = parseFloat(p.fairPrice || openPrice).toFixed(2);
-      const margin = parseFloat(p.im || p.positionMargin || 0).toFixed(2);
+      const marginN = parseFloat(p.im ?? p.positionMargin ?? p.oim ?? 0);
+      const margin = marginN.toFixed(2);
       const pnl = parseFloat(p.unrealisedPnl || 0);
       const pnlColor = pnl >= 0 ? '#10B981' : '#EF4444';
       const pnlSign = pnl >= 0 ? '+' : '';
+
+      /* Informations complémentaires renvoyées par MEXC.
+         Les noms varient selon les versions de l'API, d'où les alternatives. */
+      const lev = parseFloat(p.leverage || 200);
+      const csz = parseFloat(p.contractSize || window.__csz?.[p.symbol] || 0.0001);
+      const notionnel = (parseFloat(vol) * csz * parseFloat(fairPrice)) || 0;
+
+      // Frais : ouverture réellement prélevée, et estimation de la fermeture
+      const feeOpen  = parseFloat(p.openFee ?? p.fee ?? p.takerFee ?? 0);
+      const feeClose = parseFloat(p.closeFee ?? 0);
+      const feeFund  = parseFloat(p.fundingFee ?? p.funding ?? 0);
+      const feeTotal = feeOpen + feeClose + feeFund;
+
+      const liq = parseFloat(p.liquidatePrice ?? p.liqPrice ?? 0);
+      const realised = parseFloat(p.realised ?? p.realisedPnl ?? p.profitLoss ?? 0);
+      // Rendement sur la marge engagée, c'est ce qui compte vraiment
+      const roe = marginN > 0 ? (pnl / marginN * 100) : 0;
+      const roeColor = roe >= 0 ? '#10B981' : '#EF4444';
+      // PnL net une fois les frais déduits
+      const pnlNet = pnl - Math.abs(feeTotal);
+      const netColor = pnlNet >= 0 ? '#10B981' : '#EF4444';
+
+      const ouvertLe = p.createTime ? new Date(p.createTime).toLocaleString('fr-FR') : '—';
+      const modeMarge = (p.openType === 1) ? 'Isolée' : (p.openType === 2 ? 'Croisée' : '—');
+      const f2 = v => (v === 0 ? '0.00' : (Math.abs(v) < 0.01 ? v.toFixed(6) : v.toFixed(4)));
 
       posRows += `
         <tr style="border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px">
@@ -20253,12 +20279,26 @@ window.fetchMexcAccountAndPositions = async function() {
           <td style="padding:8px;font-weight:bold">${vol} contrat(s)</td>
           <td style="padding:8px">$${openPrice}</td>
           <td style="padding:8px">$${fairPrice}</td>
+          <td style="padding:8px;color:#FF9F1C">${liq > 0 ? '$' + liq.toFixed(2) : '—'}</td>
           <td style="padding:8px;color:#FFD700">${margin} $</td>
-          <td style="padding:8px;font-weight:bold;color:${pnlColor}">${pnlSign}${pnl.toFixed(2)} USDT</td>
+          <td style="padding:8px;font-weight:bold;color:${pnlColor}">${pnlSign}${pnl.toFixed(2)}<br><span style="font-size:9.5px;color:${roeColor}">${roe >= 0 ? '+' : ''}${roe.toFixed(2)} %</span></td>
+          <td style="padding:8px;color:#F472B6">${feeTotal !== 0 ? f2(feeTotal) : '—'}</td>
+          <td style="padding:8px;font-weight:bold;color:${netColor}">${pnlNet >= 0 ? '+' : ''}${pnlNet.toFixed(2)}</td>
           <td style="padding:8px;text-align:right">
             <button onclick="closeMexcPosition('${p.symbol}', ${p.positionType}, ${vol})" style="background:rgba(239,68,68,0.2);border:1px solid #FF5252;color:#FF5252;padding:4px 8px;border-radius:4px;font-weight:bold;font-size:10px;cursor:pointer">
               ✕ Fermer
             </button>
+          </td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line)">
+          <td colspan="10" style="padding:2px 8px 9px 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">
+            Notionnel <b style="color:#CBD5E1">${notionnel.toFixed(2)} USDT</b> ·
+            Taille contrat <b style="color:#CBD5E1">${csz}</b> ·
+            Marge <b style="color:#CBD5E1">${modeMarge}</b> ·
+            Frais ouverture <b style="color:#CBD5E1">${f2(feeOpen)}</b> ·
+            Financement <b style="color:#CBD5E1">${f2(feeFund)}</b> ·
+            Réalisé <b style="color:#CBD5E1">${realised.toFixed(2)}</b> ·
+            Ouverte le <b style="color:#CBD5E1">${ouvertLe}</b>
           </td>
         </tr>
       `;
@@ -20274,8 +20314,11 @@ window.fetchMexcAccountAndPositions = async function() {
               <th style="padding:6px 8px">CONTRATS</th>
               <th style="padding:6px 8px">PRIX ENTRÉE</th>
               <th style="padding:6px 8px">PRIX REPÈRE</th>
+              <th style="padding:6px 8px">LIQUIDATION</th>
               <th style="padding:6px 8px">MARGE</th>
-              <th style="padding:6px 8px">PnL NON RÉALISÉ</th>
+              <th style="padding:6px 8px">PnL / RENDEMENT</th>
+              <th style="padding:6px 8px">FRAIS</th>
+              <th style="padding:6px 8px">PnL NET</th>
               <th style="padding:6px 8px;text-align:right">ACTION</th>
             </tr>
           </thead>
