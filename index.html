@@ -1406,6 +1406,9 @@ footer{
           </button>
         </div>
 
+        <div style="text-align:right;margin-bottom:6px">
+          <button onclick="window.showMexcRaw()" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:5px;padding:3px 9px;font-size:10px;cursor:pointer" title="Affiche exactement ce que l'API MEXC renvoie, pour identifier les champs manquants">🔍 données brutes</button>
+        </div>
         <div id="mexc-positions-container" style="min-height:80px">
           <div style="text-align:center;color:var(--muted);font-size:12px;padding:16px">
             Cliquez sur <b>"Rafraîchir"</b> pour charger vos positions actives depuis MEXC Futures.
@@ -20220,6 +20223,15 @@ window.fetchMexcAccountAndPositions = async function() {
     const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
     if (badgeEl) badgeEl.textContent = String(posList.length);
 
+    /* Les noms de champs varient selon les versions de l'API MEXC. Plutôt que
+       de deviner, on expose la réponse brute : un clic sur « données brutes »
+       montre exactement ce que MEXC renvoie pour la première position. */
+    window.__mexcRawPositions = posList;
+    if (posList && posList.length) {
+      console.log('[MEXC] Position brute :', JSON.stringify(posList[0], null, 2));
+      console.log('[MEXC] Champs disponibles :', Object.keys(posList[0]).join(', '));
+    }
+
     if (!posContainer) return;
 
     if (!posList || posList.length === 0) {
@@ -24580,6 +24592,27 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
 })();
 
+
+/* Affichage des données brutes d'une position MEXC, pour identifier
+   sans deviner les noms de champs réellement renvoyés par l'API. */
+window.showMexcRaw = function(){
+  const p = (window.__mexcRawPositions || [])[0];
+  const box = document.getElementById('mexc-positions-container');
+  if (!box) return;
+  if (!p) {
+    box.insertAdjacentHTML('afterbegin',
+      '<div style="background:rgba(245,158,11,.1);border:1px solid #F59E0B;color:#FCD34D;padding:10px;border-radius:8px;font-size:11px;margin-bottom:10px">Aucune position chargée. Cliquez d\'abord sur Rafraîchir.</div>');
+    return;
+  }
+  const lignes = Object.keys(p).sort().map(function(k){
+    return '<tr><td style="padding:2px 10px 2px 0;color:#7DD3FC">' + k +
+           '</td><td style="padding:2px 0;color:#E2E8F0">' + JSON.stringify(p[k]) + '</td></tr>';
+  }).join('');
+  box.insertAdjacentHTML('afterbegin',
+    '<div style="background:rgba(15,23,42,.9);border:1px solid #334155;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;max-height:260px;overflow:auto">' +
+    '<div style="color:#00E5FF;font-weight:800;margin-bottom:6px">Réponse brute MEXC — première position</div>' +
+    '<table>' + lignes + '</table></div>');
+};
 </script>
 </body>
 </html>
