@@ -20339,6 +20339,359 @@ window.renderMexcLogsInTab = function() {
   container.innerHTML = html;
 };
 
+/* ===== GESTION Lancement en Direct sur Exchange (Argent Réel) ===== */
+/* ===== GESTION ONGLET & HUBS MEXC DIRECT ===== */
+window.switchMexcTab = function(tabName) {
+  document.querySelectorAll('.mexc-tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--line)';
+  });
+
+  const activeBtn = document.getElementById('mexc-tab-btn-' + tabName);
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    activeBtn.style.background = 'rgba(0,229,255,0.15)';
+    activeBtn.style.color = '#00E5FF';
+    activeBtn.style.borderColor = '#00E5FF';
+  }
+
+  document.querySelectorAll('.mexc-tab-content').forEach(content => {
+    content.style.display = 'none';
+  });
+
+  const activeContent = document.getElementById('mexc-tab-' + tabName);
+  if (activeContent) {
+    activeContent.style.display = 'block';
+  }
+
+  if (tabName === 'account') {
+    fetchMexcAccountAndPositions();
+  } else if (tabName === 'trade') {
+    updateMexcTradeCalc();
+  } else if (tabName === 'logs') {
+    renderMexcLogsInTab();
+  }
+};
+
+window.setMexcBudget = function(amt) {
+  const el = document.getElementById('mexc-trade-budget');
+  if (el) {
+    el.value = String(amt);
+    updateMexcTradeCalc();
+  }
+};
+
+window.toggleMexcLimitPriceInput = function() {
+  const typeEl = document.getElementById('mexc-trade-type');
+  const priceBox = document.getElementById('mexc-trade-price-box');
+  if (typeEl && priceBox) {
+    priceBox.style.display = (typeEl.value === '1') ? 'block' : 'none';
+  }
+  updateMexcTradeCalc();
+};
+
+window.updateMexcTradeCalc = async function() {
+  const symbol = document.getElementById('mexc-trade-symbol')?.value || 'BTC_USDT';
+  const side = document.getElementById('mexc-trade-side')?.value || '1';
+  const lev = Number(document.getElementById('mexc-trade-lev')?.value || 200);
+  const budget = Number(document.getElementById('mexc-trade-budget')?.value || 10);
+  const previewBox = document.getElementById('mexc-trade-preview-box');
+
+  if (!previewBox) return;
+
+  const currentPx = livePrice(symbol) || 65000;
+  const contractSize = (await window.getContractSize(symbol)) || 0.0001;
+  const targetNotional = budget * lev;
+  const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
+  const estNotional = calcVol * contractSize * currentPx;
+  const estMargin = lev > 0 ? estNotional / lev : estNotional;
+
+  const isLong = (side === '1');
+  const sideColor = isLong ? '#10B981' : '#EF4444';
+  const sideName = isLong ? '🟢 ACHAT / LONG (Open Long)' : '🔴 VENTE / SHORT (Open Short)';
+
+  previewBox.innerHTML = `
+    <div style="font-weight:900;color:${sideColor};margin-bottom:6px">
+      Aperçu de l'Ordre : <span style="color:#FFF">${symbol}</span> — ${sideName}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
+      <div>• Marge Demandée : <b style="color:#38BDF8">${budget} USDT</b></div>
+      <div>• Levier Appliqué : <b style="color:#FFD700">${lev}x</b></div>
+      <div>• Prix Estimé : <b style="color:#FFF">$${currentPx.toFixed(2)}</b></div>
+      <div>• Taille Contrat : <b style="color:#FFF">${contractSize}</b></div>
+      <div>• Volume à Commander : <b style="color:#00E5FF;font-size:12.5px">${calcVol} contrat(s)</b></div>
+      <div>• Notionnel Total : <b style="color:#10B981">$${estNotional.toFixed(2)} USDT</b></div>
+    </div>
+  `;
+};
+
+window.submitMexcManualTrade = async function() {
+  const symbol = document.getElementById('mexc-trade-symbol')?.value || 'BTC_USDT';
+  const side = Number(document.getElementById('mexc-trade-side')?.value || 1);
+  const type = Number(document.getElementById('mexc-trade-type')?.value || 5);
+  const priceInput = document.getElementById('mexc-trade-price')?.value;
+  const lev = Number(document.getElementById('mexc-trade-lev')?.value || 200);
+  const budget = Number(document.getElementById('mexc-trade-budget')?.value || 10);
+  const resEl = document.getElementById('mexc-manual-trade-result');
+
+  const currentPx = (type === 1 && priceInput) ? Number(priceInput) : (livePrice(symbol) || 0);
+  if (!currentPx) {
+    toast('❌ Prix du marché non disponible pour le symbole choisi.', '#FF5252');
+    return;
+  }
+
+  const contractSize = await window.getContractSize(symbol);
+  if (!contractSize) {
+    toast(`❌ Taille de contrat introuvable pour ${symbol}`, '#FF5252');
+    return;
+  }
+
+  const targetNotional = budget * lev;
+  const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
+  const actionTxt = side === 1 ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
+
+  if (!confirm(`🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?\n\n• Action : ${actionTxt}\n• Symbole : ${symbol}\n• Levier : ${lev}x\n• Marge Engagee : $${budget} USDT\n• Volume : ${calcVol} contrat(s)\n• Prix : $${currentPx.toFixed(2)}`)) {
+    return;
+  }
+
+  if (resEl) {
+    resEl.style.display = 'block';
+    resEl.style.background = 'rgba(255,215,0,0.12)';
+    resEl.style.border = '1px solid #FFD700';
+    resEl.style.color = '#FFD700';
+    resEl.innerHTML = '⏳ Transmission de l\'ordre manuel à MEXC Futures...';
+  }
+
+  const res = await window.sendRealMexcFuturesOrder({
+    symbol,
+    side,
+    type,
+    price: currentPx,
+    vol: calcVol,
+    leverage: lev,
+    tradeBudget: budget,
+    openType: 1
+  });
+
+  if (resEl) {
+    if (res && res.success) {
+      resEl.style.background = 'rgba(16,185,129,0.15)';
+      resEl.style.border = '1px solid #10B981';
+      resEl.style.color = '#10B981';
+      resEl.innerHTML = `✅ <b>ORDRE RÉEL EXÉCUTÉ SUR MEXC FUTURES !</b><br>Symbole: ${symbol} | Side: ${actionTxt} | Contrats: ${calcVol} | Levier: ${lev}x`;
+      fetchMexcAccountAndPositions();
+    } else {
+      resEl.style.background = 'rgba(239,68,68,0.15)';
+      resEl.style.border = '1px solid #FF5252';
+      resEl.style.color = '#FF5252';
+      resEl.innerHTML = `❌ <b>REJET MEXC :</b> ${res.error || 'Erreur inconnue'}`;
+    }
+  }
+};
+
+window.fetchMexcAccountAndPositions = async function() {
+  const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+  const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
+  const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
+  const lumenToken = serviceConfig.lumenToken || botConfig.lumenToken || '';
+
+  const availEl = document.getElementById('mexc-stat-futures-avail');
+  const equityEl = document.getElementById('mexc-stat-futures-equity');
+  const spotEl = document.getElementById('mexc-stat-spot-usdt');
+  const marginEl = document.getElementById('mexc-stat-futures-margin');
+  const posContainer = document.getElementById('mexc-positions-container');
+  const badgeEl = document.getElementById('mexc-pos-count-badge');
+
+  if (availEl) availEl.innerHTML = '⏳ Chargement...';
+  if (spotEl) spotEl.innerHTML = '⏳ Chargement...';
+
+  try {
+    const assetsResp = await fetch(serviceUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
+      body: JSON.stringify({ endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
+    });
+    const assetsRes = await assetsResp.json();
+
+    if (assetsRes && assetsRes.success && assetsRes.data) {
+      const resData = assetsRes.data.data ?? assetsRes.data;
+      const assetArr = Array.isArray(resData) ? resData : (resData ? [resData] : []);
+      const usdt = assetArr.find(a => a.currency === 'USDT' || a.symbol === 'USDT' || a.asset === 'USDT') || assetArr[0];
+      if (usdt) {
+        const avail = parseFloat(usdt.availableBalance ?? usdt.cashBalance ?? 0).toFixed(2);
+        const equity = parseFloat(usdt.equity ?? usdt.amount ?? 0).toFixed(2);
+        const posMargin = parseFloat(usdt.positionMargin ?? usdt.frozenBalance ?? 0).toFixed(2);
+        if (availEl) availEl.innerHTML = `<b style="color:#10B981">${avail} USDT</b>`;
+        if (equityEl) equityEl.innerHTML = `${equity} USDT`;
+        if (marginEl) marginEl.innerHTML = `${posMargin} USDT`;
+      }
+    }
+
+    const spotResp = await fetch(serviceUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
+      body: JSON.stringify({ endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
+    });
+    const spotRes = await spotResp.json();
+    if (spotRes && spotRes.success && spotRes.data) {
+      const balances = spotRes.data.balances || spotRes.data.data?.balances || [];
+      const usdtSpot = balances.find(b => b.asset === 'USDT');
+      if (usdtSpot && spotEl) {
+        spotEl.innerHTML = `${parseFloat(usdtSpot.free || '0').toFixed(2)} USDT`;
+      }
+    }
+
+    const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
+    if (badgeEl) badgeEl.textContent = String(posList.length);
+
+    if (!posContainer) return;
+
+    if (!posList || posList.length === 0) {
+      posContainer.innerHTML = `
+        <div style="text-align:center;color:#10B981;font-size:12px;padding:16px;background:rgba(16,185,129,0.06);border-radius:8px">
+          ✅ Aucune position ouverte sur votre compte MEXC Futures pour le moment.
+        </div>
+      `;
+      return;
+    }
+
+    let posRows = '';
+    posList.forEach(p => {
+      const isLong = p.positionType === 1;
+      const sideTag = isLong ? '<span style="color:#10B981;font-weight:900">🟢 LONG</span>' : '<span style="color:#EF4444;font-weight:900">🔴 SHORT</span>';
+      const vol = p.holdVol || p.vol || 0;
+      const openPrice = parseFloat(p.openPrice || 0).toFixed(2);
+      const fairPrice = parseFloat(p.fairPrice || openPrice).toFixed(2);
+      const margin = parseFloat(p.im || p.positionMargin || 0).toFixed(2);
+      const pnl = parseFloat(p.unrealisedPnl || 0);
+      const pnlColor = pnl >= 0 ? '#10B981' : '#EF4444';
+      const pnlSign = pnl >= 0 ? '+' : '';
+
+      posRows += `
+        <tr style="border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px">
+          <td style="padding:8px;font-weight:bold;color:#00E5FF">${p.symbol}</td>
+          <td style="padding:8px">${sideTag} (${p.leverage || 200}x)</td>
+          <td style="padding:8px;font-weight:bold">${vol} contrat(s)</td>
+          <td style="padding:8px">$${openPrice}</td>
+          <td style="padding:8px">$${fairPrice}</td>
+          <td style="padding:8px;color:#FFD700">${margin} $</td>
+          <td style="padding:8px;font-weight:bold;color:${pnlColor}">${pnlSign}${pnl.toFixed(2)} USDT</td>
+          <td style="padding:8px;text-align:right">
+            <button onclick="closeMexcPosition('${p.symbol}', ${p.positionType}, ${vol})" style="background:rgba(239,68,68,0.2);border:1px solid #FF5252;color:#FF5252;padding:4px 8px;border-radius:4px;font-weight:bold;font-size:10px;cursor:pointer">
+              ✕ Fermer
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    posContainer.innerHTML = `
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;text-align:left">
+          <thead>
+            <tr style="border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px">
+              <th style="padding:6px 8px">SYMBOLE</th>
+              <th style="padding:6px 8px">SENS</th>
+              <th style="padding:6px 8px">CONTRATS</th>
+              <th style="padding:6px 8px">PRIX ENTRÉE</th>
+              <th style="padding:6px 8px">PRIX REPÈRE</th>
+              <th style="padding:6px 8px">MARGE</th>
+              <th style="padding:6px 8px">PnL NON RÉALISÉ</th>
+              <th style="padding:6px 8px;text-align:right">ACTION</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${posRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+  } catch(e) {
+    console.error('Erreur fetchMexcAccountAndPositions:', e);
+    if (availEl) availEl.innerHTML = '<span style="color:#FF5252">Erreur</span>';
+  }
+};
+
+window.closeMexcPosition = async function(symbol, positionType, vol) {
+  const isLong = (positionType === 1);
+  const closeSide = isLong ? 2 : 4;
+  const actionName = isLong ? 'FERMER LONG' : 'FERMER SHORT';
+
+  if (!confirm(`🛑 FERMER LA POSITION ${actionName} sur ${symbol} (${vol} contrats) AU MARCHÉ ?`)) {
+    return;
+  }
+
+  toast(`⏳ Clôture de la position ${symbol} au marché...`, '#00E5FF');
+  const res = await window.sendRealMexcFuturesOrder({
+    symbol,
+    side: closeSide,
+    vol,
+    price: livePrice(symbol) || 0,
+    openType: 1
+  });
+
+  if (res && res.success) {
+    toast(`✅ Position ${symbol} fermée avec succès !`, '#10B981');
+    fetchMexcAccountAndPositions();
+  }
+};
+
+window.closeAllMexcPositions = async function() {
+  const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+  const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
+  const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
+  const lumenToken = serviceConfig.lumenToken || botConfig.lumenToken || '';
+
+  const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
+  if (!posList || posList.length === 0) {
+    toast('ℹ️ Aucune position ouverte à fermer.', '#00E5FF');
+    return;
+  }
+
+  if (!confirm(`🛑 ÊTES-VOUS SÛR DE VOULOIR FERMER TOUTES LES ${posList.length} POSITIONS MEXC AU MARCHÉ ?`)) {
+    return;
+  }
+
+  for (const pos of posList) {
+    await window.closeMexcPosition(pos.symbol, pos.positionType, pos.holdVol || pos.vol || 1);
+  }
+};
+
+window.renderMexcLogsInTab = function() {
+  const container = document.getElementById('mexc-logs-container');
+  if (!container) return;
+
+  const clientLogs = window.__mexcClientLogs || [];
+  if (clientLogs.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px">Aucun ordre enregistré pour cette session.</div>';
+    return;
+  }
+
+  let html = '';
+  clientLogs.forEach(l => {
+    const dateStr = new Date(l.timestamp).toLocaleTimeString();
+    const isSuccess = l.status === 'SUCCESS';
+    const statusColor = isSuccess ? '#10B981' : '#EF4444';
+    html += `
+      <div style="border-bottom:1px solid var(--line);padding:6px 0">
+        <div style="display:flex;justify-content:space-between;font-weight:bold">
+          <span style="color:#00E5FF">[${dateStr}] ${l.params?.symbol || 'ORDER'}</span>
+          <span style="color:${statusColor}">${l.status}</span>
+        </div>
+        <div style="color:var(--muted);font-size:10px;margin-top:2px">
+          ${l.params?.sideLabel || ''} | Vol: ${l.params?.vol || 1} | Levier: ${l.params?.leverage || 200}x | Margin: ${l.params?.margin ? l.params.margin.toFixed(2) + ' $' : ''}
+        </div>
+        ${l.rejectionReason ? `<div style="color:#FF5252;font-size:10px;margin-top:2px">🛡️ ${l.rejectionReason}</div>` : ''}
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+};
+
 
 window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride, tradeBudgetOverride) {
   const modal = document.getElementById('live-exchange-modal');
