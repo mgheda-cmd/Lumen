@@ -15022,7 +15022,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
 
   const showBands = true;
   const showInnerBands = S('lrc', 'showInnerBands') !== false;
-  const showFill = (S('lrc', 'showFill') !== false && (!estSecond || S('lrc','fill2') === true));
+  const showFill = (estSecond ? (S('lrc','fill2') === true) : (S('lrc', 'showFill') !== false));
   const showStats = S('lrc', 'showStats') !== false;
   const showBroken = S('lrc', 'showbroken') !== false;
   const showFibo = S('lrc', 'showfibo') === true;
@@ -15131,6 +15131,14 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   {
     const tfChip = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
     ctx.save();
+    ctx.save();
+    /* Réinitialisation complète : la médiane laisse une ombre active, et un
+       globalAlpha ou un filtre hérité rendait le texte invisible. */
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([]);
+    if ('filter' in ctx) ctx.filter = 'none';
     ctx.font = 'bold 11px "IBM Plex Mono",monospace';
     const cw2 = ctx.measureText(tfChip).width + 13, ch2 = 17;
     const cbx = 6;
@@ -15156,6 +15164,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.fillText(tfChip, cbx + cw2 / 2, cby + ch2 / 2 + 0.5);
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
+    ctx.restore();
     ctx.restore();
   }
 
