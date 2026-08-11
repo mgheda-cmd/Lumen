@@ -15120,6 +15120,30 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
+  /* Pastille d'unité de temps à l'extrémité droite de la médiane.
+     Toujours dessinée, contrairement à l'étiquette latérale qui exige que
+     le début du canal soit visible, et au badge de statistiques qui dépend
+     de showStats. C'est elle qui identifie le tunnel à coup sûr. */
+  {
+    const tfChip = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
+    const cx = Math.min(W - AXIS_W - 6, Math.max(6, x1));
+    const cy = yMid1;
+    ctx.save();
+    ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+    const cw2 = ctx.measureText(tfChip).width + 10, ch2 = 14;
+    const cbx = Math.max(2, Math.min(W - AXIS_W - cw2 - 2, cx - cw2 - 4));
+    const cby = Math.max((p && p.y != null ? p.y + 2 : 2), cy - ch2 / 2);
+    ctx.fillStyle = activeColor;
+    if (typeof roundRect === 'function') roundRect(cbx, cby, cw2, ch2, 3);
+    else { ctx.beginPath(); ctx.rect(cbx, cby, cw2, ch2); }
+    ctx.fill();
+    ctx.fillStyle = '#0B1220';
+    ctx.textAlign = 'center';
+    ctx.fillText(tfChip, cbx + cw2 / 2, cby + 10);
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
+
   // 7. Étiquette d'orientation latérale (Side Label sidelab) au début du canal (x0)
   if (x0 >= -50 && x0 <= W - AXIS_W) {
     const prevB = L.prevB ?? L.b;
