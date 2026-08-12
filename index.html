@@ -25204,10 +25204,28 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     return out.filter(x => x.i != null).sort((a,b) => a.i - b.i);
   }
 
-  window.runBtApparie = function(){
-    const d = state.data || [];
+  window.runBtApparie = async function(){
     const box = document.getElementById('bta-res');
+    const info = document.getElementById('bta-charge');
+
+    /* Le bouton charge lui-même ce qui manque. L'API Binance plafonne à 1000
+       bougies par requête : un chargement initial suivi d'une seule tranche
+       donne 2000 bougies, soit 1,4 jour en 1 minute. Sans ce complément, le
+       backtest portait sur une fraction de la période demandée. */
+    const jours = +((document.getElementById('bta-jours') || {}).value || 7);
+    const besoin = Math.min(30000, Math.ceil(jours * 24 * 60 / state.tf));
+    if((state.data || []).length < besoin * 0.95){
+      if(box) box.innerHTML = '<div style="color:#00E5FF;padding:10px">Chargement de l\'historique…</div>';
+      await window.chargerHistorique(jours);
+    }
+
+    const d = state.data || [];
     if(!d.length){ if(box) box.innerHTML = '<div style="color:#F59E0B">Aucune donnée chargée.</div>'; return; }
+    if(info) info.innerHTML = d.length + ' bougies en mémoire · ' +
+      (d.length * state.tf / 1440).toFixed(1) + ' jours' +
+      (d.length < besoin * 0.95
+        ? ' <span style="color:#F59E0B">— moins que demandé, Binance limite le remontage</span>'
+        : ' <span style="color:#10B981">— période complète</span>');
 
     const mEnt   = document.getElementById('bta-ent').value;
     const mSor   = document.getElementById('bta-sor').value;
@@ -25219,11 +25237,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     const ents = entrees(mEnt);
     const sors = sorties(mSor);
-    if(!window.__btFreeze && d.length < 3000){
-      const av = document.getElementById('bta-charge');
-      if(av) av.innerHTML = '<span style="color:#F59E0B">⚠ ' + d.length +
-        ' bougies seulement. Cliquez sur ⬇ Charger avant de lancer.</span>';
-    }
+
 
     /* Appariement chronologique : chaque entrée est fermée par la PREMIÈRE
        sortie du sens correspondant qui la suit. C'est ce que fait le
@@ -25371,7 +25385,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const besoin = Math.min(30000, Math.ceil(jours * 24 * 60 / state.tf));
     window.__btFreeze = true;              // l'historique ne sera plus écrasé
     let garde = 0;
-    while(state.data.length < besoin && garde < 40){
+    while(state.data.length < besoin && garde < 60){
       const avant = state.data.length;
       if(typeof histDone !== 'undefined' && histDone) break;
       if(info) info.textContent = 'Chargement… ' + state.data.length + ' / ' + besoin + ' bougies';
