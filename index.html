@@ -4798,6 +4798,13 @@ function restoreView(){
   return true;
 }
 async function loadData(){
+  /* Verrou de backtest : loadData vide state.data et ne recharge que N_BARS
+     bougies. Appelée par le flux temps réel ou une reconnexion, elle
+     effaçait l'historique péniblement chargé pour le backtest. */
+  if(window.__btFreeze){
+    console.log('[Lumen] rechargement ignoré : historique figé pour le backtest');
+    return;
+  }
   const g=++gen; stopFeeds(); setStatus('loading');
   state.data=[]; state.cache={}; histBusy=false; histDone=false;
   state.yScale={auto:true,lo:0,hi:0};
@@ -25212,6 +25219,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     const ents = entrees(mEnt);
     const sors = sorties(mSor);
+    if(!window.__btFreeze && d.length < 3000){
+      const av = document.getElementById('bta-charge');
+      if(av) av.innerHTML = '<span style="color:#F59E0B">⚠ ' + d.length +
+        ' bougies seulement. Cliquez sur ⬇ Charger avant de lancer.</span>';
+    }
 
     /* Appariement chronologique : chaque entrée est fermée par la PREMIÈRE
        sortie du sens correspondant qui la suit. C'est ce que fait le
@@ -25356,7 +25368,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
      en mémoire, soit quelques heures en 1 minute. */
   window.chargerHistorique = async function(jours){
     const info = document.getElementById('bta-charge');
-    const besoin = Math.min(12000, Math.ceil(jours * 24 * 60 / state.tf));
+    const besoin = Math.min(30000, Math.ceil(jours * 24 * 60 / state.tf));
+    window.__btFreeze = true;              // l'historique ne sera plus écrasé
     let garde = 0;
     while(state.data.length < besoin && garde < 40){
       const avant = state.data.length;
@@ -25368,9 +25381,17 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       else garde = 0;
     }
     const j = (state.data.length * state.tf / 1440).toFixed(1);
-    if(info) info.textContent = state.data.length + ' bougies chargées · ' + j + ' jours en ' + state.tf + 'm';
+    if(info) info.innerHTML = state.data.length + ' bougies chargées · ' + j + ' jours en ' + state.tf + 'm' +
+      ' <span style="color:#F59E0B">· historique figé, le flux ne l\'écrasera plus</span>' +
+      ' <button onclick="window.libererHistorique()" style="margin-left:8px;background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:4px;padding:1px 8px;font-size:10px;cursor:pointer">libérer</button>';
     state.cache = {};
     if(typeof render === 'function') render();
+  };
+
+  window.libererHistorique = function(){
+    window.__btFreeze = false;
+    const info = document.getElementById('bta-charge');
+    if(info) info.textContent = 'Historique libéré, le flux temps réel reprend la main.';
   };
 
   window.openBtApparie = function(){
