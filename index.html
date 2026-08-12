@@ -4215,7 +4215,7 @@ const state = {
     rsi:{on:true,period:14,tf:'chart'},
     rsi2:{on:false,period:14,tf:'60'},
     macd:{on:true,tf:'chart'},
-    sqz_mom:{on:true,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true},
+    sqz_mom:{on:true,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true,c1Up:'#00E676',c1UpDn:'#00897B',c1Dn:'#FF5252',c1DnUp:'#B71C1C',c2Up:'#00E5FF',c2UpDn:'#0288D1',c2Dn:'#FF9F1C',c2DnUp:'#B36200',c2Line:'#00E5FF'},
     imp:{on:false,period:34,tf:'chart'},
     imp2:{on:false,period:34,tf:'60'},
     stoch:{on:false,period:14,tf:'chart'},
@@ -8614,17 +8614,26 @@ function drawSqzMom(p, s, e, cw, key) {
   ctx.lineTo(W - AXIS_W, y0 + 0.5);
   ctx.stroke();
 
+  /* Deux palettes distinctes, une par unité de temps, toutes réglables.
+     Chaque unité garde ses quatre états : hausse qui accélère, hausse qui
+     ralentit, baisse qui accélère, baisse qui ralentit. */
   const SQZ_COLORS = {
-    lime: '#00E676',   // Positive & Increasing
-    green: '#00897B',  // Positive & Decreasing
-    red: '#FF5252',    // Negative & Decreasing
-    maroon: '#B71C1C'  // Negative & Increasing
+    lime:   S('sqz_mom','c1Up')   || '#00E676',   // hausse qui accélère
+    green:  S('sqz_mom','c1UpDn') || '#00897B',   // hausse qui ralentit
+    red:    S('sqz_mom','c1Dn')   || '#FF5252',   // baisse qui accélère
+    maroon: S('sqz_mom','c1DnUp') || '#B71C1C'    // baisse qui ralentit
+  };
+  const SQZ_COLORS2 = {
+    lime:   S('sqz_mom','c2Up')   || '#00E5FF',
+    green:  S('sqz_mom','c2UpDn') || '#0288D1',
+    red:    S('sqz_mom','c2Dn')   || '#FF9F1C',
+    maroon: S('sqz_mom','c2DnUp') || '#B36200'
   };
 
   // 2. Draw TF2 if enabled
   if (hasTF2) {
     if (modeTF2 === 'line') {
-      plotLine(res2.val, s, e, yOf, '#00E5FF', 1.8);
+      plotLine(res2.val, s, e, yOf, S('sqz_mom','c2Line') || '#00E5FF', 1.8);
     } else if (modeTF2 === 'overlay') {
       const bw2 = Math.max(1, cw * 0.85);
       for (let i = s; i < e; i++) {
@@ -8633,7 +8642,7 @@ function drawSqzMom(p, s, e, cw, key) {
         const x = xOf(i);
         const y2 = yOf(v2);
         const ck2 = (res2.colorKey && res2.colorKey[i]) || 'lime';
-        const col2 = SQZ_COLORS[ck2] || '#00E676';
+        const col2 = SQZ_COLORS2[ck2] || '#00E5FF';
         ctx.fillStyle = hexA(col2, 0.25);
         ctx.strokeStyle = hexA(col2, 0.7);
         ctx.lineWidth = 1;
@@ -8650,7 +8659,7 @@ function drawSqzMom(p, s, e, cw, key) {
         const x = xOf(i) + bw2 / 2;
         const y2 = yOf(v2);
         const ck2 = (res2.colorKey && res2.colorKey[i]) || 'lime';
-        const col2 = SQZ_COLORS[ck2] || '#00E676';
+        const col2 = SQZ_COLORS2[ck2] || '#00E5FF';
         ctx.fillStyle = hexA(col2, 0.6);
         ctx.fillRect(x, Math.min(y2, y0), bw2, Math.abs(y2 - y0) || 1);
       }
@@ -13100,6 +13109,15 @@ const SCHEMA={
   sqz_mom:{title:'Squeeze Momentum Indicator [LazyBear] Multi-TF',fields:[
     {k:'tf1',t:'choice',lab:'Unité de Temps 1 (UT1)',opts:[{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart'},
     {k:'tf2',t:'choice',lab:'Unité de Temps 2 (UT2 - Optionnelle)',opts:[{v:'off',t:'Désactivée'},{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off'},
+    {k:'c1Up',t:'col',lab:'UT1 — hausse qui accélère',def:'#00E676'},
+    {k:'c1UpDn',t:'col',lab:'UT1 — hausse qui ralentit',def:'#00897B'},
+    {k:'c1Dn',t:'col',lab:'UT1 — baisse qui accélère',def:'#FF5252'},
+    {k:'c1DnUp',t:'col',lab:'UT1 — baisse qui ralentit',def:'#B71C1C'},
+    {k:'c2Up',t:'col',lab:'UT2 — hausse qui accélère',def:'#00E5FF'},
+    {k:'c2UpDn',t:'col',lab:'UT2 — hausse qui ralentit',def:'#0288D1'},
+    {k:'c2Dn',t:'col',lab:'UT2 — baisse qui accélère',def:'#FF9F1C'},
+    {k:'c2DnUp',t:'col',lab:'UT2 — baisse qui ralentit',def:'#B36200'},
+    {k:'c2Line',t:'col',lab:'UT2 — couleur en mode ligne',def:'#00E5FF'},
     {k:'bbLength',t:'num',lab:'Longueur Bollinger (BB Length)',min:2,max:200,def:20},
     {k:'bbMult',t:'num',lab:'Facteur Bollinger (BB Mult)',min:0.1,max:10,def:2.0},
     {k:'kcLength',t:'num',lab:'Longueur Keltner (KC Length)',min:2,max:200,def:20},
