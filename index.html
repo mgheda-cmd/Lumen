@@ -25237,6 +25237,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const unite   = (document.getElementById('bta-unite') || {}).value || 'USDT';
     const fraisP = (+document.getElementById('bta-frais').value || 0) / 100;
     const sens   = document.getElementById('bta-sens').value;
+    const dirF   = (document.getElementById('bta-dir') || {}).value || 'tout';
 
     const ents = entrees(mEnt);
     const sors = sorties(mSor);
@@ -25274,6 +25275,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       // sens réel : inversé si demandé
       let dir = en.dir;
       if(sens === 'inverse') dir = -dir;
+
+      /* Filtre de direction appliqué APRÈS l'inversion : c'est le sens
+         réellement pris en position qui compte, pas celui du signal. */
+      if(dirF === 'long'  && dir !== 1)  continue;
+      if(dirF === 'short' && dir !== -1) continue;
 
       const pe = +en.price, ps = +ex.price;
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
@@ -25331,10 +25337,18 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += carte('Perte moyenne', '−' + moyP.toFixed(2) + ' $', '#FF5252');
     h += carte('Ratio G/P', moyP > 0 ? (moyG / moyP).toFixed(2) : '∞', (moyG / (moyP || 1)) >= 1 ? '#10B981' : '#FF5252');
     h += carte('Repli max', '−' + dd.toFixed(2) + ' $', '#FF9F1C');
+    const lg = trades.filter(t => t.dir === 1);
+    const sh = trades.filter(t => t.dir === -1);
+    const pnlLg = lg.reduce((a,t) => a + t.net, 0);
+    const pnlSh = sh.reduce((a,t) => a + t.net, 0);
     const margeMoy = trades.reduce((a,t) => a + t.marge, 0) / trades.length;
     h += carte('Durée moy.', dureeMoy + ' min');
     h += carte('Marge/trade', margeMoy.toFixed(2) + ' $', '#FFD700');
     h += carte('Rendement', ((pnl / margeMoy) * 100).toFixed(1) + ' %', c(pnl));
+    if(dirF === 'tout' && lg.length && sh.length){
+      h += carte('Longs', lg.length + ' · ' + (pnlLg >= 0 ? '+' : '') + pnlLg.toFixed(2) + ' $', c(pnlLg));
+      h += carte('Shorts', sh.length + ' · ' + (pnlSh >= 0 ? '+' : '') + pnlSh.toFixed(2) + ' $', c(pnlSh));
+    }
     h += carte('Sans sortie', sansSortie.length, sansSortie.length ? '#F59E0B' : '#94A3B8');
     h += '</div>';
 
@@ -25370,6 +25384,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const dDeb = new Date(d[0].t).toLocaleDateString('fr-FR');
     const dFin = new Date(d[d.length-1].t).toLocaleDateString('fr-FR');
     h += '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
+      'Direction : <b style="color:#CBD5E1">' +
+        (dirF === 'long' ? 'longs seuls' : dirF === 'short' ? 'shorts seuls' : 'longs et shorts') + '</b><br>' +
       'Marge : <b style="color:#CBD5E1">' + margeIn + ' ' + (unite === 'BASE' ? 'en actif de base' : 'USDT') +
         '</b> × levier ' + lev + '<br>' +
       'Période : <b style="color:#CBD5E1">' + dDeb + ' au ' + dFin + '</b> · ' +
@@ -25431,6 +25447,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="sansRosc">Sans Range Oscillator</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Sens<br><select id="bta-sens" style="' + sel + '">' +
         '<option value="normal">Tel quel</option><option value="inverse">Inversé</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Direction<br><select id="bta-dir" style="' + sel + '">' +
+        '<option value="tout">Longs et shorts</option>' +
+        '<option value="long">Longs seuls</option>' +
+        '<option value="short">Shorts seuls</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Appariement<br><select id="bta-modeap" style="' + sel + '">' +
         '<option value="chrono">Première sortie qui suit</option>' +
         '<option value="numero">Même numéro strictement</option></select></label>' +
