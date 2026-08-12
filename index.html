@@ -25397,11 +25397,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += '<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
       '<table style="width:100%;border-collapse:collapse;font-size:10.5px;font-family:\'IBM Plex Mono\',monospace">' +
       '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
-      '<th style="padding:5px">#</th><th style="padding:5px">Sens</th><th style="padding:5px">Entrée</th>' +
+      '<th style="padding:5px">N°</th><th style="padding:5px">#</th><th style="padding:5px">Sens</th><th style="padding:5px">Entrée</th>' +
       '<th style="padding:5px">Sortie</th><th style="padding:5px">Motif</th><th style="padding:5px">Durée</th>' +
       '<th style="padding:5px">Frais</th><th style="padding:5px">Net</th></tr>';
     trades.forEach(function(t, k){
       h += '<tr style="border-top:1px solid #1E293B;background:' + (k % 2 ? 'rgba(255,255,255,.02)' : 'transparent') + '">' +
+        '<td style="padding:4px 5px;color:#94A3B8;font-weight:700">' + (k + 1) + '</td>' +
         '<td style="padding:4px 5px;color:#00E5FF;font-weight:700">#' + t.num + '</td>' +
         '<td style="padding:4px 5px;color:' + (t.dir === 1 ? '#10B981' : '#FF5252') + ';font-weight:700">' + (t.dir === 1 ? 'ACHAT' : 'VENTE') + '</td>' +
         '<td style="padding:4px 5px">' + t.pe.toFixed(2) + '</td>' +
