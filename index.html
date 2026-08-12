@@ -25597,6 +25597,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix. 0 = pas d\'objectif, la sortie kk bis decide seule.">TP ($)<br><input id="bta-tp" type="number" value="0" step="10" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Taux taker MEXC : 0,016 % sur BTC, 0,008 % sur ETH. Appliqué à l\'entrée et à la sortie.">Frais % (taker)<br><input id="bta-frais" type="number" value="' + (window.fraisTakerDefaut ? window.fraisTakerDefaut() : '0.016') + '" step="0.001" style="' + sel + ';width:84px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
         '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
