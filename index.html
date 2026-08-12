@@ -9304,6 +9304,16 @@ function jourLocal(t){
   return dt.getFullYear() * 10000 + (dt.getMonth() + 1) * 100 + dt.getDate();
 }
 
+/* Numéro dérivé de l'heure locale de l'entrée : 12h14 donne #1214.
+   Contrairement à un compteur séquentiel, il ne se décale jamais quand on
+   recule dans l'historique, et deux entrées ne peuvent se confondre que si
+   elles tombent sur la même minute — ce que le filtre de position interdit. */
+function numHeure(t){
+  const dt = new Date(t);
+  // quatre chiffres, sinon minuit sept donnerait #7 au lieu de #0007
+  return String(dt.getHours()).padStart(2,'0') + String(dt.getMinutes()).padStart(2,'0');
+}
+
 /* Forme courte du jour pour les identifiants : 10ao26 au lieu de 20260810.
    Deux lettres par mois, car une seule confondrait avril et août, mars et
    mai, juin et juillet. */
@@ -18477,13 +18487,8 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         if(!wasRosc) trigList.push("Range Osc");
         triggerName = trigList.join(" + ") || "Alignement Z. Z.";
       }
-      /* Numérotation quotidienne : remise à 1 au passage de minuit local.
-         Les sorties conservent le numéro de leur entrée, même si celle-ci
-         date de la veille. */
-      { const j = jourLocal(d[i].t);
-        if(jourCourant !== j){ jourCourant = j; tradeCount = 0; } }
       tradeCount++;
-      currentTradeNum = tradeCount;
+      currentTradeNum = numHeure(d[i].t);   // #1214 pour une entrée à 12h14
       const sigDir = invertSignal ? 1 : -1;
       signals.push({
         i,
@@ -18533,10 +18538,8 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         if(!wasRosc) trigList.push("Range Osc");
         triggerName = trigList.join(" + ") || "Alignement Z. Z.";
       }
-      { const j = jourLocal(d[i].t);
-        if(jourCourant !== j){ jourCourant = j; tradeCount = 0; } }
       tradeCount++;
-      currentTradeNum = tradeCount;
+      currentTradeNum = numHeure(d[i].t);   // #1214 pour une entrée à 12h14
       const sigDir = invertSignal ? -1 : 1;
       signals.push({
         i,
