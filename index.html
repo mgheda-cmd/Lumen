@@ -9288,6 +9288,15 @@ function jourLocal(t){
   return dt.getFullYear() * 10000 + (dt.getMonth() + 1) * 100 + dt.getDate();
 }
 
+/* Forme courte du jour pour les identifiants : 10ao26 au lieu de 20260810.
+   Deux lettres par mois, car une seule confondrait avril et août, mars et
+   mai, juin et juillet. */
+const MOIS_COURT = ['ja','fe','mr','av','mi','jn','jl','ao','se','oc','no','de'];
+function jourCourt(t){
+  const dt = new Date(t);
+  return dt.getDate() + MOIS_COURT[dt.getMonth()] + String(dt.getFullYear()).slice(-2);
+}
+
 function zzEntriesForExit(){
   const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
   if(!d.length) return [];
@@ -18373,7 +18382,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
           t: d[i].t,
           num: currentTradeNum,
           tradeNum: currentTradeNum,
-          uid: jourLocal(d[i].t) + "-" + currentTradeNum,   // identifiant unique jour + numéro
+          uid: jourCourt(d[i].t) + "-" + currentTradeNum,   // identifiant unique, ex. 10ao26-3
           dir: 1,
           isExit: true,
           type: 'SORTIE_ACHAT',
@@ -18402,7 +18411,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
           t: d[i].t,
           num: currentTradeNum,
           tradeNum: currentTradeNum,
-          uid: jourLocal(d[i].t) + "-" + currentTradeNum,   // identifiant unique jour + numéro
+          uid: jourCourt(d[i].t) + "-" + currentTradeNum,   // identifiant unique, ex. 10ao26-3
           dir: -1,
           isExit: true,
           type: 'SORTIE_VENTE',
@@ -18456,7 +18465,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         t: d[i].t,
         num: currentTradeNum,
         tradeNum: currentTradeNum,
-        uid: jourLocal(d[i].t) + "-" + currentTradeNum,   // identifiant unique jour + numéro
+        uid: jourCourt(d[i].t) + "-" + currentTradeNum,   // identifiant unique, ex. 10ao26-3
         dir: sigDir,
         price: d[i].c,
         trigger: triggerName + (invertSignal ? ' (Inversé)' : ''),
@@ -18509,7 +18518,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         t: d[i].t,
         num: currentTradeNum,
         tradeNum: currentTradeNum,
-        uid: jourLocal(d[i].t) + "-" + currentTradeNum,   // identifiant unique jour + numéro
+        uid: jourCourt(d[i].t) + "-" + currentTradeNum,   // identifiant unique, ex. 10ao26-3
         dir: sigDir,
         price: d[i].c,
         trigger: triggerName + (invertSignal ? ' (Inversé)' : ''),
