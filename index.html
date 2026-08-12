@@ -2271,7 +2271,9 @@ const N_BARS = 3000;          // chargement initial
    presque jamais alimentée et valait « vrai » par défaut sur toute la
    fenêtre. Trois mille bougies laissent l'échauffement à gauche, hors
    de la zone regardée. */
-const MAX_BARS = 12000;       // profondeur maximale conservée en mémoire
+const MAX_BARS = 30000;       /* profondeur maximale conservée en mémoire.
+   12000 plafonnait à 8 jours en 1 minute, insuffisant pour backtester une
+   semaine avec la marge d'échauffement des indicateurs 15m. */
 
 function genData(symbol, tfMin){
   const cfg = SYMBOLS[symbol] || {seed:(symbol.length*97)%1000, base:100, vol:0.02};
@@ -25250,11 +25252,38 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<td style="padding:4px 5px;font-weight:800;color:' + c(t.net) + '">' + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + '</td></tr>';
     });
     h += '</table></div>';
+    const jrs = (d.length * state.tf / 1440);
+    const dDeb = new Date(d[0].t).toLocaleDateString('fr-FR');
+    const dFin = new Date(d[d.length-1].t).toLocaleDateString('fr-FR');
     h += '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
+      'Période : <b style="color:#CBD5E1">' + dDeb + ' au ' + dFin + '</b> · ' +
+      d.length + ' bougies de ' + state.tf + 'm (' + jrs.toFixed(1) + ' jours)<br>' +
       ents.length + ' entrées trouvées · ' + sors.length + ' sorties disponibles · ' +
       trades.length + ' appariées par numéro · ' + ouverts + ' entrées encore ouvertes, exclues du calcul.</div>';
 
     if(box) box.innerHTML = h;
+  };
+
+  /* Charge l'historique jusqu'à la profondeur demandée, par tranches de
+     1000 bougies. Sans cela le backtest ne porte que sur ce qui est déjà
+     en mémoire, soit quelques heures en 1 minute. */
+  window.chargerHistorique = async function(jours){
+    const info = document.getElementById('bta-charge');
+    const besoin = Math.min(12000, Math.ceil(jours * 24 * 60 / state.tf));
+    let garde = 0;
+    while(state.data.length < besoin && garde < 40){
+      const avant = state.data.length;
+      if(typeof histDone !== 'undefined' && histDone) break;
+      if(info) info.textContent = 'Chargement… ' + state.data.length + ' / ' + besoin + ' bougies';
+      await loadMoreHistory();
+      await new Promise(r => setTimeout(r, 260));
+      if(state.data.length === avant) garde++;
+      else garde = 0;
+    }
+    const j = (state.data.length * state.tf / 1440).toFixed(1);
+    if(info) info.textContent = state.data.length + ' bougies chargées · ' + j + ' jours en ' + state.tf + 'm';
+    state.cache = {};
+    if(typeof render === 'function') render();
   };
 
   window.openBtApparie = function(){
@@ -25284,8 +25313,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<label style="font-size:11px;color:#94A3B8">Marge $<br><input id="bta-marge" type="number" value="10" step="1" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="1" step="1" style="' + sel + ';width:66px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Frais %<br><input id="bta-frais" type="number" value="0.02" step="0.01" style="' + sel + ';width:72px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
+        '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
+        '<option value="14">2 semaines</option><option value="22">22 jours</option>' +
+        '<option value="30">1 mois</option></select></label>' +
+      '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
-      '</div><div id="bta-res"></div></div>';
+      '</div><div id="bta-charge" style="font-size:11px;color:#94A3B8;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace"></div><div id="bta-res"></div></div>';
     document.body.appendChild(m);
   };
 
