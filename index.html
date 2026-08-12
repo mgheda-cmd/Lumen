@@ -25164,7 +25164,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const mEnt   = document.getElementById('bta-ent').value;
     const mSor   = document.getElementById('bta-sor').value;
     const lev    = +document.getElementById('bta-lev').value || 1;
-    const marge  = +document.getElementById('bta-marge').value || 10;
+    const margeIn = +document.getElementById('bta-marge').value || 10;
+    const unite   = (document.getElementById('bta-unite') || {}).value || 'USDT';
     const fraisP = (+document.getElementById('bta-frais').value || 0) / 100;
     const sens   = document.getElementById('bta-sens').value;
 
@@ -25196,6 +25197,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const pe = +en.price, ps = +ex.price;
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
 
+      /* Marge exprimée en USDT, ou dans l'actif de base. Dans ce second cas
+         elle est convertie au prix d'entrée du trade : 0,001 BTC engagé à
+         65 000 vaut 65 USDT de marge. */
+      const marge = (unite === 'BASE') ? (margeIn * pe) : margeIn;
       const notionnel = marge * lev;
       const variation = (ps - pe) / pe;
       const brut = notionnel * variation * dir;
@@ -25204,7 +25209,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
       trades.push({
         num: en.num, dir: dir, iE: en.i, iS: ex.i,
-        pe: pe, ps: ps, brut: brut, frais: frais, net: net,
+        pe: pe, ps: ps, brut: brut, frais: frais, net: net, marge: marge,
         motif: ex.div ? 'Divergence' : 'Seuil + pente',
         duree: Math.round((d[ex.i].t - d[en.i].t) / 60000),
         trigger: en.trigger || ''
@@ -25245,7 +25250,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += carte('Perte moyenne', '−' + moyP.toFixed(2) + ' $', '#FF5252');
     h += carte('Ratio G/P', moyP > 0 ? (moyG / moyP).toFixed(2) : '∞', (moyG / (moyP || 1)) >= 1 ? '#10B981' : '#FF5252');
     h += carte('Repli max', '−' + dd.toFixed(2) + ' $', '#FF9F1C');
+    const margeMoy = trades.reduce((a,t) => a + t.marge, 0) / trades.length;
     h += carte('Durée moy.', dureeMoy + ' min');
+    h += carte('Marge/trade', margeMoy.toFixed(2) + ' $', '#FFD700');
+    h += carte('Rendement', ((pnl / margeMoy) * 100).toFixed(1) + ' %', c(pnl));
     h += carte('Sans sortie', ouverts, ouverts ? '#F59E0B' : '#94A3B8');
     h += '</div>';
 
@@ -25271,6 +25279,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const dDeb = new Date(d[0].t).toLocaleDateString('fr-FR');
     const dFin = new Date(d[d.length-1].t).toLocaleDateString('fr-FR');
     h += '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
+      'Marge : <b style="color:#CBD5E1">' + margeIn + ' ' + (unite === 'BASE' ? 'en actif de base' : 'USDT') +
+        '</b> × levier ' + lev + '<br>' +
       'Période : <b style="color:#CBD5E1">' + dDeb + ' au ' + dFin + '</b> · ' +
       d.length + ' bougies de ' + state.tf + 'm (' + jrs.toFixed(1) + ' jours)<br>' +
       ents.length + ' entrées trouvées · ' + sors.length + ' sorties disponibles · ' +
@@ -25325,7 +25335,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="tout">kk bis — toutes</option>' +
         '<option value="div">Divergences seules</option>' +
         '<option value="seuil">Seuil + pente seul</option></select></label>' +
-      '<label style="font-size:11px;color:#94A3B8">Marge $<br><input id="bta-marge" type="number" value="10" step="1" style="' + sel + ';width:72px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Marge<br><input id="bta-marge" type="number" value="10" step="any" style="' + sel + ';width:88px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
+        '<option value="USDT">USDT</option><option value="BASE">BTC (actif)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="1" step="1" style="' + sel + ';width:66px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Frais %<br><input id="bta-frais" type="number" value="0.02" step="0.01" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
