@@ -25232,9 +25232,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     const mEnt   = document.getElementById('bta-ent').value;
     const mSor   = document.getElementById('bta-sor').value;
-    const lev    = +document.getElementById('bta-lev').value || 1;
-    const margeIn = +document.getElementById('bta-marge').value || 10;
-    const unite   = (document.getElementById('bta-unite') || {}).value || 'USDT';
+    const lev    = +document.getElementById('bta-lev').value || 200;
+    const margeIn = +document.getElementById('bta-marge').value || 0.02;
+    const unite   = (document.getElementById('bta-unite') || {}).value || 'BASE';
     const fraisP = (+document.getElementById('bta-frais').value || 0) / 100;
     const sens   = document.getElementById('bta-sens').value;
     const dirF   = (document.getElementById('bta-dir') || {}).value || 'tout';
@@ -25549,10 +25549,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="tout">kk bis — toutes</option>' +
         '<option value="div">Divergences seules</option>' +
         '<option value="seuil">Seuil + pente seul</option></select></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="En USDT : marge engagée. En actif : taille de position, comme sur MEXC">Montant<br><input id="bta-marge" type="number" value="10" step="any" style="' + sel + ';width:88px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="En USDT : marge engagée. En actif : taille de position, comme sur MEXC">Montant<br><input id="bta-marge" type="number" value="0.02" step="any" style="' + sel + ';width:88px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
-        '<option value="USDT">USDT (marge)</option><option value="BASE">BTC (taille)</option></select></label>' +
-      '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="1" step="1" style="' + sel + ';width:66px"></label>' +
+        '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Frais %<br><input id="bta-frais" type="number" value="0.02" step="0.01" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
         '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
