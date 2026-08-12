@@ -9304,7 +9304,7 @@ function zzEntriesForExit(){
   });
   __zzEnt = sg.map(function(x){
     const i = (x.t != null && typeof idxOfTime === 'function' ? idxOfTime(x.t) : null);
-    return { i: (i != null ? i : x.i), dir: x.dir, num: x.num };
+    return { i: (i != null ? i : x.i), dir: x.dir, num: x.num, uid: x.uid };
   }).filter(function(x){ return x.i != null; });
   __zzEntKey = key;
   return __zzEnt;
@@ -9323,6 +9323,16 @@ function zzNumNear(idx, dir, win){
     if(dd < bd && dd <= win){ bd = dd; best = arr[k].num; }
   }
   return best;
+}
+
+/* Identifiant unique de l'entrée qu'une sortie ferme : jour + numéro.
+   Le numéro seul se répète chaque jour depuis la remise à zéro. */
+function zzUidFor(idx, dir){
+  const arr = zzEntriesForExit();
+  for(let k = arr.length - 1; k >= 0; k--){
+    if(arr[k].i <= idx && arr[k].dir === dir && arr[k].uid != null) return arr[k].uid;
+  }
+  return null;
 }
 
 function zzNumFor(idx, dir){
@@ -18363,6 +18373,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
           t: d[i].t,
           num: currentTradeNum,
           tradeNum: currentTradeNum,
+          uid: jourLocal(d[i].t) + "-" + currentTradeNum,   // identifiant unique jour + numéro
           dir: 1,
           isExit: true,
           type: 'SORTIE_ACHAT',
@@ -18391,6 +18402,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
           t: d[i].t,
           num: currentTradeNum,
           tradeNum: currentTradeNum,
+          uid: jourLocal(d[i].t) + "-" + currentTradeNum,   // identifiant unique jour + numéro
           dir: -1,
           isExit: true,
           type: 'SORTIE_VENTE',
@@ -18444,6 +18456,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         t: d[i].t,
         num: currentTradeNum,
         tradeNum: currentTradeNum,
+        uid: jourLocal(d[i].t) + "-" + currentTradeNum,   // identifiant unique jour + numéro
         dir: sigDir,
         price: d[i].c,
         trigger: triggerName + (invertSignal ? ' (Inversé)' : ''),
@@ -18496,6 +18509,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         t: d[i].t,
         num: currentTradeNum,
         tradeNum: currentTradeNum,
+        uid: jourLocal(d[i].t) + "-" + currentTradeNum,   // identifiant unique jour + numéro
         dir: sigDir,
         price: d[i].c,
         trigger: triggerName + (invertSignal ? ' (Inversé)' : ''),
@@ -25144,7 +25158,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
     return sg.map(function(x){
       const i = (x.t != null && typeof idxOfTime === 'function') ? idxOfTime(x.t) : x.i;
-      return (i != null) ? { i:i, dir:x.dir, num:x.num, price:x.price, t:x.t, trigger:x.trigger } : null;
+      return (i != null) ? { i:i, dir:x.dir, num:x.num, uid:x.uid, price:x.price, t:x.t, trigger:x.trigger } : null;
     }).filter(Boolean);
   }
 
@@ -25192,8 +25206,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         const dS = (s2.type === 'SORTIE_ACHAT') ? 1 : -1;
         if(dS !== dirFerme) continue;
         if(mSortie === 'numero'){
-          const n = (typeof zzNumFor === 'function') ? zzNumFor(s2.i, dS) : null;
-          if(n !== en.num) continue;
+          // comparaison sur jour + numéro, pas sur le numéro seul
+          const u = (typeof zzUidFor === 'function') ? zzUidFor(s2.i, dS) : null;
+          if(u == null || en.uid == null || u !== en.uid) continue;
         }
         ex = s2; break;
       }
