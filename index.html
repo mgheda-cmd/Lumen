@@ -25323,6 +25323,31 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     let cum = 0, pic = 0, dd = 0;
     for(const t of trades){ cum += t.net; if(cum > pic) pic = cum; const r = pic - cum; if(r > dd) dd = r; }
 
+    /* Stabilité : on découpe la période en trois tranches SÉPARÉES et on
+       calcule le profit factor de chacune. Une stratégie qui ne tient que
+       grâce à une seule tranche n'est pas exploitable. */
+    const tri = [];
+    const tDeb = d[0].t, tFin = d[d.length-1].t, pas = (tFin - tDeb) / 3;
+    for(let z = 0; z < 3; z++){
+      const a = tDeb + z * pas, b = a + pas;
+      const sub = trades.filter(t => d[t.iE].t >= a && d[t.iE].t < b);
+      const g2 = sub.filter(t => t.net > 0).reduce((x,t) => x + t.net, 0);
+      const p2 = Math.abs(sub.filter(t => t.net <= 0).reduce((x,t) => x + t.net, 0));
+      tri.push({ n: sub.length, pf: p2 > 0 ? (g2 / p2) : (g2 > 0 ? Infinity : 0) });
+    }
+    const stable = tri.every(x => x.n >= 3 && x.pf >= 1);
+
+    /* Conditions minimales avant d'envisager du réel. Elles reprennent les
+       seuils qu'on s'est fixés : échantillon suffisant, profit factor
+       supérieur à 1, et tenue sur les trois tranches. */
+    const conforme = (trades.length >= 30) && (pf >= 1) && stable && (pnl > 0);
+    window.__btDernier = {
+      conforme: conforme, trades: trades.length, pf: pf, pnl: pnl, dd: dd,
+      wr: wr, dirF: dirF, sens: sens, mEnt: mEnt, mSor: mSor,
+      marge: margeIn, unite: unite, lev: lev, tri: tri, stable: stable,
+      jours: (d.length * state.tf / 1440)
+    };
+
     const c = v => v >= 0 ? '#10B981' : '#FF5252';
     let h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-bottom:12px">';
     const carte = (lab, val, col) =>
@@ -25350,6 +25375,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       h += carte('Shorts', sh.length + ' · ' + (pnlSh >= 0 ? '+' : '') + pnlSh.toFixed(2) + ' $', c(pnlSh));
     }
     h += carte('Sans sortie', sansSortie.length, sansSortie.length ? '#F59E0B' : '#94A3B8');
+    tri.forEach(function(x, k){
+      h += carte('Tiers ' + (k+1), (isFinite(x.pf) ? x.pf.toFixed(2) : '∞') + ' · ' + x.n + 't',
+                 (x.n >= 3 && x.pf >= 1) ? '#10B981' : '#FF5252');
+    });
     h += '</div>';
 
     h += '<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
@@ -25393,7 +25422,55 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       ents.length + ' entrées trouvées · ' + sors.length + ' sorties disponibles · ' +
       trades.length + ' appariées · ' + sansSortie.length + ' entrées sans sortie, exclues du calcul.</div>';
 
+    const manques = [];
+    if(trades.length < 30) manques.push('moins de 30 trades (' + trades.length + ')');
+    if(!(pf >= 1))         manques.push('profit factor sous 1');
+    if(!stable)            manques.push('ne tient pas sur les trois tiers');
+    if(!(pnl > 0))         manques.push('PnL négatif');
+
+    if(conforme){
+      h += '<div style="margin-top:12px;padding:11px;border:1px solid #10B981;border-radius:9px;background:rgba(16,185,129,.08)">' +
+        '<div style="color:#10B981;font-weight:800;font-size:12px;margin-bottom:6px">✓ Configuration conforme aux critères</div>' +
+        '<div style="font-size:11px;color:#CBD5E1;line-height:1.6;margin-bottom:9px">' +
+        trades.length + ' trades · profit factor ' + pf.toFixed(2) + ' · stable sur les trois tiers · repli maximal ' + dd.toFixed(2) + ' $<br>' +
+        '<b style="color:#F59E0B">Ces chiffres restent une simulation. Le glissement et les frais réels ne sont pas modélisés à l\'identique.</b></div>' +
+        '<button onclick="window.envoyerVersMexc()" style="background:linear-gradient(135deg,#00E5FF,#0288D1);color:#0B1220;border:none;border-radius:8px;padding:9px 18px;font-weight:800;cursor:pointer">📤 Préparer cette stratégie dans le module MEXC</button></div>';
+    } else {
+      h += '<div style="margin-top:12px;padding:11px;border:1px solid #FF5252;border-radius:9px;background:rgba(239,68,68,.08)">' +
+        '<div style="color:#FF5252;font-weight:800;font-size:12px;margin-bottom:5px">Configuration non conforme</div>' +
+        '<div style="font-size:11px;color:#CBD5E1;line-height:1.6">' + manques.join(' · ') +
+        '<br>L\'envoi vers le module réel est bloqué tant que ces points ne sont pas levés.</div></div>';
+    }
+
     if(box) box.innerHTML = h;
+  };
+
+  /* Reporte les réglages validés dans le module MEXC. N'envoie aucun ordre :
+     la configuration est pré-remplie, l'activation reste manuelle. */
+  window.envoyerVersMexc = function(){
+    const r = window.__btDernier;
+    if(!r || !r.conforme){ alert('Aucune configuration conforme à envoyer.'); return; }
+    const back = document.getElementById('bta-back');
+    if(back) back.style.display = 'none';
+    if(typeof openLiveExchangeModal === 'function') openLiveExchangeModal();
+    setTimeout(function(){
+      try{
+        const dirSel = document.getElementById('live-ex-direction');
+        if(dirSel) dirSel.value = (r.dirF === 'long') ? 'LONG' : (r.dirF === 'short') ? 'SHORT' : 'BOTH';
+        const lv = document.getElementById('live-ex-lev'); if(lv) lv.value = r.lev;
+        const bg = document.getElementById('live-ex-trade-budget');
+        if(bg) bg.value = (r.unite === 'BASE') ? r.marge : r.marge;
+        const un = document.getElementById('live-ex-trade-unit');
+        if(un) un.value = (r.unite === 'BASE') ? 'BTC' : 'USDT';
+        if(typeof recalcLiveModalNotional === 'function') recalcLiveModalNotional();
+      }catch(e){}
+      alert('Réglages reportés dans le module MEXC :\n\n' +
+        '· Direction : ' + (r.dirF === 'long' ? 'longs seuls' : r.dirF === 'short' ? 'shorts seuls' : 'longs et shorts') + '\n' +
+        '· Marge : ' + r.marge + ' ' + (r.unite === 'BASE' ? 'en actif' : 'USDT') + '\n' +
+        '· Levier : ' + r.lev + '\n\n' +
+        'Aucun ordre n\'a été envoyé. Vérifiez la configuration, puis activez manuellement.\n\n' +
+        'Cette stratégie n\'a jamais tourné en démo : commencez par la plus petite marge possible.');
+    }, 350);
   };
 
   /* Charge l'historique jusqu'à la profondeur demandée, par tranches de
