@@ -25284,11 +25284,22 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const pe = +en.price, ps = +ex.price;
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
 
-      /* Marge exprimée en USDT, ou dans l'actif de base. Dans ce second cas
-         elle est convertie au prix d'entrée du trade : 0,001 BTC engagé à
-         65 000 vaut 65 USDT de marge. */
-      const marge = (unite === 'BASE') ? (margeIn * pe) : margeIn;
-      const notionnel = marge * lev;
+      /* Deux façons de dimensionner la position, comme sur MEXC :
+         — en actif de base, le montant saisi est la TAILLE de position.
+           0,02 BTC à 63 500 fait 1270 USDT de notionnel, et la marge
+           immobilisée vaut 1270 / 200 = 6,35 USDT.
+         — en USDT, le montant saisi est la marge, et le notionnel vaut
+           marge × levier.
+         L'erreur précédente traitait 0,02 BTC comme une marge de 1280 USDT
+         puis la multipliait par le levier : 200 fois trop. */
+      let marge, notionnel;
+      if(unite === 'BASE'){
+        notionnel = margeIn * pe;
+        marge = notionnel / lev;
+      } else {
+        marge = margeIn;
+        notionnel = marge * lev;
+      }
       const variation = (ps - pe) / pe;
       const brut = notionnel * variation * dir;
       const frais = notionnel * fraisP * 2;      // ouverture + fermeture
@@ -25296,7 +25307,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
       trades.push({
         num: en.num, dir: dir, iE: en.i, iS: ex.i,
-        pe: pe, ps: ps, brut: brut, frais: frais, net: net, marge: marge,
+        pe: pe, ps: ps, brut: brut, frais: frais, net: net, marge: marge, notionnel: notionnel,
         motif: ex.div ? 'Divergence' : 'Seuil + pente',
         duree: Math.round((d[ex.i].t - d[en.i].t) / 60000),
         trigger: en.trigger || ''
@@ -25368,7 +25379,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const pnlSh = sh.reduce((a,t) => a + t.net, 0);
     const margeMoy = trades.reduce((a,t) => a + t.marge, 0) / trades.length;
     h += carte('Durée moy.', dureeMoy + ' min');
+    const notMoy = trades.reduce((a,t) => a + t.notionnel, 0) / trades.length;
     h += carte('Marge/trade', margeMoy.toFixed(2) + ' $', '#FFD700');
+    h += carte('Notionnel', notMoy.toFixed(0) + ' $', '#7DD3FC');
     h += carte('Rendement', ((pnl / margeMoy) * 100).toFixed(1) + ' %', c(pnl));
     if(dirF === 'tout' && lg.length && sh.length){
       h += carte('Longs', lg.length + ' · ' + (pnlLg >= 0 ? '+' : '') + pnlLg.toFixed(2) + ' $', c(pnlLg));
@@ -25415,8 +25428,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
       'Direction : <b style="color:#CBD5E1">' +
         (dirF === 'long' ? 'longs seuls' : dirF === 'short' ? 'shorts seuls' : 'longs et shorts') + '</b><br>' +
-      'Marge : <b style="color:#CBD5E1">' + margeIn + ' ' + (unite === 'BASE' ? 'en actif de base' : 'USDT') +
-        '</b> × levier ' + lev + '<br>' +
+      (unite === 'BASE'
+        ? 'Taille : <b style="color:#CBD5E1">' + margeIn + ' en actif</b> · notionnel moyen ' + notMoy.toFixed(0) + ' $ · marge immobilisée ' + margeMoy.toFixed(2) + ' $ à ' + lev + 'x'
+        : 'Marge : <b style="color:#CBD5E1">' + margeIn + ' USDT</b> × levier ' + lev + ' = notionnel ' + notMoy.toFixed(0) + ' $') + '<br>' +
       'Période : <b style="color:#CBD5E1">' + dDeb + ' au ' + dFin + '</b> · ' +
       d.length + ' bougies de ' + state.tf + 'm (' + jrs.toFixed(1) + ' jours)<br>' +
       ents.length + ' entrées trouvées · ' + sors.length + ' sorties disponibles · ' +
@@ -25535,9 +25549,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="tout">kk bis — toutes</option>' +
         '<option value="div">Divergences seules</option>' +
         '<option value="seuil">Seuil + pente seul</option></select></label>' +
-      '<label style="font-size:11px;color:#94A3B8">Marge<br><input id="bta-marge" type="number" value="10" step="any" style="' + sel + ';width:88px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="En USDT : marge engagée. En actif : taille de position, comme sur MEXC">Montant<br><input id="bta-marge" type="number" value="10" step="any" style="' + sel + ';width:88px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
-        '<option value="USDT">USDT</option><option value="BASE">BTC (actif)</option></select></label>' +
+        '<option value="USDT">USDT (marge)</option><option value="BASE">BTC (taille)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="1" step="1" style="' + sel + ';width:66px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Frais %<br><input id="bta-frais" type="number" value="0.02" step="0.01" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
