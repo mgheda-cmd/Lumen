@@ -9281,6 +9281,13 @@ function drawTwoIndSub(p, s, e, cw) {
    une pastille VENTE. Le filtre de position est appliqué pour coller à ce
    qui est réellement affiché. */
 let __zzEntKey = null, __zzEnt = [];
+/* Repère de jour local, pour remettre la numérotation à 1 chaque minuit.
+   On se cale sur le fuseau du navigateur, celui que l'utilisateur voit. */
+function jourLocal(t){
+  const dt = new Date(t);
+  return dt.getFullYear() * 10000 + (dt.getMonth() + 1) * 100 + dt.getDate();
+}
+
 function zzEntriesForExit(){
   const d = (typeof state !== 'undefined' && state.data) ? state.data : [];
   if(!d.length) return [];
@@ -18196,6 +18203,7 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
   let entryPrice = null;
   let entryIdx = null;
   let tradeCount = 0;
+  let jourCourant = null;   // jour local courant, pour la numérotation quotidienne
   let currentTradeNum = null;
 
   const condSellEmaHa = new Array(d.length).fill(false);
@@ -18423,6 +18431,11 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         if(!wasRosc) trigList.push("Range Osc");
         triggerName = trigList.join(" + ") || "Alignement Z. Z.";
       }
+      /* Numérotation quotidienne : remise à 1 au passage de minuit local.
+         Les sorties conservent le numéro de leur entrée, même si celle-ci
+         date de la veille. */
+      { const j = jourLocal(d[i].t);
+        if(jourCourant !== j){ jourCourant = j; tradeCount = 0; } }
       tradeCount++;
       currentTradeNum = tradeCount;
       const sigDir = invertSignal ? 1 : -1;
@@ -18473,6 +18486,8 @@ function computeZZSignals(d, ind, strictMode, strictEmaHa){
         if(!wasRosc) trigList.push("Range Osc");
         triggerName = trigList.join(" + ") || "Alignement Z. Z.";
       }
+      { const j = jourLocal(d[i].t);
+        if(jourCourant !== j){ jourCourant = j; tradeCount = 0; } }
       tradeCount++;
       currentTradeNum = tradeCount;
       const sigDir = invertSignal ? -1 : 1;
