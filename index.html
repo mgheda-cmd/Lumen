@@ -25373,7 +25373,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
        supérieur à 1, et tenue sur les trois tranches. */
     const conforme = (trades.length >= 30) && (pf >= 1) && stable && (pnl > 0);
     window.__btDernier = {
-      conforme: conforme, trades: trades.length, pf: pf, pnl: pnl, dd: dd,
+      conforme: conforme, manques: [], trades: trades.length, pf: pf, pnl: pnl, dd: dd,
       wr: wr, dirF: dirF, sens: sens, mEnt: mEnt, mSor: mSor,
       marge: margeIn, unite: unite, lev: lev, tri: tri, stable: stable,
       jours: (d.length * state.tf / 1440)
@@ -25464,6 +25464,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(!(pf >= 1))         manques.push('profit factor sous 1');
     if(!stable)            manques.push('ne tient pas sur les trois tiers');
     if(!(pnl > 0))         manques.push('PnL négatif');
+    window.__btDernier.manques = manques;
 
     if(conforme){
       h += '<div style="margin-top:12px;padding:11px;border:1px solid #10B981;border-radius:9px;background:rgba(16,185,129,.08)">' +
@@ -25473,10 +25474,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<b style="color:#F59E0B">Ces chiffres restent une simulation. Le glissement et les frais réels ne sont pas modélisés à l\'identique.</b></div>' +
         '<button onclick="window.envoyerVersMexc()" style="background:linear-gradient(135deg,#00E5FF,#0288D1);color:#0B1220;border:none;border-radius:8px;padding:9px 18px;font-weight:800;cursor:pointer">📤 Préparer cette stratégie dans le module MEXC</button></div>';
     } else {
-      h += '<div style="margin-top:12px;padding:11px;border:1px solid #FF5252;border-radius:9px;background:rgba(239,68,68,.08)">' +
-        '<div style="color:#FF5252;font-weight:800;font-size:12px;margin-bottom:5px">Configuration non conforme</div>' +
-        '<div style="font-size:11px;color:#CBD5E1;line-height:1.6">' + manques.join(' · ') +
-        '<br>L\'envoi vers le module réel est bloqué tant que ces points ne sont pas levés.</div></div>';
+      /* Le bouton reste visible même hors critères : le masquer laissait
+         l'utilisateur sans savoir pourquoi. L'envoi demande alors une
+         confirmation explicite rappelant chaque point qui manque. */
+      h += '<div style="margin-top:12px;padding:11px;border:1px solid #F59E0B;border-radius:9px;background:rgba(245,158,11,.08)">' +
+        '<div style="color:#F59E0B;font-weight:800;font-size:12px;margin-bottom:5px">⚠ Configuration hors critères</div>' +
+        '<div style="font-size:11px;color:#CBD5E1;line-height:1.6;margin-bottom:9px">' + manques.join(' · ') + '</div>' +
+        '<button onclick="window.envoyerVersMexc()" style="background:transparent;border:1px solid #F59E0B;color:#FCD34D;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer">📤 Préparer quand même dans le module MEXC</button>' +
+        '</div>';
     }
 
     if(box) box.innerHTML = h;
@@ -25486,7 +25491,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
      la configuration est pré-remplie, l'activation reste manuelle. */
   window.envoyerVersMexc = function(){
     const r = window.__btDernier;
-    if(!r || !r.conforme){ alert('Aucune configuration conforme à envoyer.'); return; }
+    if(!r){ alert('Lancez d\'abord un backtest.'); return; }
+    if(!r.conforme){
+      const txt = 'Cette configuration ne remplit pas les critères de validation :\n\n· ' +
+        (r.manques || []).join('\n· ') +
+        '\n\nLes réglages seront quand même reportés dans le module MEXC, mais aucun ordre ne sera envoyé.\n\nContinuer ?';
+      if(!confirm(txt)) return;
+    }
     const back = document.getElementById('bta-back');
     if(back) back.style.display = 'none';
     if(typeof openLiveExchangeModal === 'function') openLiveExchangeModal();
