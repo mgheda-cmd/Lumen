@@ -25172,23 +25172,33 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const ents = entrees(mEnt);
     const sors = sorties(mSor);
 
-    // index des sorties par numéro d'entrée, dans l'ordre chronologique
-    const parNum = {};
-    for(const ex of sors){
-      const dirFerme = (ex.type === 'SORTIE_ACHAT') ? 1 : -1;
-      const n = (typeof zzNumFor === 'function') ? zzNumFor(ex.i, dirFerme) : null;
-      if(n == null) continue;
-      if(!parNum[n]) parNum[n] = [];
-      parNum[n].push(ex);
-    }
+    /* Appariement chronologique : chaque entrée est fermée par la PREMIÈRE
+       sortie du sens correspondant qui la suit. C'est ce que fait le
+       graphique, et ça n'échoue pas quand les numéros se répètent d'un jour
+       à l'autre depuis la remise à zéro quotidienne.
+       Une sortie déjà utilisée ne peut pas fermer un second trade. */
+    const utilisee = new Set();
+    const mSortie = document.getElementById('bta-modeap')
+                  ? document.getElementById('bta-modeap').value : 'chrono';
 
     const trades = [];
-    let ouverts = 0;
+    const sansSortie = [];
     for(const en of ents){
-      if(en.num == null) continue;
-      const cands = (parNum[en.num] || []).filter(x => x.i > en.i);
-      if(!cands.length){ ouverts++; continue; }
-      const ex = cands[0];
+      const dirFerme = en.dir;            // une entrée achat se ferme par une sortie achat
+      let ex = null;
+      for(const s2 of sors){
+        if(s2.i <= en.i) continue;
+        if(utilisee.has(s2.i)) continue;
+        const dS = (s2.type === 'SORTIE_ACHAT') ? 1 : -1;
+        if(dS !== dirFerme) continue;
+        if(mSortie === 'numero'){
+          const n = (typeof zzNumFor === 'function') ? zzNumFor(s2.i, dS) : null;
+          if(n !== en.num) continue;
+        }
+        ex = s2; break;
+      }
+      if(!ex){ sansSortie.push(en); continue; }
+      utilisee.add(ex.i);
 
       // sens réel : inversé si demandé
       let dir = en.dir;
@@ -25217,7 +25227,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     }
 
     if(!trades.length){
-      if(box) box.innerHTML = '<div style="color:#F59E0B;padding:10px">Aucun trade apparié. ' + ents.length + ' entrées, ' + sors.length + ' sorties, ' + ouverts + ' entrées sans sortie correspondante.</div>';
+      if(box) box.innerHTML = '<div style="color:#F59E0B;padding:10px">Aucun trade apparié. ' + ents.length + ' entrées, ' + sors.length + ' sorties disponibles.</div>';
       return;
     }
 
@@ -25254,7 +25264,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += carte('Durée moy.', dureeMoy + ' min');
     h += carte('Marge/trade', margeMoy.toFixed(2) + ' $', '#FFD700');
     h += carte('Rendement', ((pnl / margeMoy) * 100).toFixed(1) + ' %', c(pnl));
-    h += carte('Sans sortie', ouverts, ouverts ? '#F59E0B' : '#94A3B8');
+    h += carte('Sans sortie', sansSortie.length, sansSortie.length ? '#F59E0B' : '#94A3B8');
     h += '</div>';
 
     h += '<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
@@ -25275,6 +25285,16 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<td style="padding:4px 5px;font-weight:800;color:' + c(t.net) + '">' + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + '</td></tr>';
     });
     h += '</table></div>';
+    if(sansSortie.length){
+      h += '<details style="margin-top:9px"><summary style="cursor:pointer;color:#F59E0B;font-size:11px;font-weight:700">' +
+        sansSortie.length + ' entrées sans sortie appariée — voir le détail</summary>' +
+        '<div style="max-height:180px;overflow:auto;margin-top:6px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#94A3B8">';
+      sansSortie.forEach(function(en){
+        h += '<div style="padding:2px 0">#' + en.num + ' ' + (en.dir === 1 ? 'ACHAT' : 'VENTE') +
+             ' à ' + (+en.price).toFixed(2) + ' — ' + new Date(d[en.i].t).toLocaleString('fr-FR') + '</div>';
+      });
+      h += '</div></details>';
+    }
     const jrs = (d.length * state.tf / 1440);
     const dDeb = new Date(d[0].t).toLocaleDateString('fr-FR');
     const dFin = new Date(d[d.length-1].t).toLocaleDateString('fr-FR');
@@ -25284,7 +25304,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       'Période : <b style="color:#CBD5E1">' + dDeb + ' au ' + dFin + '</b> · ' +
       d.length + ' bougies de ' + state.tf + 'm (' + jrs.toFixed(1) + ' jours)<br>' +
       ents.length + ' entrées trouvées · ' + sors.length + ' sorties disponibles · ' +
-      trades.length + ' appariées par numéro · ' + ouverts + ' entrées encore ouvertes, exclues du calcul.</div>';
+      trades.length + ' appariées · ' + sansSortie.length + ' entrées sans sortie, exclues du calcul.</div>';
 
     if(box) box.innerHTML = h;
   };
@@ -25331,6 +25351,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="sansRosc">Sans Range Oscillator</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Sens<br><select id="bta-sens" style="' + sel + '">' +
         '<option value="normal">Tel quel</option><option value="inverse">Inversé</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Appariement<br><select id="bta-modeap" style="' + sel + '">' +
+        '<option value="chrono">Première sortie qui suit</option>' +
+        '<option value="numero">Même numéro strictement</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Sorties<br><select id="bta-sor" style="' + sel + '">' +
         '<option value="tout">kk bis — toutes</option>' +
         '<option value="div">Divergences seules</option>' +
