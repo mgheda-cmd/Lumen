@@ -25100,6 +25100,210 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
 })();
 
+
+/* ================================================================
+   BACKTEST APPARIÉ — entrées Z.Z., sorties par numéro
+   Chaque entrée Z.Z. numérotée #N est fermée par la première pastille
+   de sortie portant le même #N. Aucune sortie n'est inventée : on
+   reprend exactement ce qui est dessiné sur le graphique.
+   Les trades sans sortie appariée restent ouverts et sont comptés à
+   part, jamais fermés arbitrairement à la dernière bougie.
+   ================================================================ */
+(function(){
+
+  function entrees(mode){
+    const d = state.data || [];
+    if(!d.length) return [];
+    const base = (state.indicators && state.indicators.strat_zz) || {};
+    let cfg = Object.assign({}, base);
+    if(mode === 'nouveau')  cfg = Object.assign(cfg, { yellowMode:'msr', strictEmaHa:true });
+    if(mode === 'sansRosc') cfg = Object.assign(cfg, { skipRosc:true });
+    let sg = [];
+    try{
+      sg = (computeZZSignals(d, cfg, undefined, mode === 'nouveau' ? true : undefined) || [])
+             .filter(x => !x.isExit);
+    }catch(e){ return []; }
+    let last = 0;
+    sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
+    return sg.map(function(x){
+      const i = (x.t != null && typeof idxOfTime === 'function') ? idxOfTime(x.t) : x.i;
+      return (i != null) ? { i:i, dir:x.dir, num:x.num, price:x.price, t:x.t, trigger:x.trigger } : null;
+    }).filter(Boolean);
+  }
+
+  function sorties(filtre){
+    const kb = getInd('kk_bis');
+    let out = (kb && Array.isArray(kb.exits)) ? kb.exits.slice() : [];
+    if(filtre === 'div')   out = out.filter(x => x.div);
+    if(filtre === 'seuil') out = out.filter(x => !x.div);
+    return out.filter(x => x.i != null).sort((a,b) => a.i - b.i);
+  }
+
+  window.runBtApparie = function(){
+    const d = state.data || [];
+    const box = document.getElementById('bta-res');
+    if(!d.length){ if(box) box.innerHTML = '<div style="color:#F59E0B">Aucune donnée chargée.</div>'; return; }
+
+    const mEnt   = document.getElementById('bta-ent').value;
+    const mSor   = document.getElementById('bta-sor').value;
+    const lev    = +document.getElementById('bta-lev').value || 1;
+    const marge  = +document.getElementById('bta-marge').value || 10;
+    const fraisP = (+document.getElementById('bta-frais').value || 0) / 100;
+    const sens   = document.getElementById('bta-sens').value;
+
+    const ents = entrees(mEnt);
+    const sors = sorties(mSor);
+
+    // index des sorties par numéro d'entrée, dans l'ordre chronologique
+    const parNum = {};
+    for(const ex of sors){
+      const dirFerme = (ex.type === 'SORTIE_ACHAT') ? 1 : -1;
+      const n = (typeof zzNumFor === 'function') ? zzNumFor(ex.i, dirFerme) : null;
+      if(n == null) continue;
+      if(!parNum[n]) parNum[n] = [];
+      parNum[n].push(ex);
+    }
+
+    const trades = [];
+    let ouverts = 0;
+    for(const en of ents){
+      if(en.num == null) continue;
+      const cands = (parNum[en.num] || []).filter(x => x.i > en.i);
+      if(!cands.length){ ouverts++; continue; }
+      const ex = cands[0];
+
+      // sens réel : inversé si demandé
+      let dir = en.dir;
+      if(sens === 'inverse') dir = -dir;
+
+      const pe = +en.price, ps = +ex.price;
+      if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
+
+      const notionnel = marge * lev;
+      const variation = (ps - pe) / pe;
+      const brut = notionnel * variation * dir;
+      const frais = notionnel * fraisP * 2;      // ouverture + fermeture
+      const net = brut - frais;
+
+      trades.push({
+        num: en.num, dir: dir, iE: en.i, iS: ex.i,
+        pe: pe, ps: ps, brut: brut, frais: frais, net: net,
+        motif: ex.div ? 'Divergence' : 'Seuil + pente',
+        duree: Math.round((d[ex.i].t - d[en.i].t) / 60000),
+        trigger: en.trigger || ''
+      });
+    }
+
+    if(!trades.length){
+      if(box) box.innerHTML = '<div style="color:#F59E0B;padding:10px">Aucun trade apparié. ' + ents.length + ' entrées, ' + sors.length + ' sorties, ' + ouverts + ' entrées sans sortie correspondante.</div>';
+      return;
+    }
+
+    const gains  = trades.filter(t => t.net > 0);
+    const pertes = trades.filter(t => t.net <= 0);
+    const somGain  = gains.reduce((a,t) => a + t.net, 0);
+    const somPerte = Math.abs(pertes.reduce((a,t) => a + t.net, 0));
+    const pf = somPerte > 0 ? (somGain / somPerte) : Infinity;
+    const pnl = trades.reduce((a,t) => a + t.net, 0);
+    const wr = trades.length ? (gains.length / trades.length * 100) : 0;
+    const moyG = gains.length ? (somGain / gains.length) : 0;
+    const moyP = pertes.length ? (somPerte / pertes.length) : 0;
+    const dureeMoy = Math.round(trades.reduce((a,t) => a + t.duree, 0) / trades.length);
+
+    // repli maximal sur la courbe cumulée
+    let cum = 0, pic = 0, dd = 0;
+    for(const t of trades){ cum += t.net; if(cum > pic) pic = cum; const r = pic - cum; if(r > dd) dd = r; }
+
+    const c = v => v >= 0 ? '#10B981' : '#FF5252';
+    let h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-bottom:12px">';
+    const carte = (lab, val, col) =>
+      '<div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px 10px">' +
+      '<div style="font-size:9.5px;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px">' + lab + '</div>' +
+      '<div style="font-size:15px;font-weight:800;color:' + (col || '#E2E8F0') + ';font-family:\'IBM Plex Mono\',monospace">' + val + '</div></div>';
+    h += carte('Trades', trades.length);
+    h += carte('Réussite', wr.toFixed(1) + ' %', wr >= 50 ? '#10B981' : '#F59E0B');
+    h += carte('Profit factor', isFinite(pf) ? pf.toFixed(2) : '∞', pf >= 1 ? '#10B981' : '#FF5252');
+    h += carte('PnL net', (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' $', c(pnl));
+    h += carte('Gain moyen', '+' + moyG.toFixed(2) + ' $', '#10B981');
+    h += carte('Perte moyenne', '−' + moyP.toFixed(2) + ' $', '#FF5252');
+    h += carte('Ratio G/P', moyP > 0 ? (moyG / moyP).toFixed(2) : '∞', (moyG / (moyP || 1)) >= 1 ? '#10B981' : '#FF5252');
+    h += carte('Repli max', '−' + dd.toFixed(2) + ' $', '#FF9F1C');
+    h += carte('Durée moy.', dureeMoy + ' min');
+    h += carte('Sans sortie', ouverts, ouverts ? '#F59E0B' : '#94A3B8');
+    h += '</div>';
+
+    h += '<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:10.5px;font-family:\'IBM Plex Mono\',monospace">' +
+      '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
+      '<th style="padding:5px">#</th><th style="padding:5px">Sens</th><th style="padding:5px">Entrée</th>' +
+      '<th style="padding:5px">Sortie</th><th style="padding:5px">Motif</th><th style="padding:5px">Durée</th>' +
+      '<th style="padding:5px">Frais</th><th style="padding:5px">Net</th></tr>';
+    trades.forEach(function(t, k){
+      h += '<tr style="border-top:1px solid #1E293B;background:' + (k % 2 ? 'rgba(255,255,255,.02)' : 'transparent') + '">' +
+        '<td style="padding:4px 5px;color:#00E5FF;font-weight:700">#' + t.num + '</td>' +
+        '<td style="padding:4px 5px;color:' + (t.dir === 1 ? '#10B981' : '#FF5252') + ';font-weight:700">' + (t.dir === 1 ? 'ACHAT' : 'VENTE') + '</td>' +
+        '<td style="padding:4px 5px">' + t.pe.toFixed(2) + '</td>' +
+        '<td style="padding:4px 5px">' + t.ps.toFixed(2) + '</td>' +
+        '<td style="padding:4px 5px;color:#94A3B8">' + t.motif + '</td>' +
+        '<td style="padding:4px 5px;color:#94A3B8">' + t.duree + ' min</td>' +
+        '<td style="padding:4px 5px;color:#F472B6">−' + t.frais.toFixed(3) + '</td>' +
+        '<td style="padding:4px 5px;font-weight:800;color:' + c(t.net) + '">' + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + '</td></tr>';
+    });
+    h += '</table></div>';
+    h += '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
+      ents.length + ' entrées trouvées · ' + sors.length + ' sorties disponibles · ' +
+      trades.length + ' appariées par numéro · ' + ouverts + ' entrées encore ouvertes, exclues du calcul.</div>';
+
+    if(box) box.innerHTML = h;
+  };
+
+  window.openBtApparie = function(){
+    let m = document.getElementById('bta-back');
+    if(m){ m.style.display = 'flex'; return; }
+    m = document.createElement('div');
+    m.id = 'bta-back';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,20,.9);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px';
+    const sel = 'background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 8px;font-size:12px';
+    m.innerHTML =
+      '<div style="background:var(--panel,#0A111F);border:2px solid #A78BFA;border-radius:14px;max-width:1000px;width:100%;padding:16px;color:#E2E8F0">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<div><div style="font-size:16px;font-weight:800;color:#A78BFA">🎯 Backtest apparié</div>' +
+      '<div style="font-size:11px;color:#94A3B8">Chaque entrée #N est fermée par la sortie portant le même #N</div></div>' +
+      '<button onclick="document.getElementById(\'bta-back\').style.display=\'none\'" style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;cursor:pointer">Fermer</button></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:end;margin-bottom:12px">' +
+      '<label style="font-size:11px;color:#94A3B8">Entrées<br><select id="bta-ent" style="' + sel + '">' +
+        '<option value="zz">Z.Z. classiques</option>' +
+        '<option value="nouveau">Nouvelles conditions</option>' +
+        '<option value="sansRosc">Sans Range Oscillator</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Sens<br><select id="bta-sens" style="' + sel + '">' +
+        '<option value="normal">Tel quel</option><option value="inverse">Inversé</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Sorties<br><select id="bta-sor" style="' + sel + '">' +
+        '<option value="tout">kk bis — toutes</option>' +
+        '<option value="div">Divergences seules</option>' +
+        '<option value="seuil">Seuil + pente seul</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Marge $<br><input id="bta-marge" type="number" value="10" step="1" style="' + sel + ';width:72px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="1" step="1" style="' + sel + ';width:66px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Frais %<br><input id="bta-frais" type="number" value="0.02" step="0.01" style="' + sel + ';width:72px"></label>' +
+      '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
+      '</div><div id="bta-res"></div></div>';
+    document.body.appendChild(m);
+  };
+
+  try{
+    const a = document.getElementById('rangeimp-btn') || document.getElementById('nouv-btn') || document.getElementById('leg-btn');
+    if(a && !document.getElementById('bta-btn')){
+      const b = document.createElement('button');
+      b.id = 'bta-btn'; b.className = 'btn';
+      b.title = "Backtest où chaque entrée Z.Z. est fermée par la pastille de sortie portant le même numéro";
+      b.style.cssText = 'font-size:11px;padding:4px 9px;background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;font-weight:700';
+      b.textContent = '🎯 BT APPARIÉ';
+      b.onclick = window.openBtApparie;
+      a.parentNode.insertBefore(b, a.nextSibling);
+    }
+  }catch(e){}
+
+})();
+
 </script>
 </body>
 </html>
