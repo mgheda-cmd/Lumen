@@ -25235,7 +25235,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const lev    = +document.getElementById('bta-lev').value || 200;
     const margeIn = +document.getElementById('bta-marge').value || 0.02;
     const unite   = (document.getElementById('bta-unite') || {}).value || 'BASE';
-    const fraisP = (+document.getElementById('bta-frais').value || 0) / 100;
+    const fraisP = (+document.getElementById('bta-frais').value || 0.016) / 100;
     const sens   = document.getElementById('bta-sens').value;
     const dirF   = (document.getElementById('bta-dir') || {}).value || 'tout';
 
@@ -25427,6 +25427,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const dDeb = new Date(d[0].t).toLocaleDateString('fr-FR');
     const dFin = new Date(d[d.length-1].t).toLocaleDateString('fr-FR');
     h += '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
+      'Frais : <b style="color:#CBD5E1">' + (fraisP * 100).toFixed(3) + ' % taker</b> à l\'entrée et à la sortie · ' +
+        (trades.reduce((a,t) => a + t.frais, 0)).toFixed(2) + ' $ au total<br>' +
       'Direction : <b style="color:#CBD5E1">' +
         (dirF === 'long' ? 'longs seuls' : dirF === 'short' ? 'shorts seuls' : 'longs et shorts') + '</b><br>' +
       (unite === 'BASE'
@@ -25513,6 +25515,16 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(typeof render === 'function') render();
   };
 
+  /* Taux taker relevés sur le compte MEXC, sans remise MX.
+     Le maker est à 0 %, mais les ordres partent au marché : on est taker
+     des deux côtés, à l'entrée comme à la sortie. */
+  const FRAIS_TAKER = { BTC: 0.016, ETH: 0.008, XAU: 0.008 };
+  window.fraisTakerDefaut = function(){
+    const sym = (state.symbol || 'BTCUSDT').toUpperCase();
+    for(const k in FRAIS_TAKER){ if(sym.indexOf(k) === 0) return String(FRAIS_TAKER[k]); }
+    return '0.016';
+  };
+
   window.libererHistorique = function(){
     window.__btFreeze = false;
     const info = document.getElementById('bta-charge');
@@ -25554,7 +25566,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
-      '<label style="font-size:11px;color:#94A3B8">Frais %<br><input id="bta-frais" type="number" value="0.02" step="0.01" style="' + sel + ';width:72px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Taux taker MEXC : 0,016 % sur BTC, 0,008 % sur ETH. Appliqué à l\'entrée et à la sortie.">Frais % (taker)<br><input id="bta-frais" type="number" value="' + (window.fraisTakerDefaut ? window.fraisTakerDefaut() : '0.016') + '" step="0.001" style="' + sel + ';width:84px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
         '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
         '<option value="14">2 semaines</option><option value="22">22 jours</option>' +
