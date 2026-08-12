@@ -21224,17 +21224,37 @@ window.fetchMexcAccountAndPositions = async function() {
         window.__mexcRawPositions = positionsList;
         let posHtml = '<div style="text-align:right;margin-bottom:6px"><button onclick="window.showMexcRaw()" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:5px;padding:3px 9px;font-size:10px;cursor:pointer">🔍 données brutes</button></div>';
         positionsList.forEach(p => {
-          const isLong = (p.positionType === 1 || p.holdVol > 0 || p.side === 'long' || p.side === 1);
+          /* positionType seul fait foi : 1 = long, 2 = short. La condition
+             holdVol > 0 était toujours vraie et affichait tout en LONG. */
+          const isLong = (p.positionType != null)
+            ? (Number(p.positionType) === 1)
+            : (p.side === 'long' || p.side === 1 || p.side === 'LONG');
           const posSide = isLong ? 'LONG' : 'SHORT';
           const sideCol = isLong ? '#10B981' : '#EF4444';
           const vol = p.holdVol || p.vol || p.qty || 0;
           const entryPx = Number(p.holdAvgPrice ?? p.openAvgPrice ?? p.openPrice ?? p.costOpenPrice ?? 0);
-          const pnl = Number(p.unrealisedPnl || p.pnl || 0);
+          /* PnL : recalculé si MEXC ne le fournit pas, à partir de l'écart
+             entre le prix repère et le prix d'entrée. */
+          let pnl = Number(p.unrealisedPnl ?? p.pnl ?? p.unrealizedPnl ?? NaN);
+          if(!isFinite(pnl) || (pnl === 0 && markPx !== entryPx)){
+            pnl = (markPx - entryPx) * tailleBase * (isLong ? 1 : -1);
+          }
           const pnlCol = pnl >= 0 ? '#10B981' : '#FF5252';
 
           /* Informations complémentaires renvoyées par MEXC. Les noms varient
              selon les versions de l'API, d'où les alternatives. */
-          const markPx  = Number(p.fairPrice ?? p.markPrice ?? p.lastPrice ?? entryPx ?? 0);
+          /* Prix repère : MEXC ne le renvoie pas toujours. On retombe alors
+             sur le dernier prix connu du flux plutôt que sur le prix d'entrée,
+             qui donnait un PnL nul. */
+          let markPx = Number(p.fairPrice ?? p.markPrice ?? p.lastPrice ?? p.indexPrice ?? 0);
+          if(!(markPx > 0)){
+            try{ markPx = Number(livePrice(p.symbol) || livePrice(state.symbol) || 0); }catch(e){ markPx = 0; }
+          }
+          if(!(markPx > 0)) markPx = entryPx;
+
+          // taille réelle en actif : contrats × taille du contrat
+          const cszP = Number(p.contractSize ?? (window.__csz && window.__csz[p.symbol]) ?? 0.0001);
+          const tailleBase = Number(vol) * cszP;
           const liqPx   = Number(p.liquidatePrice ?? p.liqPrice ?? 0);
           const margeN  = Number(p.im ?? p.positionMargin ?? p.oim ?? 0);
           const lev     = Number(p.leverage || 0);
@@ -21253,7 +21273,7 @@ window.fetchMexcAccountAndPositions = async function() {
               <div>
                 <span style="font-weight:900;color:${sideCol};background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;font-size:11px">${posSide}</span>
                 <b style="color:#FFF;margin-left:6px">${p.symbol}</b>
-                <span style="color:var(--muted);font-size:11px;margin-left:6px">${vol} contrat(s) @ $${entryPx > 0 ? entryPx.toFixed(dP) : '—'}${lev ? ' · ' + lev + 'x' : ''}</span>
+                <span style="color:var(--muted);font-size:11px;margin-left:6px">${tailleBase.toFixed(4)} ${(p.symbol||'BTC_USDT').split('_')[0]} (${vol} ct) @ $${entryPx > 0 ? entryPx.toFixed(dP) : '—'}${lev ? ' · ' + lev + 'x' : ''}</span>
                 <div style="margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94A3B8;line-height:1.6">
                   Repère <b style="color:#7DD3FC">${markPx > 0 ? '$' + markPx.toFixed(dP) : '—'}</b> ·
                   Liquidation <b style="color:#FF9F1C">${liqPx > 0 ? '$' + liqPx.toFixed(dP) : '—'}</b> ·
