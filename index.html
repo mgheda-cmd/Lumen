@@ -599,6 +599,11 @@ footer{
         <span class="name">FluidTrades - SMC Lite <span class="desc">Supply/Demand & BOS</span></span>
         <span class="state">on</span>
       </div>
+      <div class="ind-item on" data-ind="fvg_ranked" id="item-fvg_ranked" style="background:var(--panel-2,#0F172A);border:1.5px solid #1AD8C2;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(26,216,194,0.2)">
+        <span class="dot" style="background:#1AD8C2;box-shadow:0 0 6px #1AD8C2;flex:none"></span>
+        <span class="name">Ranked FVG Imbalance <span class="desc">Ranking Top Zones (Zeiierman)</span></span>
+        <span class="state">on</span>
+      </div>
       <div class="ind-item" data-ind="fvg">
         <span class="dot" style="background:#1E6EFF"></span>
         <span class="name">FVG MTF <span class="desc">% acheteur / vendeur</span></span>
@@ -758,6 +763,22 @@ footer{
         <span class="state">off</span>
       </div>
       <h4 style="color:#A5B4FC;margin-top:10px;border-top:1px solid var(--line);padding-top:8px">✨ Derniers indicateurs ajoutés</h4>
+      <div class="ind-item on" data-ind="sqz_mom" id="item-sqz_mom" style="background:rgba(0,230,118,0.12);border:1.5px solid #00E676;border-radius:10px;padding:10px 12px;margin-top:4px;margin-bottom:8px;box-shadow:0 3px 10px rgba(0,230,118,0.2);display:flex;flex-direction:column;align-items:stretch;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="dot" style="background:#00E676;box-shadow:0 0 7px #00E676;flex:none"></span>
+          <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12.5px">Squeeze Momentum <span style="background:#00E676;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">LAZYBEAR DUAL-TF</span><br><span class="desc" style="color:#A7F3D0;font-size:11px">Volatilité BB/KC &amp; Régression Linéaire MTF (2 UT simultanées)</span></span>
+          <span class="state">on</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:10px;color:#94A3B8">UT 1:</span>
+          <span class="srtf mtf on" data-ind2="sqz_mom" data-tf="chart">UT</span>
+          <span class="srtf mtf" data-ind2="sqz_mom" data-tf="3">3m</span>
+          <span class="srtf mtf" data-ind2="sqz_mom" data-tf="5">5m</span>
+          <span class="srtf mtf" data-ind2="sqz_mom" data-tf="15">15m</span>
+          <span class="srtf mtf" data-ind2="sqz_mom" data-tf="60">1H</span>
+          <span class="srtf mtf" data-ind2="sqz_mom" data-tf="240">4H</span>
+        </div>
+      </div>
       <div class="ind-item on" data-ind="rangeDet" id="item-rangeDet" style="background:rgba(99,102,241,0.18);border:1px solid #6366F1;margin-top:4px;margin-bottom:6px">
         <span class="dot" style="background:#6366F1"></span>
         <span class="name" style="font-weight:700;color:#A5B4FC">Détecteur de Range ① <span style="background:#6366F1;color:#ffffff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:bold">CHOPPINESS</span><br><span class="desc" style="color:#C7D2FE">Zones de consolidation & Index Choppiness</span></span>
@@ -1316,7 +1337,7 @@ footer{
         </div>
         <div>
           <div style="font-weight:900;color:#00E5FF;font-size:17px;letter-spacing:0.3px">
-            Compte MEXC Direct & Trading en Réel
+            Compte MEXC Direct & Trading en Réel <span id="mexc-build-tag" style="font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:#64748B;border:1px solid #334155;border-radius:4px;padding:1px 6px" title="Version du fichier réellement chargée par le navigateur">version —</span>
           </div>
           <div style="font-size:11.5px;color:#CBD5E1;margin-top:2px">
             Soldes réels, positions ouvertes, exécution manuelle instantanée & bot automatique
@@ -1368,7 +1389,6 @@ footer{
     <div id="mexc-tab-account" class="mexc-tab-content">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <span style="font-weight:800;font-size:13px;color:#00E5FF">📊 Aperçu des Soldes MEXC Réels</span>
-        <span id="mexc-build-tag" style="font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:#64748B;border:1px solid #334155;border-radius:4px;padding:1px 6px" title="Version du fichier reellement chargee par le navigateur">version —</span>
         <button onclick="fetchMexcAccountAndPositions()" style="background:rgba(0,229,255,0.12);border:1px solid #00E5FF;color:#00E5FF;border-radius:6px;padding:5px 12px;font-weight:700;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:4px">
           🔄 Rafraîchir les Soldes & Positions
         </button>
@@ -1402,15 +1422,12 @@ footer{
             <span>⚡ POSITIONS OUVERTES SUR MEXC FUTURES</span>
             <span id="mexc-pos-count-badge" style="background:#FFD700;color:#0F172A;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:900">0</span>
           </div>
-          <button onclick="closeAllMexcPositions()" style="background:rgba(239,68,68,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:6px;padding:4px 10px;font-weight:800;font-size:10.5px;cursor:pointer">
+          <button onclick="window.showMexcRaw()" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:5px;padding:3px 9px;font-size:10px;cursor:pointer;margin-right:6px" title="Affiche exactement ce que l'API MEXC renvoie">🔍 données brutes</button><button onclick="closeAllMexcPositions()" style="background:rgba(239,68,68,0.15);border:1px solid #FF5252;color:#FF5252;border-radius:6px;padding:4px 10px;font-weight:800;font-size:10.5px;cursor:pointer">
             🛑 TOUT FERMER AU MARCHÉ
           </button>
         </div>
 
-        <div style="text-align:right;margin-bottom:6px">
-          <button onclick="window.showMexcRaw()" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:5px;padding:3px 9px;font-size:10px;cursor:pointer" title="Affiche exactement ce que l'API MEXC renvoie, pour identifier les champs manquants">🔍 données brutes</button>
-        </div>
-        <div id="mexc-positions-container" style="min-height:80px;overflow-x:auto">
+        <div id="mexc-positions-container" style="min-height:80px">
           <div style="text-align:center;color:var(--muted);font-size:12px;padding:16px">
             Cliquez sur <b>"Rafraîchir"</b> pour charger vos positions actives depuis MEXC Futures.
           </div>
@@ -1472,15 +1489,21 @@ footer{
           </select>
         </label>
 
-        <!-- Trade Budget USDT -->
-        <label style="font-size:11px;color:#CBD5E1;font-weight:bold;grid-column:1/-1">5. Marge à Engager (USDT)
-          <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-            <input type="number" id="mexc-trade-budget" value="10" min="1" step="1" oninput="updateMexcTradeCalc()" style="flex:1;background:var(--panel-2,#0F172A);border:1.5px solid #38BDF8;border-radius:6px;color:#38BDF8;padding:8px;font-weight:bold;font-size:13px">
-            <button type="button" onclick="setMexcBudget(5)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">5$</button>
-            <button type="button" onclick="setMexcBudget(10)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">10$</button>
-            <button type="button" onclick="setMexcBudget(25)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">25$</button>
-            <button type="button" onclick="setMexcBudget(50)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">50$</button>
-            <button type="button" onclick="setMexcBudget(100)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 10px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">100$</button>
+        <!-- Devise et Marge à Engager (USDT ou BTC) -->
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold;grid-column:1/-1">5. Marge à Engager (<span id="mexc-unit-display-label">USDT</span>)
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap">
+            <select id="mexc-trade-unit" onchange="window.onMexcManualUnitChange(); updateMexcTradeCalc();" style="background:var(--panel-2,#0F172A);border:1.5px solid #00E5FF;border-radius:6px;color:#00E5FF;padding:8px;font-weight:bold;font-size:12px;cursor:pointer">
+              <option value="USDT" selected>💵 USDT</option>
+              <option value="BTC">₿ BTC</option>
+            </select>
+            <input type="number" id="mexc-trade-budget" value="10" min="0.00001" step="any" oninput="updateMexcTradeCalc()" style="flex:1;min-width:110px;background:var(--panel-2,#0F172A);border:1.5px solid #38BDF8;border-radius:6px;color:#38BDF8;padding:8px;font-weight:bold;font-size:13px">
+            <div id="mexc-presets-container" style="display:flex;gap:4px;flex-wrap:wrap">
+              <button type="button" onclick="setMexcBudget(5)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">5$</button>
+              <button type="button" onclick="setMexcBudget(10)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">10$</button>
+              <button type="button" onclick="setMexcBudget(25)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">25$</button>
+              <button type="button" onclick="setMexcBudget(50)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">50$</button>
+              <button type="button" onclick="setMexcBudget(100)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">100$</button>
+            </div>
           </div>
         </label>
       </div>
@@ -1560,15 +1583,21 @@ footer{
           </select>
         </label>
 
-        <label style="font-size:10.5px;color:var(--muted)">💵 Budget par Trade
-          <select id="live-ex-trade-budget" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1.5px solid #38BDF8;border-radius:6px;color:#38BDF8;padding:6px;margin-top:3px;font-weight:bold">
-            <option value="1">💵 1 USDT</option>
-            <option value="5">💵 5 USDT</option>
-            <option value="10" selected>💵 10 USDT</option>
-            <option value="25">💵 25 USDT</option>
-            <option value="50">💵 50 USDT</option>
-            <option value="100">💵 100 USDT</option>
-          </select>
+        <label style="font-size:10.5px;color:var(--muted)">💵 Devise &amp; Budget par Trade
+          <div style="display:flex;gap:4px;margin-top:3px">
+            <select id="live-ex-trade-unit" onchange="window.onLiveTradeUnitChange(); window.recalcLiveModalNotional();" style="width:85px;background:var(--panel-2);border:1.5px solid #00E5FF;border-radius:6px;color:#00E5FF;padding:6px;font-weight:bold;font-size:11px;cursor:pointer">
+              <option value="USDT" selected>💵 USDT</option>
+              <option value="BTC">₿ BTC</option>
+            </select>
+            <select id="live-ex-trade-budget" onchange="window.recalcLiveModalNotional()" style="flex:1;background:var(--panel-2);border:1.5px solid #38BDF8;border-radius:6px;color:#38BDF8;padding:6px;font-weight:bold;font-size:11.5px">
+              <option value="1">💵 1 USDT</option>
+              <option value="5">💵 5 USDT</option>
+              <option value="10" selected>💵 10 USDT</option>
+              <option value="25">💵 25 USDT</option>
+              <option value="50">💵 50 USDT</option>
+              <option value="100">💵 100 USDT</option>
+            </select>
+          </div>
         </label>
 
         <label style="font-size:10.5px;color:var(--muted)">🛡️ Plafond Max Notionnel
@@ -2955,6 +2984,130 @@ const calc = {
     const bears = z.filter(q=>q.type==='bear');
     return [...bulls.slice(-30), ...bears.slice(-30)];
   },
+  /* Ranked FVG Imbalance Zones (Zeiierman) : Classement dynamique des zones FVG par score de qualité (taille, volume, tendance, atténuation) + barres de force + étiquettes intelligentes. */
+  rankedFvg(bars, opt={}) {
+    if(!bars || bars.length < 3) return [];
+    const maxZones = opt.maxZones != null ? +opt.maxZones : 10;
+    const maxStored = opt.maxStored != null ? +opt.maxStored : 50;
+    const volLength = opt.volLength != null ? +opt.volLength : 20;
+    const trendLength = opt.trendLength != null ? +opt.trendLength : 50;
+    const N = bars.length;
+
+    const volMA = new Float64Array(N);
+    let vSum = 0;
+    for(let i=0; i<N; i++){
+      const v = bars[i].v || 0;
+      vSum += v;
+      if(i >= volLength) vSum -= (bars[i - volLength].v || 0);
+      volMA[i] = i >= volLength - 1 ? vSum / volLength : (vSum / (i + 1));
+    }
+
+    const trendEMA = new Float64Array(N);
+    const alpha = 2 / (trendLength + 1);
+    let ema = bars[0] ? bars[0].c : 0;
+    for(let i=0; i<N; i++){
+      if(i === 0) ema = bars[0].c;
+      else ema = bars[i].c * alpha + ema * (1 - alpha);
+      trendEMA[i] = ema;
+    }
+
+    const atr = new Float64Array(N);
+    let atrVal = 0;
+    for(let i=0; i<N; i++){
+      const b = bars[i];
+      const tr = i === 0 ? (b.h - b.l) : Math.max(b.h - b.l, Math.abs(b.h - bars[i - 1].c), Math.abs(b.l - bars[i - 1].c));
+      if(i < 14){
+        atrVal += tr;
+        atr[i] = atrVal / (i + 1);
+      } else {
+        atrVal = (atrVal * 13 + tr) / 14;
+        atr[i] = atrVal;
+      }
+    }
+
+    const activeFvgs = [];
+
+    for(let i=2; i<N; i++){
+      const bar = bars[i];
+      const prev2 = bars[i - 2];
+      const bullFVG = bar.l > prev2.h;
+      const bearFVG = bar.h < prev2.l;
+
+      if(bullFVG || bearFVG){
+        const top = bullFVG ? bar.l : prev2.l;
+        const bottom = bullFVG ? prev2.h : bar.h;
+        const direction = bullFVG ? 1 : -1;
+        const fvgSize = Math.abs(top - bottom);
+        const vMA = volMA[i] || 1;
+        const volScore = vMA > 0 ? (bar.v || 0) / vMA : 1.0;
+        const tEMA = trendEMA[i] || bar.c;
+        const trendScore = (direction === 1 && bar.c > tEMA) ? 1.0 : (direction === -1 && bar.c < tEMA) ? 1.0 : 0.0;
+        const mitigation = 0.0;
+
+        const qualityScore = fvgSize * 100 + volScore * 10 + trendScore * 20 - mitigation * 50;
+
+        const curAtr = atr[i] || 1e-5;
+        const gapStrength = Math.min(fvgSize / Math.max(curAtr, 1e-8), 2.0) / 2.0 * 40;
+        const volStrength = Math.min(volScore, 2.0) / 2.0 * 30;
+        const trendStrength = trendScore * 20;
+        const candleRange = Math.max(bar.h - bar.l, 1e-8);
+        const candleStrength = Math.abs(bar.c - bar.o) / candleRange * 10;
+
+        const totalStrength = gapStrength + volStrength + trendStrength + candleStrength;
+        const mainStrength = Math.round(Math.max(Math.min(totalStrength, 100), 0));
+
+        const bullStrength = direction === 1 ? mainStrength : 100 - mainStrength;
+        const bearStrength = direction === -1 ? mainStrength : 100 - mainStrength;
+
+        activeFvgs.push({
+          qualityScore,
+          top,
+          bottom,
+          direction,
+          bornBar: i,
+          bornTime: prev2.t,
+          rightTime: bar.t,
+          fvgSize,
+          volScore,
+          trendScore,
+          mitigation,
+          bullStrength,
+          bearStrength,
+          type: bullFVG ? 'bull' : 'bear'
+        });
+      }
+
+      for(let j=activeFvgs.length - 1; j>=0; j--){
+        const fvg = activeFvgs[j];
+        const age = i - fvg.bornBar;
+        const touched = fvg.direction === 1 ? bar.l <= fvg.top : bar.h >= fvg.bottom;
+
+        if(touched){
+          const fillDistance = fvg.direction === 1 ? (fvg.top - bar.l) : (bar.h - fvg.bottom);
+          const zoneSize = Math.max(fvg.top - fvg.bottom, 1e-8);
+          fvg.mitigation = Math.min(Math.max(fillDistance / zoneSize, 0), 1);
+        }
+
+        fvg.qualityScore = fvg.fvgSize * 100 + fvg.volScore * 10 + fvg.trendScore * 20 - fvg.mitigation * 50 - age * 0.1;
+
+        if(fvg.mitigation >= 1){
+          activeFvgs.splice(j, 1);
+        }
+      }
+    }
+
+    activeFvgs.sort((a, b) => b.qualityScore - a.qualityScore);
+    if(activeFvgs.length > maxStored){
+      activeFvgs.length = maxStored;
+    }
+
+    activeFvgs.forEach((f, idx) => {
+      f.rank = idx + 1;
+      f.showZone = idx < maxZones;
+    });
+
+    return activeFvgs;
+  },
   /* Prise de liquidité : mèche au-delà d'un pivot puis clôture de retour. */
   sweepOne(bars,name){
     const L=5,N=bars.length,out=[];
@@ -3010,6 +3163,128 @@ const calc = {
     const sig=this.ema(d,9,line);
     const hist=d.map((_,i)=>(line[i]!=null&&sig[i]!=null)?line[i]-sig[i]:null);
     return {line,sig,hist};},
+  sqzMom(d, opt={}){
+    if(!d || !d.length) return { val:[], sqzOn:[], sqzOff:[], noSqz:[], colorKey:[] };
+    const length = opt.bbLength != null ? +opt.bbLength : 20;
+    const mult = opt.bbMult != null ? +opt.bbMult : 2.0;
+    const lengthKC = opt.kcLength != null ? +opt.kcLength : 20;
+    const multKC = opt.kcMult != null ? +opt.kcMult : 1.5;
+    const useTrueRange = opt.useTrueRange !== false;
+    const N = d.length;
+
+    const closes = new Float64Array(N);
+    const highs = new Float64Array(N);
+    const lows = new Float64Array(N);
+    for(let i=0; i<N; i++){
+      closes[i] = d[i].c;
+      highs[i] = d[i].h;
+      lows[i] = d[i].l;
+    }
+
+    // 1. Bollinger Bands
+    const bbBasis = new Float64Array(N);
+    const bbDev = new Float64Array(N);
+    let bbSum = 0;
+    for(let i=0; i<N; i++){
+      bbSum += closes[i];
+      if(i >= length) bbSum -= closes[i - length];
+      if(i >= length - 1){
+        const mean = bbSum / length;
+        bbBasis[i] = mean;
+        let varSum = 0;
+        for(let k = i - length + 1; k <= i; k++){
+          const diff = closes[k] - mean;
+          varSum += diff * diff;
+        }
+        bbDev[i] = mult * Math.sqrt(varSum / length);
+      }
+    }
+
+    // 2. Keltner Channels
+    const kcMa = new Float64Array(N);
+    const tr = new Float64Array(N);
+    let kcSum = 0;
+    for(let i=0; i<N; i++){
+      kcSum += closes[i];
+      if(i >= lengthKC) kcSum -= closes[i - lengthKC];
+      if(i >= lengthKC - 1) kcMa[i] = kcSum / lengthKC;
+
+      const h = highs[i], l = lows[i];
+      const rangeVal = useTrueRange
+        ? (i === 0 ? (h - l) : Math.max(h - l, Math.abs(h - closes[i - 1]), Math.abs(l - closes[i - 1])))
+        : (h - l);
+      tr[i] = rangeVal;
+    }
+
+    const kcRangeMa = new Float64Array(N);
+    for(let i = lengthKC - 1; i < N; i++){
+      let s = 0;
+      for(let k = i - lengthKC + 1; k <= i; k++) s += tr[k];
+      kcRangeMa[i] = s / lengthKC;
+    }
+
+    // 3. Squeeze state & source calculation
+    const sqzOn = new Array(N).fill(false);
+    const sqzOff = new Array(N).fill(false);
+    const noSqz = new Array(N).fill(true);
+    const x = new Float64Array(N);
+
+    const N_kc = lengthKC;
+    const kMean = (N_kc - 1) / 2;
+    const sxx = (N_kc * (N_kc * N_kc - 1)) / 12;
+
+    for(let i=0; i<N; i++){
+      if(i >= Math.max(length, lengthKC) - 1){
+        const uBB = bbBasis[i] + bbDev[i];
+        const lBB = bbBasis[i] - bbDev[i];
+        const uKC = kcMa[i] + kcRangeMa[i] * multKC;
+        const lKC = kcMa[i] - kcRangeMa[i] * multKC;
+
+        const on = (lBB > lKC) && (uBB < uKC);
+        const off = (lBB < lKC) && (uBB > uKC);
+        sqzOn[i] = on;
+        sqzOff[i] = off;
+        noSqz[i] = (!on) && (!off);
+
+        let hh = -Infinity, ll = Infinity;
+        for(let k = i - lengthKC + 1; k <= i; k++){
+          if(highs[k] > hh) hh = highs[k];
+          if(lows[k] < ll) ll = lows[k];
+        }
+        const midVal = ((hh + ll) / 2 + kcMa[i]) / 2;
+        x[i] = closes[i] - midVal;
+      }
+    }
+
+    // 4. Linear regression value val = linreg(x, lengthKC, 0)
+    const val = new Array(N).fill(null);
+    const colorKey = new Array(N).fill('lime');
+
+    for(let i=0; i<N; i++){
+      if(i >= lengthKC - 1){
+        let ySum = 0;
+        let cov = 0;
+        for(let k = 0; k < N_kc; k++){
+          const yk = x[i - N_kc + 1 + k];
+          ySum += yk;
+          cov += (k - kMean) * yk;
+        }
+        const yMean = ySum / N_kc;
+        const slope = cov / sxx;
+        const linregVal = yMean + slope * kMean;
+        val[i] = linregVal;
+
+        const prev = (i > 0 && val[i - 1] != null) ? val[i - 1] : 0;
+        if(linregVal > 0){
+          colorKey[i] = linregVal > prev ? 'lime' : 'green';
+        } else {
+          colorKey[i] = linregVal < prev ? 'red' : 'maroon';
+        }
+      }
+    }
+
+    return { val, sqzOn, sqzOff, noSqz, colorKey };
+  },
   stoch(d,p){const K=new Array(d.length).fill(null);
     for(let i=p-1;i<d.length;i++){
       let hh=-Infinity,ll=Infinity;
@@ -3926,6 +4201,7 @@ const state = {
     sha2:{on:false,period:10,tf:'15',mode:'lisse'},
     sha3:{on:false,period:10,tf:'60',mode:'lisse'},
     smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showZigzag:false,showPaLabels:false,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
+    fvg_ranked:{on:true,maxZones:10,maxStored:50,volLength:20,trendLength:50,showBars:true,showBlockText:true,strengthTextSize:'auto',blockTextSize:'auto',cBull:'#1AD8C2',cBear:'#D81A66',tf:'chart'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:true,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
     lrc:{on:false,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF',tf2:'off',cLine2:'#FF9F1C',cBand2:'#FF9F1C',fill2:false},
@@ -3937,6 +4213,7 @@ const state = {
     rsi:{on:true,period:14,tf:'chart'},
     rsi2:{on:false,period:14,tf:'60'},
     macd:{on:true,tf:'chart'},
+    sqz_mom:{on:true,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true},
     imp:{on:false,period:34,tf:'chart'},
     imp2:{on:false,period:34,tf:'60'},
     stoch:{on:false,period:14,tf:'chart'},
@@ -3945,8 +4222,8 @@ const state = {
     rosc2:{on:false,period:50,smooth:2,tf:'60'},
     macdsr:{on:false,fast:12,slow:26,sig:9,tf:'chart'},
     macdsr2:{on:false,fast:12,slow:26,sig:9,tf:'chart'},
-    rangeDet:{on:true,period:14,threshold:50,showOverlay:true,showSubpane:true,cRange:'#6366F1',cHigh:'#F59E0B',cLow:'#10B981',cTrend:'#3B82F6',tf:'chart'},
-    rangeDet2:{on:true,period:14,threshold:25,showOverlay:true,showSubpane:true,cRange:'#EC4899',cHigh:'#F43F5E',cLow:'#10B981',cTrend:'#06B6D4',tf:'chart'},
+    rangeDet:{on:true,period:14,threshold:50,showOverlay:true,showSubpane:true,cRange:'#6366F1',cHigh:'#F59E0B',cLow:'#10B981',cTrend:'#3B82F6',tf1:'chart',tf2:'off',modeTF2:'line'},
+    rangeDet2:{on:true,period:14,threshold:25,showOverlay:true,showSubpane:true,cRange:'#EC4899',cHigh:'#F43F5E',cLow:'#10B981',cTrend:'#06B6D4',tf1:'chart',tf2:'off',modeTF2:'line'},
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
@@ -4865,6 +5142,50 @@ function getInd(key){
         }
       }
     }
+    if(key==='sqz_mom'){
+      const tf1 = ind.tf1 || ind.tf || 'chart';
+      const mtf1 = (tf1 !== 'chart' && +tf1 !== state.tf) ? +tf1 : null;
+      let res1;
+      if(!mtf1){
+        res1 = calc.sqzMom(d, ind);
+      } else {
+        const bars1 = getMTFBars(mtf1);
+        if(!bars1 || !bars1.length) res1 = { val:[], sqzOn:[], sqzOff:[], noSqz:[], colorKey:[] };
+        else {
+          const r1 = calc.sqzMom(bars1, ind);
+          res1 = {
+            val: mapHTF(bars1, r1.val),
+            sqzOn: mapHTF(bars1, r1.sqzOn),
+            sqzOff: mapHTF(bars1, r1.sqzOff),
+            noSqz: mapHTF(bars1, r1.noSqz),
+            colorKey: mapHTF(bars1, r1.colorKey)
+          };
+        }
+      }
+
+      let res2 = null;
+      if(ind.tf2 && ind.tf2 !== 'off'){
+        const tf2 = ind.tf2;
+        const mtf2 = (tf2 !== 'chart' && +tf2 !== state.tf) ? +tf2 : null;
+        if(!mtf2){
+          res2 = calc.sqzMom(d, ind);
+        } else {
+          const bars2 = getMTFBars(mtf2);
+          if(!bars2 || !bars2.length) res2 = { val:[], sqzOn:[], sqzOff:[], noSqz:[], colorKey:[] };
+          else {
+            const r2 = calc.sqzMom(bars2, ind);
+            res2 = {
+              val: mapHTF(bars2, r2.val),
+              sqzOn: mapHTF(bars2, r2.sqzOn),
+              sqzOff: mapHTF(bars2, r2.sqzOff),
+              noSqz: mapHTF(bars2, r2.noSqz),
+              colorKey: mapHTF(bars2, r2.colorKey)
+            };
+          }
+        }
+      }
+      state.cache[ck] = { tf1: res1, tf2: res2 };
+    }
     if(key==='st')state.cache[ck]=calc.supertrend(d);
     if(key==='almasd')state.cache[ck]=calc.almaSD(d,ind.fac,ind.sd,ind.alen,ind.asig,ind.aoff);
     if(key==='signal')state.cache[ck]=computeSignals(d,ind);
@@ -5046,50 +5367,112 @@ function getInd(key){
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
     if(key==='smc_lite') state.cache[ck] = calc.smcLite(d, ind);
+    if(key==='fvg_ranked'){
+      const mtf = (ind.tf && ind.tf !== 'chart' && +ind.tf !== state.tf) ? +ind.tf : null;
+      if(!mtf) state.cache[ck] = calc.rankedFvg(d, ind);
+      else {
+        const bars = getMTFBars(mtf);
+        state.cache[ck] = bars ? calc.rankedFvg(bars, ind) : [];
+      }
+    }
     if(key==='fvg')state.cache[ck]=mtfCollect2(ind.tfs,(b,n)=>calc.fvgOne(b,n));
     if(key==='ob')state.cache[ck]=mtfCollect2(ind.tfs,(b,n,t)=>calc.obOne(b,n,t));
     if(key==='bos')state.cache[ck]=mtfCollect2(ind.tfs,(b,n,t)=>calc.bosOne(b,n,t));
     if(key==='rangeDet'){
-      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       const period=ind.period||14, thresh=ind.threshold!=null?ind.threshold:50;
-      if(!mtf)state.cache[ck]=calc.rangeDetector(d,period,thresh);
-      else{
-        const bars=getMTFBars(mtf);
-        if(!bars)state.cache[ck]={chop:[],isRange:[],rangeHi:[],rangeLo:[],rangeMid:[],zones:[]};
-        else{
-          const rd=calc.rangeDetector(bars,period,thresh);
-          state.cache[ck]={
-            chop:mapHTF(bars,rd.chop),
-            isRange:mapHTF(bars,rd.isRange),
-            rangeHi:mapHTF(bars,rd.rangeHi),
-            rangeLo:mapHTF(bars,rd.rangeLo),
-            rangeMid:mapHTF(bars,rd.rangeMid),
-            zones:rd.zones
+      const tf1 = ind.tf1 || ind.tf || 'chart';
+      const mtf1 = (tf1 !== 'chart' && +tf1 !== state.tf) ? +tf1 : null;
+      let res1;
+      if(!mtf1) {
+        res1 = calc.rangeDetector(d, period, thresh);
+      } else {
+        const bars1 = getMTFBars(mtf1);
+        if(!bars1) res1 = {chop:[],isRange:[],rangeHi:[],rangeLo:[],rangeMid:[],zones:[]};
+        else {
+          const rd1 = calc.rangeDetector(bars1, period, thresh);
+          res1 = {
+            chop: mapHTF(bars1, rd1.chop),
+            isRange: mapHTF(bars1, rd1.isRange),
+            rangeHi: mapHTF(bars1, rd1.rangeHi),
+            rangeLo: mapHTF(bars1, rd1.rangeLo),
+            rangeMid: mapHTF(bars1, rd1.rangeMid),
+            zones: rd1.zones
           };
         }
       }
+
+      let res2 = null;
+      if(ind.tf2 && ind.tf2 !== 'off'){
+        const tf2 = ind.tf2;
+        const mtf2 = (tf2 !== 'chart' && +tf2 !== state.tf) ? +tf2 : null;
+        if(!mtf2) {
+          res2 = calc.rangeDetector(d, period, thresh);
+        } else {
+          const bars2 = getMTFBars(mtf2);
+          if(!bars2) res2 = {chop:[],isRange:[],rangeHi:[],rangeLo:[],rangeMid:[],zones:[]};
+          else {
+            const rd2 = calc.rangeDetector(bars2, period, thresh);
+            res2 = {
+              chop: mapHTF(bars2, rd2.chop),
+              isRange: mapHTF(bars2, rd2.isRange),
+              rangeHi: mapHTF(bars2, rd2.rangeHi),
+              rangeLo: mapHTF(bars2, rd2.rangeLo),
+              rangeMid: mapHTF(bars2, rd2.rangeMid),
+              zones: rd2.zones
+            };
+          }
+        }
+      }
+      state.cache[ck] = { tf1: res1, tf2: res2 };
     }
     if(key==='rangeDet2'){
-      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       const period=ind.period||14, thresh=ind.threshold!=null?ind.threshold:25;
-      if(!mtf)state.cache[ck]=calc.rangeDetector2(d,period,thresh);
-      else{
-        ensureMTF(mtf);
-        const bars=mtfStore.data[mtf];
-        if(!bars)state.cache[ck]={adx:[],squeeze:[],isRange:[],rangeHi:[],rangeLo:[],rangeMid:[],zones:[]};
-        else{
-          const rd=calc.rangeDetector2(bars,period,thresh);
-          state.cache[ck]={
-            adx:mapHTF(bars,rd.adx),
-            squeeze:mapHTF(bars,rd.squeeze),
-            isRange:mapHTF(bars,rd.isRange),
-            rangeHi:mapHTF(bars,rd.rangeHi),
-            rangeLo:mapHTF(bars,rd.rangeLo),
-            rangeMid:mapHTF(bars,rd.rangeMid),
-            zones:rd.zones
+      const tf1 = ind.tf1 || ind.tf || 'chart';
+      const mtf1 = (tf1 !== 'chart' && +tf1 !== state.tf) ? +tf1 : null;
+      let res1;
+      if(!mtf1) {
+        res1 = calc.rangeDetector2(d, period, thresh);
+      } else {
+        const bars1 = getMTFBars(mtf1);
+        if(!bars1) res1 = {adx:[],squeeze:[],isRange:[],rangeHi:[],rangeLo:[],rangeMid:[],zones:[]};
+        else {
+          const rd1 = calc.rangeDetector2(bars1, period, thresh);
+          res1 = {
+            adx: mapHTF(bars1, rd1.adx),
+            squeeze: mapHTF(bars1, rd1.squeeze),
+            isRange: mapHTF(bars1, rd1.isRange),
+            rangeHi: mapHTF(bars1, rd1.rangeHi),
+            rangeLo: mapHTF(bars1, rd1.rangeLo),
+            rangeMid: mapHTF(bars1, rd1.rangeMid),
+            zones: rd1.zones
           };
         }
       }
+
+      let res2 = null;
+      if(ind.tf2 && ind.tf2 !== 'off'){
+        const tf2 = ind.tf2;
+        const mtf2 = (tf2 !== 'chart' && +tf2 !== state.tf) ? +tf2 : null;
+        if(!mtf2) {
+          res2 = calc.rangeDetector2(d, period, thresh);
+        } else {
+          const bars2 = getMTFBars(mtf2);
+          if(!bars2) res2 = {adx:[],squeeze:[],isRange:[],rangeHi:[],rangeLo:[],rangeMid:[],zones:[]};
+          else {
+            const rd2 = calc.rangeDetector2(bars2, period, thresh);
+            res2 = {
+              adx: mapHTF(bars2, rd2.adx),
+              squeeze: mapHTF(bars2, rd2.squeeze),
+              isRange: mapHTF(bars2, rd2.isRange),
+              rangeHi: mapHTF(bars2, rd2.rangeHi),
+              rangeLo: mapHTF(bars2, rd2.rangeLo),
+              rangeMid: mapHTF(bars2, rd2.rangeMid),
+              zones: rd2.zones
+            };
+          }
+        }
+      }
+      state.cache[ck] = { tf1: res1, tf2: res2 };
     }
     if(key==='sr')state.cache[ck]=calc.sr(d);
     if(key==='lrc'){
@@ -5234,6 +5617,7 @@ function computePanes(){
   if(vis('rosc2')) subs.push('rosc2');
   if(vis('macdsr')) subs.push('macdsr');
   if(vis('macdsr2')) subs.push('macdsr2');
+  if(vis('sqz_mom')) subs.push('sqz_mom');
   if(vis('rangeDet') && S('rangeDet','showSubpane')!==false) subs.push('rangeDet');
   if(vis('two_ind') && state.indicators.two_ind.showOscillator!==false) subs.push('two_ind');
   if(vis('kk_bis') && state.indicators.kk_bis.showOscillator!==false) subs.push('kk_bis');
@@ -5590,7 +5974,7 @@ function render(){
     ctx.beginPath();ctx.rect(0,p.y,W,p.h);ctx.clip();
     if(p.key==='price') drawPrice(p,s,e,cw,mainBadgeStack);
     else {
-      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:drawKKBisSub};
+      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:drawKKBisSub,sqz_mom:drawSqzMom};
       let members=(p.members||[p.key]).slice();
       // membre au premier plan -> dessiné en dernier (au-dessus)
       const front=state.subFront&&state.subFront[p.key];
@@ -6516,6 +6900,7 @@ function drawPrice(p,s,e,cw,sharedXStack){
   if(vis('rangeDet') && S('rangeDet','showOverlay')!==false) drawRangeDetOverlay(getInd('rangeDet'),s,e,yOf,cw,p);
   if(vis('rangeDet2') && S('rangeDet2','showOverlay')!==false) drawRangeDet2Overlay(getInd('rangeDet2'),s,e,yOf,cw,p);
   if(vis('smc_lite')) drawSmcLite(getInd('smc_lite'),s,e,yOf,cw,p);
+  if(vis('fvg_ranked')) drawRankedFVG(getInd('fvg_ranked'),s,e,yOf,cw,p,'fvg_ranked');
   if(vis('ob')){const _ob=getInd('ob');drawOBMTF(_ob,s,e,yOf,cw,p);alertNewOB(_ob);}
   // FVG enrichie MTF : moitiés % acheteur/vendeur, bleu/violet, MITIGATED
   if(vis('fvg')) drawFVGMTF(getInd('fvg'),s,e,yOf,cw,p,'fvg');
@@ -7714,7 +8099,7 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
     if((w > 10 || hideBox) && (hGap >= 2 || hideBox)){
       const pctBuy = Math.min(99, Math.max(1, Math.round(z.pct)));
       const pctSell = 100 - pctBuy;
-      const tfLabel = z.tf ? (z.tf >= 60 ? (z.tf/60)+'H' : z.tf+'m') : '';
+      const fvgTfLabel = z.tf ? (z.tf >= 60 ? (z.tf/60)+'H' : z.tf+'m') : '';
       const typeStr = isBull ? 'FVG ↗' : 'FVG ↘';
 
       ctx.font='bold 9px "IBM Plex Mono",monospace';
@@ -7730,14 +8115,14 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
       let opts = [];
       if(mitig){
         opts = [
-          { prefix: `${typeStr} ${tfLabel ? tfLabel + ' ' : ''}· MITIGATED · `, buy: `${pctBuy}% Ach`, sep: ' / ', sell: `${pctSell}% Ven` },
-          { prefix: `${typeStr} ${tfLabel ? tfLabel + ' ' : ''}· MITIGATED · `, buy: `${pctBuy}% A`, sep: '/', sell: `${pctSell}% V` },
+          { prefix: `${typeStr} ${fvgTfLabel ? tfLabel + ' ' : ''}· MITIGATED · `, buy: `${pctBuy}% Ach`, sep: ' / ', sell: `${pctSell}% Ven` },
+          { prefix: `${typeStr} ${fvgTfLabel ? tfLabel + ' ' : ''}· MITIGATED · `, buy: `${pctBuy}% A`, sep: '/', sell: `${pctSell}% V` },
           { prefix: `${typeStr} · MITIGATED · `, buy: `${pctBuy}% A`, sep: '/', sell: `${pctSell}% V` }
         ];
       } else {
         opts = [
-          { prefix: `${typeStr} ${tfLabel ? tfLabel + ' ' : ''}· `, buy: `${pctBuy}% Ach`, sep: ' / ', sell: `${pctSell}% Ven` },
-          { prefix: `${typeStr} ${tfLabel ? tfLabel + ' ' : ''}· `, buy: `${pctBuy}% A`, sep: '/', sell: `${pctSell}% V` },
+          { prefix: `${typeStr} ${fvgTfLabel ? tfLabel + ' ' : ''}· `, buy: `${pctBuy}% Ach`, sep: ' / ', sell: `${pctSell}% Ven` },
+          { prefix: `${typeStr} ${fvgTfLabel ? tfLabel + ' ' : ''}· `, buy: `${pctBuy}% A`, sep: '/', sell: `${pctSell}% V` },
           { prefix: `${typeStr} · `, buy: `${pctBuy}% A`, sep: '/', sell: `${pctSell}% V` }
         ];
       }
@@ -7815,6 +8200,139 @@ function drawFVGMTF(zones,s,e,yOf,cw,p,key){
   }
   ctx.restore();
 }
+function drawRankedFVG(zones, s, e, yOf, cw, p, key) {
+  if(!zones || !zones.length) return;
+  const cBull = S(key, 'cBull') || '#1AD8C2';
+  const cBear = S(key, 'cBear') || '#D81A66';
+  const maxZones = S(key, 'maxZones') ?? 10;
+  const showBars = S(key, 'showBars') !== false;
+  const showBlockText = S(key, 'showBlockText') !== false;
+  const strSizeOpt = S(key, 'strengthTextSize') || 'auto';
+  const blkSizeOpt = S(key, 'blockTextSize') || 'auto';
+
+  const strPx = strSizeOpt === 'tiny' ? 8 : strSizeOpt === 'small' ? 9 : strSizeOpt === 'large' ? 11 : strSizeOpt === 'huge' ? 12 : 9.5;
+  const blkPx = blkSizeOpt === 'tiny' ? 9 : blkSizeOpt === 'small' ? 10 : blkSizeOpt === 'large' ? 12 : blkSizeOpt === 'huge' ? 14 : 10.5;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, p.y, W - AXIS_W, p.h);
+  ctx.clip();
+
+  const R = laneRight(key);
+
+  for(let idx = 0; idx < zones.length; idx++) {
+    const z = zones[idx];
+    if(idx >= maxZones) continue;
+
+    let zi = idxOfTime(z.bornTime);
+    let x0 = 0;
+    if(zi != null) {
+      if(zi > e - 1) continue;
+      x0 = Math.max(xOf(zi) - cw / 2, 0);
+    } else {
+      if(state.data && state.data.length && z.bornTime < state.data[0].t) {
+        x0 = 0;
+      } else continue;
+    }
+
+    const x1 = R;
+    if(x1 <= x0) continue;
+
+    const wBox = x1 - x0;
+    const isBull = z.direction === 1;
+    const mainCol = isBull ? cBull : cBear;
+
+    const yTop = yOf(z.top), yBot = yOf(z.bottom);
+    const yMin = Math.min(yTop, yBot);
+    const hGap = Math.max(6, Math.abs(yBot - yTop));
+    const yMid = yMin + hGap / 2;
+
+    // 1. Fond FVG avec opacité
+    ctx.fillStyle = hexA(mainCol, 0.22);
+    ctx.fillRect(x0, yMin, wBox, hGap);
+
+    // Bordures haut et bas
+    ctx.strokeStyle = hexA(mainCol, 0.75);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, yMin); ctx.lineTo(x1, yMin);
+    ctx.moveTo(x0, yMin + hGap); ctx.lineTo(x1, yMin + hGap);
+    ctx.stroke();
+
+    // Ligne médiane 50%
+    ctx.strokeStyle = hexA(mainCol, 0.35);
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x0, yMid); ctx.lineTo(x1, yMid);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 2. Rank badge (#1, #2, etc.)
+    const rankTxt = `#${z.rank}`;
+    ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+    const rw = ctx.measureText(rankTxt).width + 8;
+    const rh = Math.min(14, Math.max(10, hGap - 2));
+    const rx = x0 + 4;
+    const ry = yMin + (hGap - rh) / 2;
+
+    ctx.fillStyle = mainCol;
+    if(ctx.roundRect) {
+      ctx.beginPath(); ctx.roundRect(rx, ry, rw, rh, 3); ctx.fill();
+    } else {
+      ctx.fillRect(rx, ry, rw, rh);
+    }
+    ctx.fillStyle = '#0F172A';
+    ctx.textAlign = 'center';
+    ctx.fillText(rankTxt, rx + rw / 2, ry + rh - 3);
+
+    // 3. Strength Bars (showBars)
+    if(showBars) {
+      const hHalf = hGap / 2;
+
+      // Bear Bar (partie haute)
+      const wBear = Math.max(12, (wBox / 100) * z.bearStrength);
+      ctx.fillStyle = hexA(cBear, 0.85);
+      ctx.fillRect(x0 + rw + 8, yMin + 1, Math.min(wBox - rw - 16, wBear), Math.max(2, hHalf - 2));
+
+      ctx.font = `bold ${strPx}px "IBM Plex Mono",monospace`;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${z.bearStrength}%`, x0 + rw + 12, yMin + hHalf / 2 + strPx / 3);
+
+      // Bull Bar (partie basse)
+      const wBull = Math.max(12, (wBox / 100) * z.bullStrength);
+      ctx.fillStyle = hexA(cBull, 0.85);
+      ctx.fillRect(x0 + rw + 8, yMid + 1, Math.min(wBox - rw - 16, wBull), Math.max(2, hHalf - 2));
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${z.bullStrength}%`, x0 + rw + 12, yMid + hHalf / 2 + strPx / 3);
+    }
+
+    // 4. Smart Block Text (showBlockText)
+    if(showBlockText && wBox > 120) {
+      let labelText = '';
+      if(!isBull) {
+        if(z.bearStrength >= 70) labelText = 'Strong Bearish Imbalance';
+        else if(z.bearStrength >= 55) labelText = 'Bearish Bias';
+        else if(z.bullStrength > z.bearStrength) labelText = 'Weak Bearish (Bull Pressure)';
+        else labelText = 'Neutral Bearish';
+      } else {
+        if(z.bullStrength >= 70) labelText = 'Strong Bullish Imbalance';
+        else if(z.bullStrength >= 55) labelText = 'Bullish Bias';
+        else if(z.bearStrength > z.bullStrength) labelText = 'Weak Bullish (Bear Pressure)';
+        else labelText = 'Neutral Bullish';
+      }
+
+      ctx.font = `bold ${blkPx}px "IBM Plex Mono",monospace`;
+      ctx.fillStyle = '#F8FAFC';
+      ctx.textAlign = 'right';
+      ctx.fillText(labelText, x1 - 10, yMin + hGap / 2 + blkPx / 3);
+    }
+  }
+
+  ctx.restore();
+}
 function fitLabel(cands,maxW,maxH,bold){
   const cap=Math.max(6,Math.min(12,Math.floor(maxH-2)));
   for(let fs=cap;fs>=6;fs--){
@@ -7862,7 +8380,7 @@ function plotLine(arr,s,e,yOf,color,w){
 }
 
 /* ----- sous-panneaux ----- */
-function tfLabel(key){
+function indSubTfLabel(key){
   const tf=state.indicators[key]&&state.indicators[key].tf;
   if(!tf||tf==='chart'||+tf===state.tf)return '';
   return ' · '+({'3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[tf]||tf);
@@ -7922,7 +8440,7 @@ function drawRSI(p,s,e,cw,K){
   }
   plotLine(arr,s,e,yOf,CR,1.4);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'RSI '+state.indicators[K].period+tfLabel(K), arr[i]!=null?arr[i].toFixed(1):'—', CR);
+  subLabel(p,'RSI '+state.indicators[K].period+indSubTfLabel(K), arr[i]!=null?arr[i].toFixed(1):'—', CR);
 }
 function drawMACD(p,s,e,cw){
   const m=getInd('macd');
@@ -7993,7 +8511,7 @@ function drawImp(p,s,e,cw,K){
   const tfl=state.indicators.imp.tf;
   const tfName=(tfl&&tfl!=='chart')?({'15':'15m','60':'1H','240':'4H'}[tfl]||''):'';
   const val=m.md[i]!=null?m.md[i].toFixed(2):'—';
-  subLabel(p,'Impulse MACD '+state.indicators[K].period+tfLabel(K),
+  subLabel(p,'Impulse MACD '+state.indicators[K].period+indSubTfLabel(K),
     val, m.col[i]!=null?C0[m.col[i]]:css('--muted'));
 }
 function drawROsc(p,s,e,cw,K){
@@ -8025,7 +8543,7 @@ function drawROsc(p,s,e,cw,K){
     ctx.beginPath();ctx.moveTo(x1,yOf(v1));ctx.lineTo(x2,yOf(v2));ctx.stroke();
   }
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'Range Oscillator '+state.indicators[K].period+tfLabel(K),
+  subLabel(p,'Range Oscillator '+state.indicators[K].period+indSubTfLabel(K),
     arr[i]!=null?arr[i].toFixed(1):'—', arr[i]!=null?(arr[i]>=0?cUp:cDown):css('--muted'));
 }
 function drawMacdSR(p,s,e,cw,K){
@@ -8064,6 +8582,162 @@ function drawMacdSR(p,s,e,cw,K){
   subLabel(p,'MACD S/R '+(state.indicators[K].fast||12)+' '+(state.indicators[K].slow||26)+tfLabel(K),
     M[i]!=null?M[i].toFixed(1):'—', M[i]!=null?(M[i]>=G[i]?cUp:cDn):css('--muted'));
 }
+function drawSqzMom(p, s, e, cw, key) {
+  key = key || 'sqz_mom';
+  const data = getInd(key);
+  if (!data || !data.tf1) return;
+
+  const res1 = data.tf1;
+  const res2 = data.tf2;
+  const ind = state.indicators[key] || {};
+  const showSqzDots = ind.showSqzDots !== false;
+  const modeTF2 = ind.modeTF2 || 'overlay';
+  const hasTF2 = res2 && ind.tf2 && ind.tf2 !== 'off' && res2.val && res2.val.length;
+
+  let mx = 0;
+  for (let i = s; i < e; i++) {
+    if (res1.val && res1.val[i] != null) mx = Math.max(mx, Math.abs(res1.val[i]));
+    if (hasTF2 && res2.val && res2.val[i] != null) mx = Math.max(mx, Math.abs(res2.val[i]));
+  }
+  mx = mx || 0.0001;
+
+  const yOf = subYOf(p, key, -mx, mx, false);
+  const y0 = yOf(0);
+
+  // 1. Zero line
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, y0 + 0.5);
+  ctx.lineTo(W - AXIS_W, y0 + 0.5);
+  ctx.stroke();
+
+  const SQZ_COLORS = {
+    lime: '#00E676',   // Positive & Increasing
+    green: '#00897B',  // Positive & Decreasing
+    red: '#FF5252',    // Negative & Decreasing
+    maroon: '#B71C1C'  // Negative & Increasing
+  };
+
+  // 2. Draw TF2 if enabled
+  if (hasTF2) {
+    if (modeTF2 === 'line') {
+      plotLine(res2.val, s, e, yOf, '#00E5FF', 1.8);
+    } else if (modeTF2 === 'overlay') {
+      const bw2 = Math.max(1, cw * 0.85);
+      for (let i = s; i < e; i++) {
+        const v2 = res2.val[i];
+        if (v2 == null) continue;
+        const x = xOf(i);
+        const y2 = yOf(v2);
+        const ck2 = (res2.colorKey && res2.colorKey[i]) || 'lime';
+        const col2 = SQZ_COLORS[ck2] || '#00E676';
+        ctx.fillStyle = hexA(col2, 0.25);
+        ctx.strokeStyle = hexA(col2, 0.7);
+        ctx.lineWidth = 1;
+        const h2 = Math.abs(y2 - y0) || 1;
+        const topY = Math.min(y2, y0);
+        ctx.fillRect(x - bw2 / 2, topY, bw2, h2);
+        ctx.strokeRect(x - bw2 / 2, topY, bw2, h2);
+      }
+    } else if (modeTF2 === 'side') {
+      const bw2 = Math.max(1, cw * 0.38);
+      for (let i = s; i < e; i++) {
+        const v2 = res2.val[i];
+        if (v2 == null) continue;
+        const x = xOf(i) + bw2 / 2;
+        const y2 = yOf(v2);
+        const ck2 = (res2.colorKey && res2.colorKey[i]) || 'lime';
+        const col2 = SQZ_COLORS[ck2] || '#00E676';
+        ctx.fillStyle = hexA(col2, 0.6);
+        ctx.fillRect(x, Math.min(y2, y0), bw2, Math.abs(y2 - y0) || 1);
+      }
+    }
+  }
+
+  // 3. Draw TF1 Histogram
+  const bw1 = modeTF2 === 'side' && hasTF2 ? Math.max(1, cw * 0.38) : Math.max(1, cw * 0.65);
+  for (let i = s; i < e; i++) {
+    const v1 = res1.val[i];
+    if (v1 == null) continue;
+    const x = modeTF2 === 'side' && hasTF2 ? xOf(i) - bw1 / 2 : xOf(i);
+    const y1 = yOf(v1);
+    const ck1 = (res1.colorKey && res1.colorKey[i]) || 'lime';
+    const col1 = SQZ_COLORS[ck1] || '#00E676';
+    ctx.fillStyle = col1;
+    ctx.fillRect(x - bw1 / 2, Math.min(y1, y0), bw1, Math.abs(y1 - y0) || 1);
+  }
+
+  // 4. Draw Squeeze Dots
+  if (showSqzDots) {
+    const rDot = Math.max(1.5, Math.min(3.5, cw * 0.25));
+    for (let i = s; i < e; i++) {
+      const x = xOf(i);
+
+      // TF1 Dot
+      const on1 = res1.sqzOn && res1.sqzOn[i];
+      const off1 = res1.sqzOff && res1.sqzOff[i];
+      const dotCol1 = on1 ? '#FF5252' : (off1 ? '#808080' : '#2196F3');
+      const yDot1 = hasTF2 ? y0 - 3.5 : y0;
+
+      ctx.fillStyle = dotCol1;
+      ctx.beginPath();
+      ctx.arc(x, yDot1, rDot, 0, Math.PI * 2);
+      ctx.fill();
+      if (on1) {
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // TF2 Dot if enabled
+      if (hasTF2 && res2.sqzOn) {
+        const on2 = res2.sqzOn[i];
+        const off2 = res2.sqzOff[i];
+        const dotCol2 = on2 ? '#FF3D00' : (off2 ? '#808080' : '#00E5FF');
+        const yDot2 = y0 + 3.5;
+        ctx.fillStyle = dotCol2;
+        ctx.beginPath();
+        ctx.arc(x, yDot2, rDot, 0, Math.PI * 2);
+        ctx.fill();
+        if (on2) {
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // 5. Header label
+  const hoverI = hoverIndex() ?? state.data.length - 1;
+  const v1 = res1.val[hoverI];
+  const v1Str = v1 != null ? (v1 >= 0 ? '+' : '') + v1.toFixed(4) : '—';
+
+  const sqz1Str = res1.sqzOn && res1.sqzOn[hoverI]
+    ? '⚡ SQUEEZE ON'
+    : ((res1.sqzOff && res1.sqzOff[hoverI]) ? '🟢 Squeeze Off' : '🔵 No Squeeze');
+
+  const tf1Label = ind.tf1 && ind.tf1 !== 'chart'
+    ? (({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[ind.tf1]) || ind.tf1)
+    : (state.tf >= 60 ? (state.tf / 60) + 'H' : state.tf + 'm');
+
+  let fullTxt = `SQZ MOM (${tf1Label}): ${v1Str} [${sqz1Str}]`;
+
+  if (hasTF2 && res2.val) {
+    const v2 = res2.val[hoverI];
+    const v2Str = v2 != null ? (v2 >= 0 ? '+' : '') + v2.toFixed(4) : '—';
+    const sqz2Str = res2.sqzOn && res2.sqzOn[hoverI]
+      ? '⚡ SQUEEZE ON'
+      : ((res2.sqzOff && res2.sqzOff[hoverI]) ? '🟢 Squeeze Off' : '🔵 No Squeeze');
+    const tf2Label = ind.tf2 === 'chart'
+      ? (state.tf >= 60 ? (state.tf / 60) + 'H' : state.tf + 'm')
+      : (({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[ind.tf2]) || ind.tf2);
+    fullTxt += ` | UT2 (${tf2Label}): ${v2Str} [${sqz2Str}]`;
+  }
+
+  subLabel(p, fullTxt, '', '#00E676');
+}
 function drawStoch(p,s,e,cw){
   const st=getInd('stoch');
   const yOf=subYOf(p,'stoch',0,100,true);
@@ -8083,7 +8757,7 @@ function drawStoch(p,s,e,cw){
   plotLine(st.k,s,e,yOf,CK,1.4);
   plotLine(st.d,s,e,yOf,hexA(CD,.6),1.1);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'Stoch '+state.indicators.stoch.period+tfLabel('stoch'),
+  subLabel(p,'Stoch '+state.indicators.stoch.period+indSubTfLabel('stoch'),
     st.k[i]!=null?st.k[i].toFixed(1):'—', CK);
 }
 function drawATR(p,s,e,cw){
@@ -8096,10 +8770,12 @@ function drawATR(p,s,e,cw){
   const CA=S('atr','cLine');
   plotLine(a,s,e,yOf,CA,1.4);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'ATR '+state.indicators.atr.period+tfLabel('atr'), a[i]!=null?fmt(a[i]):'—', CA);
+  subLabel(p,'ATR '+state.indicators.atr.period+indSubTfLabel('atr'), a[i]!=null?fmt(a[i]):'—', CA);
 }
 
-function drawRangeDetOverlay(rd,s,e,yOf,cw,p){
+function drawRangeDetOverlay(data,s,e,yOf,cw,p){
+  if(!data)return;
+  const rd=data.tf1||data;
   if(!rd||!rd.chop)return;
   const cRange=S('rangeDet','cRange')||'#6366F1';
   const cHi='#EF4444'; // Rouge très lisible pour la résistance
@@ -8203,9 +8879,14 @@ function drawRangeDetOverlay(rd,s,e,yOf,cw,p){
 }
 
 function drawRangeDetSub(p,s,e,cw){
-  const rd=getInd('rangeDet');
-  if(!rd||!rd.chop)return;
-  const thresh=state.indicators.rangeDet.threshold||50;
+  const data=getInd('rangeDet');
+  if(!data)return;
+  const rd1=data.tf1||data;
+  const rd2=data.tf2;
+  if(!rd1||!rd1.chop)return;
+
+  const ind=state.indicators.rangeDet||{};
+  const thresh=ind.threshold||50;
   const cRange='#6366F1';
   const cTrend='#3B82F6';
 
@@ -8227,10 +8908,51 @@ function drawRangeDetSub(p,s,e,cw){
   ctx.fillStyle='rgba(147, 197, 253, 0.8)';
   ctx.fillText('⚡ ZONE DE TENDANCE (<50%)', 10, yOf(20));
 
+  // UT2 if active
+  if (rd2 && rd2.chop) {
+    const cRange2 = '#A855F7';
+    const cTrend2 = '#38BDF8';
+    if (ind.modeTF2 === 'overlay') {
+      for (let i = Math.max(s,1); i < e; i++) {
+        if (rd2.chop[i] == null || rd2.chop[i-1] == null) continue;
+        const x1 = xOf(i-1), x2 = xOf(i);
+        const v1 = rd2.chop[i-1], v2 = rd2.chop[i];
+        const isR = v2 >= thresh;
+        const col = isR ? cRange2 : cTrend2;
+        ctx.beginPath();
+        ctx.moveTo(x1, yThresh);
+        ctx.lineTo(x1, yOf(v1));
+        ctx.lineTo(x2, yOf(v2));
+        ctx.lineTo(x2, yThresh);
+        ctx.closePath();
+        ctx.fillStyle = hexA(col, isR ? 0.15 : 0.05);
+        ctx.fill();
+        ctx.strokeStyle = hexA(col, 0.6);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+    } else {
+      ctx.strokeStyle = '#A855F7';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      let started = false;
+      for (let i = s; i < e; i++) {
+        if (rd2.chop[i] == null) continue;
+        const x = xOf(i), y = yOf(rd2.chop[i]);
+        if (!started) { ctx.moveTo(x, y); started = true; }
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // UT1
   for(let i=Math.max(s,1);i<e;i++){
-    if(rd.chop[i]==null||rd.chop[i-1]==null)continue;
+    if(rd1.chop[i]==null||rd1.chop[i-1]==null)continue;
     const x1=xOf(i-1),x2=xOf(i);
-    const v1=rd.chop[i-1],v2=rd.chop[i];
+    const v1=rd1.chop[i-1],v2=rd1.chop[i];
     const isR=v2>=thresh;
     const col=isR?cRange:cTrend;
 
@@ -8252,14 +8974,26 @@ function drawRangeDetSub(p,s,e,cw){
   }
 
   const i=hoverIndex()??state.data.length-1;
-  const val=rd.chop[i]!=null?rd.chop[i].toFixed(0)+'%':'—';
-  const stateTxt=rd.isRange[i]?'🟢 EN RANGE':'🔵 EN TENDANCE';
-  const labelCol=rd.isRange[i]?cRange:cTrend;
+  const val1=rd1.chop[i]!=null?rd1.chop[i].toFixed(0)+'%':'—';
+  const stateTxt1=rd1.isRange[i]?'🟢 RANGE':'🔵 TENDANCE';
+  const tf1Label = ind.tf1 && ind.tf1 !== 'chart' ? (({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[ind.tf1]) || ind.tf1) : (state.tf >= 60 ? (state.tf / 60) + 'H' : state.tf + 'm');
 
-  subLabel(p,`Détecteur de Range · État: ${stateTxt}`,`Score: ${val}`,labelCol);
+  let fullTxt = `Détecteur de Range ① (${tf1Label}): ${val1} [${stateTxt1}]`;
+
+  if (rd2 && rd2.chop) {
+    const val2 = rd2.chop[i] != null ? rd2.chop[i].toFixed(0) + '%' : '—';
+    const stateTxt2 = rd2.isRange[i] ? '🟢 RANGE' : '🔵 TENDANCE';
+    const tf2Label = ind.tf2 === 'chart' ? (state.tf >= 60 ? (state.tf / 60) + 'H' : state.tf + 'm') : (({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[ind.tf2]) || ind.tf2);
+    fullTxt += ` | UT2 (${tf2Label}): ${val2} [${stateTxt2}]`;
+  }
+
+  const labelCol=rd1.isRange[i]?cRange:cTrend;
+  subLabel(p,fullTxt,'',labelCol);
 }
 
-function drawRangeDet2Overlay(rd,s,e,yOf,cw,p){
+function drawRangeDet2Overlay(data,s,e,yOf,cw,p){
+  if(!data)return;
+  const rd=data.tf1||data;
   if(!rd||!rd.adx)return;
   const cRange=S('rangeDet2','cRange')||'#EC4899';
   const cHi=S('rangeDet2','cHigh')||'#F43F5E';
@@ -8359,9 +9093,14 @@ function drawRangeDet2Overlay(rd,s,e,yOf,cw,p){
 }
 
 function drawRangeDet2Sub(p,s,e,cw){
-  const rd=getInd('rangeDet2');
-  if(!rd||!rd.adx)return;
-  const thresh=state.indicators.rangeDet2.threshold||25;
+  const data=getInd('rangeDet2');
+  if(!data)return;
+  const rd1=data.tf1||data;
+  const rd2=data.tf2;
+  if(!rd1||!rd1.adx)return;
+
+  const ind=state.indicators.rangeDet2||{};
+  const thresh=ind.threshold||25;
   const cRange='#EC4899';
   const cTrend='#06B6D4';
 
@@ -8381,11 +9120,39 @@ function drawRangeDet2Sub(p,s,e,cw){
   ctx.fillStyle='rgba(165, 243, 252, 0.8)';
   ctx.fillText('⚡ TENDANCE (ADX > 25)', 10, yOf(48));
 
+  // UT2 if active
+  if (rd2 && rd2.adx) {
+    ctx.strokeStyle = '#F43F5E';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    let started = false;
+    for (let i = s; i < e; i++) {
+      if (rd2.adx[i] == null) continue;
+      const x = xOf(i), y = yOf(rd2.adx[i]);
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    for (let i = s; i < e; i++) {
+      if (rd2.squeeze && rd2.squeeze[i]) {
+        const x = xOf(i);
+        ctx.fillStyle = '#F43F5E';
+        ctx.beginPath();
+        ctx.arc(x, p.y + p.h - 16, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // UT1
   for(let i=Math.max(s,1);i<e;i++){
-    if(rd.adx[i]==null||rd.adx[i-1]==null)continue;
+    if(rd1.adx[i]==null||rd1.adx[i-1]==null)continue;
     const x1=xOf(i-1),x2=xOf(i);
-    const v1=rd.adx[i-1],v2=rd.adx[i];
-    const isR=v2<=thresh || rd.squeeze[i];
+    const v1=rd1.adx[i-1],v2=rd1.adx[i];
+    const isR=v2<=thresh || (rd1.squeeze && rd1.squeeze[i]);
     const col=isR?cRange:cTrend;
 
     ctx.beginPath();
@@ -8404,7 +9171,7 @@ function drawRangeDet2Sub(p,s,e,cw){
     ctx.lineTo(x2,yOf(v2));
     ctx.stroke();
 
-    if(rd.squeeze[i]){
+    if(rd1.squeeze && rd1.squeeze[i]){
       ctx.fillStyle='#EC4899';
       ctx.beginPath();
       ctx.arc((x1+x2)/2, p.y+p.h-8, 2.5, 0, Math.PI*2);
@@ -8413,32 +9180,24 @@ function drawRangeDet2Sub(p,s,e,cw){
   }
 
   const i=hoverIndex()??state.data.length-1;
-  const val=rd.adx[i]!=null?rd.adx[i].toFixed(1)+(rd.squeeze[i]?' [SQUEEZE]':''):'—';
-  const isRangeNow = (rd.adx[i]!=null && rd.adx[i]<=thresh) || (rd.squeeze&&rd.squeeze[i]);
-  const stateTxt = isRangeNow ? '🌸 CONSOLIDATION / SQUEEZE' : '⚡ TENDANCE (ADX > 25)';
-  const labelCol = isRangeNow ? cRange : cTrend;
+  const val1=rd1.adx[i]!=null?rd1.adx[i].toFixed(1)+(rd1.squeeze&&rd1.squeeze[i]?' [SQZ]':''):'—';
+  const isRangeNow1 = (rd1.adx[i]!=null && rd1.adx[i]<=thresh) || (rd1.squeeze&&rd1.squeeze[i]);
+  const stateTxt1 = isRangeNow1 ? '🌸 CONSOLIDATION' : '⚡ TENDANCE';
+  const tf1Label = ind.tf1 && ind.tf1 !== 'chart' ? (({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[ind.tf1]) || ind.tf1) : (state.tf >= 60 ? (state.tf / 60) + 'H' : state.tf + 'm');
 
-  subLabel(p,`Range Squeeze & ADX · ${stateTxt}`,`ADX: ${val}`,labelCol);
-}
+  let fullTxt = `Détecteur de Range ② (${tf1Label}): ADX ${val1} [${stateTxt1}]`;
 
-/* En mode Volatilité, le Pine multiplie le score par ribbon_width/avg(max,min),
-   un rapport de l'ordre de 0,003 sur du BTC. Les valeurs tombent alors bien en
-   dessous de l'unité et deviennent invisibles sur une échelle fixe -100/+100.
-   Le Pine résout cela en passant ses hlines à `na` : l'échelle devient
-   automatique. On reproduit ce comportement. */
-function volAutoRange(res, s, e){
-  let lo = Infinity, hi = -Infinity;
-  for(let i = Math.max(0, s - 1); i < e; i++){
-    for(const v of [res.net ? res.net[i] : null, res.signal ? res.signal[i] : null,
-                    res.net2 ? res.net2[i] : null]){
-      if(v != null && isFinite(v)){ if(v < lo) lo = v; if(v > hi) hi = v; }
-    }
+  if (rd2 && rd2.adx) {
+    const val2 = rd2.adx[i] != null ? rd2.adx[i].toFixed(1) + (rd2.squeeze && rd2.squeeze[i] ? ' [SQZ]' : '') : '—';
+    const isRangeNow2 = (rd2.adx[i] != null && rd2.adx[i] <= thresh) || (rd2.squeeze && rd2.squeeze[i]);
+    const stateTxt2 = isRangeNow2 ? '🌸 CONSOLIDATION' : '⚡ TENDANCE';
+    const tf2Label = ind.tf2 === 'chart' ? (state.tf >= 60 ? (state.tf / 60) + 'H' : state.tf + 'm') : (({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[ind.tf2]) || ind.tf2);
+    fullTxt += ` | UT2 (${tf2Label}): ADX ${val2} [${stateTxt2}]`;
   }
-  if(!isFinite(lo) || !isFinite(hi) || lo === hi){ return {lo: -1, hi: 1}; }
-  const pad = (hi - lo) * 0.12 || 0.1;
-  return {lo: lo - pad, hi: hi + pad};
-}
 
+  const labelCol = isRangeNow1 ? cRange : cTrend;
+  subLabel(p,fullTxt,'',labelCol);
+}
 function drawTwoIndSub(p, s, e, cw) {
   const res = getInd('two_ind');
   if (!res || !res.net) return;
@@ -8931,7 +9690,14 @@ const IND_META={
   rosc2:{label:p=>'Range Osc ② '+p,color:'#2FA0C0'},
   macdsr:{label:()=>'MACD S/R'+((state.indicators.macdsr.tf&&state.indicators.macdsr.tf!=='chart')?' '+({'15':'15m','60':'1H','240':'4H'}[state.indicators.macdsr.tf]||''):''),color:'#4A90FF'},
   macdsr2:{label:()=>'MACD S/R ②',color:'#8A6BFF'},
+  sqz_mom:{label:()=>{
+    const ind = state.indicators.sqz_mom || {};
+    const tf1Str = ind.tf1 && ind.tf1 !== 'chart' ? (({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[ind.tf1])||ind.tf1) : (state.tf >= 60 ? (state.tf/60)+'H' : state.tf+'m');
+    const tf2Str = ind.tf2 && ind.tf2 !== 'off' ? (' + ' + (ind.tf2 === 'chart' ? (state.tf >= 60 ? (state.tf/60)+'H' : state.tf+'m') : (({'1':'1m','3':'3m','5':'5m','15':'15m','60':'1H','240':'4H'}[ind.tf2])||ind.tf2))) : '';
+    return 'Squeeze Momentum [LazyBear] (' + tf1Str + tf2Str + ')';
+  },color:'#00E676'},
   smc_lite:{label:()=>'FluidTrades - SMC Lite',color:'#00FFFF'},
+  fvg_ranked:{label:()=>'Ranked FVG (Zeiierman)',color:'#1AD8C2'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
   fvgm:{label:()=>'FVG MTF '+(state.indicators.fvgm.tf!=='auto'
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.fvgm.tf]||'')
@@ -9865,6 +10631,7 @@ document.querySelectorAll('.srtf.mtf').forEach(el=>{
     const k=el.dataset.ind2, tf=el.dataset.tf;
     if(!state.indicators[k]) return;
     state.indicators[k].tf=tf;
+    if(k==='sqz_mom') state.indicators[k].tf1=tf;
     document.querySelectorAll('.srtf.mtf[data-ind2="'+k+'"]').forEach(x=>
       x.classList.toggle('on',x.dataset.tf===tf));
     state.cache={};
@@ -12302,6 +13069,17 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier (orange)',def:'#FF9D42'},
     {k:'showZero',t:'bool',lab:'Ligne zéro / Axe 0',def:true},
   ]},
+  sqz_mom:{title:'Squeeze Momentum Indicator [LazyBear] Multi-TF',fields:[
+    {k:'tf1',t:'choice',lab:'Unité de Temps 1 (UT1)',opts:[{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart'},
+    {k:'tf2',t:'choice',lab:'Unité de Temps 2 (UT2 - Optionnelle)',opts:[{v:'off',t:'Désactivée'},{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off'},
+    {k:'bbLength',t:'num',lab:'Longueur Bollinger (BB Length)',min:2,max:200,def:20},
+    {k:'bbMult',t:'num',lab:'Facteur Bollinger (BB Mult)',min:0.1,max:10,def:2.0},
+    {k:'kcLength',t:'num',lab:'Longueur Keltner (KC Length)',min:2,max:200,def:20},
+    {k:'kcMult',t:'num',lab:'Facteur Keltner (KC Mult)',min:0.1,max:10,def:1.5},
+    {k:'useTrueRange',t:'bool',lab:'Utiliser TrueRange pour Keltner',def:true},
+    {k:'modeTF2',t:'choice',lab:'Mode d\'affichage UT2',opts:[{v:'overlay',t:'Superposé (Semi-transparent)'},{v:'line',t:'Ligne continue UT2'},{v:'side',t:'Côte à côte'}],def:'overlay'},
+    {k:'showSqzDots',t:'bool',lab:'Afficher les points Squeeze sur ligne zéro',def:true},
+  ]},
   macdsr2:{title:'MACD S/R (ChartPrime) ②',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'fast',t:'num',lab:'Longueur rapide',min:2,max:100,ind:1},
@@ -12311,8 +13089,10 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier (orange)',def:'#FF9D42'},
     {k:'showZero',t:'bool',lab:'Ligne zéro / Axe 0',def:true},
   ]},
-  rangeDet:{title:'Détecteur de Range (Consolidation & Choppiness)',fields:[
-    {k:'tf',t:'tf',lab:'Unité de temps'},
+  rangeDet:{title:'Détecteur de Range ① (Choppiness) Multi-TF',fields:[
+    {k:'tf1',t:'choice',lab:'Unité de Temps 1 (UT1)',opts:[{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart'},
+    {k:'tf2',t:'choice',lab:'Unité de Temps 2 (UT2 - Optionnelle)',opts:[{v:'off',t:'Désactivée'},{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off'},
+    {k:'modeTF2',t:'choice',lab:'Mode d\'affichage UT2',opts:[{v:'line',t:'Ligne continue UT2'},{v:'overlay',t:'Superposé (Remplissage)'}],def:'line'},
     {k:'period',t:'num',lab:'Période Choppiness',min:5,max:100,ind:1},
     {k:'threshold',t:'num',lab:'Seuil Range (0..100)',min:30,max:80,ind:1},
     {k:'showOverlay',t:'bool',lab:'Afficher zones & bornes sur le prix',def:true},
@@ -12323,8 +13103,10 @@ const SCHEMA={
     {k:'cTrend',t:'col',lab:'Couleur Tendance',def:'#3B82F6'},
     {k:'showZero',t:'bool',lab:'Ligne zéro / Axe 0',def:true},
   ]},
-  rangeDet2:{title:'Détecteur de Range ② (Squeeze & ADX)',fields:[
-    {k:'tf',t:'tf',lab:'Unité de temps'},
+  rangeDet2:{title:'Détecteur de Range ② (Squeeze & ADX) Multi-TF',fields:[
+    {k:'tf1',t:'choice',lab:'Unité de Temps 1 (UT1)',opts:[{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart'},
+    {k:'tf2',t:'choice',lab:'Unité de Temps 2 (UT2 - Optionnelle)',opts:[{v:'off',t:'Désactivée'},{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off'},
+    {k:'modeTF2',t:'choice',lab:'Mode d\'affichage UT2',opts:[{v:'line',t:'Ligne continue UT2'},{v:'overlay',t:'Superposé (Remplissage)'}],def:'line'},
     {k:'period',t:'num',lab:'Période (ADX & Volatilité)',min:5,max:100,ind:1},
     {k:'threshold',t:'num',lab:'Seuil ADX Range (max ADX)',min:10,max:40,ind:1},
     {k:'showOverlay',t:'bool',lab:'Afficher zones & bornes sur le prix',def:true},
@@ -12526,6 +13308,19 @@ const SCHEMA={
   volume:{title:'Volume',fields:[
     {k:'cUp',t:'col',lab:'Haussier',def:'#25D0A4'},
     {k:'cDown',t:'col',lab:'Baissier',def:'#F45B7D'},
+  ]},
+  fvg_ranked:{title:'Ranked FVG Imbalance Zones (Zeiierman)',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'maxZones',t:'num',lab:'Show Top Zones (max Zones)',min:1,max:20,def:10,ind:1},
+    {k:'maxStored',t:'num',lab:'Max Stored FVGs',min:10,max:200,def:50,ind:1},
+    {k:'volLength',t:'num',lab:'Volume MA Length',min:1,max:100,def:20,ind:1},
+    {k:'trendLength',t:'num',lab:'Trend EMA Length',min:1,max:200,def:50,ind:1},
+    {k:'showBars',t:'bool',lab:'Show Strength Bars',def:true},
+    {k:'showBlockText',t:'bool',lab:'Show FVG Block Text',def:true},
+    {k:'strengthTextSize',t:'choice',lab:'Taille texte barres de force',opts:[{v:'auto',t:'Auto'},{v:'tiny',t:'Tr. Petit'},{v:'small',t:'Petit'},{v:'normal',t:'Normal'},{v:'large',t:'Grand'},{v:'huge',t:'Très grand'}],def:'auto'},
+    {k:'blockTextSize',t:'choice',lab:'Taille texte blocs Smart',opts:[{v:'auto',t:'Auto'},{v:'tiny',t:'Tr. Petit'},{v:'small',t:'Petit'},{v:'normal',t:'Normal'},{v:'large',t:'Grand'},{v:'huge',t:'Très grand'}],def:'auto'},
+    {k:'cBull',t:'col',lab:'Couleur Haussière (Bullish)',def:'#1AD8C2'},
+    {k:'cBear',t:'col',lab:'Couleur Baissière (Bearish)',def:'#D81A66'},
   ]},
   fvg:{title:'FVG',fields:[
     {k:'hideBox',t:'bool',lab:'Masquer le rectangle FVG (garder uniquement la pastille)',def:false},
@@ -16772,14 +17567,8 @@ function integrateIndicatorFromEmail(email) {
   document.getElementById('gmail-modal-back').style.display = 'none';
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+// duplicate escapeHtml removed
+
 
 // UI Event Listeners Gmail Modal
 const gmailBtn = document.getElementById('gmail-import-btn');
@@ -18995,8 +19784,8 @@ function renderZZBtResultsUI(bestIdOverride){
                     <span style="color:#FFD700">${Math.round(capital * (riskPctVal > 1 ? riskPctVal / 100 : riskPctVal) * c.lev).toLocaleString()} USDT</span>
                   </div>
                   <div style="color:#38BDF8;font-weight:800;display:flex;justify-content:space-between;margin-top:4px;padding-top:4px;border-top:1px dashed rgba(56,189,248,0.3);font-size:9.5px">
-                    <span>🚀 Ordre Réel Exchange (${Number(window.__liveBotActive?.tradeBudget || 1)} USDT) :</span>
-                    <span style="color:#10B981;font-weight:900">${Math.round(Number(window.__liveBotActive?.tradeBudget || 1) * c.lev)} USDT au marché</span>
+                    <span>🚀 Ordre Réel Exchange (${window.__liveBotActive?.tradeBudget || 1} ${window.__liveBotActive?.tradeUnit || 'USDT'}) :</span>
+                    <span style="color:#10B981;font-weight:900">${Math.round(((window.__liveBotActive?.tradeUnit === 'BTC') ? (Number(window.__liveBotActive?.tradeBudget || 0.0005) * (livePrice(state.symbol) || 65000)) : Number(window.__liveBotActive?.tradeBudget || 1)) * c.lev)} USDT au marché</span>
                   </div>
                 </div>
                 <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;margin-bottom:10px">
@@ -19081,8 +19870,8 @@ function renderZZBtResultsUI(bestIdOverride){
                     <span style="color:#FFD700">${Math.round(capital * (riskPctVal > 1 ? riskPctVal / 100 : riskPctVal) * levVal).toLocaleString()} USDT</span>
                   </div>
                   <div style="color:#38BDF8;font-weight:800;display:flex;justify-content:space-between;margin-top:3px;padding-top:3px;border-top:1px dashed rgba(56,189,248,0.3);font-size:9px">
-                    <span>🚀 Ordre Réel Exchange (${Number(window.__liveBotActive?.tradeBudget || 1)} USDT) :</span>
-                    <span style="color:#10B981;font-weight:900">${Math.round(Number(window.__liveBotActive?.tradeBudget || 1) * levVal)} USDT au marché</span>
+                    <span>🚀 Ordre Réel Exchange (${window.__liveBotActive?.tradeBudget || 1} ${window.__liveBotActive?.tradeUnit || 'USDT'}) :</span>
+                    <span style="color:#10B981;font-weight:900">${Math.round(((window.__liveBotActive?.tradeUnit === 'BTC') ? (Number(window.__liveBotActive?.tradeBudget || 0.0005) * (livePrice(state.symbol) || 65000)) : Number(window.__liveBotActive?.tradeBudget || 1)) * levVal)} USDT au marché</span>
                   </div>
                 </div>
               </div>
@@ -19309,12 +20098,8 @@ function selectZZBtScenario(scId){
   renderZZBtResultsUI();
 }
 
-function zZoom(f){
-  const anchor=zoomState.view.start+zoomState.view.count/2;
-  const nc=Math.max(5,Math.min(zData().length,zoomState.view.count*f));
-  zoomState.view.start=anchor-(anchor-zoomState.view.start)*(nc/zoomState.view.count);
-  zoomState.view.count=nc; renderZoom();
-}
+// duplicate zZoom removed
+
 
 let activeZZBtScenario = 'tp300';
 let activeZZTop5Tf = 1;
@@ -20074,6 +20859,62 @@ window.selectZZBtLev = function(l) {
 };
 
 /* ===== GESTION ONGLET & HUBS MEXC DIRECT ===== */
+window.onMexcManualUnitChange = function() {
+  const unit = document.getElementById('mexc-trade-unit')?.value || 'USDT';
+  const labelEl = document.getElementById('mexc-unit-display-label');
+  if (labelEl) labelEl.textContent = unit;
+  const inputEl = document.getElementById('mexc-trade-budget');
+  const presetsContainer = document.getElementById('mexc-presets-container');
+  if (unit === 'BTC') {
+    if (inputEl) inputEl.value = '0.0005';
+    if (presetsContainer) {
+      presetsContainer.innerHTML = `
+        <button type="button" onclick="setMexcBudget(0.0001)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.0001₿</button>
+        <button type="button" onclick="setMexcBudget(0.0002)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.0002₿</button>
+        <button type="button" onclick="setMexcBudget(0.0005)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.0005₿</button>
+        <button type="button" onclick="setMexcBudget(0.001)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.001₿</button>
+        <button type="button" onclick="setMexcBudget(0.005)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.005₿</button>
+      `;
+    }
+  } else {
+    if (inputEl) inputEl.value = '10';
+    if (presetsContainer) {
+      presetsContainer.innerHTML = `
+        <button type="button" onclick="setMexcBudget(5)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">5$</button>
+        <button type="button" onclick="setMexcBudget(10)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">10$</button>
+        <button type="button" onclick="setMexcBudget(25)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">25$</button>
+        <button type="button" onclick="setMexcBudget(50)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">50$</button>
+        <button type="button" onclick="setMexcBudget(100)" style="background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;padding:6px 9px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">100$</button>
+      `;
+    }
+  }
+};
+
+window.onLiveTradeUnitChange = function() {
+  const unit = document.getElementById('live-ex-trade-unit')?.value || 'USDT';
+  const budgetSelect = document.getElementById('live-ex-trade-budget');
+  if (!budgetSelect) return;
+  if (unit === 'BTC') {
+    budgetSelect.innerHTML = `
+      <option value="0.0001">₿ 0.0001 BTC</option>
+      <option value="0.0002">₿ 0.0002 BTC</option>
+      <option value="0.0005" selected>₿ 0.0005 BTC</option>
+      <option value="0.001">₿ 0.001 BTC</option>
+      <option value="0.005">₿ 0.005 BTC</option>
+      <option value="0.01">₿ 0.01 BTC</option>
+    `;
+  } else {
+    budgetSelect.innerHTML = `
+      <option value="1">💵 1 USDT</option>
+      <option value="5">💵 5 USDT</option>
+      <option value="10" selected>💵 10 USDT</option>
+      <option value="25">💵 25 USDT</option>
+      <option value="50">💵 50 USDT</option>
+      <option value="100">💵 100 USDT</option>
+    `;
+  }
+};
+
 window.switchMexcTab = function(tabName) {
   document.querySelectorAll('.mexc-tab-btn').forEach(btn => {
     btn.classList.remove('active');
@@ -20081,7 +20922,6 @@ window.switchMexcTab = function(tabName) {
     btn.style.color = 'var(--text)';
     btn.style.borderColor = 'var(--line)';
   });
-
   const activeBtn = document.getElementById('mexc-tab-btn-' + tabName);
   if (activeBtn) {
     activeBtn.classList.add('active');
@@ -20089,11 +20929,9 @@ window.switchMexcTab = function(tabName) {
     activeBtn.style.color = '#00E5FF';
     activeBtn.style.borderColor = '#00E5FF';
   }
-
   document.querySelectorAll('.mexc-tab-content').forEach(content => {
     content.style.display = 'none';
   });
-
   const activeContent = document.getElementById('mexc-tab-' + tabName);
   if (activeContent) {
     activeContent.style.display = 'block';
@@ -20129,17 +20967,20 @@ window.updateMexcTradeCalc = async function() {
   const symbol = document.getElementById('mexc-trade-symbol')?.value || 'BTC_USDT';
   const side = document.getElementById('mexc-trade-side')?.value || '1';
   const lev = Number(document.getElementById('mexc-trade-lev')?.value || 200);
-  const budget = Number(document.getElementById('mexc-trade-budget')?.value || 10);
+  const unit = document.getElementById('mexc-trade-unit')?.value || 'USDT';
+  const rawBudget = Number(document.getElementById('mexc-trade-budget')?.value || (unit === 'BTC' ? 0.0005 : 10));
   const previewBox = document.getElementById('mexc-trade-preview-box');
-
   if (!previewBox) return;
 
   const currentPx = livePrice(symbol) || 65000;
   const contractSize = (await window.getContractSize(symbol)) || 0.0001;
-  const targetNotional = budget * lev;
+
+  const marginUsdt = unit === 'BTC' ? (rawBudget * currentPx) : rawBudget;
+  const targetNotional = marginUsdt * lev;
   const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
   const estNotional = calcVol * contractSize * currentPx;
-  const estMargin = lev > 0 ? estNotional / lev : estNotional;
+  const estMarginUsdt = lev > 0 ? estNotional / lev : estNotional;
+  const estMarginBtc = currentPx > 0 ? estMarginUsdt / currentPx : 0;
 
   const isLong = (side === '1');
   const sideColor = isLong ? '#10B981' : '#EF4444';
@@ -20150,12 +20991,12 @@ window.updateMexcTradeCalc = async function() {
       Aperçu de l'Ordre : <span style="color:#FFF">${symbol}</span> — ${sideName}
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
-      <div>• Marge Demandée : <b style="color:#38BDF8">${budget} USDT</b></div>
+      <div>• Marge Demandée : <b style="color:#38BDF8">${rawBudget} ${unit}</b> ${unit === 'BTC' ? `<span style="color:#A78BFA">(≈ $${marginUsdt.toFixed(2)} USDT)</span>` : `<span style="color:#A78BFA">(≈ ${currentPx > 0 ? (rawBudget / currentPx).toFixed(6) : 0} BTC)</span>`}</div>
       <div>• Levier Appliqué : <b style="color:#FFD700">${lev}x</b></div>
       <div>• Prix Estimé : <b style="color:#FFF">$${currentPx.toFixed(2)}</b></div>
       <div>• Taille Contrat : <b style="color:#FFF">${contractSize}</b></div>
       <div>• Volume à Commander : <b style="color:#00E5FF;font-size:12.5px">${calcVol} contrat(s)</b></div>
-      <div>• Notionnel Total : <b style="color:#10B981">$${estNotional.toFixed(2)} USDT</b></div>
+      <div>• Notionnel Total : <b style="color:#10B981">$${estNotional.toFixed(2)} USDT</b> (≈ ${estMarginBtc.toFixed(6)} BTC)</div>
     </div>
   `;
 };
@@ -20166,29 +21007,35 @@ window.submitMexcManualTrade = async function() {
   const type = Number(document.getElementById('mexc-trade-type')?.value || 5);
   const priceInput = document.getElementById('mexc-trade-price')?.value;
   const lev = Number(document.getElementById('mexc-trade-lev')?.value || 200);
-  const budget = Number(document.getElementById('mexc-trade-budget')?.value || 10);
+  const unit = document.getElementById('mexc-trade-unit')?.value || 'USDT';
+  const rawBudget = Number(document.getElementById('mexc-trade-budget')?.value || (unit === 'BTC' ? 0.0005 : 10));
   const resEl = document.getElementById('mexc-manual-trade-result');
-
   const currentPx = (type === 1 && priceInput) ? Number(priceInput) : (livePrice(symbol) || 0);
+
   if (!currentPx) {
     toast('❌ Prix du marché non disponible pour le symbole choisi.', '#FF5252');
     return;
   }
-
   const contractSize = await window.getContractSize(symbol);
   if (!contractSize) {
     toast(`❌ Taille de contrat introuvable pour ${symbol}`, '#FF5252');
     return;
   }
-
-  const targetNotional = budget * lev;
+  const marginUsdt = unit === 'BTC' ? (rawBudget * currentPx) : rawBudget;
+  const targetNotional = marginUsdt * lev;
   const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
   const actionTxt = side === 1 ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
 
-  if (!confirm(`🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?\n\n• Action : ${actionTxt}\n• Symbole : ${symbol}\n• Levier : ${lev}x\n• Marge Engagee : $${budget} USDT\n• Volume : ${calcVol} contrat(s)\n• Prix : $${currentPx.toFixed(2)}`)) {
+  if (!confirm(`🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?
+
+• Action : ${actionTxt}
+• Symbole : ${symbol}
+• Levier : ${lev}x
+• Marge Engagée : ${rawBudget} ${unit} (≈ $${marginUsdt.toFixed(2)} USDT)
+• Volume : ${calcVol} contrat(s)
+• Prix : $${currentPx.toFixed(2)}`)) {
     return;
   }
-
   if (resEl) {
     resEl.style.display = 'block';
     resEl.style.background = 'rgba(255,215,0,0.12)';
@@ -20196,7 +21043,6 @@ window.submitMexcManualTrade = async function() {
     resEl.style.color = '#FFD700';
     resEl.innerHTML = '⏳ Transmission de l\'ordre manuel à MEXC Futures...';
   }
-
   const res = await window.sendRealMexcFuturesOrder({
     symbol,
     side,
@@ -20204,16 +21050,17 @@ window.submitMexcManualTrade = async function() {
     price: currentPx,
     vol: calcVol,
     leverage: lev,
-    tradeBudget: budget,
+    tradeBudget: marginUsdt,
+    tradeBudgetVal: rawBudget,
+    tradeUnit: unit,
     openType: 1
   });
-
   if (resEl) {
     if (res && res.success) {
       resEl.style.background = 'rgba(16,185,129,0.15)';
       resEl.style.border = '1px solid #10B981';
       resEl.style.color = '#10B981';
-      resEl.innerHTML = `✅ <b>ORDRE RÉEL EXÉCUTÉ SUR MEXC FUTURES !</b><br>Symbole: ${symbol} | Side: ${actionTxt} | Contrats: ${calcVol} | Levier: ${lev}x`;
+      resEl.innerHTML = `✅ <b>ORDRE RÉEL EXÉCUTÉ SUR MEXC FUTURES !</b><br>Symbole: ${symbol} | Side: ${actionTxt} | Marge: ${rawBudget} ${unit} | Contrats: ${calcVol} | Levier: ${lev}x`;
       fetchMexcAccountAndPositions();
     } else {
       resEl.style.background = 'rgba(239,68,68,0.15)';
@@ -20227,607 +21074,152 @@ window.submitMexcManualTrade = async function() {
 window.fetchMexcAccountAndPositions = async function() {
   const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
   const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
-  const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
-  const lumenToken = serviceConfig.lumenToken || botConfig.lumenToken || '';
+  const inputUrl = document.getElementById('live-ex-serviceurl')?.value?.trim();
+  const serviceUrl = inputUrl || serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
+  const inputToken = document.getElementById('live-ex-token')?.value?.trim()?.replace(/^['"]|['"]$/g, '');
+  const lumenToken = inputToken !== undefined && inputToken !== '' ? inputToken : (serviceConfig.lumenToken || botConfig.lumenToken || '');
 
-  const availEl = document.getElementById('mexc-stat-futures-avail');
-  const equityEl = document.getElementById('mexc-stat-futures-equity');
-  const spotEl = document.getElementById('mexc-stat-spot-usdt');
-  const marginEl = document.getElementById('mexc-stat-futures-margin');
+  const elFuturesAvail = document.getElementById('mexc-stat-futures-avail');
+  const elFuturesEquity = document.getElementById('mexc-stat-futures-equity');
+  const elSpotUsdt = document.getElementById('mexc-stat-spot-usdt');
+  const elFuturesMargin = document.getElementById('mexc-stat-futures-margin');
+  const elPosBadge = document.getElementById('mexc-pos-count-badge');
   const posContainer = document.getElementById('mexc-positions-container');
-  const badgeEl = document.getElementById('mexc-pos-count-badge');
 
-  if (availEl) availEl.innerHTML = '⏳ Chargement...';
-  if (spotEl) spotEl.innerHTML = '⏳ Chargement...';
+  if (elFuturesAvail) elFuturesAvail.innerHTML = '⏳ ...';
+  if (elFuturesEquity) elFuturesEquity.innerHTML = '⏳ ...';
+  if (elSpotUsdt) elSpotUsdt.innerHTML = '⏳ ...';
+  if (elFuturesMargin) elFuturesMargin.innerHTML = '⏳ ...';
+  if (posContainer) posContainer.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px;text-align:center">⏳ Chargement des positions ouvertes...</div>';
 
   try {
-    const assetsResp = await fetch(serviceUrl, {
+    const futuresPromise = fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
       body: JSON.stringify({ endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
-    });
-    const assetsRes = await assetsResp.json();
+    }).then(r => r.json()).catch(err => ({ success: false, error: err.message }));
 
-    if (assetsRes && assetsRes.success && assetsRes.data) {
-      const resData = assetsRes.data.data ?? assetsRes.data;
-      const assetArr = Array.isArray(resData) ? resData : (resData ? [resData] : []);
-      const usdt = assetArr.find(a => a.currency === 'USDT' || a.symbol === 'USDT' || a.asset === 'USDT') || assetArr[0];
-      if (usdt) {
-        const avail = parseFloat(usdt.availableBalance ?? usdt.cashBalance ?? 0).toFixed(2);
-        const equity = parseFloat(usdt.equity ?? usdt.amount ?? 0).toFixed(2);
-        const posMargin = parseFloat(usdt.positionMargin ?? usdt.frozenBalance ?? 0).toFixed(2);
-        if (availEl) availEl.innerHTML = `<b style="color:#10B981">${avail} USDT</b>`;
-        if (equityEl) equityEl.innerHTML = `${equity} USDT`;
-        if (marginEl) marginEl.innerHTML = `${posMargin} USDT`;
-      }
-    }
-
-    const spotResp = await fetch(serviceUrl, {
+    const spotPromise = fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
       body: JSON.stringify({ endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
-    });
-    const spotRes = await spotResp.json();
-    if (spotRes && spotRes.success && spotRes.data) {
-      const balances = spotRes.data.balances || spotRes.data.data?.balances || [];
-      const usdtSpot = balances.find(b => b.asset === 'USDT');
-      if (usdtSpot && spotEl) {
-        spotEl.innerHTML = `${parseFloat(usdtSpot.free || '0').toFixed(2)} USDT`;
+    }).then(r => r.json()).catch(err => ({ success: false, error: err.message }));
+
+    const posPromise = window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
+
+    const [futuresRes, spotRes, posData] = await Promise.all([futuresPromise, spotPromise, posPromise]);
+
+    let availUsdt = 0;
+    let equityUsdt = 0;
+    let posMarginUsdt = 0;
+
+    if (futuresRes && futuresRes.success && futuresRes.data) {
+      const resData = futuresRes.data.data ?? futuresRes.data;
+      const assetArr = Array.isArray(resData) ? resData : (resData ? [resData] : []);
+      const usdtFutures = assetArr.find(a => a.currency === 'USDT' || a.symbol === 'USDT' || a.asset === 'USDT') || assetArr[0];
+      if (usdtFutures) {
+        availUsdt = parseFloat(usdtFutures.availableBalance ?? usdtFutures.cashBalance ?? usdtFutures.amount ?? 0) || 0;
+        equityUsdt = parseFloat(usdtFutures.equity ?? usdtFutures.cashBalance ?? availUsdt) || 0;
+        posMarginUsdt = parseFloat(usdtFutures.positionMargin ?? usdtFutures.frozenBalance ?? 0) || 0;
       }
-    }
-
-    const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
-    if (badgeEl) badgeEl.textContent = String(posList.length);
-
-    window.__mexcRawPositions = posList;
-    if (posList && posList.length) {
-      console.log('[MEXC] Champs disponibles :', Object.keys(posList[0]).join(', '));
-    }
-
-    /* Les noms de champs varient selon les versions de l'API MEXC. Plutôt que
-       de deviner, on expose la réponse brute : un clic sur « données brutes »
-       montre exactement ce que MEXC renvoie pour la première position. */
-    window.__mexcRawPositions = posList;
-    if (posList && posList.length) {
-      console.log('[MEXC] Position brute :', JSON.stringify(posList[0], null, 2));
-      console.log('[MEXC] Champs disponibles :', Object.keys(posList[0]).join(', '));
-    }
-
-    if (!posContainer) return;
-
-    if (!posList || posList.length === 0) {
-      posContainer.innerHTML = `
-        <div style="text-align:center;color:#10B981;font-size:12px;padding:16px;background:rgba(16,185,129,0.06);border-radius:8px">
-          ✅ Aucune position ouverte sur votre compte MEXC Futures pour le moment.
-        </div>
-      `;
-      return;
-    }
-
-    let posRows = '';
-    posList.forEach(p => {
-      const isLong = p.positionType === 1;
-      const sideTag = isLong ? '<span style="color:#10B981;font-weight:900">🟢 LONG</span>' : '<span style="color:#EF4444;font-weight:900">🔴 SHORT</span>';
-      const vol = p.holdVol || p.vol || 0;
-      /* MEXC nomme ces champs différemment selon les versions.
-         Le repli sur 0 donnait des prix à zéro : on essaie toutes les
-         variantes connues avant d'abandonner. */
-      const openN = parseFloat(p.openAvgPrice ?? p.openPrice ?? p.holdAvgPrice ?? p.costOpenPrice ?? 0);
-      const fairN = parseFloat(p.fairPrice ?? p.markPrice ?? p.lastPrice ?? p.indexPrice ?? openN ?? 0);
-      const decP = (openN > 0 && openN < 1) ? 6 : 2;
-      const openPrice = openN > 0 ? openN.toFixed(decP) : '—';
-      const fairPrice = fairN > 0 ? fairN.toFixed(decP) : '—';
-      const marginN = parseFloat(p.im ?? p.positionMargin ?? p.oim ?? 0);
-      const margin = marginN.toFixed(2);
-      const pnl = parseFloat(p.unrealisedPnl || 0);
-      const pnlColor = pnl >= 0 ? '#10B981' : '#EF4444';
-      const pnlSign = pnl >= 0 ? '+' : '';
-
-      /* Informations complémentaires renvoyées par MEXC.
-         Les noms varient selon les versions de l'API, d'où les alternatives. */
-      const lev = parseFloat(p.leverage || 200);
-      const csz = parseFloat(p.contractSize || window.__csz?.[p.symbol] || 0.0001);
-      const notionnel = (parseFloat(vol) * csz * (fairN || openN)) || 0;
-
-      // Frais : ouverture réellement prélevée, et estimation de la fermeture
-      const feeOpen  = parseFloat(p.openFee ?? p.fee ?? p.takerFee ?? 0);
-      const feeClose = parseFloat(p.closeFee ?? 0);
-      const feeFund  = parseFloat(p.fundingFee ?? p.funding ?? 0);
-      const feeTotal = feeOpen + feeClose + feeFund;
-
-      const liq = parseFloat(p.liquidatePrice ?? p.liqPrice ?? 0);
-      const realised = parseFloat(p.realised ?? p.realisedPnl ?? p.profitLoss ?? 0);
-      // Rendement sur la marge engagée, c'est ce qui compte vraiment
-      const roe = marginN > 0 ? (pnl / marginN * 100) : 0;
-      const roeColor = roe >= 0 ? '#10B981' : '#EF4444';
-      // PnL net une fois les frais déduits
-      const pnlNet = pnl - Math.abs(feeTotal);
-      const netColor = pnlNet >= 0 ? '#10B981' : '#EF4444';
-
-      const ouvertLe = p.createTime ? new Date(p.createTime).toLocaleString('fr-FR') : '—';
-      const modeMarge = (p.openType === 1) ? 'Isolée' : (p.openType === 2 ? 'Croisée' : '—');
-      const f2 = v => (v === 0 ? '0.00' : (Math.abs(v) < 0.01 ? v.toFixed(6) : v.toFixed(4)));
-
-      posRows += `
-        <tr style="border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px">
-          <td style="padding:6px 5px;font-weight:900;color:#00E5FF;font-size:11.5px">${p.symbol}</td>
-          <td style="padding:6px 5px;font-weight:800">${sideTag} <span style="color:#FACC15">${p.leverage || 200}x</span></td>
-          <td style="padding:6px 5px;font-weight:800;color:#E2E8F0">${vol} <span style="color:#94A3B8;font-weight:400">ct</span></td>
-          <td style="padding:6px 5px;font-weight:800;color:#F8FAFC">${openPrice === '—' ? '—' : '$' + openPrice}</td>
-          <td style="padding:6px 5px;font-weight:800;color:#7DD3FC">${fairPrice === '—' ? '—' : '$' + fairPrice}</td>
-          <td style="padding:6px 5px;color:#FF9F1C">${liq > 0 ? '$' + liq.toFixed(2) : '—'}</td>
-          <td style="padding:6px 5px;color:#FFD700">${margin} $</td>
-          <td style="padding:6px 5px;font-weight:bold;color:${pnlColor}">${pnlSign}${pnl.toFixed(2)}<br><span style="font-size:9.5px;color:${roeColor}">${roe >= 0 ? '+' : ''}${roe.toFixed(2)} %</span></td>
-          <td style="padding:6px 5px;color:#F472B6">${feeTotal !== 0 ? f2(feeTotal) : '—'}</td>
-          <td style="padding:6px 5px;font-weight:bold;color:${netColor}">${pnlNet >= 0 ? '+' : ''}${pnlNet.toFixed(2)}</td>
-          <td style="padding:6px 5px;text-align:right">
-            <button onclick="closeMexcPosition('${p.symbol}', ${p.positionType}, ${vol})" style="background:rgba(239,68,68,0.2);border:1px solid #FF5252;color:#FF5252;padding:4px 8px;border-radius:4px;font-weight:bold;font-size:10px;cursor:pointer">
-              ✕ Fermer
-            </button>
-          </td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--line)">
-          <td colspan="11" style="padding:2px 8px 9px 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94A3B8;background:rgba(15,23,42,.35)">
-            Notionnel <b style="color:#CBD5E1">${notionnel.toFixed(2)} USDT</b> ·
-            Taille contrat <b style="color:#CBD5E1">${csz}</b> ·
-            Marge <b style="color:#CBD5E1">${modeMarge}</b> ·
-            Frais ouverture <b style="color:#CBD5E1">${f2(feeOpen)}</b> ·
-            Financement <b style="color:#CBD5E1">${f2(feeFund)}</b> ·
-            Réalisé <b style="color:#CBD5E1">${realised.toFixed(2)}</b> ·
-            Ouverte le <b style="color:#CBD5E1">${ouvertLe}</b>
-          </td>
-        </tr>
-      `;
-    });
-
-    posContainer.innerHTML = `
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;text-align:left">
-          <thead>
-            <tr style="border-bottom:1.5px solid #334155;color:#CBD5E1;font-size:10.5px;font-weight:800;background:rgba(15,23,42,.6)">
-              <th style="padding:5px 5px">SYMBOLE</th>
-              <th style="padding:5px 5px">SENS</th>
-              <th style="padding:5px 5px">CONTR.</th>
-              <th style="padding:5px 5px">ENTRÉE</th>
-              <th style="padding:5px 5px">REPÈRE</th>
-              <th style="padding:5px 5px">LIQUID.</th>
-              <th style="padding:5px 5px">MARGE</th>
-              <th style="padding:5px 5px">PnL / REND.</th>
-              <th style="padding:5px 5px">FRAIS</th>
-              <th style="padding:5px 5px">PnL NET</th>
-              <th style="padding:5px 5px;text-align:right">ACTION</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${posRows}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-  } catch(e) {
-    console.error('Erreur fetchMexcAccountAndPositions:', e);
-    if (availEl) availEl.innerHTML = '<span style="color:#FF5252">Erreur</span>';
-  }
-};
-
-window.closeMexcPosition = async function(symbol, positionType, vol) {
-  const isLong = (positionType === 1);
-  const closeSide = isLong ? 2 : 4;
-  const actionName = isLong ? 'FERMER LONG' : 'FERMER SHORT';
-
-  if (!confirm(`🛑 FERMER LA POSITION ${actionName} sur ${symbol} (${vol} contrats) AU MARCHÉ ?`)) {
-    return;
-  }
-
-  toast(`⏳ Clôture de la position ${symbol} au marché...`, '#00E5FF');
-  const res = await window.sendRealMexcFuturesOrder({
-    symbol,
-    side: closeSide,
-    vol,
-    price: livePrice(symbol) || 0,
-    openType: 1
-  });
-
-  if (res && res.success) {
-    toast(`✅ Position ${symbol} fermée avec succès !`, '#10B981');
-    fetchMexcAccountAndPositions();
-  }
-};
-
-window.closeAllMexcPositions = async function() {
-  const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
-  const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
-  const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
-  const lumenToken = serviceConfig.lumenToken || botConfig.lumenToken || '';
-
-  const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
-  if (!posList || posList.length === 0) {
-    toast('ℹ️ Aucune position ouverte à fermer.', '#00E5FF');
-    return;
-  }
-
-  if (!confirm(`🛑 ÊTES-VOUS SÛR DE VOULOIR FERMER TOUTES LES ${posList.length} POSITIONS MEXC AU MARCHÉ ?`)) {
-    return;
-  }
-
-  for (const pos of posList) {
-    await window.closeMexcPosition(pos.symbol, pos.positionType, pos.holdVol || pos.vol || 1);
-  }
-};
-
-window.renderMexcLogsInTab = function() {
-  const container = document.getElementById('mexc-logs-container');
-  if (!container) return;
-
-  const clientLogs = window.__mexcClientLogs || [];
-  if (clientLogs.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px">Aucun ordre enregistré pour cette session.</div>';
-    return;
-  }
-
-  let html = '';
-  clientLogs.forEach(l => {
-    const dateStr = new Date(l.timestamp).toLocaleTimeString();
-    const isSuccess = l.status === 'SUCCESS';
-    const statusColor = isSuccess ? '#10B981' : '#EF4444';
-    html += `
-      <div style="border-bottom:1px solid var(--line);padding:6px 0">
-        <div style="display:flex;justify-content:space-between;font-weight:bold">
-          <span style="color:#00E5FF">[${dateStr}] ${l.params?.symbol || 'ORDER'}</span>
-          <span style="color:${statusColor}">${l.status}</span>
-        </div>
-        <div style="color:var(--muted);font-size:10px;margin-top:2px">
-          ${l.params?.sideLabel || ''} | Vol: ${l.params?.vol || 1} | Levier: ${l.params?.leverage || 200}x | Margin: ${l.params?.margin ? l.params.margin.toFixed(2) + ' $' : ''}
-        </div>
-        ${l.rejectionReason ? `<div style="color:#FF5252;font-size:10px;margin-top:2px">🛡️ ${l.rejectionReason}</div>` : ''}
-      </div>
-    `;
-  });
-
-  container.innerHTML = html;
-};
-
-/* ===== GESTION Lancement en Direct sur Exchange (Argent Réel) ===== */
-/* ===== GESTION ONGLET & HUBS MEXC DIRECT ===== */
-window.switchMexcTab = function(tabName) {
-  document.querySelectorAll('.mexc-tab-btn').forEach(btn => {
-    btn.classList.remove('active');
-    btn.style.background = 'rgba(255,255,255,0.05)';
-    btn.style.color = 'var(--text)';
-    btn.style.borderColor = 'var(--line)';
-  });
-
-  const activeBtn = document.getElementById('mexc-tab-btn-' + tabName);
-  if (activeBtn) {
-    activeBtn.classList.add('active');
-    activeBtn.style.background = 'rgba(0,229,255,0.15)';
-    activeBtn.style.color = '#00E5FF';
-    activeBtn.style.borderColor = '#00E5FF';
-  }
-
-  document.querySelectorAll('.mexc-tab-content').forEach(content => {
-    content.style.display = 'none';
-  });
-
-  const activeContent = document.getElementById('mexc-tab-' + tabName);
-  if (activeContent) {
-    activeContent.style.display = 'block';
-  }
-
-  if (tabName === 'account') {
-    fetchMexcAccountAndPositions();
-  } else if (tabName === 'trade') {
-    updateMexcTradeCalc();
-  } else if (tabName === 'logs') {
-    renderMexcLogsInTab();
-  }
-};
-
-window.setMexcBudget = function(amt) {
-  const el = document.getElementById('mexc-trade-budget');
-  if (el) {
-    el.value = String(amt);
-    updateMexcTradeCalc();
-  }
-};
-
-window.toggleMexcLimitPriceInput = function() {
-  const typeEl = document.getElementById('mexc-trade-type');
-  const priceBox = document.getElementById('mexc-trade-price-box');
-  if (typeEl && priceBox) {
-    priceBox.style.display = (typeEl.value === '1') ? 'block' : 'none';
-  }
-  updateMexcTradeCalc();
-};
-
-window.updateMexcTradeCalc = async function() {
-  const symbol = document.getElementById('mexc-trade-symbol')?.value || 'BTC_USDT';
-  const side = document.getElementById('mexc-trade-side')?.value || '1';
-  const lev = Number(document.getElementById('mexc-trade-lev')?.value || 200);
-  const budget = Number(document.getElementById('mexc-trade-budget')?.value || 10);
-  const previewBox = document.getElementById('mexc-trade-preview-box');
-
-  if (!previewBox) return;
-
-  const currentPx = livePrice(symbol) || 65000;
-  const contractSize = (await window.getContractSize(symbol)) || 0.0001;
-  const targetNotional = budget * lev;
-  const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
-  const estNotional = calcVol * contractSize * currentPx;
-  const estMargin = lev > 0 ? estNotional / lev : estNotional;
-
-  const isLong = (side === '1');
-  const sideColor = isLong ? '#10B981' : '#EF4444';
-  const sideName = isLong ? '🟢 ACHAT / LONG (Open Long)' : '🔴 VENTE / SHORT (Open Short)';
-
-  previewBox.innerHTML = `
-    <div style="font-weight:900;color:${sideColor};margin-bottom:6px">
-      Aperçu de l'Ordre : <span style="color:#FFF">${symbol}</span> — ${sideName}
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
-      <div>• Marge Demandée : <b style="color:#38BDF8">${budget} USDT</b></div>
-      <div>• Levier Appliqué : <b style="color:#FFD700">${lev}x</b></div>
-      <div>• Prix Estimé : <b style="color:#FFF">$${currentPx.toFixed(2)}</b></div>
-      <div>• Taille Contrat : <b style="color:#FFF">${contractSize}</b></div>
-      <div>• Volume à Commander : <b style="color:#00E5FF;font-size:12.5px">${calcVol} contrat(s)</b></div>
-      <div>• Notionnel Total : <b style="color:#10B981">$${estNotional.toFixed(2)} USDT</b></div>
-    </div>
-  `;
-};
-
-window.submitMexcManualTrade = async function() {
-  const symbol = document.getElementById('mexc-trade-symbol')?.value || 'BTC_USDT';
-  const side = Number(document.getElementById('mexc-trade-side')?.value || 1);
-  const type = Number(document.getElementById('mexc-trade-type')?.value || 5);
-  const priceInput = document.getElementById('mexc-trade-price')?.value;
-  const lev = Number(document.getElementById('mexc-trade-lev')?.value || 200);
-  const budget = Number(document.getElementById('mexc-trade-budget')?.value || 10);
-  const resEl = document.getElementById('mexc-manual-trade-result');
-
-  const currentPx = (type === 1 && priceInput) ? Number(priceInput) : (livePrice(symbol) || 0);
-  if (!currentPx) {
-    toast('❌ Prix du marché non disponible pour le symbole choisi.', '#FF5252');
-    return;
-  }
-
-  const contractSize = await window.getContractSize(symbol);
-  if (!contractSize) {
-    toast(`❌ Taille de contrat introuvable pour ${symbol}`, '#FF5252');
-    return;
-  }
-
-  const targetNotional = budget * lev;
-  const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
-  const actionTxt = side === 1 ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
-
-  if (!confirm(`🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?\n\n• Action : ${actionTxt}\n• Symbole : ${symbol}\n• Levier : ${lev}x\n• Marge Engagee : $${budget} USDT\n• Volume : ${calcVol} contrat(s)\n• Prix : $${currentPx.toFixed(2)}`)) {
-    return;
-  }
-
-  if (resEl) {
-    resEl.style.display = 'block';
-    resEl.style.background = 'rgba(255,215,0,0.12)';
-    resEl.style.border = '1px solid #FFD700';
-    resEl.style.color = '#FFD700';
-    resEl.innerHTML = '⏳ Transmission de l\'ordre manuel à MEXC Futures...';
-  }
-
-  const res = await window.sendRealMexcFuturesOrder({
-    symbol,
-    side,
-    type,
-    price: currentPx,
-    vol: calcVol,
-    leverage: lev,
-    tradeBudget: budget,
-    openType: 1
-  });
-
-  if (resEl) {
-    if (res && res.success) {
-      resEl.style.background = 'rgba(16,185,129,0.15)';
-      resEl.style.border = '1px solid #10B981';
-      resEl.style.color = '#10B981';
-      resEl.innerHTML = `✅ <b>ORDRE RÉEL EXÉCUTÉ SUR MEXC FUTURES !</b><br>Symbole: ${symbol} | Side: ${actionTxt} | Contrats: ${calcVol} | Levier: ${lev}x`;
-      fetchMexcAccountAndPositions();
+      if (elFuturesAvail) elFuturesAvail.innerHTML = `${availUsdt.toFixed(2)} <span style="font-size:12px;color:#94A3B8">USDT</span>`;
+      if (elFuturesEquity) elFuturesEquity.innerHTML = `${equityUsdt.toFixed(2)} USDT`;
     } else {
-      resEl.style.background = 'rgba(239,68,68,0.15)';
-      resEl.style.border = '1px solid #FF5252';
-      resEl.style.color = '#FF5252';
-      resEl.innerHTML = `❌ <b>REJET MEXC :</b> ${res.error || 'Erreur inconnue'}`;
-    }
-  }
-};
-
-window.fetchMexcAccountAndPositions = async function() {
-  const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
-  const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
-  const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
-  const lumenToken = serviceConfig.lumenToken || botConfig.lumenToken || '';
-
-  const availEl = document.getElementById('mexc-stat-futures-avail');
-  const equityEl = document.getElementById('mexc-stat-futures-equity');
-  const spotEl = document.getElementById('mexc-stat-spot-usdt');
-  const marginEl = document.getElementById('mexc-stat-futures-margin');
-  const posContainer = document.getElementById('mexc-positions-container');
-  const badgeEl = document.getElementById('mexc-pos-count-badge');
-
-  if (availEl) availEl.innerHTML = '⏳ Chargement...';
-  if (spotEl) spotEl.innerHTML = '⏳ Chargement...';
-
-  try {
-    const assetsResp = await fetch(serviceUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
-    });
-    const assetsRes = await assetsResp.json();
-
-    if (assetsRes && assetsRes.success && assetsRes.data) {
-      const resData = assetsRes.data.data ?? assetsRes.data;
-      const assetArr = Array.isArray(resData) ? resData : (resData ? [resData] : []);
-      const usdt = assetArr.find(a => a.currency === 'USDT' || a.symbol === 'USDT' || a.asset === 'USDT') || assetArr[0];
-      if (usdt) {
-        const avail = parseFloat(usdt.availableBalance ?? usdt.cashBalance ?? 0).toFixed(2);
-        const equity = parseFloat(usdt.equity ?? usdt.amount ?? 0).toFixed(2);
-        const posMargin = parseFloat(usdt.positionMargin ?? usdt.frozenBalance ?? 0).toFixed(2);
-        if (availEl) availEl.innerHTML = `<b style="color:#10B981">${avail} USDT</b>`;
-        if (equityEl) equityEl.innerHTML = `${equity} USDT`;
-        if (marginEl) marginEl.innerHTML = `${posMargin} USDT`;
-      }
+      const errMsg = futuresRes.error || futuresRes.data?.msg || 'Non connecté';
+      if (elFuturesAvail) elFuturesAvail.innerHTML = `<span style="font-size:13px;color:#FF5252">Indisponible</span>`;
+      if (elFuturesEquity) elFuturesEquity.innerHTML = `<span style="font-size:11px;color:#FF5252">${errMsg}</span>`;
     }
 
-    const spotResp = await fetch(serviceUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
-    });
-    const spotRes = await spotResp.json();
     if (spotRes && spotRes.success && spotRes.data) {
-      const balances = spotRes.data.balances || spotRes.data.data?.balances || [];
-      const usdtSpot = balances.find(b => b.asset === 'USDT');
-      if (usdtSpot && spotEl) {
-        spotEl.innerHTML = `${parseFloat(usdtSpot.free || '0').toFixed(2)} USDT`;
+      const balances = spotRes.data.data?.balances || spotRes.data.balances || [];
+      const usdtSpotObj = balances.find(b => b.asset === 'USDT');
+      const spotUsdtVal = parseFloat(usdtSpotObj?.free || '0') || 0;
+      if (elSpotUsdt) elSpotUsdt.innerHTML = `${spotUsdtVal.toFixed(2)} <span style="font-size:12px;color:#94A3B8">USDT</span>`;
+    } else {
+      if (elSpotUsdt) elSpotUsdt.innerHTML = `<span style="font-size:13px;color:#94A3B8">0.00 USDT</span>`;
+    }
+
+    const positionsList = Array.isArray(posData) ? posData : [];
+    if (elPosBadge) elPosBadge.innerText = String(positionsList.length);
+
+    if (!posMarginUsdt && positionsList.length > 0) {
+      positionsList.forEach(p => {
+        posMarginUsdt += parseFloat(p.im || p.positionMargin || p.oim || 0) || 0;
+      });
+    }
+    if (elFuturesMargin) elFuturesMargin.innerHTML = `${posMarginUsdt.toFixed(2)} <span style="font-size:12px;color:#94A3B8">USDT</span>`;
+
+    if (posContainer) {
+      if (!positionsList.length) {
+        posContainer.innerHTML = '<div style="color:#10B981;font-weight:bold;font-size:12px;padding:14px;background:rgba(16,185,129,0.08);border-radius:8px;border:1px solid rgba(16,185,129,0.3);text-align:center">✅ Aucune position ouverte en cours sur MEXC Futures.</div>';
+      } else {
+        window.__mexcRawPositions = positionsList;
+        let posHtml = '<div style="text-align:right;margin-bottom:6px"><button onclick="window.showMexcRaw()" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:5px;padding:3px 9px;font-size:10px;cursor:pointer">🔍 données brutes</button></div>';
+        positionsList.forEach(p => {
+          const isLong = (p.positionType === 1 || p.holdVol > 0 || p.side === 'long' || p.side === 1);
+          const posSide = isLong ? 'LONG' : 'SHORT';
+          const sideCol = isLong ? '#10B981' : '#EF4444';
+          const vol = p.holdVol || p.vol || p.qty || 0;
+          const entryPx = Number(p.holdAvgPrice ?? p.openAvgPrice ?? p.openPrice ?? p.costOpenPrice ?? 0);
+          const pnl = Number(p.unrealisedPnl || p.pnl || 0);
+          const pnlCol = pnl >= 0 ? '#10B981' : '#FF5252';
+
+          /* Informations complémentaires renvoyées par MEXC. Les noms varient
+             selon les versions de l'API, d'où les alternatives. */
+          const markPx  = Number(p.fairPrice ?? p.markPrice ?? p.lastPrice ?? entryPx ?? 0);
+          const liqPx   = Number(p.liquidatePrice ?? p.liqPrice ?? 0);
+          const margeN  = Number(p.im ?? p.positionMargin ?? p.oim ?? 0);
+          const lev     = Number(p.leverage || 0);
+          const fOpen   = Number(p.openFee ?? p.fee ?? 0);
+          const fClose  = Number(p.closeFee ?? 0);
+          const fFund   = Number(p.fundingFee ?? p.funding ?? 0);
+          const fraisT  = fOpen + fClose + fFund;
+          const pnlNet  = pnl - Math.abs(fraisT);
+          const netCol  = pnlNet >= 0 ? '#10B981' : '#FF5252';
+          const roe     = margeN > 0 ? (pnl / margeN * 100) : 0;
+          const roeCol  = roe >= 0 ? '#10B981' : '#FF5252';
+          const dP      = (entryPx > 0 && entryPx < 1) ? 5 : 2;
+          const f6      = v => (v === 0 ? '0' : (Math.abs(v) < 0.01 ? v.toFixed(6) : v.toFixed(4)));
+          posHtml += `
+            <div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <div>
+                <span style="font-weight:900;color:${sideCol};background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;font-size:11px">${posSide}</span>
+                <b style="color:#FFF;margin-left:6px">${p.symbol}</b>
+                <span style="color:var(--muted);font-size:11px;margin-left:6px">${vol} contrat(s) @ $${entryPx > 0 ? entryPx.toFixed(dP) : '—'}${lev ? ' · ' + lev + 'x' : ''}</span>
+                <div style="margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94A3B8;line-height:1.6">
+                  Repère <b style="color:#7DD3FC">${markPx > 0 ? '$' + markPx.toFixed(dP) : '—'}</b> ·
+                  Liquidation <b style="color:#FF9F1C">${liqPx > 0 ? '$' + liqPx.toFixed(dP) : '—'}</b> ·
+                  Marge <b style="color:#FFD700">${margeN.toFixed(2)} $</b> ·
+                  Frais <b style="color:#F472B6">${fraisT !== 0 ? f6(fraisT) : '—'}</b>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="text-align:right">
+                  <div style="font-weight:bold;color:${pnlCol};font-size:12px">PNL: ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} USDT</div>
+                  <div style="font-size:10px;color:${roeCol};font-family:'IBM Plex Mono',monospace">${roe >= 0 ? '+' : ''}${roe.toFixed(2)} % sur marge</div>
+                  <div style="font-size:10.5px;font-weight:800;color:${netCol};font-family:'IBM Plex Mono',monospace">net ${pnlNet >= 0 ? '+' : ''}${pnlNet.toFixed(2)}</div>
+                </div>
+                <button onclick="window.closeMexcPosition('${p.symbol}', '${posSide.toLowerCase()}', ${vol})" style="background:rgba(239,68,68,0.2);border:1px solid #EF4444;color:#FF5252;padding:4px 8px;border-radius:5px;font-weight:bold;font-size:10.5px;cursor:pointer">Clôturer Market</button>
+              </div>
+            </div>
+          `;
+        });
+        posContainer.innerHTML = posHtml;
       }
     }
 
-    const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
-    if (badgeEl) badgeEl.textContent = String(posList.length);
-
-    window.__mexcRawPositions = posList;
-    if (posList && posList.length) {
-      console.log('[MEXC] Champs disponibles :', Object.keys(posList[0]).join(', '));
-    }
-
-    if (!posContainer) return;
-
-    if (!posList || posList.length === 0) {
-      posContainer.innerHTML = `
-        <div style="text-align:center;color:#10B981;font-size:12px;padding:16px;background:rgba(16,185,129,0.06);border-radius:8px">
-          ✅ Aucune position ouverte sur votre compte MEXC Futures pour le moment.
-        </div>
-      `;
-      return;
-    }
-
-    let posRows = '';
-    posList.forEach(p => {
-      const isLong = p.positionType === 1;
-      const sideTag = isLong ? '<span style="color:#10B981;font-weight:900">🟢 LONG</span>' : '<span style="color:#EF4444;font-weight:900">🔴 SHORT</span>';
-      const vol = p.holdVol || p.vol || 0;
-      /* MEXC nomme ces champs différemment selon les versions.
-         Le repli sur 0 donnait des prix à zéro : on essaie toutes les
-         variantes connues avant d'abandonner. */
-      const openN = parseFloat(p.openAvgPrice ?? p.openPrice ?? p.holdAvgPrice ?? p.costOpenPrice ?? 0);
-      const fairN = parseFloat(p.fairPrice ?? p.markPrice ?? p.lastPrice ?? p.indexPrice ?? openN ?? 0);
-      const decP = (openN > 0 && openN < 1) ? 6 : 2;
-      const openPrice = openN > 0 ? openN.toFixed(decP) : '—';
-      const fairPrice = fairN > 0 ? fairN.toFixed(decP) : '—';
-      const marginN = parseFloat(p.im ?? p.positionMargin ?? p.oim ?? 0);
-      const margin = marginN.toFixed(2);
-      const pnl = parseFloat(p.unrealisedPnl || 0);
-      const pnlColor = pnl >= 0 ? '#10B981' : '#EF4444';
-      const pnlSign = pnl >= 0 ? '+' : '';
-
-      /* Informations complémentaires renvoyées par MEXC.
-         Les noms varient selon les versions de l'API, d'où les alternatives. */
-      const lev = parseFloat(p.leverage || 200);
-      const csz = parseFloat(p.contractSize || window.__csz?.[p.symbol] || 0.0001);
-      const notionnel = (parseFloat(vol) * csz * (fairN || openN)) || 0;
-
-      // Frais : ouverture réellement prélevée, et estimation de la fermeture
-      const feeOpen  = parseFloat(p.openFee ?? p.fee ?? p.takerFee ?? 0);
-      const feeClose = parseFloat(p.closeFee ?? 0);
-      const feeFund  = parseFloat(p.fundingFee ?? p.funding ?? 0);
-      const feeTotal = feeOpen + feeClose + feeFund;
-
-      const liq = parseFloat(p.liquidatePrice ?? p.liqPrice ?? 0);
-      const realised = parseFloat(p.realised ?? p.realisedPnl ?? p.profitLoss ?? 0);
-      // Rendement sur la marge engagée, c'est ce qui compte vraiment
-      const roe = marginN > 0 ? (pnl / marginN * 100) : 0;
-      const roeColor = roe >= 0 ? '#10B981' : '#EF4444';
-      // PnL net une fois les frais déduits
-      const pnlNet = pnl - Math.abs(feeTotal);
-      const netColor = pnlNet >= 0 ? '#10B981' : '#EF4444';
-
-      const ouvertLe = p.createTime ? new Date(p.createTime).toLocaleString('fr-FR') : '—';
-      const modeMarge = (p.openType === 1) ? 'Isolée' : (p.openType === 2 ? 'Croisée' : '—');
-      const f2 = v => (v === 0 ? '0.00' : (Math.abs(v) < 0.01 ? v.toFixed(6) : v.toFixed(4)));
-
-      posRows += `
-        <tr style="border-bottom:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px">
-          <td style="padding:6px 5px;font-weight:900;color:#00E5FF;font-size:11.5px">${p.symbol}</td>
-          <td style="padding:6px 5px;font-weight:800">${sideTag} <span style="color:#FACC15">${p.leverage || 200}x</span></td>
-          <td style="padding:6px 5px;font-weight:800;color:#E2E8F0">${vol} <span style="color:#94A3B8;font-weight:400">ct</span></td>
-          <td style="padding:6px 5px;font-weight:800;color:#F8FAFC">${openPrice === '—' ? '—' : '$' + openPrice}</td>
-          <td style="padding:6px 5px;font-weight:800;color:#7DD3FC">${fairPrice === '—' ? '—' : '$' + fairPrice}</td>
-          <td style="padding:6px 5px;color:#FF9F1C">${liq > 0 ? '$' + liq.toFixed(2) : '—'}</td>
-          <td style="padding:6px 5px;color:#FFD700">${margin} $</td>
-          <td style="padding:6px 5px;font-weight:bold;color:${pnlColor}">${pnlSign}${pnl.toFixed(2)}<br><span style="font-size:9.5px;color:${roeColor}">${roe >= 0 ? '+' : ''}${roe.toFixed(2)} %</span></td>
-          <td style="padding:6px 5px;color:#F472B6">${feeTotal !== 0 ? f2(feeTotal) : '—'}</td>
-          <td style="padding:6px 5px;font-weight:bold;color:${netColor}">${pnlNet >= 0 ? '+' : ''}${pnlNet.toFixed(2)}</td>
-          <td style="padding:6px 5px;text-align:right">
-            <button onclick="closeMexcPosition('${p.symbol}', ${p.positionType}, ${vol})" style="background:rgba(239,68,68,0.2);border:1px solid #FF5252;color:#FF5252;padding:4px 8px;border-radius:4px;font-weight:bold;font-size:10px;cursor:pointer">
-              ✕ Fermer
-            </button>
-          </td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--line)">
-          <td colspan="11" style="padding:2px 8px 9px 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94A3B8;background:rgba(15,23,42,.35)">
-            Notionnel <b style="color:#CBD5E1">${notionnel.toFixed(2)} USDT</b> ·
-            Taille contrat <b style="color:#CBD5E1">${csz}</b> ·
-            Marge <b style="color:#CBD5E1">${modeMarge}</b> ·
-            Frais ouverture <b style="color:#CBD5E1">${f2(feeOpen)}</b> ·
-            Financement <b style="color:#CBD5E1">${f2(feeFund)}</b> ·
-            Réalisé <b style="color:#CBD5E1">${realised.toFixed(2)}</b> ·
-            Ouverte le <b style="color:#CBD5E1">${ouvertLe}</b>
-          </td>
-        </tr>
-      `;
-    });
-
-    posContainer.innerHTML = `
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;text-align:left">
-          <thead>
-            <tr style="border-bottom:1.5px solid #334155;color:#CBD5E1;font-size:10.5px;font-weight:800;background:rgba(15,23,42,.6)">
-              <th style="padding:5px 5px">SYMBOLE</th>
-              <th style="padding:5px 5px">SENS</th>
-              <th style="padding:5px 5px">CONTR.</th>
-              <th style="padding:5px 5px">ENTRÉE</th>
-              <th style="padding:5px 5px">REPÈRE</th>
-              <th style="padding:5px 5px">LIQUID.</th>
-              <th style="padding:5px 5px">MARGE</th>
-              <th style="padding:5px 5px">PnL / REND.</th>
-              <th style="padding:5px 5px">FRAIS</th>
-              <th style="padding:5px 5px">PnL NET</th>
-              <th style="padding:5px 5px;text-align:right">ACTION</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${posRows}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-  } catch(e) {
-    console.error('Erreur fetchMexcAccountAndPositions:', e);
-    if (availEl) availEl.innerHTML = '<span style="color:#FF5252">Erreur</span>';
+  } catch (err) {
+    console.error('Erreur fetchMexcAccountAndPositions:', err);
+    if (elFuturesAvail) elFuturesAvail.innerHTML = '<span style="color:#FF5252">Erreur</span>';
+    if (posContainer) posContainer.innerHTML = `<div style="color:#FF5252;font-size:11.5px;padding:12px;text-align:center">Erreur lors de la récupération des informations : ${err.message}</div>`;
   }
 };
 
-window.closeMexcPosition = async function(symbol, positionType, vol) {
-  const isLong = (positionType === 1);
-  const closeSide = isLong ? 2 : 4;
-  const actionName = isLong ? 'FERMER LONG' : 'FERMER SHORT';
-
-  if (!confirm(`🛑 FERMER LA POSITION ${actionName} sur ${symbol} (${vol} contrats) AU MARCHÉ ?`)) {
-    return;
-  }
-
-  toast(`⏳ Clôture de la position ${symbol} au marché...`, '#00E5FF');
+window.closeMexcPosition = async function(symbol, sideStr, vol) {
+  if (!confirm(`Fermer la position ${sideStr.toUpperCase()} sur ${symbol} (${vol} contrats) au marché ?`)) return;
+  const isLong = (sideStr === 'long');
+  const closeSide = isLong ? 2 : 4; // 2 = Close Long, 4 = Close Short
+  toast(`⏳ Clôture de la position ${symbol}...`, '#00E5FF');
   const res = await window.sendRealMexcFuturesOrder({
     symbol,
     side: closeSide,
@@ -20835,57 +21227,73 @@ window.closeMexcPosition = async function(symbol, positionType, vol) {
     price: livePrice(symbol) || 0,
     openType: 1
   });
-
   if (res && res.success) {
-    toast(`✅ Position ${symbol} fermée avec succès !`, '#10B981');
+    toast(`✅ Position ${symbol} clôturée avec succès !`, '#10B981');
     fetchMexcAccountAndPositions();
+  } else {
+    toast(`❌ Échec clôture position : ${res.error || 'Erreur inconnue'}`, '#FF5252');
   }
 };
 
 window.closeAllMexcPositions = async function() {
   const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
   const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
-  const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
-  const lumenToken = serviceConfig.lumenToken || botConfig.lumenToken || '';
+  const inputUrl = document.getElementById('live-ex-serviceurl')?.value?.trim();
+  const serviceUrl = inputUrl || serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
+  const inputToken = document.getElementById('live-ex-token')?.value?.trim()?.replace(/^['"]|['"]$/g, '');
+  const lumenToken = inputToken !== undefined && inputToken !== '' ? inputToken : (serviceConfig.lumenToken || botConfig.lumenToken || '');
 
-  const posList = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
-  if (!posList || posList.length === 0) {
-    toast('ℹ️ Aucune position ouverte à fermer.', '#00E5FF');
+  const posData = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
+  if (!posData || !posData.length) {
+    toast('ℹ️ Aucune position ouverte à clôturer.', '#38BDF8');
     return;
   }
 
-  if (!confirm(`🛑 ÊTES-VOUS SÛR DE VOULOIR FERMER TOUTES LES ${posList.length} POSITIONS MEXC AU MARCHÉ ?`)) {
-    return;
+  if (!confirm(`Fermer TOUTES les ${posData.length} position(s) ouverte(s) sur MEXC Futures au marché ?`)) return;
+
+  toast(`⏳ Clôture de ${posData.length} position(s)...`, '#00E5FF');
+  let successCount = 0;
+  for (const p of posData) {
+    const isLong = (p.positionType === 1 || p.holdVol > 0 || p.side === 'long' || p.side === 1);
+    const closeSide = isLong ? 2 : 4;
+    const vol = p.holdVol || p.vol || p.qty || 0;
+    const res = await window.sendRealMexcFuturesOrder({
+      symbol: p.symbol,
+      side: closeSide,
+      vol,
+      price: livePrice(p.symbol) || 0,
+      openType: 1
+    });
+    if (res && res.success) successCount++;
   }
 
-  for (const pos of posList) {
-    await window.closeMexcPosition(pos.symbol, pos.positionType, pos.holdVol || pos.vol || 1);
-  }
+  toast(`✅ ${successCount}/${posData.length} position(s) clôturée(s) avec succès !`, '#10B981');
+  fetchMexcAccountAndPositions();
 };
 
 window.renderMexcLogsInTab = function() {
-  const container = document.getElementById('mexc-logs-container');
+  const container = document.getElementById('mexc-tab-logs-container');
   if (!container) return;
-
-  const clientLogs = window.__mexcClientLogs || [];
-  if (clientLogs.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px">Aucun ordre enregistré pour cette session.</div>';
+  const logs = window.__mexcClientLogs || [];
+  if (!logs.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:11.5px;padding:12px">Aucun ordre enregistré dans cette session.</div>';
     return;
   }
 
   let html = '';
-  clientLogs.forEach(l => {
-    const dateStr = new Date(l.timestamp).toLocaleTimeString();
-    const isSuccess = l.status === 'SUCCESS';
-    const statusColor = isSuccess ? '#10B981' : '#EF4444';
+  logs.forEach(l => {
+    const d = new Date(l.timestamp);
+    const timeStr = d.toLocaleTimeString('fr-FR');
+    const isOk = (l.status === 'SUCCESS' || l.status === 'OK');
+    const statusCol = isOk ? '#10B981' : '#FF5252';
     html += `
-      <div style="border-bottom:1px solid var(--line);padding:6px 0">
-        <div style="display:flex;justify-content:space-between;font-weight:bold">
-          <span style="color:#00E5FF">[${dateStr}] ${l.params?.symbol || 'ORDER'}</span>
-          <span style="color:${statusColor}">${l.status}</span>
+      <div style="background:var(--panel-2,#0F172A);border-left:3px solid ${statusCol};border-radius:4px;padding:8px 10px;margin-bottom:6px;font-size:11px;font-family:'IBM Plex Mono',monospace">
+        <div style="display:flex;justify-content:space-between;color:var(--muted)">
+          <span>🕒 ${timeStr} — <b style="color:${statusCol}">${l.status}</b></span>
+          <span>${l.params?.symbol || ''}</span>
         </div>
-        <div style="color:var(--muted);font-size:10px;margin-top:2px">
-          ${l.params?.sideLabel || ''} | Vol: ${l.params?.vol || 1} | Levier: ${l.params?.leverage || 200}x | Margin: ${l.params?.margin ? l.params.margin.toFixed(2) + ' $' : ''}
+        <div style="color:#FFF;margin-top:2px">
+          ${l.params?.sideLabel || ''} | Vol: ${l.params?.vol || ''} | Price: $${l.params?.price || ''}
         </div>
         ${l.rejectionReason ? `<div style="color:#FF5252;font-size:10px;margin-top:2px">🛡️ ${l.rejectionReason}</div>` : ''}
       </div>
@@ -20894,7 +21302,6 @@ window.renderMexcLogsInTab = function() {
 
   container.innerHTML = html;
 };
-
 
 window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride, tradeBudgetOverride) {
   const modal = document.getElementById('live-exchange-modal');
@@ -20913,7 +21320,6 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
   if (tradeBudgetEl && tradeBudgetOverride) tradeBudgetEl.value = String(tradeBudgetOverride);
 
   try {
-    // Purge toute ancienne clé contenant API Secret ou Clé API dans le navigateur
     localStorage.removeItem('lumen_live_exchange_keys');
 
     const saved = localStorage.getItem('lumen_live_exchange_config');
@@ -20921,7 +21327,6 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
       const parsed = JSON.parse(saved);
       if (parsed.exName && document.getElementById('live-ex-name')) document.getElementById('live-ex-name').value = parsed.exName;
       if (parsed.serviceUrl && document.getElementById('live-ex-serviceurl')) {
-        // Ignorer seulement les exemples génériques non configurés
         if (!parsed.serviceUrl.includes('votre-mexc-signer')) {
           document.getElementById('live-ex-serviceurl').value = parsed.serviceUrl;
         } else {
@@ -20934,7 +21339,13 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
     if (savedBot) {
       const bot = JSON.parse(savedBot);
       if (bot.tradeDir && document.getElementById('live-ex-dir')) document.getElementById('live-ex-dir').value = bot.tradeDir;
-      if (bot.tradeBudget && document.getElementById('live-ex-trade-budget') && !tradeBudgetOverride) document.getElementById('live-ex-trade-budget').value = bot.tradeBudget;
+      if (bot.tradeUnit && document.getElementById('live-ex-trade-unit')) {
+        document.getElementById('live-ex-trade-unit').value = bot.tradeUnit;
+        if (typeof window.onLiveTradeUnitChange === 'function') window.onLiveTradeUnitChange();
+      }
+      if (bot.tradeBudget && document.getElementById('live-ex-trade-budget') && !tradeBudgetOverride) {
+        document.getElementById('live-ex-trade-budget').value = String(bot.tradeBudget);
+      }
       if (bot.maxUsdt && document.getElementById('live-ex-maxusdt')) document.getElementById('live-ex-maxusdt').value = bot.maxUsdt;
       if (bot.active) updateLiveExchangeUI(bot);
     }
@@ -20947,17 +21358,19 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
   if (typeof window.fetchMexcAccountAndPositions === 'function') {
     window.fetchMexcAccountAndPositions();
   }
-  if (typeof window.fetchMexcAccountAndPositions === 'function') {
-    window.fetchMexcAccountAndPositions();
-  }
 };
 
 window.recalcLiveModalNotional = function() {
-  const budget = Number(document.getElementById('live-ex-trade-budget')?.value || 1);
+  const unit = document.getElementById('live-ex-trade-unit')?.value || 'USDT';
+  const rawBudget = Number(document.getElementById('live-ex-trade-budget')?.value || (unit === 'BTC' ? 0.0005 : 10));
   const lev = Number(document.getElementById('live-ex-lev')?.value || 200);
-  const maxUsdt = Number(document.getElementById('live-ex-maxusdt')?.value || 200);
+  const maxUsdt = Number(document.getElementById('live-ex-maxusdt')?.value || 500);
 
-  const notional = Math.round(budget * lev);
+  const sym = state.symbol || 'BTC_USDT';
+  const px = livePrice(sym) || 65000;
+  const budgetUsdt = unit === 'BTC' ? (rawBudget * px) : rawBudget;
+
+  const notional = Math.round(budgetUsdt * lev);
   const calcContent = document.getElementById('live-calc-content');
   const calcBadge = document.getElementById('live-calc-badge');
   const calcBox = document.getElementById('live-ex-calc-box');
@@ -20974,49 +21387,29 @@ window.recalcLiveModalNotional = function() {
     if (calcBadge) {
       calcBadge.style.background = '#FF5252';
       calcBadge.style.color = '#FFFFFF';
-      calcBadge.innerText = '⚠️ BLOCAGE SÉCURITÉ DÉTECTÉ';
+      calcBadge.textContent = '⛔ BLOQUÉ - SÉCURITÉ PLAFOND';
     }
     calcContent.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="color:#FF8080;font-weight:800;font-size:12px">
-          ⚠️ ATTENTION : Risque de blocage du trade par la sécurité du bot !
-        </div>
-        <div>
-          • Budget choisi par trade : <b style="color:#38BDF8">${budget} USDT</b><br>
-          • Levier choisi : <b style="color:#FFD700">${lev}x</b><br>
-          • 📊 <b style="color:#FFF">POSITION RÉELLE EN MARCHÉ (Valeur Notionnelle)</b> = ${budget} USDT × ${lev}x = <b style="color:#FFD700;font-size:13px">${notional} USDT</b>
-        </div>
-        <div style="color:#FFA8A8;background:rgba(239,68,68,0.22);padding:8px 10px;border-radius:6px;border:1px solid #FF5252;line-height:1.5">
-          ❌ Votre Plafond Max de Sécurité actuel (<b style="color:#FFF">${maxUsdt} USDT</b>) est INFÉRIEUR à la position réelle au marché (<b style="color:#FFF">${notional} USDT</b>).<br>
-          Chaque ordre sera rejeté avec l'erreur <i>"Plafond Dépassé"</i>.
-        </div>
-        <div style="margin-top:4px">
-          <button onclick="window.autoAdjustLivePlafond(${notional})" style="background:linear-gradient(135deg,#10B981,#059669);color:#FFF;border:none;border-radius:6px;padding:7px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(16,185,129,0.4)">
-            💡 Cliquer pour ajuster automatiquement le Plafond Max à ${notional} USDT (ou +)
-          </button>
-        </div>
-      </div>
+      <b style="color:#FF5252">⚠️ ORDRE INVALIDE : La position virtuelle ($${notional.toLocaleString()} USDT) dépasse votre Plafond Max (${maxUsdt} USDT).</b><br>
+      • Budget Marge : <b>${rawBudget} ${unit}</b> ${unit === 'BTC' ? `(≈ $${budgetUsdt.toFixed(2)} USDT)` : ''}<br>
+      • Levier : <b>${lev}x</b><br>
+      👉 <i>Augmentez votre Plafond Max Notionnel ou réduisez votre Budget par Trade.</i>
     `;
   } else {
     if (calcBox) {
-      calcBox.style.borderColor = '#38BDF8';
-      calcBox.style.background = 'rgba(15,23,42,0.85)';
+      calcBox.style.borderColor = '#10B981';
+      calcBox.style.background = 'rgba(16,185,129,0.12)';
     }
     if (calcBadge) {
       calcBadge.style.background = '#10B981';
       calcBadge.style.color = '#FFFFFF';
-      calcBadge.innerText = '✅ CONFIGURATION AUTORISÉE';
+      calcBadge.textContent = '✅ SIMULATION CONFORME AUX SÉCURITÉS';
     }
+    const btcEquiv = px > 0 ? (budgetUsdt / px).toFixed(6) : '0';
     calcContent.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <div>
-          • Marge/Budget engagé : <b style="color:#38BDF8">${budget} USDT</b> × Levier <b style="color:#FFD700">${lev}x</b><br>
-          • 📊 <b style="color:#FFF">POSITION RÉELLE EN MARCHÉ (Valeur Notionnelle)</b> = <b style="color:#34D399;font-size:12.5px">${notional} USDT</b>
-        </div>
-        <div style="color:#34D399;background:rgba(16,185,129,0.12);padding:6px 10px;border-radius:6px;border:1px solid rgba(16,185,129,0.3);margin-top:2px;line-height:1.5">
-          ✅ Plafond Max défini à <b style="color:#FFF">${maxUsdt} USDT</b> (≥ ${notional} USDT nécessaires). Vos ordres s'exécuteront sans être bloqués par la sécurité.
-        </div>
-      </div>
+      • Budget Marge par Trade : <b style="color:#38BDF8">${rawBudget} ${unit}</b> ${unit === 'BTC' ? `<span style="color:#A78BFA">(≈ $${budgetUsdt.toFixed(2)} USDT)</span>` : `<span style="color:#A78BFA">(≈ ${btcEquiv} BTC)</span>`}<br>
+      • Levier Sélectionné : <b style="color:#FFD700">${lev}x</b><br>
+      • Notionnel Total de la Position : <b style="color:#10B981">$${notional.toLocaleString()} USDT</b> (Inférieur au Plafond de ${maxUsdt} USDT)
     `;
   }
 };
@@ -21024,40 +21417,16 @@ window.recalcLiveModalNotional = function() {
 window.autoAdjustLivePlafond = function(neededUsdt) {
   const maxUsdtSelect = document.getElementById('live-ex-maxusdt');
   if (!maxUsdtSelect) return;
-
-  let found = false;
-  for (let i = 0; i < maxUsdtSelect.options.length; i++) {
-    const val = Number(maxUsdtSelect.options[i].value);
-    if (val >= neededUsdt) {
-      maxUsdtSelect.selectedIndex = i;
-      found = true;
-      break;
-    }
-  }
-
-  if (!found) {
-    const newOpt = document.createElement('option');
-    newOpt.value = String(neededUsdt);
-    newOpt.text = `🛡️ Plafond Max ${neededUsdt} USDT (Ajusté)`;
-    newOpt.selected = true;
-    maxUsdtSelect.appendChild(newOpt);
-  }
-
+  const opts = Array.from(maxUsdtSelect.options).map(o => Number(o.value));
+  const bestOpt = opts.find(v => v >= neededUsdt) || Math.max(...opts);
+  maxUsdtSelect.value = String(bestOpt);
   window.recalcLiveModalNotional();
-  toast(`🛡️ Plafond Max réajusté à ${maxUsdtSelect.value} USDT pour autoriser votre position de ${neededUsdt} USDT !`, '#10B981');
 };
 
 window.toggleTokenVisibility = function() {
-  const input = document.getElementById('live-ex-token');
-  const label = document.getElementById('live-ex-token-toggle-label');
-  if (!input) return;
-  if (input.type === 'password') {
-    input.type = 'text';
-    if (label) label.innerText = 'Clair';
-  } else {
-    input.type = 'password';
-    if (label) label.innerText = 'Masqué';
-  }
+  const el = document.getElementById('live-ex-token');
+  if (!el) return;
+  el.type = (el.type === 'password') ? 'text' : 'password';
 };
 
 window.closeLiveExchangeModal = function() {
@@ -21096,38 +21465,18 @@ window.testLiveExchangeConnection = async function() {
   }
 
   try {
-    // 1. Interrogation API MEXC Futures V1 (Contrats) - AUCUNE CLÉ DANS LE PAYLOAD
     const futuresResp = await fetch(serviceUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Lumen-Token': lumenToken
-      },
-      body: JSON.stringify({
-        endpoint: '/api/v1/private/account/assets',
-        method: 'GET',
-        isFutures: true,
-        params: {}
-      })
+      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
+      body: JSON.stringify({ endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
     });
-
     const futuresRes = await futuresResp.json();
 
-    // 2. Interrogation API MEXC Spot V3 - AUCUNE CLÉ DANS LE PAYLOAD
     const spotResp = await fetch(serviceUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Lumen-Token': lumenToken
-      },
-      body: JSON.stringify({
-        endpoint: '/api/v3/account',
-        method: 'GET',
-        isFutures: false,
-        params: {}
-      })
+      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
+      body: JSON.stringify({ endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
     });
-
     const spotRes = await spotResp.json();
 
     let futuresBalStr = 'Non accessible ou solde 0.00';
@@ -21135,7 +21484,6 @@ window.testLiveExchangeConnection = async function() {
     let futuresSuccess = false;
     let spotSuccess = false;
 
-    // Analyse réponse Futures V1
     if (futuresRes.success && futuresRes.data) {
       futuresSuccess = true;
       const resData = futuresRes.data.data ?? futuresRes.data;
@@ -21149,7 +21497,6 @@ window.testLiveExchangeConnection = async function() {
       }
     }
 
-    // Analyse réponse Spot V3
     if (spotRes.success && spotRes.data) {
       spotSuccess = true;
       const balances = spotRes.data.data?.balances || spotRes.data.balances || [];
@@ -21171,7 +21518,9 @@ window.testLiveExchangeConnection = async function() {
         • Protections Actives : <b>Max Position 500 USDT · Anti-Doublon 30s ✓</b><br>
         • Journal des Ordres : <a href="javascript:void(0)" onclick="viewMexcOrderLogs()" style="color:#00E5FF;text-decoration:underline;font-weight:bold">Consulter le Journal des Ordres</a>`;
       }
-      toast(`✅ Connexion MEXC authentifiée via microservice !\n• Futures V1 : ${futuresBalStr}\n• Spot V3 : ${spotBalStr}`, '#10B981');
+      toast(`✅ Connexion MEXC authentifiée via microservice !
+• Futures V1 : ${futuresBalStr}
+• Spot V3 : ${spotBalStr}`, '#10B981');
       return;
     } else {
       const errDetails = futuresRes.error || spotRes.error || futuresRes.data?.msg || spotRes.data?.msg || 'Erreur d\'authentification microservice';
@@ -21184,7 +21533,6 @@ window.testLiveExchangeConnection = async function() {
       toast(`❌ Connexion microservice échouée : ${errDetails}`, '#FF5252');
       return;
     }
-
   } catch (err) {
     if (resEl) {
       resEl.style.background = 'rgba(255,82,82,0.15)';
@@ -21204,13 +21552,17 @@ window.startLiveExchangeTrading = function() {
   const autoCapital = document.getElementById('live-ex-autocapital')?.checked ?? true;
   const mode = document.getElementById('live-ex-mode')?.value || 'tp300';
   const tradeDir = document.getElementById('live-ex-dir')?.value || 'both';
-  const tradeBudget = document.getElementById('live-ex-trade-budget')?.value || '1';
+  const tradeUnit = document.getElementById('live-ex-trade-unit')?.value || 'USDT';
+  const tradeBudget = document.getElementById('live-ex-trade-budget')?.value || (tradeUnit === 'BTC' ? '0.0005' : '1');
   const alloc = document.getElementById('live-ex-alloc')?.value || '100';
   const lev = document.getElementById('live-ex-lev')?.value || '200';
   const sl = document.getElementById('live-ex-sl')?.value || '100';
-  
+
+  const px = livePrice(state.symbol || 'BTCUSDT') || 65000;
+  const budgetUsdt = tradeUnit === 'BTC' ? (Number(tradeBudget) * px) : Number(tradeBudget);
+
   let maxUsdtNum = Number(document.getElementById('live-ex-maxusdt')?.value || '500');
-  const neededNotional = Math.round(Number(tradeBudget) * Number(lev));
+  const neededNotional = Math.round(budgetUsdt * Number(lev));
   if (maxUsdtNum < neededNotional) {
     maxUsdtNum = Math.max(neededNotional, 500);
     const maxUsdtSelect = document.getElementById('live-ex-maxusdt');
@@ -21224,7 +21576,6 @@ window.startLiveExchangeTrading = function() {
     alert('Veuillez spécifier l\'URL de votre microservice de signature MEXC !');
     return;
   }
-
   const scenarioNamesMap = {
     tp200: 'Pastilles Z.Z. (TP +200 pts)',
     tp300: 'Pastilles Z.Z. (TP +300 pts)',
@@ -21232,13 +21583,11 @@ window.startLiveExchangeTrading = function() {
     tp500: 'Pastilles Z.Z. (TP +500 pts)',
     pastille_only: 'Pastilles Z.Z. (Pastille Inverse)'
   };
-
   const dirNamesMap = {
     both: '🔄 Longs & Shorts',
     long_only: '🟢 LONGs Uniquement',
     short_only: '🔴 SHORTs Uniquement'
   };
-
   const botConfig = {
     active: true,
     exName,
@@ -21249,23 +21598,27 @@ window.startLiveExchangeTrading = function() {
     modeLabel: scenarioNamesMap[mode] || mode,
     tradeDir,
     dirLabel: dirNamesMap[tradeDir] || tradeDir,
+    tradeUnit,
     tradeBudget,
+    tradeBudgetUsdt: budgetUsdt,
     alloc,
     lev,
     sl,
     maxUsdt,
     startedAt: Date.now()
   };
-
   try {
     localStorage.setItem('lumen_live_exchange_bot', JSON.stringify(botConfig));
     localStorage.setItem('lumen_live_exchange_config', JSON.stringify({ exName, serviceUrl, lumenToken }));
   } catch(e){}
-
   updateLiveExchangeUI(botConfig);
-
-  toast(`🔴 AUTO-TRADING EN ARGENT RÉEL ACTIVÉ SUR MEXC !\n• Stratégie : ${scenarioNamesMap[mode]}\n• Direction : ${dirNamesMap[tradeDir]}\n• Budget par Trade : ${tradeBudget} USDT\n• Plafond Sécurité : ${maxUsdt} USDT\n• Service : ${serviceUrl}\n• Bot en direct : EN MARCHE 🚀`, '#FFD700');
-
+  toast(`🔴 AUTO-TRADING EN ARGENT RÉEL ACTIVÉ SUR MEXC !
+• Stratégie : ${scenarioNamesMap[mode]}
+• Direction : ${dirNamesMap[tradeDir]}
+• Budget par Trade : ${tradeBudget} ${tradeUnit}
+• Plafond Sécurité : ${maxUsdt} USDT
+• Service : ${serviceUrl}
+• Bot en direct : EN MARCHE 🚀`, '#FFD700');
   closeLiveExchangeModal();
 };
 
@@ -21463,8 +21816,8 @@ window.getRealMexcFuturesOpenPositions = async function(serviceUrl, lumenToken) 
     });
     const res = await resp.json();
     if (res) {
-      if (Array.isArray(res.data)) return res.data;
-      if (res.data && Array.isArray(res.data.data)) return res.data.data;
+      if (Array.isArray(res.data)) { window.__mexcRawPositions = res.data; return res.data; }
+      if (res.data && Array.isArray(res.data.data)) { window.__mexcRawPositions = res.data.data; return res.data.data; }
     }
     return [];
   } catch (e) {
@@ -21740,49 +22093,60 @@ window.pushManualMexcTrade = async function(side) {
     toast('❌ Le bot de trading en direct sur MEXC doit être actif !', '#FF5252');
     return;
   }
-
   const rawSym = state.symbol || 'BTCUSDT';
   const px = livePrice(rawSym) || 0;
   if (!px) {
     toast('❌ Prix du marché indisponible. Veuillez réessayer.', '#FF5252');
     return;
   }
+  const tradeUnit = botConfig.tradeUnit || 'USDT';
+  const rawBudget = Number(botConfig.tradeBudget || (tradeUnit === 'BTC' ? 0.0005 : 1));
+  const tradeBudgetUsdt = tradeUnit === 'BTC' ? (rawBudget * px) : rawBudget;
 
-  const tradeBudget = Number(botConfig.tradeBudget || 1);
   const maxUsdt = Number(botConfig.maxUsdt || 500);
   const lev = Number(botConfig.lev || 200);
-
   const contractSize = await window.getContractSize(rawSym);
   if (!contractSize) {
     toast(`❌ Impossible de récupérer la taille du contrat (contractSize) pour ${rawSym} depuis MEXC Futures.`, '#FF5252');
     return;
   }
-
-  const targetNotional = tradeBudget * lev;
+  const targetNotional = tradeBudgetUsdt * lev;
   const calcVol = Math.max(1, Math.round(targetNotional / (px * contractSize)));
   const estNotional = calcVol * contractSize * px;
-  const estMargin = lev > 0 ? estNotional / lev : estNotional;
-
+  const estMarginUsdt = lev > 0 ? estNotional / lev : estNotional;
   const isLong = (side === 1 || side === 'long');
   const sideNum = isLong ? 1 : 3; // 1 = Open Long, 3 = Open Short
   const actionTxt = isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
 
-  const confirmMsg = `⚡ EXÉCUTER UN PUSH DE TRADE EN DIRECT SUR MEXC FUTURES ?\n\n` +
-    `• Action : ${actionTxt}\n` +
-    `• Paire : ${rawSym}\n` +
-    `• Prix du Marché : $${px.toFixed(2)}\n` +
-    `• Taille de Contrat : ${contractSize}\n` +
-    `• Budget Marge Cible : ${tradeBudget} USDT\n` +
-    `• Marge Estimée : $${estMargin.toFixed(2)} USDT\n` +
-    `• Notionnel Estimé : $${estNotional.toFixed(2)} USDT\n` +
-    `• Plafond Sécurité Marge : ${maxUsdt} USDT\n` +
-    `• Levier : ${lev}x\n` +
-    `• Volume Calculé : ${calcVol} contrat(s)\n\n` +
+  const confirmMsg = `⚡ EXÉCUTER UN PUSH DE TRADE EN DIRECT SUR MEXC FUTURES ?
+
+` +
+    `• Action : ${actionTxt}
+` +
+    `• Paire : ${rawSym}
+` +
+    `• Prix du Marché : $${px.toFixed(2)}
+` +
+    `• Taille de Contrat : ${contractSize}
+` +
+    `• Budget Marge Cible : ${rawBudget} ${tradeUnit} ${tradeUnit === 'BTC' ? `(≈ $${tradeBudgetUsdt.toFixed(2)} USDT)` : ''}
+` +
+    `• Marge Estimée : $${estMarginUsdt.toFixed(2)} USDT
+` +
+    `• Notionnel Estimé : $${estNotional.toFixed(2)} USDT
+` +
+    `• Plafond Sécurité Marge : ${maxUsdt} USDT
+` +
+    `• Levier : ${lev}x
+` +
+    `• Volume Calculé : ${calcVol} contrat(s)
+
+` +
     `Souhaitez-vous envoyer cet ordre au marché directement sur votre compte MEXC ?`;
 
   if (!confirm(confirmMsg)) return;
 
-  toast(`⏳ [Push Marché Direct] Envoi de l'ordre ${actionTxt} ${calcVol} contrat(s) ($${tradeBudget} @ ${lev}x) @ $${px.toFixed(2)}...`, '#00E5FF');
+  toast(`⏳ [Push Marché Direct] Envoi de l'ordre ${actionTxt} ${calcVol} contrat(s) (${rawBudget} ${tradeUnit} @ ${lev}x) @ $${px.toFixed(2)}...`, '#00E5FF');
 
   const res = await window.sendRealMexcFuturesOrder({
     symbol: rawSym,
@@ -21790,14 +22154,16 @@ window.pushManualMexcTrade = async function(side) {
     price: px,
     vol: calcVol,
     leverage: lev,
-    tradeBudget: tradeBudget,
+    tradeBudget: tradeBudgetUsdt,
+    tradeBudgetVal: rawBudget,
+    tradeUnit: tradeUnit,
     notional: estNotional,
     maxUsdt: maxUsdt,
     openType: 1
   });
 
   if (res && res.success) {
-    toast(`🚀 [Push Réussi] Ordre ${actionTxt} ($${tradeBudget} @ ${lev}x) exécuté au marché sur MEXC !`, '#10B981');
+    toast(`🚀 [Push Réussi] Ordre ${actionTxt} (${rawBudget} ${tradeUnit} @ ${lev}x) exécuté au marché sur MEXC !`, '#10B981');
   }
 };
 
@@ -21807,32 +22173,33 @@ function updateLiveExchangeUI(bot) {
   const modalBanner = document.getElementById('live-exchange-active-banner');
   const exNameEl = document.getElementById('live-active-ex-name');
   const detailsEl = document.getElementById('live-active-ex-details');
-
   const topBanner = document.getElementById('top-live-trading-banner');
   const mainExNameEl = document.getElementById('main-top-live-ex-name');
   const mainDetailsEl = document.getElementById('main-top-live-ex-details');
-
   const mainPushContainer = document.getElementById('main-top-push-container');
   const modalPushContainer = document.getElementById('modal-top-push-container');
 
   if (bot && bot.active) {
     const dirTxt = bot.dirLabel || 'Longs & Shorts';
-    const tradeBudgetUsdt = bot.tradeBudget || '1';
-    const maxUsdtTxt = bot.maxUsdt || '5';
+    const tradeUnit = bot.tradeUnit || 'USDT';
+    const tradeBudgetVal = bot.tradeBudget || (tradeUnit === 'BTC' ? '0.0005' : '1');
+    const pxNow = livePrice(state.symbol || 'BTCUSDT') || 65000;
+    const budgetUsdtApprox = tradeUnit === 'BTC' ? (Number(tradeBudgetVal) * pxNow).toFixed(2) : tradeBudgetVal;
+
+    const maxUsdtTxt = bot.maxUsdt || '500';
     const startDate = bot.startedAt ? new Date(bot.startedAt) : new Date();
     const startStr = startDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' à ' + startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-    const detailHtml = `Stratégie: <b style="color:#FACC15">${bot.modeLabel}</b> · Direction: <b style="color:#38BDF8">${dirTxt}</b> · <span style="background:rgba(56,189,248,0.22);padding:2px 8px;border-radius:5px;border:1px solid #38BDF8;font-weight:900;color:#38BDF8;letter-spacing:0.3px">💵 BUDGET TRADE: ${tradeBudgetUsdt} USDT</span> · <span style="background:rgba(16,185,129,0.22);padding:2px 8px;border-radius:5px;border:1px solid #10B981;font-weight:900;color:#34D399;letter-spacing:0.3px">🛡️ PLAFOND SÉCURITÉ: ${maxUsdtTxt} USDT</span> · Levier: <b style="color:#FACC15">${bot.lev}x</b> · SL: <b style="color:#FB923C">${bot.sl} pts</b> · 🕒 Déployé le: <b style="color:#A78BFA">${startStr}</b> · Service: <b style="color:#94A3B8;font-weight:600">${bot.serviceUrl}</b>`;
+    const detailHtml = `Stratégie: <b style="color:#FACC15">${bot.modeLabel}</b> · Direction: <b style="color:#38BDF8">${dirTxt}</b> · <span style="background:rgba(56,189,248,0.22);padding:2px 8px;border-radius:5px;border:1px solid #38BDF8;font-weight:900;color:#38BDF8;letter-spacing:0.3px">💵 BUDGET TRADE: ${tradeBudgetVal} ${tradeUnit} ${tradeUnit === 'BTC' ? `(≈ $${budgetUsdtApprox} USDT)` : ''}</span> · <span style="background:rgba(16,185,129,0.22);padding:2px 8px;border-radius:5px;border:1px solid #10B981;font-weight:900;color:#34D399;letter-spacing:0.3px">🛡️ PLAFOND SÉCURITÉ: ${maxUsdtTxt} USDT</span> · Levier: <b style="color:#FACC15">${bot.lev}x</b> · SL: <b style="color:#FB923C">${bot.sl} pts</b> · 🕒 Déployé le: <b style="color:#A78BFA">${startStr}</b> · Service: <b style="color:#94A3B8;font-weight:600">${bot.serviceUrl}</b>`;
 
-    // Génération dynamique des boutons PUSH selon la direction choisie
     let pushBtnsHtml = '';
     if (bot.tradeDir === 'long_only') {
-      pushBtnsHtml = `<button onclick="pushManualMexcTrade('long')" style="background:linear-gradient(135deg, #059669, #10B981);color:#FFFFFF;border:1px solid #34D399;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(16,185,129,0.4)">⚡ PUSH LONG (${tradeBudgetUsdt} USDT)</button>`;
+      pushBtnsHtml = `<button onclick="pushManualMexcTrade('long')" style="background:linear-gradient(135deg, #059669, #10B981);color:#FFFFFF;border:1px solid #34D399;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(16,185,129,0.4)">⚡ PUSH LONG (${tradeBudgetVal} ${tradeUnit})</button>`;
     } else if (bot.tradeDir === 'short_only') {
-      pushBtnsHtml = `<button onclick="pushManualMexcTrade('short')" style="background:linear-gradient(135deg, #B91C1C, #EF4444);color:#FFFFFF;border:1px solid #F87171;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,0.4)">⚡ PUSH SHORT (${tradeBudgetUsdt} USDT)</button>`;
+      pushBtnsHtml = `<button onclick="pushManualMexcTrade('short')" style="background:linear-gradient(135deg, #B91C1C, #EF4444);color:#FFFFFF;border:1px solid #F87171;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,0.4)">⚡ PUSH SHORT (${tradeBudgetVal} ${tradeUnit})</button>`;
     } else {
-      pushBtnsHtml = `<button onclick="pushManualMexcTrade('long')" style="background:linear-gradient(135deg, #059669, #10B981);color:#FFFFFF;border:1px solid #34D399;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(16,185,129,0.4)">⚡ PUSH LONG (${tradeBudgetUsdt} USDT)</button>` +
-        `<button onclick="pushManualMexcTrade('short')" style="background:linear-gradient(135deg, #B91C1C, #EF4444);color:#FFFFFF;border:1px solid #F87171;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,0.4)">⚡ PUSH SHORT (${tradeBudgetUsdt} USDT)</button>`;
+      pushBtnsHtml = `<button onclick="pushManualMexcTrade('long')" style="background:linear-gradient(135deg, #059669, #10B981);color:#FFFFFF;border:1px solid #34D399;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(16,185,129,0.4)">⚡ PUSH LONG (${tradeBudgetVal} ${tradeUnit})</button>` +
+        `<button onclick="pushManualMexcTrade('short')" style="background:linear-gradient(135deg, #B91C1C, #EF4444);color:#FFFFFF;border:1px solid #F87171;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,0.4)">⚡ PUSH SHORT (${tradeBudgetVal} ${tradeUnit})</button>`;
     }
 
     if (mainPushContainer) mainPushContainer.innerHTML = pushBtnsHtml;
@@ -21843,7 +22210,6 @@ function updateLiveExchangeUI(bot) {
       if (exNameEl) exNameEl.textContent = (bot.exName || 'MEXC').toUpperCase();
       if (detailsEl) detailsEl.innerHTML = detailHtml + ` · <a href="javascript:void(0)" onclick="viewMexcOrderLogs()" style="color:#38BDF8;text-decoration:underline;font-weight:bold">Journal des Ordres</a>`;
     }
-
     if (topBanner) {
       topBanner.style.display = 'block';
       if (mainExNameEl) mainExNameEl.textContent = (bot.exName || 'MEXC').toUpperCase();
@@ -21856,7 +22222,6 @@ function updateLiveExchangeUI(bot) {
     if (modalPushContainer) modalPushContainer.innerHTML = '';
   }
 
-  // Refresh ZZ Top 5 proposal cards display if available
   if (window.__zzTop5 && window.__zzTop5.length) {
     try {
       const container = document.getElementById('zz-top5-container');
@@ -21869,6 +22234,7 @@ function updateLiveExchangeUI(bot) {
     } catch(e){}
   }
 }
+
 
 const btnZZClose = document.getElementById('bt-zz-close');
 if(btnZZClose){
@@ -24705,36 +25071,35 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     }
   }catch(e){}
 
+
+  window.__LUMEN_BUILD = 'B-1108-1545';
+  setTimeout(function(){
+    const el = document.getElementById('mexc-build-tag');
+    if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
+  }, 900);
+  console.log('%c[Lumen] version ' + window.__LUMEN_BUILD, 'color:#00E5FF;font-weight:700');
+
+  window.showMexcRaw = function(){
+    const p = (window.__mexcRawPositions || [])[0];
+    const box = document.getElementById('mexc-positions-container');
+    if (!box) return;
+    if (!p) {
+      box.insertAdjacentHTML('afterbegin',
+        '<div style="background:rgba(245,158,11,.1);border:1px solid #F59E0B;color:#FCD34D;padding:10px;border-radius:8px;font-size:11px;margin-bottom:10px">Aucune position chargée. Cliquez d&apos;abord sur Rafraîchir.</div>');
+      return;
+    }
+    const lignes = Object.keys(p).sort().map(function(k){
+      return '<tr><td style="padding:2px 10px 2px 0;color:#7DD3FC">' + k +
+            '</td><td style="padding:2px 0;color:#E2E8F0">' + JSON.stringify(p[k]) + '</td></tr>';
+    }).join('');
+    box.insertAdjacentHTML('afterbegin',
+      '<div style="background:rgba(15,23,42,.9);border:1px solid #334155;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;max-height:260px;overflow:auto">' +
+      '<div style="color:#00E5FF;font-weight:800;margin-bottom:6px">Réponse brute MEXC — première position</div>' +
+      '<table>' + lignes + '</table></div>');
+  };
+
 })();
 
-
-/* Affichage des données brutes d'une position MEXC, pour identifier
-   sans deviner les noms de champs réellement renvoyés par l'API. */
-window.__LUMEN_BUILD = 'B-1108-1545';
-setTimeout(function(){
-  const el = document.getElementById('mexc-build-tag');
-  if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
-}, 900);   // repère de version, visible dans la console
-console.log('%c[Lumen] version ' + window.__LUMEN_BUILD, 'color:#00E5FF;font-weight:700');
-
-window.showMexcRaw = function(){
-  const p = (window.__mexcRawPositions || [])[0];
-  const box = document.getElementById('mexc-positions-container');
-  if (!box) return;
-  if (!p) {
-    box.insertAdjacentHTML('afterbegin',
-      '<div style="background:rgba(245,158,11,.1);border:1px solid #F59E0B;color:#FCD34D;padding:10px;border-radius:8px;font-size:11px;margin-bottom:10px">Aucune position chargée. Cliquez d\'abord sur Rafraîchir.</div>');
-    return;
-  }
-  const lignes = Object.keys(p).sort().map(function(k){
-    return '<tr><td style="padding:2px 10px 2px 0;color:#7DD3FC">' + k +
-           '</td><td style="padding:2px 0;color:#E2E8F0">' + JSON.stringify(p[k]) + '</td></tr>';
-  }).join('');
-  box.insertAdjacentHTML('afterbegin',
-    '<div style="background:rgba(15,23,42,.9);border:1px solid #334155;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;max-height:260px;overflow:auto">' +
-    '<div style="color:#00E5FF;font-weight:800;margin-bottom:6px">Réponse brute MEXC — première position</div>' +
-    '<table>' + lignes + '</table></div>');
-};
 </script>
 </body>
 </html>
