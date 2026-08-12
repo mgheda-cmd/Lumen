@@ -25258,6 +25258,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const fraisP = (+document.getElementById('bta-frais').value || 0.016) / 100;
     const sens   = document.getElementById('bta-sens').value;
     const dirF   = (document.getElementById('bta-dir') || {}).value || 'tout';
+    const tpVal  = +((document.getElementById('bta-tp') || {}).value) || 0;
 
     const ents = entrees(mEnt);
     const sors = sorties(mSor);
@@ -25301,8 +25302,24 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       if(dirF === 'long'  && dir !== 1)  continue;
       if(dirF === 'short' && dir !== -1) continue;
 
-      const pe = +en.price, ps = +ex.price;
+      const pe = +en.price;
+      let ps = +ex.price;
+      let iS = ex.i;
+      let motif = ex.div ? 'Divergence' : 'Seuil + pente';
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
+
+      /* Objectif de gain : on parcourt les bougies entre l'entrée et la
+         sortie. Si le prix atteint la cible, on ferme là — le plus haut
+         pour un achat, le plus bas pour une vente. Le TP prime donc sur la
+         sortie kk bis lorsqu'il est touché avant elle. */
+      if(tpVal > 0){
+        const cible = (dir === 1) ? (pe + tpVal) : (pe - tpVal);
+        for(let k = en.i + 1; k <= ex.i; k++){
+          const b = d[k]; if(!b) continue;
+          const touche = (dir === 1) ? (b.h >= cible) : (b.l <= cible);
+          if(touche){ ps = cible; iS = k; motif = 'TP +' + tpVal; break; }
+        }
+      }
 
       /* Deux façons de dimensionner la position, comme sur MEXC :
          — en actif de base, le montant saisi est la TAILLE de position.
@@ -25326,10 +25343,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const net = brut - frais;
 
       trades.push({
-        num: en.num, dir: dir, iE: en.i, iS: ex.i,
+        num: en.num, dir: dir, iE: en.i, iS: iS,
         pe: pe, ps: ps, brut: brut, frais: frais, net: net, marge: marge, notionnel: notionnel,
-        motif: ex.div ? 'Divergence' : 'Seuil + pente',
-        duree: Math.round((d[ex.i].t - d[en.i].t) / 60000),
+        motif: motif,
+        duree: Math.round((d[iS].t - d[en.i].t) / 60000),
         trigger: en.trigger || ''
       });
     }
@@ -25408,6 +25425,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       h += carte('Shorts', sh.length + ' · ' + (pnlSh >= 0 ? '+' : '') + pnlSh.toFixed(2) + ' $', c(pnlSh));
     }
     h += carte('Sans sortie', sansSortie.length, sansSortie.length ? '#F59E0B' : '#94A3B8');
+    if(tpVal > 0){
+      const nTp = trades.filter(t => String(t.motif).indexOf('TP') === 0).length;
+      h += carte('Fermés par TP', nTp + ' / ' + trades.length, nTp ? '#10B981' : '#94A3B8');
+    }
     tri.forEach(function(x, k){
       h += carte('Tiers ' + (k+1), (isFinite(x.pf) ? x.pf.toFixed(2) : '∞') + ' · ' + x.n + 't',
                  (x.n >= 3 && x.pf >= 1) ? '#10B981' : '#FF5252');
