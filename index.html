@@ -25799,6 +25799,17 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } else {
       window.__btFreeze = true;              // l'historique ne sera plus écrasé
     }
+
+    /* Réarmement du chargement. histDone passe à true dès qu'une requête
+       revient vide, et n'est remis à false que par loadData — que le verrou
+       empêche justement de tourner. Sans cela le backtest ne fonctionnait
+       que les premières fois, puis restait bloqué jusqu'au rechargement de
+       la page. histBusy est libéré aussi, au cas où une requête aurait
+       échoué en laissant le drapeau levé. */
+    try{
+      if(typeof histDone !== 'undefined') histDone = false;
+      if(typeof histBusy !== 'undefined') histBusy = false;
+    }catch(e){}
     
     if (state.data.length < besoin) {
       if (info) info.textContent = 'Chargement rapide… ' + state.data.length + ' / ' + besoin + ' bougies';
