@@ -26603,10 +26603,14 @@ window.trierBalayage = function(mode){
    ================================================================ */
 (function(){
 
-  const SEUILS = { pertes: 4, repliPct: 15, pfFenetre: 15, pfMin: 0.8 };
+  const SEUILS = { pertes: 4, repliPct: 15, pfFenetre: 15, pfMin: 0.8, sansReponse: 3 };
   let dernierAlerteT = 0;
   let ignoreJusqua = 0;
   let sommetEquite = null;
+  /* Alertes envoyées sans que l'utilisateur ait tranché. Au bout de trois,
+     le bot s'arrête de lui-même : mieux vaut une coupure injustifiée qu'une
+     série de pertes qui continue pendant qu'on ne regarde pas. */
+  let alertesSansReponse = 0;
 
   function equite(){
     let e = paper.cash || 0;
@@ -26663,21 +26667,61 @@ window.trierBalayage = function(mode){
          ' $, shorts ' + (ps>=0?'+':'') + ps.toFixed(2) + ' $.')
       : '';
 
+    alertesSansReponse++;
+    const reste = SEUILS.sansReponse - alertesSansReponse;
+
     try{ beep(); }catch(e){}
     try{ toast('⚠ Le bot enchaîne les pertes', '#FF5252'); }catch(e){}
 
+    /* Notification Telegram, envoyée avant la question : si tu n'es pas
+       devant l'écran, tu es prévenu quand même. */
+    try{
+      if(typeof sendTelegramNotification === 'function'){
+        const tg = '⚠️ <b>ALERTE LUMEN — LE BOT PERD</b>\n\n· ' +
+          motifs.join('\n· ') + (sens ? ('\n\n' + sens) : '') +
+          '\n\nAlerte ' + alertesSansReponse + ' / ' + SEUILS.sansReponse +
+          (reste > 0
+            ? ('\n<i>Sans réponse de votre part, le bot s\'arrêtera après ' + reste +
+               ' alerte' + (reste > 1 ? 's' : '') + ' supplémentaire' + (reste > 1 ? 's' : '') + '.</i>')
+            : '\n<b>Arrêt automatique du bot.</b>');
+        sendTelegramNotification(tg);
+      }
+    }catch(e){}
+
+    /* Troisième alerte sans réponse : arrêt sans demander. */
+    if(alertesSansReponse >= SEUILS.sansReponse){
+      try{
+        if(typeof stopLiveExchangeTrading === 'function') stopLiveExchangeTrading();
+        toast('Bot arrêté automatiquement · ' + SEUILS.sansReponse + ' alertes sans réponse', '#FF5252');
+        if(typeof sendTelegramNotification === 'function'){
+          sendTelegramNotification('🛑 <b>BOT ARRÊTÉ AUTOMATIQUEMENT</b>\n\n' +
+            SEUILS.sansReponse + ' alertes sont restées sans réponse.\nAucune nouvelle position ne sera ouverte.');
+        }
+      }catch(e){}
+      alertesSansReponse = 0;
+      return;
+    }
+
     const txt = '⚠ ALERTE — LE BOT PERD\n\n· ' + motifs.join('\n· ') +
       (sens ? ('\n\n' + sens) : '') +
+      '\n\nAlerte ' + alertesSansReponse + ' sur ' + SEUILS.sansReponse +
+      '. Sans réponse, le bot s\'arrêtera de lui-même.' +
       '\n\nSouhaitez-vous ARRÊTER le bot maintenant ?\n\n' +
       'OK = arrêter · Annuler = laisser tourner';
 
     if(confirm(txt)){
+      alertesSansReponse = 0;
       try{
         if(typeof stopLiveExchangeTrading === 'function') stopLiveExchangeTrading();
         toast('Bot arrêté suite à l\'alerte', '#F59E0B');
+        if(typeof sendTelegramNotification === 'function'){
+          sendTelegramNotification('🛑 <b>Bot arrêté</b> à votre demande après alerte.');
+        }
       }catch(e){}
     } else {
-      // on laisse tourner : silence pendant une heure pour ne pas harceler
+      /* Répondre « laisser tourner » est une réponse : le compteur repart
+         à zéro et l'alerte se tait une heure. */
+      alertesSansReponse = 0;
       ignoreJusqua = maintenant + 60 * 60000;
       try{ toast('Bot laissé actif · prochaine alerte dans 1 h au plus tôt', '#94A3B8'); }catch(e){}
     }
@@ -26685,7 +26729,7 @@ window.trierBalayage = function(mode){
 
   // réinitialisation du sommet au démarrage d'un bot
   window.reinitSanteBot = function(){
-    sommetEquite = null; dernierAlerteT = 0; ignoreJusqua = 0;
+    sommetEquite = null; dernierAlerteT = 0; ignoreJusqua = 0; alertesSansReponse = 0;
   };
 
 })();
