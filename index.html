@@ -5957,6 +5957,8 @@ function placeBadge(bx, bw, by, bh, dir) {
   return y;
 }
 function render(){
+  // mise en pause pendant un backtest, pour ne pas recalculer inutilement
+  if(window.__btNoRender) return;
   if(!W || !H){
     resize();
     if(!W || !H)return;
@@ -25377,6 +25379,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         ((err && err.message) ? err.message : String(err)) +
         '<br><span style="color:#CBD5E1">Vous pouvez relancer sans recharger la page.</span></div>';
       try{ if(typeof histBusy !== 'undefined') histBusy = false; }catch(e){}
+      window.__btNoRender = false;
+      state.cache = {};
       return null;
     }
   };
@@ -25425,6 +25429,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const tpVal  = +((document.getElementById('bta-tp') || {}).value) || 0;
     const rangS  = (document.getElementById('bta-rang') || {}).value || '1';
 
+    /* Le graphique est mis en pause pendant le calcul : avec 11 000 bougies
+       et toutes les couches de comparaison actives, chaque render() recalcule
+       l'ensemble et saturait la mémoire au bout de quelques lancements. */
+    const rendAvant = window.__btNoRender;
+    window.__btNoRender = true;
     jour('calcul des entrées…');
     const ents = entrees(mEnt);
     jour(ents.length + ' entrées · calcul des sorties…');
@@ -25715,6 +25724,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     jour('terminé · ' + trades.length + ' trades');
     if(box) box.innerHTML = h;
+
+    /* Libération : on ne garde pas en mémoire les séries calculées pour le
+       backtest, sinon chaque lancement empile un jeu complet d'indicateurs
+       sur 11 000 bougies. */
+    window.__btNoRender = rendAvant || false;
+    state.cache = {};
     return true;
   };
 
@@ -25920,6 +25935,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       if(typeof histDone !== 'undefined') histDone = false;
     }catch(e){}
     window.__btFreeze = false;
+    window.__btNoRender = false;
     state.cache = {};
     const info = document.getElementById('bta-charge');
     if(info) info.innerHTML = '<span style="color:#10B981">Verrous libérés · ' +
