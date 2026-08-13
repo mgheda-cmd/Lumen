@@ -11241,7 +11241,15 @@ if(notifBtn && notifMenuEl){
 const lastPrices={};
 function livePrice(sym){
   if(sym===state.symbol&&state.data.length)return state.data[state.data.length-1].c;
-  return lastPrices[sym]||null;
+  if(lastPrices[sym]!=null)return lastPrices[sym];
+  /* MEXC nomme ses contrats BTC_USDT, le graphique BTCUSDT. Sans cette
+     équivalence, livePrice renvoyait null et le module d'ordre retombait
+     sur un prix codé en dur de 65 000, faussant le volume commandé. */
+  const nu=String(sym||'').replace(/_/g,'');
+  if(nu===state.symbol&&state.data.length)return state.data[state.data.length-1].c;
+  if(lastPrices[nu]!=null)return lastPrices[nu];
+  for(const k in lastPrices){ if(String(k).replace(/_/g,'')===nu) return lastPrices[k]; }
+  return null;
 }
 function posPnl(p){
   const px=livePrice(p.sym);
@@ -21250,7 +21258,7 @@ window.submitMexcManualTrade = async function() {
   const currentPx = (type === 1 && priceInput) ? Number(priceInput) : (livePrice(symbol) || 0);
 
   if (!currentPx) {
-    toast('❌ Prix du marché non disponible pour le symbole choisi.', '#FF5252');
+    toast('❌ Prix du marché indisponible. Vérifiez que le graphique affiche bien ce symbole.', '#FF5252');
     return;
   }
   const contractSize = await window.getContractSize(symbol);
@@ -21262,6 +21270,26 @@ window.submitMexcManualTrade = async function() {
   const targetNotional = marginUsdt * lev;
   const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
   const actionTxt = side === 1 ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
+
+  /* MEXC refuse les ordres trop petits. Plutôt qu'un rejet obscur côté
+     serveur, on prévient ici avec le montant qui manque. */
+  const MIN_NOTIONNEL = 5;      // USDT, seuil observé sur les contrats BTC
+  if (targetNotional < MIN_NOTIONNEL) {
+    toast('❌ Ordre trop petit : notionnel de ' + targetNotional.toFixed(2) +
+          ' USDT, minimum ' + MIN_NOTIONNEL + ' USDT. Augmentez la taille.', '#FF5252');
+    if (resEl) {
+      resEl.style.display = 'block';
+      resEl.style.background = 'rgba(245,158,11,0.12)';
+      resEl.style.border = '1px solid #F59E0B';
+      resEl.style.color = '#FCD34D';
+      resEl.innerHTML = '⚠️ <b>Ordre trop petit.</b><br>Notionnel demandé : ' +
+        targetNotional.toFixed(2) + ' USDT (' + calcVol + ' contrat(s)).<br>' +
+        'MEXC exige au moins ' + MIN_NOTIONNEL + ' USDT de notionnel.<br>' +
+        'Avec un prix de ' + currentPx.toFixed(0) + ' $, il faut au minimum ' +
+        (MIN_NOTIONNEL / currentPx).toFixed(5) + ' BTC de taille.';
+    }
+    return;
+  }
 
   if (!confirm(`🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?
 
