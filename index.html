@@ -12672,7 +12672,15 @@ function checkAutoTrade(inputSignals){
               toast(`❌ Erreur Auto-Trade: contractSize introuvable pour ${state.symbol}`, '#FF5252');
               return;
             }
-            const targetNotional = liveCap * liveLev;
+            /* liveCap est interprété selon l'unité choisie dans le module :
+               en BTC c'est la taille de position, en USDT c'est la marge.
+               Sans cette distinction le bot envoyait un notionnel 200 fois
+               trop grand et MEXC rejetait l'ordre. */
+            const liveUnit = (window.__liveBotActive.tradeUnit ||
+                              (document.getElementById('live-ex-trade-unit') || {}).value || 'USDT');
+            const targetNotional = (liveUnit === 'BTC')
+              ? (liveCap * (px || 1))
+              : (liveCap * liveLev);
             const calcVol = Math.max(1, Math.round(targetNotional / ((px || 1) * cs)));
 
             window.sendRealMexcFuturesOrder({
@@ -12715,7 +12723,15 @@ function checkAutoTrade(inputSignals){
               toast(`❌ Erreur Auto-Trade: contractSize introuvable pour ${state.symbol}`, '#FF5252');
               return;
             }
-            const targetNotional = liveCap * liveLev;
+            /* liveCap est interprété selon l'unité choisie dans le module :
+               en BTC c'est la taille de position, en USDT c'est la marge.
+               Sans cette distinction le bot envoyait un notionnel 200 fois
+               trop grand et MEXC rejetait l'ordre. */
+            const liveUnit = (window.__liveBotActive.tradeUnit ||
+                              (document.getElementById('live-ex-trade-unit') || {}).value || 'USDT');
+            const targetNotional = (liveUnit === 'BTC')
+              ? (liveCap * (px || 1))
+              : (liveCap * liveLev);
             const calcVol = Math.max(1, Math.round(targetNotional / ((px || 1) * cs)));
 
             window.sendRealMexcFuturesOrder({
