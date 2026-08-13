@@ -25647,8 +25647,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="30">1 mois</option></select></label>' +
       '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
-      '</div><div id="bta-charge" style="font-size:11px;color:#94A3B8;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace"></div><div id="bta-res"></div></div>';
+      '</div><div id="bta-charge" style="font-size:11px;color:#94A3B8;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace"></div>' +
+      '<div id="bta-configs" style="margin-bottom:12px;padding:10px;border:1px solid #312E81;border-radius:9px;background:rgba(49,46,129,.12)"></div>' +
+      '<div id="bta-res"></div></div>';
     document.body.appendChild(m);
+    setTimeout(function(){ if(typeof window.afficherConfigsBT === 'function') window.afficherConfigsBT(); }, 60);
   };
 
   try{
@@ -25663,6 +25666,145 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       a.parentNode.insertBefore(b, a.nextSibling);
     }
   }catch(e){}
+
+})();
+
+
+/* ================================================================
+   CONFIGURATIONS DE BACKTEST — enregistrer et restaurer
+   Ne retient que les réglages qui influencent réellement un backtest :
+   les conditions d'entrée Z.Z., les sorties kk bis, le Range Oscillator,
+   l'Impulse MACD, le MACD S/R, plus les paramètres du backtest lui-même.
+   Le reste (couleurs, SMC, zones) n'a aucun effet sur les résultats.
+   ================================================================ */
+(function(){
+
+  const INDICS = {
+    strat_zz: ['emaPeriod','haTf','haPeriod','mode','roscPeriod','impTf','impPeriod',
+               'invertSignal','strictEmaHa','yellowMode','skipRosc','cloudTrigger'],
+    kk_bis:   ['tf','tf2','src','mode','phase','spacing','sigLen','kMult','rmsWin',
+               'armBars','cool','upper','lower','pivotLen','divMinBars','divMaxBars'],
+    two_ind:  ['tf','mode','phase','spacing','sigLen','upper','lower'],
+    rosc:     ['period','smooth','tf'],
+    imp:      ['period','sig','tf'],
+    macdsr:   ['fast','slow','sig','tf']
+  };
+  const CHAMPS_BT = ['bta-ent','bta-sens','bta-dir','bta-modeap','bta-sor','bta-rang',
+                     'bta-marge','bta-unite','bta-lev','bta-tp','bta-frais','bta-jours'];
+
+  function lireConfig(){
+    const c = { indicateurs:{}, backtest:{}, tf: state.tf, symbole: state.symbol,
+                date: new Date().toISOString() };
+    for(const k in INDICS){
+      const src = (state.indicators || {})[k]; if(!src) continue;
+      c.indicateurs[k] = { on: !!src.on };
+      INDICS[k].forEach(function(p){ if(src[p] !== undefined) c.indicateurs[k][p] = src[p]; });
+    }
+    CHAMPS_BT.forEach(function(id){
+      const el = document.getElementById(id);
+      if(el) c.backtest[id] = el.value;
+    });
+    return c;
+  }
+
+  function appliquerConfig(c){
+    if(!c) return;
+    for(const k in (c.indicateurs || {})){
+      if(!state.indicators[k]) state.indicators[k] = {};
+      Object.assign(state.indicators[k], c.indicateurs[k]);
+    }
+    for(const id in (c.backtest || {})){
+      const el = document.getElementById(id);
+      if(el) el.value = c.backtest[id];
+    }
+    state.cache = {};
+    if(typeof saveConfig === 'function') saveConfig();
+    if(typeof syncMenu === 'function') syncMenu();
+    if(typeof render === 'function') render();
+  }
+
+  function listeEnregistrees(){
+    try{ return JSON.parse(localStorage.getItem('lumen_bt_configs') || '[]'); }
+    catch(e){ return []; }
+  }
+  function ecrireListe(l){
+    try{ localStorage.setItem('lumen_bt_configs', JSON.stringify(l.slice(0, 20))); }catch(e){}
+  }
+
+  window.enregistrerConfigBT = function(){
+    const nom = prompt('Nom de cette configuration :',
+      'Config ' + new Date().toLocaleString('fr-FR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}));
+    if(!nom) return;
+    const l = listeEnregistrees();
+    const r = window.__btDernier;
+    l.unshift({ nom: nom, cfg: lireConfig(),
+      resume: r ? (r.trades + ' trades · PF ' + (isFinite(r.pf) ? r.pf.toFixed(2) : '∞') +
+                   ' · ' + (r.pnl >= 0 ? '+' : '') + r.pnl.toFixed(2) + ' $') : 'sans résultat' });
+    ecrireListe(l);
+    window.afficherConfigsBT();
+  };
+
+  window.restaurerConfigBT = function(i){
+    const l = listeEnregistrees();
+    if(!l[i]) return;
+    if(!confirm('Restaurer « ' + l[i].nom + ' » ?\n\nLes réglages actuels des indicateurs concernés seront remplacés.')) return;
+    appliquerConfig(l[i].cfg);
+    window.afficherConfigsBT();
+  };
+
+  window.supprimerConfigBT = function(i){
+    const l = listeEnregistrees();
+    if(!l[i] || !confirm('Supprimer « ' + l[i].nom + ' » ?')) return;
+    l.splice(i, 1); ecrireListe(l);
+    window.afficherConfigsBT();
+  };
+
+  window.afficherConfigsBT = function(){
+    const box = document.getElementById('bta-configs');
+    if(!box) return;
+    const l = listeEnregistrees();
+    const c = lireConfig();
+
+    let h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<div style="font-size:12px;font-weight:800;color:#A78BFA">⚙ Configuration</div>' +
+      '<div style="display:flex;gap:6px">' +
+      '<button onclick="window.enregistrerConfigBT()" style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer">💾 Enregistrer</button>' +
+      '<button onclick="window.basculerDetailBT()" style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;font-size:11px;cursor:pointer">Détail</button>' +
+      '</div></div>';
+
+    if(l.length){
+      h += '<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">';
+      l.forEach(function(x, i){
+        h += '<div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,.6);border:1px solid #1E293B;border-radius:7px;padding:6px 9px">' +
+          '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:11.5px;font-weight:700;color:#E2E8F0">' + x.nom + '</div>' +
+          '<div style="font-size:10px;color:#94A3B8;font-family:\'IBM Plex Mono\',monospace">' + (x.resume || '') + '</div></div>' +
+          '<button onclick="window.restaurerConfigBT(' + i + ')" style="background:rgba(16,185,129,.14);border:1px solid #10B981;color:#10B981;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Restaurer</button>' +
+          '<button onclick="window.supprimerConfigBT(' + i + ')" style="background:transparent;border:1px solid #475569;color:#7E8CA8;border-radius:5px;padding:3px 8px;font-size:10.5px;cursor:pointer">✕</button></div>';
+      });
+      h += '</div>';
+    } else {
+      h += '<div style="font-size:11px;color:#7E8CA8;margin-bottom:8px">Aucune configuration enregistrée.</div>';
+    }
+
+    h += '<div id="bta-detail" style="display:none;max-height:230px;overflow:auto;background:rgba(15,23,42,.6);border:1px solid #1E293B;border-radius:7px;padding:8px 10px;font-family:\'IBM Plex Mono\',monospace;font-size:10px">';
+    for(const k in c.indicateurs){
+      const o = c.indicateurs[k];
+      h += '<div style="margin-bottom:5px"><span style="color:' + (o.on ? '#10B981' : '#64748B') + ';font-weight:700">' +
+           (o.on ? '●' : '○') + ' ' + k + '</span> <span style="color:#94A3B8">' +
+           Object.keys(o).filter(p => p !== 'on').map(p => p + '=' + o[p]).join(' · ') + '</span></div>';
+    }
+    h += '<div style="margin-top:7px;padding-top:6px;border-top:1px solid #1E293B;color:#7DD3FC">Backtest : ' +
+         Object.keys(c.backtest).map(p => p.replace('bta-','') + '=' + c.backtest[p]).join(' · ') + '</div>';
+    h += '</div>';
+
+    box.innerHTML = h;
+  };
+
+  window.basculerDetailBT = function(){
+    const d = document.getElementById('bta-detail');
+    if(d) d.style.display = (d.style.display === 'none') ? 'block' : 'none';
+  };
 
 })();
 
