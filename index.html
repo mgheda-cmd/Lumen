@@ -11321,6 +11321,7 @@ function updatePaper(){
     const pnl = (p.side === 'long' ? (exitPx - p.entry) : (p.entry - exitPx)) * p.qty;
     const fee = p.qty * exitPx * getPaperFeeRate();
     paper.cash += (p.margin || (p.qty * p.entry / (p.lev || 1))) + pnl - fee;
+    setTimeout(function(){ try{ if(typeof verifierSanteBot === 'function') verifierSanteBot(); }catch(e){} }, 400);
     paper.history.unshift({
       sym: p.sym, side: p.side, entry: p.entry, exit: exitPx, pnl: pnl - fee, qty: p.qty,
       notional: p.notional || (p.qty * p.entry), margin: p.margin || (p.qty * p.entry / (p.lev || 1)),
@@ -26590,6 +26591,105 @@ window.trierBalayage = function(mode){
   });
   if(typeof window.__redessinerBalayage === 'function') window.__redessinerBalayage();
 };
+
+/* ================================================================
+   SURVEILLANCE DU BOT — alerte en cas de série perdante
+   Trois critères, évalués après chaque trade fermé :
+     · pertes consécutives
+     · repli de l'équité depuis son sommet
+     · profit factor sur les derniers trades
+   L'alerte ne coupe rien d'elle-même : elle demande ce que tu veux
+   faire, et n'insiste pas si tu choisis de laisser tourner.
+   ================================================================ */
+(function(){
+
+  const SEUILS = { pertes: 4, repliPct: 15, pfFenetre: 15, pfMin: 0.8 };
+  let dernierAlerteT = 0;
+  let ignoreJusqua = 0;
+  let sommetEquite = null;
+
+  function equite(){
+    let e = paper.cash || 0;
+    (paper.positions || []).forEach(function(p){ e += (p.margin || 0); });
+    return e;
+  }
+
+  window.verifierSanteBot = function(){
+    // ne surveille que si le bot réel tourne
+    let actif = false;
+    try{
+      const raw = localStorage.getItem('lumen_live_exchange_bot');
+      actif = !!(raw && JSON.parse(raw).active);
+    }catch(e){}
+    if(!actif) return;
+
+    const maintenant = Date.now();
+    if(maintenant < ignoreJusqua) return;
+    if(maintenant - dernierAlerteT < 5 * 60000) return;   // pas plus d'une alerte par 5 min
+
+    const h = (paper.history || []).slice(0, 40);
+    if(h.length < 5) return;
+
+    const motifs = [];
+
+    // 1. pertes consécutives, du plus récent au plus ancien
+    let suite = 0;
+    for(const t of h){ if((t.pnl || 0) < 0) suite++; else break; }
+    if(suite >= SEUILS.pertes) motifs.push(suite + ' pertes consécutives');
+
+    // 2. repli de l'équité depuis son sommet
+    const eq = equite();
+    if(sommetEquite == null || eq > sommetEquite) sommetEquite = eq;
+    const repli = sommetEquite > 0 ? ((sommetEquite - eq) / sommetEquite * 100) : 0;
+    if(repli >= SEUILS.repliPct) motifs.push('repli de ' + repli.toFixed(1) + ' % depuis le sommet');
+
+    // 3. profit factor sur la fenêtre glissante
+    const f = h.slice(0, SEUILS.pfFenetre);
+    if(f.length >= SEUILS.pfFenetre){
+      const g = f.filter(t => (t.pnl||0) > 0).reduce((a,t) => a + t.pnl, 0);
+      const p = Math.abs(f.filter(t => (t.pnl||0) <= 0).reduce((a,t) => a + t.pnl, 0));
+      const pf = p > 0 ? (g / p) : (g > 0 ? 99 : 0);
+      if(pf < SEUILS.pfMin) motifs.push('profit factor ' + pf.toFixed(2) + ' sur ' + f.length + ' trades');
+    }
+
+    if(!motifs.length) return;
+    dernierAlerteT = maintenant;
+
+    // répartition par sens sur la fenêtre, pour éclairer la décision
+    const lg = h.filter(t => t.side === 'long'), sh = h.filter(t => t.side === 'short');
+    const pl = lg.reduce((a,t) => a + (t.pnl||0), 0), ps = sh.reduce((a,t) => a + (t.pnl||0), 0);
+    const sens = (lg.length >= 3 && sh.length >= 3)
+      ? ('Sur les ' + h.length + ' derniers trades : longs ' + (pl>=0?'+':'') + pl.toFixed(2) +
+         ' $, shorts ' + (ps>=0?'+':'') + ps.toFixed(2) + ' $.')
+      : '';
+
+    try{ beep(); }catch(e){}
+    try{ toast('⚠ Le bot enchaîne les pertes', '#FF5252'); }catch(e){}
+
+    const txt = '⚠ ALERTE — LE BOT PERD\n\n· ' + motifs.join('\n· ') +
+      (sens ? ('\n\n' + sens) : '') +
+      '\n\nSouhaitez-vous ARRÊTER le bot maintenant ?\n\n' +
+      'OK = arrêter · Annuler = laisser tourner';
+
+    if(confirm(txt)){
+      try{
+        if(typeof stopLiveExchangeTrading === 'function') stopLiveExchangeTrading();
+        toast('Bot arrêté suite à l\'alerte', '#F59E0B');
+      }catch(e){}
+    } else {
+      // on laisse tourner : silence pendant une heure pour ne pas harceler
+      ignoreJusqua = maintenant + 60 * 60000;
+      try{ toast('Bot laissé actif · prochaine alerte dans 1 h au plus tôt', '#94A3B8'); }catch(e){}
+    }
+  };
+
+  // réinitialisation du sommet au démarrage d'un bot
+  window.reinitSanteBot = function(){
+    sommetEquite = null; dernierAlerteT = 0; ignoreJusqua = 0;
+  };
+
+})();
+
 </script>
 </body>
 </html>
