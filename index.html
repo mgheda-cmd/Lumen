@@ -22169,24 +22169,46 @@ window.getContractSize = async function(symbol) {
   if (clientContractSizeCache.has(sym)) {
     return clientContractSizeCache.get(sym);
   }
+  /* L'appel direct à contract.mexc.com est bloqué par la politique CORS du
+     navigateur : la promesse ne se résolvait jamais et le bouton d'envoi
+     restait figé. On passe par le microservice de signature, qui n'a pas
+     cette contrainte, avec un délai maximal et un repli connu. */
+  const REPLI = { 'BTC_USDT': 0.0001, 'ETH_USDT': 0.01 };
+
+  const avecDelai = function(p, ms){
+    return Promise.race([p, new Promise(function(_, rej){
+      setTimeout(function(){ rej(new Error('délai dépassé')); }, ms);
+    })]);
+  };
+
   try {
-    const res = await fetch(`https://contract.mexc.com/api/v1/contract/detail?symbol=${sym}`);
-    if (res.ok) {
-      const json = await res.json();
-      const data = json.data;
-      const detail = Array.isArray(data) ? data.find(d => d.symbol === sym) || data[0] : data;
-      if (detail && detail.contractSize) {
-        const size = parseFloat(detail.contractSize);
-        if (size > 0) {
-          clientContractSizeCache.set(sym, size);
-          return size;
+    const cfg = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+    const url = (document.getElementById('live-ex-serviceurl') || {}).value || cfg.serviceUrl || '';
+    if (url) {
+      const jeton = (document.getElementById('live-ex-token') || {}).value || cfg.lumenToken || '';
+      const res = await avecDelai(fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-lumen-token': jeton },
+        body: JSON.stringify({ endpoint: '/api/v1/contract/detail', method: 'GET', params: { symbol: sym } })
+      }), 8000);
+      if (res.ok) {
+        const json = await res.json();
+        const data = (json && json.data && json.data.data) ? json.data.data : (json.data || json);
+        const detail = Array.isArray(data) ? (data.find(d => d.symbol === sym) || data[0]) : data;
+        if (detail && detail.contractSize) {
+          const size = parseFloat(detail.contractSize);
+          if (size > 0) { clientContractSizeCache.set(sym, size); return size; }
         }
       }
     }
   } catch (err) {
-    console.error('[getContractSize client] Erreur:', err);
+    console.warn('[getContractSize] échec, repli utilisé :', err && err.message);
   }
-  return null;
+
+  // repli : les tailles usuelles, plutôt que de bloquer l'envoi
+  if (REPLI[sym]) { clientContractSizeCache.set(sym, REPLI[sym]); return REPLI[sym]; }
+  clientContractSizeCache.set(sym, 0.0001);
+  return 0.0001;
 };
 
 /**
