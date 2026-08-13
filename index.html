@@ -26249,19 +26249,34 @@ window.envoyerVersMexc = function(){
       mis.push('Budget : ' + val + ((r.unite === 'BASE') ? ' BTC' : ' USDT'));
     }
 
-    // objectif de gain, si le backtest en utilisait un
-    if(r.tp > 0){
-      const m = document.getElementById('live-ex-mode');
-      const cible = 'tp' + Math.round(r.tp);
-      if(m && Array.prototype.some.call(m.options, function(o){ return o.value === cible; })){
-        m.value = cible; mis.push('Mode : TP +' + r.tp);
+    /* Mode de sortie. Sans objectif dans le backtest, on sélectionne
+       « Pastille Seule » plutôt que de laisser le TP +300 par défaut, que
+       l'utilisateur n'a jamais choisi. */
+    const m = document.getElementById('live-ex-mode');
+    if(m){
+      const cible = (r.tp > 0) ? ('tp' + Math.round(r.tp)) : 'pastille_only';
+      if(Array.prototype.some.call(m.options, function(o){ return o.value === cible; })){
+        m.value = cible;
+        mis.push('Mode : ' + (r.tp > 0 ? ('TP +' + r.tp) : 'Pastille seule, sans objectif'));
       }
     }
 
     try{ if(typeof recalcLiveModalNotional === 'function') recalcLiveModalNotional(); }catch(e){}
     try{ if(typeof switchMexcTab === 'function') switchMexcTab('config'); }catch(e){}
 
-    alert('Réglages reportés dans le module MEXC :\n\n· ' + (mis.length ? mis.join('\n· ') : 'aucun champ correspondant trouvé') +
+    /* Le bot ne sait sortir que sur pastille Z.Z. opposée ou sur objectif
+       fixe. Si le backtest a mesuré une sortie kk bis, l'exécution réelle
+       ne reproduira pas ce qui a été mesuré : il faut le dire. */
+    const sortieBt = (r.mSor === 'div') ? 'divergences kk bis'
+                   : (r.mSor === 'seuil') ? 'seuil + pente kk bis'
+                   : 'sorties kk bis';
+    const ecart = (r.tp > 0)
+      ? ''
+      : '\n\n⚠ Le backtest mesurait une sortie sur ' + sortieBt + '.\n' +
+        'Le bot ne sait sortir que sur pastille Z.Z. opposée ou sur objectif fixe.\n' +
+        'Les résultats réels différeront de ceux du backtest.';
+
+    alert('Réglages reportés dans le module MEXC :\n\n· ' + (mis.length ? mis.join('\n· ') : 'aucun champ correspondant trouvé') + ecart +
       '\n\nAucun ordre n\'a été envoyé.\nVérifiez la configuration, puis activez manuellement.\n\n' +
       'Cette stratégie n\'a jamais tourné en démo : commencez par la plus petite taille possible.');
   }, 400);
