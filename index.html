@@ -332,6 +332,9 @@ footer{
     <button data-type="line" title="Ligne">〰</button>
     <button data-type="area" title="Aire">◗</button>
   </div>
+  <button id="btn-header-latest-candles" onclick="scrollToLatestCandles()" class="btn" title="Aller aux bougies les plus récentes (temps réel)" style="font-size:11px;padding:4px 9px;background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;font-weight:700;display:inline-flex;align-items:center;gap:4px;cursor:pointer">
+    ⏭️ Direct
+  </button>
 
   <div class="ind-wrap">
     <button class="btn btn-ind" id="btn-ind" aria-haspopup="true" aria-expanded="false">
@@ -1326,8 +1329,8 @@ footer{
 </div>
 
 <!-- MODAL LANCEMENT EN DIRECT SUR EXCHANGE EN ARGENT RÉEL -->
-<div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(6,10,20,0.88);z-index:10000;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(6px)">
-  <div style="background:var(--panel,#0A111F);border:2px solid #00E5FF;border-radius:16px;max-width:1400px;width:98vw;max-height:94vh;overflow:auto;padding:20px;box-shadow:0 16px 50px rgba(0,229,255,0.25)">
+<div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(4,8,18,0.92);z-index:10000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)">
+  <div style="background:#0B132B;border:2px solid #00E5FF;border-radius:18px;max-width:1300px;width:95vw;max-height:92vh;overflow:auto;padding:24px;color:#F8FAFC;box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(0,229,255,0.3)">
     
     <!-- Modal Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid rgba(0,229,255,0.25);padding-bottom:12px">
@@ -1368,19 +1371,19 @@ footer{
 
     <!-- Navigation Tabs Bar -->
     <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px;overflow-x:auto">
-      <button class="mexc-tab-btn active" id="mexc-tab-btn-account" onclick="switchMexcTab('account')" style="background:rgba(0,229,255,0.15);color:#00E5FF;border:1px solid #00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn active" id="mexc-tab-btn-account" onclick="switchMexcTab('account')" style="background:linear-gradient(135deg, rgba(0,229,255,0.25), rgba(16,185,129,0.25));color:#00E5FF;border:1.5px solid #00E5FF;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 0 12px rgba(0,229,255,0.3)">
         💼 Compte & Soldes
       </button>
-      <button class="mexc-tab-btn" id="mexc-tab-btn-trade" onclick="switchMexcTab('trade')" style="background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn" id="mexc-tab-btn-trade" onclick="switchMexcTab('trade')" style="background:#131C2E;color:#CBD5E1;border:1px solid #2A3A5B;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
         ⚡ Passer un Trade Réel
       </button>
-      <button class="mexc-tab-btn" id="mexc-tab-btn-bot" onclick="switchMexcTab('bot')" style="background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn" id="mexc-tab-btn-bot" onclick="switchMexcTab('bot')" style="background:#131C2E;color:#CBD5E1;border:1px solid #2A3A5B;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
         🤖 Bot Auto Stratégie
       </button>
-      <button class="mexc-tab-btn" id="mexc-tab-btn-config" onclick="switchMexcTab('config')" style="background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn" id="mexc-tab-btn-config" onclick="switchMexcTab('config')" style="background:#131C2E;color:#CBD5E1;border:1px solid #2A3A5B;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
         🔑 Clés & API
       </button>
-      <button class="mexc-tab-btn" id="mexc-tab-btn-logs" onclick="switchMexcTab('logs')" style="background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn" id="mexc-tab-btn-logs" onclick="switchMexcTab('logs')" style="background:#131C2E;color:#CBD5E1;border:1px solid #2A3A5B;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
         📋 Journal Ordres
       </button>
     </div>
@@ -1524,20 +1527,20 @@ footer{
 
     <!-- TAB 3: BOT TRADING AUTO -->
     <div id="mexc-tab-bot" class="mexc-tab-content" style="display:none">
-      <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:12px 14px;margin-bottom:14px">
-        <div style="font-weight:800;font-size:12.5px;color:#FFD700;margin-bottom:4px">🤖 ROBOT D'EXÉCUTION AUTOMATIQUE EN TEMPS RÉEL</div>
-        <div style="font-size:11px;color:#E2E8F0">Le robot écoute les signaux en direct sur le graphique et exécute automatiquement les ordres sur MEXC selon vos paramètres ci-dessous.</div>
+      <div style="background:rgba(250,204,21,0.12);border:1.5px solid #FACC15;border-radius:12px;padding:14px 18px;margin-bottom:16px">
+        <div style="font-weight:900;font-size:13.5px;color:#FACC15;margin-bottom:4px;display:flex;align-items:center;gap:8px">🤖 ROBOT D'EXÉCUTION AUTOMATIQUE EN TEMPS RÉEL</div>
+        <div style="font-size:12px;color:#F8FAFC;line-height:1.5">Le robot écoute les signaux en direct sur le graphique et exécute automatiquement les ordres sur MEXC selon vos paramètres ci-dessous.</div>
       </div>
 
       <!-- DYNAMIC CAPITAL ADJUSTMENT -->
-      <div style="background:linear-gradient(135deg, rgba(16,185,129,0.18), rgba(0,229,255,0.12));border:1.5px solid #10B981;border-radius:10px;padding:12px 14px;margin-bottom:14px">
-        <div style="display:flex;align-items:flex-start;gap:10px">
-          <input type="checkbox" id="live-ex-autocapital" checked style="width:18px;height:18px;margin-top:2px;accent-color:#10B981;cursor:pointer">
+      <div style="background:rgba(16,185,129,0.12);border:1.5px solid #10B981;border-radius:12px;padding:14px 18px;margin-bottom:16px">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <input type="checkbox" id="live-ex-autocapital" checked style="width:20px;height:20px;margin-top:2px;accent-color:#10B981;cursor:pointer">
           <div>
-            <label for="live-ex-autocapital" style="font-weight:900;font-size:12.5px;color:#10B981;cursor:pointer">
+            <label for="live-ex-autocapital" style="font-weight:900;font-size:13px;color:#34D399;cursor:pointer;display:block">
               🔄 AJUSTER AUTOMATIQUEMENT LE CAPITAL AVANT CHAQUE TRADE
             </label>
-            <div style="font-size:11px;color:var(--text);margin-top:2px">
+            <div style="font-size:12px;color:#E2E8F0;margin-top:3px">
               Prend en compte votre solde exact disponible en temps réel sur MEXC avant chaque prise de position.
             </div>
           </div>
@@ -1545,9 +1548,9 @@ footer{
       </div>
 
       <!-- Risk & Allocation Parameters -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;background:rgba(15,23,42,0.6);padding:12px;border-radius:10px;border:1px solid var(--line)">
-        <label style="font-size:10.5px;color:var(--muted)">Mode Stratégie
-          <select id="live-ex-mode" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:#10B981;padding:6px;margin-top:3px;font-weight:bold">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px;background:#131C2E;padding:18px;border-radius:14px;border:1px solid #2A3A5B;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
+        <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block">Mode Stratégie
+          <select id="live-ex-mode" style="width:100%;background:#0B132B;border:1.5px solid #10B981;border-radius:8px;color:#10B981;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12.5px;cursor:pointer">
             <option value="tp200">Pastilles Z.Z. (TP +200 pts)</option>
             <option value="tp300" selected>Pastilles Z.Z. (TP +300 pts)</option>
             <option value="tp400">Pastilles Z.Z. (TP +400 pts)</option>
@@ -1556,16 +1559,16 @@ footer{
           </select>
         </label>
 
-        <label style="font-size:10.5px;color:var(--muted)">Direction
-          <select id="live-ex-dir" style="width:100%;background:var(--panel-2);border:1.5px solid #00E5FF;border-radius:6px;color:#00E5FF;padding:6px;margin-top:3px;font-weight:bold">
+        <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block">Direction
+          <select id="live-ex-dir" style="width:100%;background:#0B132B;border:1.5px solid #00E5FF;border-radius:8px;color:#00E5FF;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12.5px;cursor:pointer">
             <option value="both" selected>🔄 Longs &amp; Shorts</option>
             <option value="long_only">🟢 LONG Uniquement</option>
             <option value="short_only">🔴 SHORT Uniquement</option>
           </select>
         </label>
 
-        <label style="font-size:10.5px;color:var(--muted)">Levier Bot
-          <select id="live-ex-lev" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:#FFD700;padding:6px;margin-top:3px;font-weight:bold">
+        <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block">Levier Bot
+          <select id="live-ex-lev" onchange="window.recalcLiveModalNotional()" style="width:100%;background:#0B132B;border:1.5px solid #FFD700;border-radius:8px;color:#FFD700;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12.5px;cursor:pointer">
             <option value="10">10x</option>
             <option value="20">20x</option>
             <option value="50">50x</option>
@@ -1574,8 +1577,8 @@ footer{
           </select>
         </label>
 
-        <label style="font-size:10.5px;color:var(--muted)">Stop Loss
-          <select id="live-ex-sl" style="width:100%;background:var(--panel-2);border:1px solid #FF5252;border-radius:6px;color:#FF5252;padding:6px;margin-top:3px;font-weight:bold">
+        <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block">Stop Loss
+          <select id="live-ex-sl" style="width:100%;background:#0B132B;border:1.5px solid #FF5252;border-radius:8px;color:#FF5252;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12.5px;cursor:pointer">
             <option value="0">Pastille inverse (Pas de SL fixe)</option>
             <option value="50">🛑 SL -50 pts</option>
             <option value="100" selected>🛑 SL -100 pts</option>
@@ -1583,13 +1586,13 @@ footer{
           </select>
         </label>
 
-        <label style="font-size:10.5px;color:var(--muted)">💵 Devise &amp; Budget par Trade
-          <div style="display:flex;gap:4px;margin-top:3px">
-            <select id="live-ex-trade-unit" onchange="window.onLiveTradeUnitChange(); window.recalcLiveModalNotional();" style="width:85px;background:var(--panel-2);border:1.5px solid #00E5FF;border-radius:6px;color:#00E5FF;padding:6px;font-weight:bold;font-size:11px;cursor:pointer">
+        <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block">💵 Devise &amp; Budget par Trade
+          <div style="display:flex;gap:6px;margin-top:5px">
+            <select id="live-ex-trade-unit" onchange="window.onLiveTradeUnitChange(); window.recalcLiveModalNotional();" style="width:95px;flex:none;background:#0B132B;border:1.5px solid #00E5FF;border-radius:8px;color:#00E5FF;padding:9px 6px;font-weight:800;font-size:12px;cursor:pointer">
               <option value="USDT" selected>💵 USDT</option>
               <option value="BTC">₿ BTC</option>
             </select>
-            <select id="live-ex-trade-budget" onchange="window.recalcLiveModalNotional()" style="flex:1;background:var(--panel-2);border:1.5px solid #38BDF8;border-radius:6px;color:#38BDF8;padding:6px;font-weight:bold;font-size:11.5px">
+            <select id="live-ex-trade-budget" onchange="window.recalcLiveModalNotional()" style="flex:1;min-width:0;background:#0B132B;border:1.5px solid #38BDF8;border-radius:8px;color:#38BDF8;padding:9px 8px;font-weight:800;font-size:12px;cursor:pointer">
               <option value="1">💵 1 USDT</option>
               <option value="5">💵 5 USDT</option>
               <option value="10" selected>💵 10 USDT</option>
@@ -1600,8 +1603,8 @@ footer{
           </div>
         </label>
 
-        <label style="font-size:10.5px;color:var(--muted)">🛡️ Plafond Max Notionnel
-          <select id="live-ex-maxusdt" onchange="window.recalcLiveModalNotional()" style="width:100%;background:var(--panel-2);border:1.5px solid #10B981;border-radius:6px;color:#10B981;padding:6px;margin-top:3px;font-weight:bold">
+        <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block">🛡️ Plafond Max Notionnel
+          <select id="live-ex-maxusdt" onchange="window.recalcLiveModalNotional()" style="width:100%;background:#0B132B;border:1.5px solid #10B981;border-radius:8px;color:#10B981;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12.5px;cursor:pointer">
             <option value="500" selected>🛡️ Max 500 USDT</option>
             <option value="1000">🛡️ Max 1000 USDT</option>
             <option value="2000">🛡️ Max 2000 USDT</option>
@@ -1611,8 +1614,8 @@ footer{
       </div>
 
       <!-- Action Buttons -->
-      <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
-        <button onclick="startLiveExchangeTrading()" style="flex:1;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0F172A;border:none;border-radius:8px;padding:11px 18px;font-weight:900;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(255,215,0,0.4)">
+      <div style="display:flex;gap:12px;align-items:center;margin-top:14px">
+        <button onclick="startLiveExchangeTrading()" style="flex:1;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0F172A;border:none;border-radius:10px;padding:14px 22px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 4px 20px rgba(255,215,0,0.4);letter-spacing:0.3px">
           🔴 CONFIRMER &amp; DÉMARRER LE BOT AUTO RÉEL 🚀
         </button>
       </div>
@@ -1632,13 +1635,13 @@ footer{
         </label>
 
         <label style="font-size:11px;color:#CBD5E1;font-weight:bold">2. URL Microservice de Signature
-          <input type="text" id="live-ex-serviceurl" value="/api/mexc/signed" placeholder="/api/mexc/signed ou https://mexc-signer.vercel.app/api/mexc" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent);border-radius:6px;color:#00E5FF;padding:8px;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+          <input type="text" id="live-ex-serviceurl" value="https://mexc-signer.vercel.app/api/mexc" placeholder="https://mexc-signer.vercel.app/api/mexc ou /api/mexc/signed" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent);border-radius:6px;color:#00E5FF;padding:8px;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:12px">
           <span style="font-size:10px;color:var(--muted);font-weight:normal;display:block;margin-top:3px">💡 Utilisez <code>/api/mexc/signed</code> pour le serveur intégré ou votre URL Vercel.</span>
         </label>
 
-        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">3. Jeton d'Accès Lumen ('X-Lumen-Token')
+        <label style="font-size:11px;color:#CBD5E1;font-weight:bold">3. 5. Jeton d'Accès Lumen ('X-Lumen-Token')
           <div style="position:relative;margin-top:4px;display:flex;align-items:center">
-            <input type="text" id="live-ex-token" placeholder="Saisissez votre LUMEN_ACCESS_TOKEN" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent,#00E5FF);border-radius:6px;color:#00E5FF;padding:9px 80px 9px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:bold" oninput="this.value=this.value.replace(/^['&quot;]|['&quot;]$/g,'')" onblur="this.value=this.value.trim().replace(/^['&quot;]|['&quot;]$/g,'')">
+            <input type="text" id="live-ex-token" placeholder="med1071038842Med" value="med1071038842Med" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent,#00E5FF);border-radius:6px;color:#00E5FF;padding:9px 80px 9px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:bold" oninput="this.value=this.value.replace(/^['&quot;]|['&quot;]$/g,'')" onblur="this.value=this.value.trim().replace(/^['&quot;]|['&quot;]$/g,'')">
             <button type="button" onclick="toggleTokenVisibility()" id="live-ex-token-toggle" style="position:absolute;right:6px;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.4);border-radius:4px;color:#00E5FF;cursor:pointer;font-size:11px;padding:4px 8px;font-weight:bold" title="Masquer / Afficher">👁️ <span id="live-ex-token-toggle-label">Clair</span></button>
           </div>
         </label>
@@ -1859,6 +1862,7 @@ footer{
   <div id="chart-trade-hud" style="display:none;position:absolute;top:10px;right:10px;z-index:15;pointer-events:auto;max-width:320px;width:calc(100% - 20px)"></div>
   <button id="chips-toggle" title="Masquer / afficher la liste des indicateurs">▾</button>
   <div id="chips"></div>
+  <button id="btn-float-latest-candles" onclick="scrollToLatestCandles()" title="Aller aux bougies les plus récentes (temps réel)" style="position:absolute;bottom:30px;right:75px;z-index:25;background:rgba(15,23,42,0.92);border:1px solid #00E5FF;color:#00E5FF;border-radius:20px;padding:6px 14px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.6);backdrop-filter:blur(6px);transition:all 0.2s">⏭️ Dernières bougies</button>
   <canvas id="chart"></canvas>
 </div>
 
@@ -4229,7 +4233,7 @@ const state = {
     exhaustion:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
-    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell'},
+    strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
@@ -6048,6 +6052,7 @@ function render(){
     }
   }
   if(state.view.start<60&&!histBusy&&!histDone)loadMoreHistory();
+  if(typeof updateLatestCandlesBtnVisibility === "function") updateLatestCandlesBtnVisibility();
   drawTimeAxis(s,e);
   if(state.mouse) drawCrosshair(panes,s,e);
   const pricePane = panes.find(q => q.key === 'price');
@@ -9659,14 +9664,76 @@ function drawKKBisSub(p, s, e, cw) {
    n'est déclenché que tant qu'il en reste à l'écran. */
 let __zzPulseTimer = null, __zzPulseSeen = 0;
 function __zzPulse(){
-  __zzPulseSeen = Date.now();
   if(__zzPulseTimer) return;
+  __zzPulseSeen = Date.now();
   __zzPulseTimer = setInterval(function(){
     if(Date.now() - __zzPulseSeen > 2000){
       clearInterval(__zzPulseTimer); __zzPulseTimer = null; return;
     }
     if(typeof render === 'function') render();
-  }, 160);
+  }, 250);
+}
+
+
+/* ---------- Bouton de recentrage sur les bougies les plus récentes ---------- */
+window.scrollToLatestCandles = function() {
+  if (!state.data || !state.data.length) return;
+  const count = state.view.count || 150;
+  state.view.start = Math.max(0, state.data.length - count);
+  state.yScale.auto = true;
+  if (state.subScale) {
+    for (const k in state.subScale) {
+      if (state.subScale[k]) state.subScale[k].auto = true;
+    }
+  }
+  state.cache = {};
+  if (typeof saveView === 'function') saveView();
+  if (typeof render === 'function') render();
+};
+
+function updateLatestCandlesBtnVisibility() {
+  const btnFloat = document.getElementById('btn-float-latest-candles');
+  const btnHeader = document.getElementById('btn-header-latest-candles');
+  if (!state.data || !state.data.length) {
+    if (btnFloat && btnFloat.style.display !== 'none') btnFloat.style.display = 'none';
+    return;
+  }
+  const isBack = (state.view.start + state.view.count) < (state.data.length - 3);
+  if (btnFloat) {
+    if (btnFloat.style.display !== 'inline-flex') btnFloat.style.display = 'inline-flex';
+    if (btnFloat.dataset.isBack !== String(isBack)) {
+      btnFloat.dataset.isBack = String(isBack);
+      if (isBack) {
+        btnFloat.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.35), rgba(6,182,212,0.45))';
+        btnFloat.style.borderColor = '#00E5FF';
+        btnFloat.style.color = '#FFFFFF';
+        btnFloat.style.boxShadow = '0 0 16px rgba(0,229,255,0.7), 0 4px 12px rgba(0,0,0,0.5)';
+        btnFloat.innerHTML = '⚡ Dernières bougies (Direct)';
+      } else {
+        btnFloat.style.background = 'rgba(15,23,42,0.85)';
+        btnFloat.style.borderColor = 'rgba(100,116,139,0.5)';
+        btnFloat.style.color = '#94A3B8';
+        btnFloat.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+        btnFloat.innerHTML = '⏭️ Dernières bougies';
+      }
+    }
+  }
+  if (btnHeader) {
+    if (btnHeader.dataset.isBack !== String(isBack)) {
+      btnHeader.dataset.isBack = String(isBack);
+      if (isBack) {
+        btnHeader.style.background = 'rgba(255, 215, 0, 0.25)';
+        btnHeader.style.borderColor = '#FFD700';
+        btnHeader.style.color = '#FFD700';
+        btnHeader.innerHTML = '⚡ Direct';
+      } else {
+        btnHeader.style.background = 'rgba(0, 229, 255, 0.15)';
+        btnHeader.style.borderColor = '#00E5FF';
+        btnHeader.style.color = '#00E5FF';
+        btnHeader.innerHTML = '⏭️ Direct';
+      }
+    }
+  }
 }
 
 /* ----- axe temps ----- */
@@ -16307,6 +16374,7 @@ async function runMasterBacktest(){
         curCap = Math.max(0, curCap + pnlDollar);
         peakCap = Math.max(peakCap, curCap);
         const dd = peakCap - curCap;
+        const ddPct = peakCap > 0 ? (dd / peakCap) * 100 : 0;
         if (dd > maxDD) maxDD = dd;
 
         trades.push({
@@ -16317,7 +16385,9 @@ async function runMasterBacktest(){
           pnlDollar,
           netReturnPct: netReturnPct * 100,
           reason: exitReason,
-          capitalAfter: curCap
+          capitalAfter: curCap,
+          ddDollar: dd,
+          ddPct: ddPct
         });
 
         pos = null;
@@ -16548,6 +16618,7 @@ async function runBacktest(skipFetch){
           capital = Math.max(0, capital + pnlDollar);
           peak = Math.max(peak, capital);
           const dd = peak - capital;
+          const ddPct = peak > 0 ? (dd / peak) * 100 : 0;
           if (dd > maxDD) maxDD = dd;
 
           trades.push({
@@ -16563,7 +16634,9 @@ async function runBacktest(skipFetch){
             engagedUsd: engagedCapital,
             engagedNotional,
             engagedQty,
-            lev: activeLev
+            lev: activeLev,
+            ddDollar: dd,
+            ddPct: ddPct
           });
 
           pos = null;
@@ -16599,6 +16672,7 @@ async function runBacktest(skipFetch){
       capital += pnlDollar;
       peak = Math.max(peak, capital);
       const dd = peak - capital;
+      const ddPct = peak > 0 ? (dd / peak) * 100 : 0;
       if (dd > maxDD) maxDD = dd;
 
       trades.push({
@@ -16614,7 +16688,9 @@ async function runBacktest(skipFetch){
         engagedUsd: engagedCapital,
         engagedNotional,
         engagedQty,
-        lev: activeLev
+        lev: activeLev,
+        ddDollar: dd,
+        ddPct: ddPct
       });
     }
 
@@ -17306,8 +17382,9 @@ async function runBacktest(skipFetch){
               <th style="padding:6px 8px;color:#FF495C">💥 Prix Liquidation</th>
               <th style="padding:6px 8px;color:#00E5FF">💰 Engagé ($ & BTC)</th>
               <th style="padding:6px 8px">Motif de Sortie</th>
+              <th style="padding:6px 8px;text-align:right;color:#FF5252">📉 DD Trade</th>
               <th style="padding:6px 8px;text-align:right">PnL Net</th>
-              <th style="padding:6px 8px;text-align:right">Solde (Capital)</th>
+              <th style="padding:6px 8px;text-align:right;color:#00E5FF">Solde (Capital)</th>
             </tr>
           </thead>
           <tbody>
@@ -17330,8 +17407,8 @@ async function runBacktest(skipFetch){
                   <td style="padding:6px 8px;color:var(--muted)">${resSel.trades.length-idx}</td>
                   <td style="padding:6px 8px;white-space:nowrap">${dateStr}</td>
                   <td style="padding:6px 8px;font-weight:bold;color:${dirColor}">${t.dir}</td>
-                  <td style="padding:6px 8px">${t.entryP.toFixed(2)} $</td>
-                  <td style="padding:6px 8px">${t.exitP.toFixed(2)} $</td>
+                  <td style="padding:6px 8px"><span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 6px;border-radius:4px;display:inline-block">${t.entryP.toFixed(2)} $</span></td>
+                  <td style="padding:6px 8px"><span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 6px;border-radius:4px;display:inline-block">${t.exitP.toFixed(2)} $</span></td>
                   <td style="padding:6px 8px;font-weight:bold;color:${calcLiqP?'#FF495C':'var(--muted)'};white-space:nowrap">${liqCell}</td>
                   <td style="padding:6px 8px;white-space:nowrap">
                     <strong style="color:#FFF">$${fmtDollar(notional)}</strong>
@@ -17339,11 +17416,15 @@ async function runBacktest(skipFetch){
                     <div style="font-size:9.5px;color:var(--muted)">Marge: ${marginFmt} (${levVal}x)</div>
                   </td>
                   <td style="padding:6px 8px"><span style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;font-size:10px">🏁 ${t.reason}</span></td>
+                  <td style="padding:6px 8px;text-align:right">
+                    <span style="color:#000000;background:${(t.ddPct||0)>0?'#FCA5A5':'#A7F3D0'};font-weight:900;padding:2px 6px;border-radius:4px;display:inline-block">${(t.ddPct||0)>0 ? '-' + (t.ddPct||0).toFixed(1) + '%' : '0.0%'}</span>
+                    <div style="font-size:9.5px;color:${(t.ddDollar||0)>0?'#FF5252':'var(--muted)'};font-weight:bold;margin-top:2px">${(t.ddDollar||0)>0 ? '−' + fmtDollar(t.ddDollar) + ' $' : '0.00 $'}</div>
+                  </td>
                   <td style="padding:6px 8px;text-align:right;font-weight:bold;color:${colVal(t.pnlDollar)}">
                     ${fmtDollar(t.pnlDollar)} (${fmtPct(t.netReturnPct)})
                   </td>
-                  <td style="padding:6px 8px;text-align:right;font-weight:bold;color:#00E5FF">
-                    ${fmtDollar(t.capitalAfter != null ? t.capitalAfter : initialCapital)}
+                  <td style="padding:6px 8px;text-align:right">
+                    <span style="color:#000000;background:#BAE6FD;font-weight:900;padding:2px 6px;border-radius:4px;display:inline-block">$${fmtDollar(t.capitalAfter != null ? t.capitalAfter : initialCapital)}</span>
                   </td>
                 </tr>
               `;
@@ -18664,6 +18745,7 @@ function runSingleZZSim(d, sigMap, tpVal, slPts, capital, lev, feeRate, riskPct)
         curCap = Math.max(0, curCap + pnlDollar);
         peakCap = Math.max(peakCap, curCap);
         const dd = peakCap - curCap;
+        const ddPct = peakCap > 0 ? (dd / peakCap) * 100 : 0;
         if (dd > maxDD) maxDD = dd;
 
         trades.push({
@@ -18678,7 +18760,8 @@ function runSingleZZSim(d, sigMap, tpVal, slPts, capital, lev, feeRate, riskPct)
           reason: exitReason, capitalAfter: curCap,
           engagedUsd: marge, engagedNotional: notional,
           engagedQty: notional / (pos.entryP || 1),
-          liqP: pos.liqP, lev, liquide
+          liqP: pos.liqP, lev, liquide,
+          ddDollar: dd, ddPct: ddPct
         });
 
         pos = null;
@@ -20041,8 +20124,9 @@ function renderZZBtResultsUI(bestIdOverride){
               <th style="padding:6px 8px;color:#FF495C">💥 Prix Liquidation</th>
               <th style="padding:6px 8px;color:#10B981">💰 Engagé ($ & BTC)</th>
               <th style="padding:6px 8px">Motif de Sortie</th>
+              <th style="padding:6px 8px;text-align:right;color:#FF5252">📉 DD Trade</th>
               <th style="padding:6px 8px;text-align:right">PnL Net</th>
-              <th style="padding:6px 8px;text-align:right">Solde (Capital)</th>
+              <th style="padding:6px 8px;text-align:right;color:#00E5FF">Solde (Capital)</th>
             </tr>
           </thead>
           <tbody>
@@ -20066,8 +20150,8 @@ function renderZZBtResultsUI(bestIdOverride){
                   <td style="padding:6px 8px;color:var(--muted)">${selRes.trades.length - idx}</td>
                   <td style="padding:6px 8px;white-space:nowrap">${dateStr}</td>
                   <td style="padding:6px 8px;font-weight:bold;color:${dirColor}">${t.dir === 'ACHAT' ? '🟢 ACHAT' : '🔴 VENTE'}</td>
-                  <td style="padding:6px 8px">${t.entryP.toFixed(2)} $</td>
-                  <td style="padding:6px 8px">${t.exitP.toFixed(2)} $</td>
+                  <td style="padding:6px 8px"><span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 6px;border-radius:4px;display:inline-block">${t.entryP.toFixed(2)} $</span></td>
+                  <td style="padding:6px 8px"><span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 6px;border-radius:4px;display:inline-block">${t.exitP.toFixed(2)} $</span></td>
                   <td style="padding:6px 8px;font-weight:bold;color:${calcLiqP ? '#FF495C' : 'var(--muted)'};white-space:nowrap">${liqCell}</td>
                   <td style="padding:6px 8px;white-space:nowrap">
                     <strong style="color:#FFF">$${fmtDollar(notional)}</strong>
@@ -20075,11 +20159,15 @@ function renderZZBtResultsUI(bestIdOverride){
                     <div style="font-size:9.5px;color:var(--muted)">Marge: ${marginFmt} (${levVal}x)</div>
                   </td>
                   <td style="padding:6px 8px"><span style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;font-size:10px">${t.reason}</span></td>
+                  <td style="padding:6px 8px;text-align:right">
+                    <span style="color:#000000;background:${(t.ddPct||0)>0?'#FCA5A5':'#A7F3D0'};font-weight:900;padding:2px 6px;border-radius:4px;display:inline-block">${(t.ddPct||0)>0 ? '-' + (t.ddPct||0).toFixed(1) + '%' : '0.0%'}</span>
+                    <div style="font-size:9.5px;color:${(t.ddDollar||0)>0?'#FF5252':'var(--muted)'};font-weight:bold;margin-top:2px">${(t.ddDollar||0)>0 ? '−' + fmtDollar(t.ddDollar) + ' $' : '0.00 $'}</div>
+                  </td>
                   <td style="padding:6px 8px;text-align:right;font-weight:bold;color:${colVal(t.pnlDollar)}">
                     ${fmtDollar(t.pnlDollar)} (${fmtPct(t.netReturnPct)})
                   </td>
-                  <td style="padding:6px 8px;text-align:right;font-weight:bold;color:#10B981">
-                    ${fmtDollar(t.capitalAfter != null ? t.capitalAfter : capital)}
+                  <td style="padding:6px 8px;text-align:right">
+                    <span style="color:#000000;background:#BAE6FD;font-weight:900;padding:2px 6px;border-radius:4px;display:inline-block">$${fmtDollar(t.capitalAfter != null ? t.capitalAfter : capital)}</span>
                   </td>
                 </tr>
               `;
@@ -20361,6 +20449,7 @@ window.runAuditZZSim = function(d, sigMap, tpVal, slPts, capital, lev, feeRate, 
         curCap = Math.max(0, curCap + pnlDollar);
         peakCap = Math.max(peakCap, curCap);
         const dd = peakCap - curCap;
+        const ddPct = peakCap > 0 ? (dd / peakCap) * 100 : 0;
         if (dd > maxDD) maxDD = dd;
 
         trades.push({
@@ -20370,7 +20459,8 @@ window.runAuditZZSim = function(d, sigMap, tpVal, slPts, capital, lev, feeRate, 
           theoreticalPnl: theoreticalBrut, feeUsd, slipUsd, pnlDollar,
           netReturnPct: marge > 0 ? (pnlDollar / marge) * 100 : 0,
           reason: exitReason, capitalAfter: curCap, engagedUsd: marge,
-          liqP: pos.liqP, lev, liquide
+          liqP: pos.liqP, lev, liquide,
+          ddDollar: dd, ddPct: ddPct
         });
 
         pos = null;
@@ -20654,14 +20744,14 @@ window.runAuditFromUI = function() {
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
                   <td style="padding:3px;color:var(--muted)">${dtStr}</td>
                   <td style="padding:3px;font-weight:bold;color:${tr.dir==='ACHAT'?'#10B981':'#EF4444'}">${tr.dir}</td>
-                  <td style="padding:3px;text-align:right;color:var(--muted)">
-                    ${tr.rawEntryP.toFixed(1)} / <b style="color:#FFF">${tr.realEntryP.toFixed(1)}</b>
+                  <td style="padding:3px;text-align:right">
+                    <span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">${tr.rawEntryP.toFixed(1)} / ${tr.realEntryP.toFixed(1)} $</span>
                   </td>
-                  <td style="padding:3px;text-align:right;color:var(--muted)">
-                    ${tr.rawExitP.toFixed(1)} / <b style="color:#FFF">${tr.realExitP.toFixed(1)}</b>
+                  <td style="padding:3px;text-align:right">
+                    <span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">${tr.rawExitP.toFixed(1)} / ${tr.realExitP.toFixed(1)} $</span>
                   </td>
-                  <td style="padding:3px;text-align:right;color:#F87171">
-                    -${tr.feeUsd.toFixed(2)} $
+                  <td style="padding:3px;text-align:right">
+                    <span style="color:#000000;background:#FCA5A5;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">-${tr.feeUsd.toFixed(2)} $</span>
                   </td>
                   <td style="padding:3px;text-align:right;color:${tr.theoreticalPnl>=0?'#10B981':'#EF4444'}">
                     ${fmtD(tr.theoreticalPnl)}
@@ -21146,6 +21236,8 @@ window.fetchMexcAccountAndPositions = async function() {
   const serviceUrl = inputUrl || serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
   const inputToken = document.getElementById('live-ex-token')?.value?.trim()?.replace(/^['"]|['"]$/g, '');
   const lumenToken = inputToken !== undefined && inputToken !== '' ? inputToken : (serviceConfig.lumenToken || botConfig.lumenToken || '');
+  const apiKey = (document.getElementById('live-ex-apikey')?.value || serviceConfig.apiKey || botConfig.apiKey || '').trim();
+  const apiSecret = (document.getElementById('live-ex-apisecret')?.value || serviceConfig.apiSecret || botConfig.apiSecret || '').trim();
 
   const elFuturesAvail = document.getElementById('mexc-stat-futures-avail');
   const elFuturesEquity = document.getElementById('mexc-stat-futures-equity');
@@ -21164,16 +21256,16 @@ window.fetchMexcAccountAndPositions = async function() {
     const futuresPromise = fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
+      body: JSON.stringify({ apiKey, apiSecret, endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
     }).then(r => r.json()).catch(err => ({ success: false, error: err.message }));
 
     const spotPromise = fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
+      body: JSON.stringify({ apiKey, apiSecret, endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
     }).then(r => r.json()).catch(err => ({ success: false, error: err.message }));
 
-    const posPromise = window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
+    const posPromise = window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken, apiKey, apiSecret);
 
     const [futuresRes, spotRes, posData] = await Promise.all([futuresPromise, spotPromise, posPromise]);
 
@@ -21233,14 +21325,6 @@ window.fetchMexcAccountAndPositions = async function() {
           const sideCol = isLong ? '#10B981' : '#EF4444';
           const vol = p.holdVol || p.vol || p.qty || 0;
           const entryPx = Number(p.holdAvgPrice ?? p.openAvgPrice ?? p.openPrice ?? p.costOpenPrice ?? 0);
-          /* PnL : recalculé si MEXC ne le fournit pas, à partir de l'écart
-             entre le prix repère et le prix d'entrée. */
-          let pnl = Number(p.unrealisedPnl ?? p.pnl ?? p.unrealizedPnl ?? NaN);
-          if(!isFinite(pnl) || (pnl === 0 && markPx !== entryPx)){
-            pnl = (markPx - entryPx) * tailleBase * (isLong ? 1 : -1);
-          }
-          const pnlCol = pnl >= 0 ? '#10B981' : '#FF5252';
-
           /* Informations complémentaires renvoyées par MEXC. Les noms varient
              selon les versions de l'API, d'où les alternatives. */
           /* Prix repère : MEXC ne le renvoie pas toujours. On retombe alors
@@ -21255,6 +21339,13 @@ window.fetchMexcAccountAndPositions = async function() {
           // taille réelle en actif : contrats × taille du contrat
           const cszP = Number(p.contractSize ?? (window.__csz && window.__csz[p.symbol]) ?? 0.0001);
           const tailleBase = Number(vol) * cszP;
+          /* PnL : recalculé si MEXC ne le fournit pas, à partir de l'écart
+             entre le prix repère et le prix d'entrée. */
+          let pnl = Number(p.unrealisedPnl ?? p.pnl ?? p.unrealizedPnl ?? NaN);
+          if(!isFinite(pnl) || (pnl === 0 && markPx !== entryPx)){
+            pnl = (markPx - entryPx) * tailleBase * (isLong ? 1 : -1);
+          }
+          const pnlCol = pnl >= 0 ? '#10B981' : '#FF5252';
           const liqPx   = Number(p.liquidatePrice ?? p.liqPrice ?? 0);
           const margeN  = Number(p.im ?? p.positionMargin ?? p.oim ?? 0);
           const lev     = Number(p.leverage || 0);
@@ -21331,7 +21422,9 @@ window.closeAllMexcPositions = async function() {
   const inputToken = document.getElementById('live-ex-token')?.value?.trim()?.replace(/^['"]|['"]$/g, '');
   const lumenToken = inputToken !== undefined && inputToken !== '' ? inputToken : (serviceConfig.lumenToken || botConfig.lumenToken || '');
 
-  const posData = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken);
+  const apiKey = (document.getElementById('live-ex-apikey')?.value || serviceConfig.apiKey || botConfig.apiKey || '').trim();
+  const apiSecret = (document.getElementById('live-ex-apisecret')?.value || serviceConfig.apiSecret || botConfig.apiSecret || '').trim();
+  const posData = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken, apiKey, apiSecret);
   if (!posData || !posData.length) {
     toast('ℹ️ Aucune position ouverte à clôturer.', '#38BDF8');
     return;
@@ -21391,21 +21484,28 @@ window.renderMexcLogsInTab = function() {
   container.innerHTML = html;
 };
 
+window.setSelectValueOrAddOption = function(selectEl, value, labelFormatter) {
+  if (!selectEl || value == null || value === '') return;
+  const valStr = String(value);
+  let found = false;
+  for (let i = 0; i < selectEl.options.length; i++) {
+    if (selectEl.options[i].value === valStr) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    const opt = document.createElement('option');
+    opt.value = valStr;
+    opt.textContent = labelFormatter ? labelFormatter(valStr) : valStr;
+    selectEl.appendChild(opt);
+  }
+  selectEl.value = valStr;
+};
+
 window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride, tradeBudgetOverride) {
   const modal = document.getElementById('live-exchange-modal');
   if (!modal) return;
-
-  const modeEl = document.getElementById('live-ex-mode');
-  if (modeEl && scIdOverride) modeEl.value = scIdOverride;
-
-  const slEl = document.getElementById('live-ex-sl');
-  if (slEl && slValOverride !== undefined) slEl.value = String(slValOverride);
-
-  const levEl = document.getElementById('live-ex-lev');
-  if (levEl && levOverride) levEl.value = String(levOverride);
-
-  const tradeBudgetEl = document.getElementById('live-ex-trade-budget');
-  if (tradeBudgetEl && tradeBudgetOverride) tradeBudgetEl.value = String(tradeBudgetOverride);
 
   try {
     localStorage.removeItem('lumen_live_exchange_keys');
@@ -21422,22 +21522,41 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
         }
       }
       if (parsed.lumenToken && document.getElementById('live-ex-token')) document.getElementById('live-ex-token').value = parsed.lumenToken;
+      if (parsed.apiKey && document.getElementById('live-ex-apikey')) document.getElementById('live-ex-apikey').value = parsed.apiKey;
+      if (parsed.apiSecret && document.getElementById('live-ex-apisecret')) document.getElementById('live-ex-apisecret').value = parsed.apiSecret;
     }
+
     const savedBot = localStorage.getItem('lumen_live_exchange_bot');
     if (savedBot) {
       const bot = JSON.parse(savedBot);
+      if (bot.mode) window.setSelectValueOrAddOption(document.getElementById('live-ex-mode'), bot.mode, v => 'Mode ' + v);
       if (bot.tradeDir && document.getElementById('live-ex-dir')) document.getElementById('live-ex-dir').value = bot.tradeDir;
       if (bot.tradeUnit && document.getElementById('live-ex-trade-unit')) {
         document.getElementById('live-ex-trade-unit').value = bot.tradeUnit;
         if (typeof window.onLiveTradeUnitChange === 'function') window.onLiveTradeUnitChange();
       }
-      if (bot.tradeBudget && document.getElementById('live-ex-trade-budget') && !tradeBudgetOverride) {
-        document.getElementById('live-ex-trade-budget').value = String(bot.tradeBudget);
+      if (bot.tradeBudget && !tradeBudgetOverride) {
+        const u = document.getElementById('live-ex-trade-unit')?.value || 'USDT';
+        window.setSelectValueOrAddOption(document.getElementById('live-ex-trade-budget'), bot.tradeBudget, v => (u === 'BTC' ? '₿ ' : '💵 ') + v + ' ' + u);
+      }
+      if (bot.lev && !levOverride) {
+        window.setSelectValueOrAddOption(document.getElementById('live-ex-lev'), bot.lev, v => v + 'x');
+      }
+      if (bot.sl && slValOverride === undefined) {
+        window.setSelectValueOrAddOption(document.getElementById('live-ex-sl'), bot.sl, v => v === '0' ? 'Pastille inverse (Pas de SL fixe)' : '🛑 SL -' + v + ' pts');
       }
       if (bot.maxUsdt && document.getElementById('live-ex-maxusdt')) document.getElementById('live-ex-maxusdt').value = bot.maxUsdt;
       if (bot.active) updateLiveExchangeUI(bot);
     }
   } catch(e){}
+
+  if (scIdOverride) window.setSelectValueOrAddOption(document.getElementById('live-ex-mode'), scIdOverride, v => 'Mode ' + v);
+  if (slValOverride !== undefined) window.setSelectValueOrAddOption(document.getElementById('live-ex-sl'), String(slValOverride), v => v === '0' ? 'Pastille inverse (Pas de SL fixe)' : '🛑 SL -' + v + ' pts');
+  if (levOverride) window.setSelectValueOrAddOption(document.getElementById('live-ex-lev'), String(levOverride), v => v + 'x');
+  if (tradeBudgetOverride) {
+    const u = document.getElementById('live-ex-trade-unit')?.value || 'USDT';
+    window.setSelectValueOrAddOption(document.getElementById('live-ex-trade-budget'), String(tradeBudgetOverride), v => (u === 'BTC' ? '₿ ' : '💵 ') + v + ' ' + u);
+  }
 
   modal.style.display = 'flex';
   if (typeof window.recalcLiveModalNotional === 'function') {
@@ -21540,8 +21659,10 @@ window.testLiveExchangeConnection = async function() {
     return;
   }
 
+  const apiKey = (document.getElementById('live-ex-apikey')?.value || '').trim();
+  const apiSecret = (document.getElementById('live-ex-apisecret')?.value || '').trim();
   try {
-    localStorage.setItem('lumen_live_exchange_config', JSON.stringify({ exName, serviceUrl, lumenToken }));
+    localStorage.setItem('lumen_live_exchange_config', JSON.stringify({ exName, serviceUrl, lumenToken, apiKey, apiSecret }));
   } catch(e){}
 
   if (resEl) {
@@ -21556,14 +21677,14 @@ window.testLiveExchangeConnection = async function() {
     const futuresResp = await fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
+      body: JSON.stringify({ apiKey, apiSecret, endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
     });
     const futuresRes = await futuresResp.json();
 
     const spotResp = await fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
+      body: JSON.stringify({ apiKey, apiSecret, endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
     });
     const spotRes = await spotResp.json();
 
@@ -21886,9 +22007,12 @@ function logMexcClientOrder(logItem) {
  * Interroge les positions ouvertes sur MEXC Futures
  * endpoint: /api/v1/private/position/open_positions
  */
-window.getRealMexcFuturesOpenPositions = async function(serviceUrl, lumenToken) {
+window.getRealMexcFuturesOpenPositions = async function(serviceUrl, lumenToken, apiKey, apiSecret) {
   if (!serviceUrl) return [];
   try {
+    const cfg = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+    const key = apiKey || cfg.apiKey || document.getElementById('live-ex-apikey')?.value || '';
+    const sec = apiSecret || cfg.apiSecret || document.getElementById('live-ex-apisecret')?.value || '';
     const resp = await fetch(serviceUrl, {
       method: 'POST',
       headers: {
@@ -21896,6 +22020,8 @@ window.getRealMexcFuturesOpenPositions = async function(serviceUrl, lumenToken) 
         'X-Lumen-Token': lumenToken || ''
       },
       body: JSON.stringify({
+        apiKey: key,
+        apiSecret: sec,
         endpoint: '/api/v1/private/position/open_positions',
         method: 'GET',
         isFutures: true,
@@ -22068,6 +22194,8 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
         'X-Lumen-Token': lumenToken
       },
       body: JSON.stringify({
+        apiKey,
+        apiSecret,
         endpoint: '/api/v1/private/order/submit',
         method: 'POST',
         isFutures: true,
@@ -25273,6 +25401,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const utilisee = new Set();
     const mSortie = document.getElementById('bta-modeap')
                   ? document.getElementById('bta-modeap').value : 'chrono';
+    const exitOpp = (document.getElementById('bta-opp') || {}).value || 'sans_sortie';
 
     const trades = [];
     const sansSortie = [];
@@ -25293,21 +25422,32 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         cands.push(s2);
         if(cands.length >= 3) break;
       }
-      /* Rang de sortie demandé, ou fermeture par le signal Z.Z. opposé :
-         la position est alors close par l'entrée suivante de sens contraire,
-         ce qui correspond à la règle « on ne rouvre pas sans être sorti ». */
-      if(rangS === 'oppose'){
-        ex = null;
-        for(const e2 of ents){
-          if(e2.i <= en.i || e2.dir === en.dir) continue;
-          ex = { i:e2.i, price:e2.price, type:(en.dir === 1 ? 'SORTIE_ACHAT' : 'SORTIE_VENTE'), div:false, oppose:true };
-          break;
+      /* Rang de sortie demandé : la 1re, la 2e ou la 3e sortie qui suit.
+         La fermeture sur signal opposé reste gérée par exitOpp ci-dessous. */
+      ex = cands[Math.min(+rangS, cands.length) - 1] || null;
+
+      // Chercher la première entrée en sens opposé après l'entrée actuelle
+      let nextOpp = null;
+      if(exitOpp !== 'non'){
+        for(const en2 of ents){
+          if(en2.i > en.i && en2.dir !== en.dir){
+            nextOpp = en2;
+            break;
+          }
         }
-      } else {
-        ex = cands[Math.min(+rangS, cands.length) - 1] || null;
       }
+
+      let isOppExit = false;
+      if(exitOpp === 'toujours' && nextOpp && (!ex || nextOpp.i < ex.i)){
+        ex = { i: nextOpp.i, price: nextOpp.price, isOpp: true, num: nextOpp.num, div: false };
+        isOppExit = true;
+      } else if(exitOpp === 'sans_sortie' && !ex && nextOpp){
+        ex = { i: nextOpp.i, price: nextOpp.price, isOpp: true, num: nextOpp.num, div: false };
+        isOppExit = true;
+      }
+
       if(!ex){ sansSortie.push(en); continue; }
-      if(!ex.oppose) utilisee.add(ex.i);
+      if(!isOppExit) utilisee.add(ex.i);
 
       // sens réel : inversé si demandé
       let dir = en.dir;
@@ -25319,9 +25459,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       if(dirF === 'short' && dir !== -1) continue;
 
       const pe = +en.price;
-      let ps = +ex.price;
+      let ps = +(ex.price || (d[ex.i] ? d[ex.i].c : pe));
       let iS = ex.i;
-      let motif = ex.oppose ? 'Signal opposé' : (ex.div ? 'Divergence' : 'Seuil + pente');
+      let motif = isOppExit ? ('Entrée opposée' + (ex.num != null ? ' #' + ex.num : '')) : (ex.div ? 'Divergence' : 'Seuil + pente');
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
 
       /* Objectif de gain : on parcourt les bougies entre l'entrée et la
@@ -25385,7 +25525,18 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     // repli maximal sur la courbe cumulée
     let cum = 0, pic = 0, dd = 0;
-    for(const t of trades){ cum += t.net; if(cum > pic) pic = cum; const r = pic - cum; if(r > dd) dd = r; }
+    let btaSolde = 100, btaPeak = 100;
+    for(const t of trades){
+      cum += t.net;
+      btaSolde += t.net;
+      if(cum > pic) pic = cum;
+      if(btaSolde > btaPeak) btaPeak = btaSolde;
+      const r = pic - cum;
+      if(r > dd) dd = r;
+      t.solde = btaSolde;
+      t.ddDollar = btaPeak - btaSolde;
+      t.ddPct = btaPeak > 0 ? ((btaPeak - btaSolde) / btaPeak) * 100 : 0;
+    }
 
     /* Stabilité : on découpe la période en trois tranches SÉPARÉES et on
        calcule le profit factor de chacune. Une stratégie qui ne tient que
@@ -25456,18 +25607,20 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
       '<th style="padding:5px">N°</th><th style="padding:5px">#</th><th style="padding:5px">Sens</th><th style="padding:5px">Entrée</th>' +
       '<th style="padding:5px">Sortie</th><th style="padding:5px">Motif</th><th style="padding:5px">Durée</th>' +
-      '<th style="padding:5px">Frais</th><th style="padding:5px">Net</th></tr>';
+      '<th style="padding:5px">Frais</th><th style="padding:5px;color:#FF5252">DD Trade</th><th style="padding:5px">Net</th><th style="padding:5px;color:#00E5FF">Solde</th></tr>';
     trades.forEach(function(t, k){
       h += '<tr style="border-top:1px solid #1E293B;background:' + (k % 2 ? 'rgba(255,255,255,.02)' : 'transparent') + '">' +
         '<td style="padding:4px 5px;color:#94A3B8;font-weight:700">' + (k + 1) + '</td>' +
         '<td style="padding:4px 5px;color:#00E5FF;font-weight:700">#' + t.num + '</td>' +
         '<td style="padding:4px 5px;color:' + (t.dir === 1 ? '#10B981' : '#FF5252') + ';font-weight:700">' + (t.dir === 1 ? 'ACHAT' : 'VENTE') + '</td>' +
-        '<td style="padding:4px 5px">' + t.pe.toFixed(2) + '</td>' +
-        '<td style="padding:4px 5px">' + t.ps.toFixed(2) + '</td>' +
-        '<td style="padding:4px 5px;color:#94A3B8">' + t.motif + '</td>' +
-        '<td style="padding:4px 5px;color:#94A3B8">' + t.duree + ' min</td>' +
-        '<td style="padding:4px 5px;color:#F472B6">−' + t.frais.toFixed(3) + '</td>' +
-        '<td style="padding:4px 5px;font-weight:800;color:' + c(t.net) + '">' + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + '</td></tr>';
+        '<td style="padding:4px 5px"><span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + t.pe.toFixed(2) + ' $</span></td>' +
+        '<td style="padding:4px 5px"><span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + t.ps.toFixed(2) + ' $</span></td>' +
+        '<td style="padding:4px 5px;color:#E2E8F0;font-weight:700">' + t.motif + '</td>' +
+        '<td style="padding:4px 5px;color:#CBD5E1">' + t.duree + ' min</td>' +
+        '<td style="padding:4px 5px"><span style="color:#000000;background:#FCA5A5;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">−' + t.frais.toFixed(3) + ' $</span></td>' +
+        '<td style="padding:4px 5px"><span style="color:#000000;background:' + ((t.ddPct||0)>0 ? '#FCA5A5' : '#A7F3D0') + ';font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + ((t.ddPct||0)>0 ? '-' + (t.ddPct||0).toFixed(1) + '%' : '0.0%') + '</span><div style="font-size:9.5px;color:' + ((t.ddDollar||0)>0 ? '#FF5252' : '#94A3B8') + ';font-weight:bold;margin-top:2px">' + ((t.ddDollar||0)>0 ? '−' + t.ddDollar.toFixed(2) + ' $' : '0.00 $') + '</div></td>' +
+        '<td style="padding:4px 5px;font-weight:800;color:' + c(t.net) + '">' + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + ' $</td>' +
+        '<td style="padding:4px 5px"><span style="color:#000000;background:#BAE6FD;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + (t.solde != null ? t.solde.toFixed(2) : '100.00') + ' $</span></td></tr>';
     });
     h += '</table></div>';
     if(sansSortie.length){
@@ -25528,7 +25681,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
      la configuration est pré-remplie, l'activation reste manuelle. */
   window.envoyerVersMexc = function(){
     const r = window.__btDernier;
-    if(!r){ alert('Lancez d\'abord un backtest.'); return; }
+    if(!r){ alert("Lancez d'abord un backtest."); return; }
     if(!r.conforme){
       const txt = 'Cette configuration ne remplit pas les critères de validation :\n\n· ' +
         (r.manques || []).join('\n· ') +
@@ -25537,47 +25690,136 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     }
     const back = document.getElementById('bta-back');
     if(back) back.style.display = 'none';
-    if(typeof openLiveExchangeModal === 'function') openLiveExchangeModal();
+
+    const targetDir = (r.dirF === 'long') ? 'long_only' : (r.dirF === 'short') ? 'short_only' : 'both';
+    const targetUnit = (r.unite === 'BASE') ? 'BTC' : 'USDT';
+    const targetBudget = String(r.marge || (targetUnit === 'BTC' ? '0.02' : '10'));
+    const targetLev = String(r.lev || '200');
+    const targetSl = String(r.sl || '0');
+    const targetMode = r.scScenario || 'tp300';
+
+    const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
+    botConfig.tradeDir = targetDir;
+    botConfig.tradeUnit = targetUnit;
+    botConfig.tradeBudget = targetBudget;
+    botConfig.lev = targetLev;
+    botConfig.sl = targetSl;
+    botConfig.mode = targetMode;
+    botConfig.formula = {
+      pf: r.pf,
+      pnl: r.pnl,
+      trades: r.tradesCount,
+      wr: r.wr,
+      unite: r.unite,
+      marge: r.marge,
+      lev: r.lev,
+      dirF: r.dirF,
+      sl: r.sl,
+      scScenario: r.scScenario
+    };
+    localStorage.setItem('lumen_live_exchange_bot', JSON.stringify(botConfig));
+    window.__liveBotActive = botConfig;
+
+    if(typeof openLiveExchangeModal === 'function') {
+      openLiveExchangeModal(targetMode, targetSl, targetLev, targetBudget);
+    }
+
     setTimeout(function(){
       try{
-        const dirSel = document.getElementById('live-ex-direction');
-        if(dirSel) dirSel.value = (r.dirF === 'long') ? 'LONG' : (r.dirF === 'short') ? 'SHORT' : 'BOTH';
-        const lv = document.getElementById('live-ex-lev'); if(lv) lv.value = r.lev;
-        const bg = document.getElementById('live-ex-trade-budget');
-        if(bg) bg.value = (r.unite === 'BASE') ? r.marge : r.marge;
-        const un = document.getElementById('live-ex-trade-unit');
-        if(un) un.value = (r.unite === 'BASE') ? 'BTC' : 'USDT';
-        if(typeof recalcLiveModalNotional === 'function') recalcLiveModalNotional();
-      }catch(e){}
-      alert('Réglages reportés dans le module MEXC :\n\n' +
-        '· Direction : ' + (r.dirF === 'long' ? 'longs seuls' : r.dirF === 'short' ? 'shorts seuls' : 'longs et shorts') + '\n' +
-        '· Marge : ' + r.marge + ' ' + (r.unite === 'BASE' ? 'en actif' : 'USDT') + '\n' +
-        '· Levier : ' + r.lev + '\n\n' +
-        'Aucun ordre n\'a été envoyé. Vérifiez la configuration, puis activez manuellement.\n\n' +
-        'Cette stratégie n\'a jamais tourné en démo : commencez par la plus petite marge possible.');
-    }, 350);
-  };
+        const dirSel = document.getElementById('live-ex-dir');
+        if(dirSel) dirSel.value = targetDir;
 
-  /* Charge l'historique jusqu'à la profondeur demandée, par tranches de
-     1000 bougies. Sans cela le backtest ne porte que sur ce qui est déjà
-     en mémoire, soit quelques heures en 1 minute. */
-  window.chargerHistorique = async function(jours){
+        const un = document.getElementById('live-ex-trade-unit');
+        if(un) {
+          un.value = targetUnit;
+          if(typeof window.onLiveTradeUnitChange === 'function') window.onLiveTradeUnitChange();
+        }
+
+        const bg = document.getElementById('live-ex-trade-budget');
+        window.setSelectValueOrAddOption(bg, targetBudget, v => (targetUnit === 'BTC' ? '₿ ' : '💵 ') + v + ' ' + targetUnit + ' (Backtest)');
+
+        const lv = document.getElementById('live-ex-lev');
+        window.setSelectValueOrAddOption(lv, targetLev, v => v + 'x (Backtest)');
+
+        const slEl = document.getElementById('live-ex-sl');
+        window.setSelectValueOrAddOption(slEl, targetSl, v => v === '0' ? 'Pastille inverse (Pas de SL fixe)' : '🛑 SL -' + v + ' pts (Backtest)');
+
+        const modeEl = document.getElementById('live-ex-mode');
+        window.setSelectValueOrAddOption(modeEl, targetMode, v => 'Mode Backtest (' + v + ')');
+
+        if(typeof recalcLiveModalNotional === 'function') recalcLiveModalNotional();
+        if(typeof switchMexcTab === 'function') switchMexcTab('bot');
+        if(typeof updateLiveExchangeUI === 'function') updateLiveExchangeUI(botConfig);
+      }catch(e){
+        console.error('Erreur report stratégie MEXC:', e);
+      }
+
+      if(typeof toast === 'function') toast('✅ Formule du Backtest reportée avec succès dans l\'onglet Bot MEXC !', '#10B981');
+      alert('Réglages du Backtest reportés dans le module MEXC Bot :\n\n' +
+        '· Direction : ' + (r.dirF === 'long' ? 'longs seuls' : r.dirF === 'short' ? 'shorts seuls' : 'longs et shorts') + '\n' +
+        '· Marge / Budget : ' + r.marge + ' ' + (r.unite === 'BASE' ? 'BTC' : 'USDT') + '\n' +
+        '· Levier : ' + r.lev + 'x\n' +
+        '· Stop Loss : ' + (r.sl ? r.sl + ' pts' : 'Pastille inverse') + '\n' +
+        '· Profit Factor : ' + r.pf + ' | Réussite : ' + r.wr + '%\n\n' +
+        'Les paramètres de votre stratégie sont pré-remplis dans l\'onglet "🤖 Bot Auto Stratégie" de la fenêtre MEXC.');
+    }, 150);
+  };
+  window.chargerHistorique = async function(jours, force){
     const info = document.getElementById('bta-charge');
     const besoin = Math.min(30000, Math.ceil(jours * 24 * 60 / state.tf));
-    window.__btFreeze = true;              // l'historique ne sera plus écrasé
-    let garde = 0;
-    while(state.data.length < besoin && garde < 60){
-      const avant = state.data.length;
-      if(typeof histDone !== 'undefined' && histDone) break;
-      if(info) info.textContent = 'Chargement… ' + state.data.length + ' / ' + besoin + ' bougies';
-      await loadMoreHistory();
-      await new Promise(r => setTimeout(r, 260));
-      if(state.data.length === avant) garde++;
-      else garde = 0;
+    if (force) {
+      state.data = [];
+      window.__btFreeze = false;
+    } else {
+      window.__btFreeze = true;              // l'historique ne sera plus écrasé
     }
+    
+    if (state.data.length < besoin) {
+      if (info) info.textContent = 'Chargement rapide… ' + state.data.length + ' / ' + besoin + ' bougies';
+      const intervalStr = (typeof TF_MAP !== 'undefined' && TF_MAP[state.tf]) ? TF_MAP[state.tf] : '1m';
+      let garde = 0;
+      
+      while (state.data.length < besoin && garde < 10) {
+        const oldestT = state.data.length ? state.data[0].t : Date.now();
+        const missing = besoin - state.data.length;
+        const chunksNeeded = Math.min(6, Math.ceil(missing / 1000));
+        
+        const promises = [];
+        for (let c = 0; c < chunksNeeded; c++) {
+          const endT = oldestT - 1 - (c * 1000 * state.tf * 60000);
+          promises.push(
+            fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${intervalStr}&limit=1000&endTime=${endT}`)
+              .catch(() => null)
+          );
+        }
+        
+        const results = await Promise.all(promises);
+        let added = 0;
+        const map = new Map();
+        state.data.forEach(x => map.set(x.t, x));
+        
+        for (const rows of results) {
+          if (Array.isArray(rows) && rows.length) {
+            rows.forEach(k => {
+              const t = +k[0];
+              if (!map.has(t)) {
+                map.set(t, {t:+k[0], o:+k[1], h:+k[2], l:+k[3], c:+k[4], v:+k[5]});
+                added++;
+              }
+            });
+          }
+        }
+        
+        state.data = Array.from(map.values()).sort((a,b) => a.t - b.t);
+        if (info) info.textContent = 'Chargement… ' + state.data.length + ' / ' + besoin + ' bougies';
+        if (added === 0) garde++;
+        else garde = 0;
+      }
+    }
+    
     const j = (state.data.length * state.tf / 1440).toFixed(1);
     if(info) info.innerHTML = state.data.length + ' bougies chargées · ' + j + ' jours en ' + state.tf + 'm' +
-      ' <span style="color:#F59E0B">· historique figé, le flux ne l\'écrasera plus</span>' +
+      ' <span style="color:#10B981">· période complète (historique figé)</span>' +
       ' <button onclick="window.libererHistorique()" style="margin-left:8px;background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:4px;padding:1px 8px;font-size:10px;cursor:pointer">libérer</button>';
     state.cache = {};
     if(typeof render === 'function') render();
@@ -25599,6 +25841,25 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(info) info.textContent = 'Historique libéré, le flux temps réel reprend la main.';
   };
 
+  window.resetBtApparieConfig = function(){
+    try { localStorage.removeItem(typeof CFG_KEY !== 'undefined' ? CFG_KEY : 'lumen-config-v1'); } catch(e){}
+    if(typeof FACTORY_INDICATORS === 'object'){
+      if(FACTORY_INDICATORS.kk_bis){
+        state.indicators.kk_bis = JSON.parse(JSON.stringify(FACTORY_INDICATORS.kk_bis));
+      }
+      if(FACTORY_INDICATORS.strat_zz){
+        state.indicators.strat_zz = JSON.parse(JSON.stringify(FACTORY_INDICATORS.strat_zz));
+        state.indicators.strat_zz.invertSignal = true;
+      }
+    }
+    state.cache = {};
+    if(typeof saveConfig === 'function') saveConfig();
+    if(typeof applyConfigToUI === 'function') applyConfigToUI();
+    if(typeof render === 'function') render();
+    if(typeof toast === 'function') toast('⟲ Réglages d\'indicateurs remis aux valeurs d\'usine !', '#10B981');
+    if(typeof window.runBtApparie === 'function') window.runBtApparie();
+  };
+
   window.openBtApparie = function(){
     let m = document.getElementById('bta-back');
     if(m){ m.style.display = 'flex'; return; }
@@ -25611,7 +25872,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
       '<div><div style="font-size:16px;font-weight:800;color:#A78BFA">🎯 Backtest apparié</div>' +
       '<div style="font-size:11px;color:#94A3B8">Chaque entrée #N est fermée par la sortie portant le même #N</div></div>' +
-      '<button onclick="document.getElementById(\'bta-back\').style.display=\'none\'" style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;cursor:pointer">Fermer</button></div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      '<button onclick="window.resetBtApparieConfig()" style="background:rgba(239,68,68,.14);border:1px solid #EF4444;color:#FCA5A5;border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer" title="Remettre tous les indicateurs (kk bis, Z.Z.) aux réglages d\'usine d\'origine">⟲ Réglages Usine</button>' +
+      '<button onclick="document.getElementById(\'bta-back\').style.display=\'none\'" style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;cursor:pointer">Fermer</button></div></div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:end;margin-bottom:12px">' +
       '<label style="font-size:11px;color:#94A3B8">Entrées<br><select id="bta-ent" style="' + sel + '">' +
         '<option value="zz">Z.Z. classiques</option>' +
@@ -25630,6 +25893,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="tout">kk bis — toutes</option>' +
         '<option value="div">Divergences seules</option>' +
         '<option value="seuil">Seuil + pente seul</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Fermer le trade lors de l\'apparition d\'une entrée en sens opposé">Sortie entrée opposée<br><select id="bta-opp" style="' + sel + '">' +
+        '<option value="sans_sortie" selected>Oui (si pas de sortie kk bis)</option>' +
+        '<option value="toujours">Oui (si plus tôt ou si pas de sortie)</option>' +
+        '<option value="non">Non (garder sans sortie)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="En USDT : marge engagée. En actif : taille de position, comme sur MEXC">Montant<br><input id="bta-marge" type="number" value="0.02" step="any" style="' + sel + ';width:88px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
@@ -25639,13 +25906,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="1">La 1re qui suit</option>' +
         '<option value="2">La 2e qui suit</option>' +
         '<option value="3">La 3e qui suit</option>' +
-        '<option value="oppose">Signal Z.Z. opposé</option></select></label>' +
+        '</select></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Taux taker MEXC : 0,016 % sur BTC, 0,008 % sur ETH. Appliqué à l\'entrée et à la sortie.">Frais % (taker)<br><input id="bta-frais" type="number" value="' + (window.fraisTakerDefaut ? window.fraisTakerDefaut() : '0.016') + '" step="0.001" style="' + sel + ';width:84px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
         '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
         '<option value="14">2 semaines</option><option value="22">22 jours</option>' +
         '<option value="30">1 mois</option></select></label>' +
-      '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
+      '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value, true)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
       '</div><div id="bta-charge" style="font-size:11px;color:#94A3B8;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace"></div>' +
       '<div id="bta-configs" style="margin-bottom:12px;padding:10px;border:1px solid #312E81;border-radius:9px;background:rgba(49,46,129,.12)"></div>' +
@@ -25668,7 +25935,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 })();
-
 
 /* ================================================================
    CONFIGURATIONS DE BACKTEST — enregistrer et restaurer
@@ -25812,7 +26078,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   };
 
 })();
-
 </script>
 </body>
 </html>
