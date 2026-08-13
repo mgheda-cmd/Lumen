@@ -26291,39 +26291,49 @@ window.envoyerVersMexc = function(){
        stratégie en réel. Le taux de réussite pèse peu : il ne dit rien de
        la rentabilité tant qu'on ignore le rapport gain/perte. */
     res.forEach(function(x){
-      const notes = [];
-
-      // 1. Rapport PnL / repli maximal — 4 points. Le critère décisif :
-      //    c'est ce qu'on encaisse pour ce qu'on gagne.
       const rap = (x.dd > 0) ? (x.pnl / x.dd) : (x.pnl > 0 ? 3 : 0);
-      notes.push(Math.max(0, Math.min(4, rap * 2)));
+      const pf  = isFinite(x.pf) ? x.pf : 3;
 
-      // 2. Profit factor — 3 points. 1,0 ne vaut rien, 2,0 vaut le maximum.
-      const pf = isFinite(x.pf) ? x.pf : 3;
-      notes.push(Math.max(0, Math.min(3, (pf - 1) * 3)));
+      /* NOTE PRUDENTE — privilégie la régularité et la maîtrise du risque.
+         Le rapport PnL / repli pèse le plus lourd, la stabilité compte, et
+         les plafonds sont sévères. C'est la note à suivre pour du réel. */
+      let dure = Math.max(0, Math.min(4, rap * 2))
+               + Math.max(0, Math.min(3, (pf - 1) * 3))
+               + Math.max(0, Math.min(2, x.trades / 30 * 2))
+               + (x.conforme ? 1 : 0);
+      if(x.pnl <= 0)     dure = Math.min(dure, 2);
+      if(x.trades < 10)  dure = Math.min(dure, 3);
+      if(!x.conforme)    dure = Math.min(dure, 7);
+      x.noteDure = Math.round(dure * 10) / 10;
 
-      // 3. Taille de l'échantillon — 2 points. En dessous de 30 trades,
-      //    le résultat n'est pas exploitable.
-      notes.push(Math.max(0, Math.min(2, x.trades / 30 * 2)));
+      /* NOTE OFFENSIVE — privilégie le gain absolu. Le repli ne pèse qu'un
+         point, le PnL rapporté au meilleur du balayage en vaut quatre.
+         À suivre si l'on accepte des creux profonds pour viser plus haut. */
+      const pnlMax = Math.max.apply(null, res.map(function(y){ return Math.max(0.01, y.pnl); }));
+      let souple = Math.max(0, Math.min(4, (x.pnl / pnlMax) * 4))
+                 + Math.max(0, Math.min(3, (pf - 1) * 2.5))
+                 + Math.max(0, Math.min(2, x.trades / 20 * 2))
+                 + Math.max(0, Math.min(1, rap));
+      if(x.pnl <= 0)    souple = Math.min(souple, 2);
+      if(x.trades < 6)  souple = Math.min(souple, 3);
+      x.noteSouple = Math.round(souple * 10) / 10;
 
-      // 4. Stabilité sur les trois tiers — 1 point, tout ou rien.
-      notes.push(x.conforme ? 1 : 0);
-
-      let n = notes.reduce(function(a, b){ return a + b; }, 0);
-      if(x.pnl <= 0) n = Math.min(n, 2);        // une stratégie perdante plafonne à 2
-      if(x.trades < 10) n = Math.min(n, 3);     // échantillon dérisoire
-      x.note = Math.round(n * 10) / 10;
+      x.note = x.noteDure;
     });
 
-    res.sort(function(x, y){ return y.note - x.note; });
+    res.sort(function(x, y){ return y.noteDure - x.noteDure; });
     window.__balayage = res;
 
     let h = '<div style="font-size:12px;font-weight:800;color:#00E5FF;margin-bottom:8px">' +
-      '🔎 Balayage kk bis — ' + res.length + ' combinaisons testées, classées par note</div>' +
+      '🔎 Balayage kk bis — ' + res.length + ' combinaisons testées' +
+      ' <button onclick="window.trierBalayage(\'dure\')" style="margin-left:8px;background:transparent;border:1px solid #10B981;color:#10B981;border-radius:5px;padding:2px 9px;font-size:10px;cursor:pointer">Trier prudente</button>' +
+      ' <button onclick="window.trierBalayage(\'souple\')" style="background:transparent;border:1px solid #7DD3FC;color:#7DD3FC;border-radius:5px;padding:2px 9px;font-size:10px;cursor:pointer">Trier offensive</button></div>' +
       '<div style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
       '<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:\'IBM Plex Mono\',monospace">' +
       '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
-      '<th style="padding:6px">Note</th><th style="padding:6px">Unités</th><th style="padding:6px">Trades</th>' +
+      '<th style="padding:6px" title="Privilegie la maitrise du risque">Prudente</th>' +
+      '<th style="padding:6px" title="Privilegie le gain absolu">Offensive</th>' +
+      '<th style="padding:6px">Unités</th><th style="padding:6px">Trades</th>' +
       '<th style="padding:6px">Réussite</th><th style="padding:6px">PnL net</th>' +
       '<th style="padding:6px">Repli max</th><th style="padding:6px"></th></tr>';
 
@@ -26333,8 +26343,11 @@ window.envoyerVersMexc = function(){
       h += '<tr style="border-top:1px solid #1E293B;background:' +
         (i === 0 ? 'rgba(16,185,129,.08)' : (i % 2 ? 'rgba(255,255,255,.02)' : 'transparent')) + '">' +
         '<td style="padding:5px 6px;font-weight:900;font-size:13px;color:' +
-          (x.note >= 7 ? '#10B981' : x.note >= 5 ? '#F59E0B' : '#FF5252') + '">' +
-          x.note.toFixed(1) + '</td>' +
+          (x.noteDure >= 7 ? '#10B981' : x.noteDure >= 5 ? '#F59E0B' : '#FF5252') + '">' +
+          x.noteDure.toFixed(1) + '</td>' +
+        '<td style="padding:5px 6px;font-weight:800;font-size:12px;color:' +
+          (x.noteSouple >= 7 ? '#7DD3FC' : x.noteSouple >= 5 ? '#F59E0B' : '#FF5252') + '">' +
+          x.noteSouple.toFixed(1) + '</td>' +
         '<td style="padding:5px 6px;color:#00E5FF;font-weight:700">' + x.a + 'm × ' + x.b + 'm' +
           (x.conforme ? ' <span style="color:#10B981">✓</span>' : '') + '</td>' +
         '<td style="padding:5px 6px;color:#94A3B8">' + x.trades + '</td>' +
@@ -26347,15 +26360,45 @@ window.envoyerVersMexc = function(){
     });
     h += '</table></div>' +
       '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
-      '<b style="color:#CBD5E1">Composition de la note</b> — 4 points pour le rapport PnL / repli maximal, ' +
-      '3 pour le profit factor, 2 pour le nombre de trades, 1 pour la stabilité sur les trois tiers.<br>' +
-      'Le taux de réussite n\'entre pas dans le calcul : seul, il ne dit rien de la rentabilité. ' +
-      'Une stratégie perdante plafonne à 2, un échantillon sous 10 trades à 3.<br>' +
+      '<b style="color:#10B981">Prudente</b> — 4 pts rapport PnL/repli · 3 pts profit factor · 2 pts nombre de trades · 1 pt stabilité. ' +
+      'Plafonnée à 7 si la combinaison ne tient pas sur les trois tiers.<br>' +
+      '<b style="color:#7DD3FC">Offensive</b> — 4 pts PnL rapporté au meilleur du balayage · 3 pts profit factor · 2 pts nombre de trades · 1 pt rapport PnL/repli.<br>' +
+      'Le taux de réussite n\'entre dans aucune des deux : seul, il ne dit rien de la rentabilité.<br>' +
       'Cliquez sur « Choisir » pour appliquer une combinaison et obtenir le détail complet.</div>';
 
     if(box) box.innerHTML = h;
     if(info) info.innerHTML = '<span style="color:#10B981">Balayage terminé · ' +
       res.length + ' combinaisons</span>';
+  };
+
+  /* Redessine le tableau après un changement de tri, sans relancer les
+     21 backtests. */
+  window.__redessinerBalayage = function(){
+    const r = window.__balayage;
+    const box = document.getElementById('bta-res');
+    if(!r || !box) return;
+    const lignes = box.querySelectorAll('table tr');
+    if(!lignes.length) return;
+    let h = '';
+    r.forEach(function(x, i){
+      const cw = x.wr >= 55 ? '#10B981' : x.wr >= 45 ? '#F59E0B' : '#FF5252';
+      const cp = x.pnl >= 0 ? '#10B981' : '#FF5252';
+      h += '<tr style="border-top:1px solid #1E293B;background:' +
+        (i === 0 ? 'rgba(16,185,129,.08)' : (i % 2 ? 'rgba(255,255,255,.02)' : 'transparent')) + '">' +
+        '<td style="padding:5px 6px;font-weight:900;font-size:13px;color:' +
+          (x.noteDure >= 7 ? '#10B981' : x.noteDure >= 5 ? '#F59E0B' : '#FF5252') + '">' + x.noteDure.toFixed(1) + '</td>' +
+        '<td style="padding:5px 6px;font-weight:800;font-size:12px;color:' +
+          (x.noteSouple >= 7 ? '#7DD3FC' : x.noteSouple >= 5 ? '#F59E0B' : '#FF5252') + '">' + x.noteSouple.toFixed(1) + '</td>' +
+        '<td style="padding:5px 6px;color:#00E5FF;font-weight:700">' + x.a + 'm × ' + x.b + 'm' +
+          (x.conforme ? ' <span style="color:#10B981">✓</span>' : '') + '</td>' +
+        '<td style="padding:5px 6px;color:#94A3B8">' + x.trades + '</td>' +
+        '<td style="padding:5px 6px;font-weight:700;color:' + cw + '">' + x.wr.toFixed(1) + ' %</td>' +
+        '<td style="padding:5px 6px;font-weight:800;color:' + cp + '">' + (x.pnl >= 0 ? '+' : '') + x.pnl.toFixed(2) + ' $</td>' +
+        '<td style="padding:5px 6px;color:#FF9F1C">−' + x.dd.toFixed(2) + ' $</td>' +
+        '<td style="padding:5px 6px;text-align:right"><button onclick="window.appliquerCombi(' + i + ')" style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Choisir</button></td></tr>';
+    });
+    const tbl = box.querySelector('table');
+    if(tbl) tbl.innerHTML = tbl.querySelector('tr').outerHTML + h;
   };
 
   window.appliquerCombi = function(i){
@@ -26372,6 +26415,16 @@ window.envoyerVersMexc = function(){
 
 })();
 
+
+/* Re-tri du balayage selon la notation choisie. */
+window.trierBalayage = function(mode){
+  const r = window.__balayage;
+  if(!r || !r.length) return;
+  r.sort(function(x, y){
+    return (mode === 'souple') ? (y.noteSouple - x.noteSouple) : (y.noteDure - x.noteDure);
+  });
+  if(typeof window.__redessinerBalayage === 'function') window.__redessinerBalayage();
+};
 </script>
 </body>
 </html>
