@@ -26001,7 +26001,21 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }
 
   function listeEnregistrees(){
-    try{ return JSON.parse(localStorage.getItem('lumen_bt_configs') || '[]'); }
+    try{
+      const l = JSON.parse(localStorage.getItem('lumen_bt_configs') || '[]');
+      /* Les configurations enregistrées avant l'ajout du taux de réussite
+         gardent leur ancien résumé. On le reconstitue quand les données
+         sont disponibles, plutôt que de laisser une ligne incomplète. */
+      let modif = false;
+      l.forEach(function(x){
+        if(x.wr != null && x.resume && x.resume.indexOf('réussite') < 0){
+          x.resume = x.resume.replace(/(\d+ trades)/, '$1 · ' + Number(x.wr).toFixed(1) + ' % réussite');
+          modif = true;
+        }
+      });
+      if(modif) ecrireListe(l);
+      return l;
+    }
     catch(e){ return []; }
   }
   function ecrireListe(l){
@@ -26060,7 +26074,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
           '<div style="font-size:11.5px;font-weight:700;color:#E2E8F0">' + x.nom + '</div>' +
           '<div style="font-size:10px;font-family:\'IBM Plex Mono\',monospace;color:' +
             (x.wr == null ? '#94A3B8' : (x.wr >= 55 ? '#10B981' : x.wr >= 45 ? '#F59E0B' : '#FF5252')) +
-            '">' + (x.resume || '') + '</div></div>' +
+            '">' + (x.resume || '') +
+            (x.wr == null && x.resume && x.resume !== 'sans résultat'
+              ? ' <span style="color:#7E8CA8">· réussite non enregistrée</span>' : '') +
+            '</div></div>' +
           '<button onclick="window.restaurerConfigBT(' + i + ')" style="background:rgba(16,185,129,.14);border:1px solid #10B981;color:#10B981;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Restaurer</button>' +
           '<button onclick="window.supprimerConfigBT(' + i + ')" style="background:transparent;border:1px solid #475569;color:#7E8CA8;border-radius:5px;padding:3px 8px;font-size:10.5px;cursor:pointer">✕</button></div>';
       });
