@@ -26078,6 +26078,52 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   };
 
 })();
+
+/* ================================================================
+   ENVOI D'UNE CONFIGURATION VALIDÉE VERS LE MODULE MEXC
+   Reporte les réglages du dernier backtest dans le module de trading
+   réel. N'envoie aucun ordre : seuls les champs sont pré-remplis,
+   l'activation reste manuelle.
+   ================================================================ */
+window.envoyerVersMexc = function(){
+  const r = window.__btDernier;
+  if(!r){ alert('Lancez d\'abord un backtest.'); return; }
+
+  if(!r.conforme){
+    const txt = 'Cette configuration ne remplit pas les critères de validation :\n\n· ' +
+      ((r.manques && r.manques.length) ? r.manques.join('\n· ') : 'critères non renseignés') +
+      '\n\nLes réglages seront quand même reportés dans le module MEXC.\nAucun ordre ne sera envoyé.\n\nContinuer ?';
+    if(!confirm(txt)) return;
+  }
+
+  const back = document.getElementById('bta-back');
+  if(back) back.style.display = 'none';
+  if(typeof openLiveExchangeModal === 'function') openLiveExchangeModal();
+
+  setTimeout(function(){
+    const mis = [];
+    const poser = function(id, val, lib){
+      const el = document.getElementById(id);
+      if(el && val != null && val !== ''){ el.value = val; mis.push(lib + ' : ' + val); }
+    };
+
+    // direction : le module attend LONG, SHORT ou BOTH
+    poser('live-ex-dir',
+      (r.dirF === 'long') ? 'LONG' : (r.dirF === 'short') ? 'SHORT' : 'BOTH',
+      'Direction');
+    poser('live-ex-lev', r.lev, 'Levier');
+    poser('live-ex-trade-budget', r.marge, 'Montant');
+    poser('live-ex-trade-unit', (r.unite === 'BASE') ? 'BTC' : 'USDT', 'Unité');
+
+    try{ if(typeof recalcLiveModalNotional === 'function') recalcLiveModalNotional(); }catch(e){}
+    try{ if(typeof switchMexcTab === 'function') switchMexcTab('config'); }catch(e){}
+
+    alert('Réglages reportés dans le module MEXC :\n\n· ' + (mis.length ? mis.join('\n· ') : 'aucun champ correspondant trouvé') +
+      '\n\nAucun ordre n\'a été envoyé.\nVérifiez la configuration, puis activez manuellement.\n\n' +
+      'Cette stratégie n\'a jamais tourné en démo : commencez par la plus petite taille possible.');
+  }, 400);
+};
+
 </script>
 </body>
 </html>
