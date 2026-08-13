@@ -21133,8 +21133,19 @@ window.updateMexcTradeCalc = async function() {
   const currentPx = livePrice(symbol) || 65000;
   const contractSize = (await window.getContractSize(symbol)) || 0.0001;
 
-  const marginUsdt = unit === 'BTC' ? (rawBudget * currentPx) : rawBudget;
-  const targetNotional = marginUsdt * lev;
+  /* En BTC, le montant saisi est la TAILLE de position, comme sur MEXC :
+     0,02 BTC à 63 500 fait 1270 USDT de notionnel et 6,35 USDT de marge à
+     200x. L'ancien calcul le traitait comme une marge puis le multipliait
+     par le levier, soit un notionnel 200 fois trop grand — d'où le rejet
+     de l'ordre par MEXC. En USDT, le montant reste la marge. */
+  let targetNotional, marginUsdt;
+  if (unit === 'BTC') {
+    targetNotional = rawBudget * currentPx;
+    marginUsdt = targetNotional / lev;
+  } else {
+    marginUsdt = rawBudget;
+    targetNotional = marginUsdt * lev;
+  }
   const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
   const estNotional = calcVol * contractSize * currentPx;
   const estMarginUsdt = lev > 0 ? estNotional / lev : estNotional;
