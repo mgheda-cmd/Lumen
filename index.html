@@ -25385,6 +25385,16 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const box = document.getElementById('bta-res');
     const info = document.getElementById('bta-charge');
 
+    /* Journal visible : quand un lancement ne produit rien, on veut savoir
+       où il s'est arrêté sans passer par la console. */
+    const T0 = Date.now();
+    window.__btLog = [];
+    const jour = function(txt){
+      window.__btLog.push('+' + (Date.now() - T0) + 'ms  ' + txt);
+      if(info) info.innerHTML = '<span style="color:#7DD3FC">' + txt + '</span>';
+    };
+    jour('démarrage · ' + (state.data || []).length + ' bougies en mémoire');
+
     /* Le bouton charge lui-même ce qui manque. L'API Binance plafonne à 1000
        bougies par requête : un chargement initial suivi d'une seule tranche
        donne 2000 bougies, soit 1,4 jour en 1 minute. Sans ce complément, le
@@ -25415,8 +25425,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const tpVal  = +((document.getElementById('bta-tp') || {}).value) || 0;
     const rangS  = (document.getElementById('bta-rang') || {}).value || '1';
 
+    jour('calcul des entrées…');
     const ents = entrees(mEnt);
+    jour(ents.length + ' entrées · calcul des sorties…');
     const sors = sorties(mSor);
+    jour(ents.length + ' entrées · ' + sors.length + ' sorties · appariement…');
 
 
     /* Appariement chronologique : chaque entrée est fermée par la PREMIÈRE
@@ -25700,7 +25713,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '</div>';
     }
 
+    jour('terminé · ' + trades.length + ' trades');
     if(box) box.innerHTML = h;
+    return true;
   };
 
   /* Reporte les réglages validés dans le module MEXC. N'envoie aucun ordre :
@@ -25897,6 +25912,20 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(typeof window.runBtApparie === 'function') window.runBtApparie();
   };
 
+  /* Libère tous les verrous. À utiliser si un lancement s'est interrompu
+     et que le bouton ne répond plus. */
+  window.reinitBt = function(){
+    try{
+      if(typeof histBusy !== 'undefined') histBusy = false;
+      if(typeof histDone !== 'undefined') histDone = false;
+    }catch(e){}
+    window.__btFreeze = false;
+    state.cache = {};
+    const info = document.getElementById('bta-charge');
+    if(info) info.innerHTML = '<span style="color:#10B981">Verrous libérés · ' +
+      (state.data || []).length + ' bougies en mémoire. Vous pouvez relancer.</span>';
+  };
+
   window.openBtApparie = function(){
     let m = document.getElementById('bta-back');
     if(m){ m.style.display = 'flex'; return; }
@@ -25951,6 +25980,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="30">1 mois</option></select></label>' +
       '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value, true)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
+      '<button onclick="window.reinitBt()" title="Libère les verrous de chargement si un lancement est resté bloqué" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer">↺ Débloquer</button>' +
       '</div><div id="bta-charge" style="font-size:11px;color:#94A3B8;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace"></div>' +
       '<div id="bta-configs" style="margin-bottom:12px;padding:10px;border:1px solid #312E81;border-radius:9px;background:rgba(49,46,129,.12)"></div>' +
       '<div id="bta-res"></div></div>';
