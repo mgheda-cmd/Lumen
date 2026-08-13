@@ -25702,6 +25702,19 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const sh = trades.filter(t => t.dir === -1);
     const pnlLg = lg.reduce((a,t) => a + t.net, 0);
     const pnlSh = sh.reduce((a,t) => a + t.net, 0);
+    /* Séparation par direction, pour que le balayage puisse dire si une
+       combinaison convient mieux aux longs ou aux shorts. */
+    const pfDir = function(arr){
+      const g = arr.filter(t => t.net > 0).reduce((a,t) => a + t.net, 0);
+      const p = Math.abs(arr.filter(t => t.net <= 0).reduce((a,t) => a + t.net, 0));
+      return p > 0 ? (g / p) : (g > 0 ? Infinity : 0);
+    };
+    window.__btDirs = {
+      lg: { n: lg.length, pnl: pnlLg, pf: pfDir(lg),
+            wr: lg.length ? (lg.filter(t => t.net > 0).length / lg.length * 100) : 0 },
+      sh: { n: sh.length, pnl: pnlSh, pf: pfDir(sh),
+            wr: sh.length ? (sh.filter(t => t.net > 0).length / sh.length * 100) : 0 }
+    };
     const margeMoy = trades.reduce((a,t) => a + t.marge, 0) / trades.length;
     h += carte('Durée moy.', dureeMoy + ' min');
     const notMoy = trades.reduce((a,t) => a + t.notionnel, 0) / trades.length;
@@ -26390,8 +26403,9 @@ window.envoyerVersMexc = function(){
         await window.__runBtInterne();
         const r = window.__btDernier;
         if(r && r.trades > 0){
+          const dd2 = window.__btDirs || null;
           res.push({ a:a, b:b, trades:r.trades, wr:r.wr, pnl:r.pnl, dd:r.dd,
-                     pf:r.pf, conforme:r.conforme });
+                     pf:r.pf, conforme:r.conforme, dirs:dd2 });
         } else {
           res.push({ a:a, b:b, trades:0, wr:0, pnl:0, dd:0, pf:0, conforme:false });
         }
@@ -26437,6 +26451,24 @@ window.envoyerVersMexc = function(){
       x.noteSouple = Math.round(souple * 10) / 10;
 
       x.note = x.noteDure;
+
+      /* Orientation : à quel sens cette combinaison profite le plus.
+         On compare le PnL des longs et des shorts, en exigeant un minimum
+         de trades de chaque côté pour que la comparaison ait un sens. */
+      x.orient = null;
+      const dd = x.dirs;
+      if(dd && dd.lg && dd.sh){
+        const nl = dd.lg.n, ns = dd.sh.n;
+        if(nl >= 5 && ns >= 5){
+          const pl = dd.lg.pnl, ps = dd.sh.pnl;
+          const ecart = Math.abs(pl - ps);
+          const base = Math.max(Math.abs(pl), Math.abs(ps), 1);
+          if(ecart / base < 0.25) x.orient = { s:'=', txt:'équilibrée' };
+          else if(pl > ps)        x.orient = { s:'L', txt:'longs', pnl:pl, autre:ps };
+          else                    x.orient = { s:'S', txt:'shorts', pnl:ps, autre:pl };
+        } else if(nl >= 5 && ns < 5) x.orient = { s:'L', txt:'longs seuls', pnl:dd.lg.pnl };
+        else if(ns >= 5 && nl < 5)   x.orient = { s:'S', txt:'shorts seuls', pnl:dd.sh.pnl };
+      }
     });
 
     res.sort(function(x, y){ return y.noteDure - x.noteDure; });
@@ -26453,7 +26485,9 @@ window.envoyerVersMexc = function(){
       '<th style="padding:6px" title="Privilegie le gain absolu">Offensive</th>' +
       '<th style="padding:6px">Unités</th><th style="padding:6px">Trades</th>' +
       '<th style="padding:6px">Réussite</th><th style="padding:6px">PnL net</th>' +
-      '<th style="padding:6px">Repli max</th><th style="padding:6px"></th></tr>';
+      '<th style="padding:6px">Repli max</th>' +
+      '<th style="padding:6px" title="Sens auquel cette combinaison profite le plus">Convient à</th>' +
+      '<th style="padding:6px"></th></tr>';
 
     res.forEach(function(x, i){
       const cw = x.wr >= 55 ? '#10B981' : x.wr >= 45 ? '#F59E0B' : '#FF5252';
@@ -26472,6 +26506,17 @@ window.envoyerVersMexc = function(){
         '<td style="padding:5px 6px;font-weight:700;color:' + cw + '">' + x.wr.toFixed(1) + ' %</td>' +
         '<td style="padding:5px 6px;font-weight:800;color:' + cp + '">' + (x.pnl >= 0 ? '+' : '') + x.pnl.toFixed(2) + ' $</td>' +
         '<td style="padding:5px 6px;color:#FF9F1C">−' + x.dd.toFixed(2) + ' $</td>' +
+        '<td style="padding:5px 6px">' + (function(){
+          const o = x.orient;
+          if(!o) return '<span style="color:#64748B">—</span>';
+          const col = o.s === 'L' ? '#10B981' : o.s === 'S' ? '#FF5252' : '#94A3B8';
+          const ico = o.s === 'L' ? '▲' : o.s === 'S' ? '▼' : '=';
+          const det = (o.pnl != null && o.autre != null)
+            ? '<div style="font-size:9px;color:#7E8CA8">' +
+              (o.pnl >= 0 ? '+' : '') + o.pnl.toFixed(1) + ' vs ' +
+              (o.autre >= 0 ? '+' : '') + o.autre.toFixed(1) + '</div>' : '';
+          return '<span style="color:' + col + ';font-weight:800">' + ico + ' ' + o.txt + '</span>' + det;
+        })() + '</td>' +
         '<td style="padding:5px 6px;text-align:right">' +
           '<button onclick="window.appliquerCombi(' + i + ')" style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Choisir</button>' +
         '</td></tr>';
@@ -26482,6 +26527,8 @@ window.envoyerVersMexc = function(){
       'Plafonnée à 7 si la combinaison ne tient pas sur les trois tiers.<br>' +
       '<b style="color:#7DD3FC">Offensive</b> — 4 pts PnL rapporté au meilleur du balayage · 3 pts profit factor · 2 pts nombre de trades · 1 pt rapport PnL/repli.<br>' +
       'Le taux de réussite n\'entre dans aucune des deux : seul, il ne dit rien de la rentabilité.<br>' +
+      '<b style="color:#CBD5E1">Convient à</b> — sens dont le PnL domine, avec au moins 5 trades de chaque côté. ' +
+      '« équilibrée » quand l\'écart reste sous 25 %. Les deux chiffres sont les PnL comparés.<br>' +
       'Cliquez sur « Choisir » pour appliquer une combinaison et obtenir le détail complet.</div>';
 
     if(box) box.innerHTML = h;
