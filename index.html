@@ -1556,6 +1556,9 @@ footer{
             <option value="tp400">Pastilles Z.Z. (TP +400 pts)</option>
             <option value="tp500">Pastilles Z.Z. (TP +500 pts)</option>
             <option value="pastille_only">Pastilles Z.Z. (Pastille Inverse)</option>
+            <option value="kk_all">Sortie kk bis — toutes (+ filet pastille inverse)</option>
+            <option value="kk_div">Sortie kk bis — divergences seules (+ filet)</option>
+            <option value="kk_seuil">Sortie kk bis — seuil + pente seul (+ filet)</option>
           </select>
         </label>
 
@@ -12574,6 +12577,41 @@ function checkAutoTrade(inputSignals){
       else if(sg.dir === 1) buySignal = true;
       else if(sg.dir === -1) sellSignal = true;
     }
+
+    /* SORTIE kk bis — même source que le backtest.
+       On lit les sorties calculées par l'indicateur et on déclenche si l'une
+       d'elles apparaît sur les trois dernières bougies, dans le sens de la
+       position ouverte. La pastille Z.Z. opposée reste active comme filet :
+       si kk bis ne donne rien, la position se ferme quand même. */
+    try{
+      const modeSortie = (function(){
+        const el = document.getElementById('live-ex-mode');
+        if(el && el.value) return el.value;
+        const raw = localStorage.getItem('lumen_live_exchange_bot');
+        return raw ? (JSON.parse(raw).mode || '') : '';
+      })();
+
+      if(modeSortie.indexOf('kk_') === 0){
+        const kb = getInd('kk_bis');
+        let sorties = (kb && Array.isArray(kb.exits)) ? kb.exits : [];
+        if(modeSortie === 'kk_div')   sorties = sorties.filter(x => x.div);
+        if(modeSortie === 'kk_seuil') sorties = sorties.filter(x => !x.div);
+
+        // position réellement ouverte, pour ne fermer que dans le bon sens
+        const posOuverte = (paper && paper.positions && paper.positions[0]) ? paper.positions[0] : null;
+        if(posOuverte){
+          const sensPos = (posOuverte.side === 'long') ? 1 : -1;
+          for(const ex of sorties){
+            if(ex.i == null || ex.i < lastIdx - 2) continue;
+            const sensEx = (ex.type === 'SORTIE_ACHAT') ? 1 : -1;
+            if(sensEx !== sensPos) continue;
+            exitTriggered = true;
+            exitReason = 'Sortie kk bis · ' + (ex.div ? 'divergence' : 'seuil + pente');
+            break;
+          }
+        }
+      }
+    }catch(e){}
 
     // Récupération du filtre de direction si le bot réel est configuré
     let liveBotDir = 'both';
@@ -26254,10 +26292,16 @@ window.envoyerVersMexc = function(){
        l'utilisateur n'a jamais choisi. */
     const m = document.getElementById('live-ex-mode');
     if(m){
-      const cible = (r.tp > 0) ? ('tp' + Math.round(r.tp)) : 'pastille_only';
+      /* Sans objectif, on reporte le mode kk bis correspondant à ce que le
+         backtest a mesuré, avec la pastille inverse comme filet. */
+      const cible = (r.tp > 0) ? ('tp' + Math.round(r.tp))
+                  : (r.mSor === 'div') ? 'kk_div'
+                  : (r.mSor === 'seuil') ? 'kk_seuil'
+                  : 'kk_all';
       if(Array.prototype.some.call(m.options, function(o){ return o.value === cible; })){
         m.value = cible;
-        mis.push('Mode : ' + (r.tp > 0 ? ('TP +' + r.tp) : 'Pastille seule, sans objectif'));
+        mis.push('Mode : ' + (r.tp > 0 ? ('TP +' + r.tp)
+          : ('sortie kk bis ' + (r.mSor === 'div' ? 'divergences' : r.mSor === 'seuil' ? 'seuil + pente' : 'toutes') + ', filet pastille inverse')));
       }
     }
 
@@ -26270,11 +26314,9 @@ window.envoyerVersMexc = function(){
     const sortieBt = (r.mSor === 'div') ? 'divergences kk bis'
                    : (r.mSor === 'seuil') ? 'seuil + pente kk bis'
                    : 'sorties kk bis';
-    const ecart = (r.tp > 0)
-      ? ''
-      : '\n\n⚠ Le backtest mesurait une sortie sur ' + sortieBt + '.\n' +
-        'Le bot ne sait sortir que sur pastille Z.Z. opposée ou sur objectif fixe.\n' +
-        'Les résultats réels différeront de ceux du backtest.';
+    const ecart = (r.tp > 0) ? ''
+      : '\n\nLe bot exécutera la même sortie que le backtest (' + sortieBt + '),\n' +
+        'avec la pastille Z.Z. opposée comme filet de sécurité.';
 
     alert('Réglages reportés dans le module MEXC :\n\n· ' + (mis.length ? mis.join('\n· ') : 'aucun champ correspondant trouvé') + ecart +
       '\n\nAucun ordre n\'a été envoyé.\nVérifiez la configuration, puis activez manuellement.\n\n' +
