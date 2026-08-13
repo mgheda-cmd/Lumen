@@ -26287,15 +26287,43 @@ window.envoyerVersMexc = function(){
     state.indicators.kk_bis.tf2 = av2;
     state.cache = {};
 
-    res.sort(function(x, y){ return y.pnl - x.pnl; });
+    /* Note sur 10, pondérée selon ce qui compte vraiment pour tenir une
+       stratégie en réel. Le taux de réussite pèse peu : il ne dit rien de
+       la rentabilité tant qu'on ignore le rapport gain/perte. */
+    res.forEach(function(x){
+      const notes = [];
+
+      // 1. Rapport PnL / repli maximal — 4 points. Le critère décisif :
+      //    c'est ce qu'on encaisse pour ce qu'on gagne.
+      const rap = (x.dd > 0) ? (x.pnl / x.dd) : (x.pnl > 0 ? 3 : 0);
+      notes.push(Math.max(0, Math.min(4, rap * 2)));
+
+      // 2. Profit factor — 3 points. 1,0 ne vaut rien, 2,0 vaut le maximum.
+      const pf = isFinite(x.pf) ? x.pf : 3;
+      notes.push(Math.max(0, Math.min(3, (pf - 1) * 3)));
+
+      // 3. Taille de l'échantillon — 2 points. En dessous de 30 trades,
+      //    le résultat n'est pas exploitable.
+      notes.push(Math.max(0, Math.min(2, x.trades / 30 * 2)));
+
+      // 4. Stabilité sur les trois tiers — 1 point, tout ou rien.
+      notes.push(x.conforme ? 1 : 0);
+
+      let n = notes.reduce(function(a, b){ return a + b; }, 0);
+      if(x.pnl <= 0) n = Math.min(n, 2);        // une stratégie perdante plafonne à 2
+      if(x.trades < 10) n = Math.min(n, 3);     // échantillon dérisoire
+      x.note = Math.round(n * 10) / 10;
+    });
+
+    res.sort(function(x, y){ return y.note - x.note; });
     window.__balayage = res;
 
     let h = '<div style="font-size:12px;font-weight:800;color:#00E5FF;margin-bottom:8px">' +
-      '🔎 Balayage kk bis — ' + res.length + ' combinaisons testées, classées par PnL</div>' +
+      '🔎 Balayage kk bis — ' + res.length + ' combinaisons testées, classées par note</div>' +
       '<div style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
       '<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:\'IBM Plex Mono\',monospace">' +
       '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
-      '<th style="padding:6px">Unités</th><th style="padding:6px">Trades</th>' +
+      '<th style="padding:6px">Note</th><th style="padding:6px">Unités</th><th style="padding:6px">Trades</th>' +
       '<th style="padding:6px">Réussite</th><th style="padding:6px">PnL net</th>' +
       '<th style="padding:6px">Repli max</th><th style="padding:6px"></th></tr>';
 
@@ -26304,6 +26332,9 @@ window.envoyerVersMexc = function(){
       const cp = x.pnl >= 0 ? '#10B981' : '#FF5252';
       h += '<tr style="border-top:1px solid #1E293B;background:' +
         (i === 0 ? 'rgba(16,185,129,.08)' : (i % 2 ? 'rgba(255,255,255,.02)' : 'transparent')) + '">' +
+        '<td style="padding:5px 6px;font-weight:900;font-size:13px;color:' +
+          (x.note >= 7 ? '#10B981' : x.note >= 5 ? '#F59E0B' : '#FF5252') + '">' +
+          x.note.toFixed(1) + '</td>' +
         '<td style="padding:5px 6px;color:#00E5FF;font-weight:700">' + x.a + 'm × ' + x.b + 'm' +
           (x.conforme ? ' <span style="color:#10B981">✓</span>' : '') + '</td>' +
         '<td style="padding:5px 6px;color:#94A3B8">' + x.trades + '</td>' +
@@ -26316,7 +26347,10 @@ window.envoyerVersMexc = function(){
     });
     h += '</table></div>' +
       '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
-      'La coche ✓ signale les combinaisons qui remplissent les quatre critères de validation.<br>' +
+      '<b style="color:#CBD5E1">Composition de la note</b> — 4 points pour le rapport PnL / repli maximal, ' +
+      '3 pour le profit factor, 2 pour le nombre de trades, 1 pour la stabilité sur les trois tiers.<br>' +
+      'Le taux de réussite n\'entre pas dans le calcul : seul, il ne dit rien de la rentabilité. ' +
+      'Une stratégie perdante plafonne à 2, un échantillon sous 10 trades à 3.<br>' +
       'Cliquez sur « Choisir » pour appliquer une combinaison et obtenir le détail complet.</div>';
 
     if(box) box.innerHTML = h;
