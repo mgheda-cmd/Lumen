@@ -25367,6 +25367,21 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }
 
   window.runBtApparie = async function(){
+    /* Une exception laissait le bouton inerte jusqu'au rechargement de la
+       page. Elle est désormais affichée, et le panneau reste utilisable. */
+    try{ return await window.__runBtInterne(); }
+    catch(err){
+      const b = document.getElementById('bta-res');
+      if(b) b.innerHTML = '<div style="padding:11px;border:1px solid #FF5252;border-radius:8px;' +
+        'background:rgba(239,68,68,.08);color:#FF5252;font-size:11.5px">Le calcul s\'est interrompu : ' +
+        ((err && err.message) ? err.message : String(err)) +
+        '<br><span style="color:#CBD5E1">Vous pouvez relancer sans recharger la page.</span></div>';
+      try{ if(typeof histBusy !== 'undefined') histBusy = false; }catch(e){}
+      return null;
+    }
+  };
+
+  window.__runBtInterne = async function(){
     const box = document.getElementById('bta-res');
     const info = document.getElementById('bta-charge');
 
