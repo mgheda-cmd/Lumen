@@ -12592,6 +12592,17 @@ function checkAutoTrade(inputSignals){
       })();
 
       if(modeSortie.indexOf('kk_') === 0){
+        /* Le bot lit les sorties de kk bis : l'indicateur doit être actif,
+           sinon getInd ne renvoie rien et seul le filet fonctionnerait.
+           Une configuration enregistrée dans le navigateur peut l'avoir
+           éteint, on le rallume donc au besoin. */
+        if(state.indicators.kk_bis && !state.indicators.kk_bis.on){
+          state.indicators.kk_bis.on = true;
+          delete state.cache['kk_bis'];
+          try{ if(typeof saveConfig === 'function') saveConfig(); }catch(e){}
+          try{ if(typeof syncMenu === 'function') syncMenu(); }catch(e){}
+          try{ toast('kk bis réactivé : le bot en a besoin pour ses sorties', '#00E5FF'); }catch(e){}
+        }
         const kb = getInd('kk_bis');
         let sorties = (kb && Array.isArray(kb.exits)) ? kb.exits : [];
         if(modeSortie === 'kk_div')   sorties = sorties.filter(x => x.div);
@@ -21864,7 +21875,15 @@ window.startLiveExchangeTrading = function() {
     long_only: '🟢 LONGs Uniquement',
     short_only: '🔴 SHORTs Uniquement'
   };
-  const botConfig = {
+    /* kk bis doit être actif si le mode de sortie en dépend. */
+  if(String(mode).indexOf('kk_') === 0 && state.indicators && state.indicators.kk_bis && !state.indicators.kk_bis.on){
+    state.indicators.kk_bis.on = true;
+    delete state.cache['kk_bis'];
+    try{ if(typeof saveConfig === 'function') saveConfig(); }catch(e){}
+    try{ if(typeof syncMenu === 'function') syncMenu(); }catch(e){}
+  }
+
+const botConfig = {
     active: true,
     exName,
     serviceUrl,
