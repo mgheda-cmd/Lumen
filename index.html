@@ -25259,6 +25259,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const sens   = document.getElementById('bta-sens').value;
     const dirF   = (document.getElementById('bta-dir') || {}).value || 'tout';
     const tpVal  = +((document.getElementById('bta-tp') || {}).value) || 0;
+    const rangS  = (document.getElementById('bta-rang') || {}).value || '1';
 
     const ents = entrees(mEnt);
     const sors = sorties(mSor);
@@ -25278,6 +25279,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     for(const en of ents){
       const dirFerme = en.dir;            // une entrée achat se ferme par une sortie achat
       let ex = null;
+      const cands = [];
       for(const s2 of sors){
         if(s2.i <= en.i) continue;
         if(utilisee.has(s2.i)) continue;
@@ -25288,10 +25290,24 @@ function updateActiveBacktestSignals(tradesList, stratName) {
           const u = (typeof zzUidFor === 'function') ? zzUidFor(s2.i, dS) : null;
           if(u == null || en.uid == null || u !== en.uid) continue;
         }
-        ex = s2; break;
+        cands.push(s2);
+        if(cands.length >= 3) break;
+      }
+      /* Rang de sortie demandé, ou fermeture par le signal Z.Z. opposé :
+         la position est alors close par l'entrée suivante de sens contraire,
+         ce qui correspond à la règle « on ne rouvre pas sans être sorti ». */
+      if(rangS === 'oppose'){
+        ex = null;
+        for(const e2 of ents){
+          if(e2.i <= en.i || e2.dir === en.dir) continue;
+          ex = { i:e2.i, price:e2.price, type:(en.dir === 1 ? 'SORTIE_ACHAT' : 'SORTIE_VENTE'), div:false, oppose:true };
+          break;
+        }
+      } else {
+        ex = cands[Math.min(+rangS, cands.length) - 1] || null;
       }
       if(!ex){ sansSortie.push(en); continue; }
-      utilisee.add(ex.i);
+      if(!ex.oppose) utilisee.add(ex.i);
 
       // sens réel : inversé si demandé
       let dir = en.dir;
@@ -25305,7 +25321,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const pe = +en.price;
       let ps = +ex.price;
       let iS = ex.i;
-      let motif = ex.div ? 'Divergence' : 'Seuil + pente';
+      let motif = ex.oppose ? 'Signal opposé' : (ex.div ? 'Divergence' : 'Seuil + pente');
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
 
       /* Objectif de gain : on parcourt les bougies entre l'entrée et la
@@ -25619,6 +25635,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix. 0 = pas d\'objectif, la sortie kk bis decide seule.">TP ($)<br><input id="bta-tp" type="number" value="0" step="10" style="' + sel + ';width:72px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Quand plusieurs sorties suivent une entree, laquelle retenir">Sortie retenue<br><select id="bta-rang" style="' + sel + '">' +
+        '<option value="1">La 1re qui suit</option>' +
+        '<option value="2">La 2e qui suit</option>' +
+        '<option value="3">La 3e qui suit</option>' +
+        '<option value="oppose">Signal Z.Z. opposé</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Taux taker MEXC : 0,016 % sur BTC, 0,008 % sur ETH. Appliqué à l\'entrée et à la sortie.">Frais % (taker)<br><input id="bta-frais" type="number" value="' + (window.fraisTakerDefaut ? window.fraisTakerDefaut() : '0.016') + '" step="0.001" style="' + sel + ';width:84px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
         '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
