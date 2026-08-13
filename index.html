@@ -25738,8 +25738,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const l = listeEnregistrees();
     const r = window.__btDernier;
     l.unshift({ nom: nom, cfg: lireConfig(),
-      resume: r ? (r.trades + ' trades · PF ' + (isFinite(r.pf) ? r.pf.toFixed(2) : '∞') +
-                   ' · ' + (r.pnl >= 0 ? '+' : '') + r.pnl.toFixed(2) + ' $') : 'sans résultat' });
+      resume: r ? (r.trades + ' trades · ' + r.wr.toFixed(1) + ' % réussite · PF ' +
+                   (isFinite(r.pf) ? r.pf.toFixed(2) : '∞') +
+                   ' · ' + (r.pnl >= 0 ? '+' : '') + r.pnl.toFixed(2) + ' $' +
+                   (r.conforme ? ' ✓' : '')) : 'sans résultat',
+      wr: r ? r.wr : null, pf: r ? r.pf : null, conforme: r ? r.conforme : false });
     ecrireListe(l);
     window.afficherConfigsBT();
   };
@@ -25778,7 +25781,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         h += '<div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,.6);border:1px solid #1E293B;border-radius:7px;padding:6px 9px">' +
           '<div style="flex:1;min-width:0">' +
           '<div style="font-size:11.5px;font-weight:700;color:#E2E8F0">' + x.nom + '</div>' +
-          '<div style="font-size:10px;color:#94A3B8;font-family:\'IBM Plex Mono\',monospace">' + (x.resume || '') + '</div></div>' +
+          '<div style="font-size:10px;font-family:\'IBM Plex Mono\',monospace;color:' +
+            (x.wr == null ? '#94A3B8' : (x.wr >= 55 ? '#10B981' : x.wr >= 45 ? '#F59E0B' : '#FF5252')) +
+            '">' + (x.resume || '') + '</div></div>' +
           '<button onclick="window.restaurerConfigBT(' + i + ')" style="background:rgba(16,185,129,.14);border:1px solid #10B981;color:#10B981;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Restaurer</button>' +
           '<button onclick="window.supprimerConfigBT(' + i + ')" style="background:transparent;border:1px solid #475569;color:#7E8CA8;border-radius:5px;padding:3px 8px;font-size:10.5px;cursor:pointer">✕</button></div>';
       });
