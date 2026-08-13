@@ -25621,7 +25621,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
        supérieur à 1, et tenue sur les trois tranches. */
     const conforme = (trades.length >= 30) && (pf >= 1) && stable && (pnl > 0);
     window.__btDernier = {
-      conforme: conforme, manques: [], trades: trades.length, pf: pf, pnl: pnl, dd: dd,
+      conforme: conforme, manques: [], trades: trades.length, pf: pf, pnl: pnl, dd: dd, tp: tpVal,
       wr: wr, dirF: dirF, sens: sens, mEnt: mEnt, mSor: mSor,
       marge: margeIn, unite: unite, lev: lev, tri: tri, stable: stable,
       jours: (d.length * state.tf / 1440)
@@ -26224,13 +26224,39 @@ window.envoyerVersMexc = function(){
       if(el && val != null && val !== ''){ el.value = val; mis.push(lib + ' : ' + val); }
     };
 
-    // direction : le module attend LONG, SHORT ou BOTH
+    /* Les valeurs doivent correspondre exactement aux options du module :
+       un select qui reçoit une valeur inconnue se vide silencieusement,
+       ce qui laissait les champs Direction et Budget blancs. */
     poser('live-ex-dir',
-      (r.dirF === 'long') ? 'LONG' : (r.dirF === 'short') ? 'SHORT' : 'BOTH',
+      (r.dirF === 'long') ? 'long_only' : (r.dirF === 'short') ? 'short_only' : 'both',
       'Direction');
-    poser('live-ex-lev', r.lev, 'Levier');
-    poser('live-ex-trade-budget', r.marge, 'Montant');
+    poser('live-ex-lev', String(r.lev), 'Levier');
     poser('live-ex-trade-unit', (r.unite === 'BASE') ? 'BTC' : 'USDT', 'Unité');
+
+    /* Le budget est une liste fermée. On y ajoute la valeur du backtest si
+       elle n'y figure pas, plutôt que de laisser le champ vide. */
+    const selB = document.getElementById('live-ex-trade-budget');
+    if(selB){
+      const val = String(r.marge);
+      const existe = Array.prototype.some.call(selB.options, function(o){ return o.value === val; });
+      if(!existe){
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val + ((r.unite === 'BASE') ? ' BTC' : ' USDT') + ' (backtest)';
+        selB.insertBefore(opt, selB.firstChild);
+      }
+      selB.value = val;
+      mis.push('Budget : ' + val + ((r.unite === 'BASE') ? ' BTC' : ' USDT'));
+    }
+
+    // objectif de gain, si le backtest en utilisait un
+    if(r.tp > 0){
+      const m = document.getElementById('live-ex-mode');
+      const cible = 'tp' + Math.round(r.tp);
+      if(m && Array.prototype.some.call(m.options, function(o){ return o.value === cible; })){
+        m.value = cible; mis.push('Mode : TP +' + r.tp);
+      }
+    }
 
     try{ if(typeof recalcLiveModalNotional === 'function') recalcLiveModalNotional(); }catch(e){}
     try{ if(typeof switchMexcTab === 'function') switchMexcTab('config'); }catch(e){}
