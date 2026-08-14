@@ -25647,7 +25647,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-2040';
+  window.__LUMEN_BUILD = 'B-1408-2125';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25818,7 +25818,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const utilisee = new Set();
     const mSortie = document.getElementById('bta-modeap')
                   ? document.getElementById('bta-modeap').value : 'chrono';
-    const exitOpp = (document.getElementById('bta-opp') || {}).value || 'sans_sortie';
+    /* Par défaut, la première des deux ferme : une entrée en sens opposé
+       clôt la position en cours même si une sortie kk bis est prévue plus
+       tard. Sans cela deux positions coexistent, et le moteur les calcule
+       chacune adossée au capital entier, ce qui masque le risque. */
+    const exitOpp = (document.getElementById('bta-opp') || {}).value || 'toujours';
 
     const trades = [];
     const sansSortie = [];
@@ -26484,10 +26488,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="tout">kk bis — toutes</option>' +
         '<option value="div">Divergences seules</option>' +
         '<option value="seuil">Seuil + pente seul</option></select></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="Fermer le trade lors de l\'apparition d\'une entrée en sens opposé">Sortie entrée opposée<br><select id="bta-opp" style="' + sel + '">' +
-        '<option value="sans_sortie" selected>Oui (si pas de sortie kk bis)</option>' +
-        '<option value="toujours">Oui (si plus tôt ou si pas de sortie)</option>' +
-        '<option value="non">Non (garder sans sortie)</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Une entrée en sens opposé ferme-t-elle la position en cours ? Dès qu\'elle arrive : la première des deux, sortie kk bis ou signal opposé, ferme le trade, donc une seule position à la fois. Seulement si aucune sortie kk bis : le signal opposé ne sert que de secours, ce qui laisse des positions se chevaucher.">Sortie entrée opposée<br><select id="bta-opp" style="' + sel + '">' +
+        '<option value="toujours" selected>Dès qu\'elle arrive — la 1re des deux ferme</option>' +
+        '<option value="sans_sortie">Seulement si aucune sortie kk bis</option>' +
+        '<option value="non">Jamais — attendre kk bis uniquement</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="En USDT : marge engagée. En actif : taille de position, comme sur MEXC">Montant<br><input id="bta-marge" type="number" value="0.02" step="any" style="' + sel + ';width:88px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
