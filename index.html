@@ -25647,7 +25647,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-2125';
+  window.__LUMEN_BUILD = 'B-1408-2210';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -26557,8 +26557,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     imp:      ['period','sig','tf'],
     macdsr:   ['fast','slow','sig','tf']
   };
+  /* Tout champ du panneau qui pèse sur le résultat doit figurer ici, sinon
+     il n'est ni enregistré ni restauré et le bouton semble sans effet.
+     À compléter dès qu'un réglage est ajouté au panneau. */
   const CHAMPS_BT = ['bta-ent','bta-sens','bta-dir','bta-modeap','bta-sor','bta-rang',
-                     'bta-marge','bta-unite','bta-lev','bta-tp','bta-frais','bta-jours'];
+                     'bta-marge','bta-unite','bta-lev','bta-tp','bta-frais','bta-jours',
+                     'bta-capital','bta-mmode','bta-mpct','bta-mbonus','bta-opp'];
 
   function lireConfig(){
     const c = { indicateurs:{}, backtest:{}, tf: state.tf, symbole: state.symbol,
@@ -26581,10 +26585,28 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       if(!state.indicators[k]) state.indicators[k] = {};
       Object.assign(state.indicators[k], c.indicateurs[k]);
     }
+    /* Une configuration enregistrée avant l'ajout d'un réglage ne le
+       contient pas. Plutôt que de laisser à l'écran la valeur en cours —
+       qui n'a rien à voir avec la configuration restaurée — on remet le
+       réglage manquant à son défaut, et on le signale. */
+    const DEFAUTS_BT = { 'bta-capital':'100', 'bta-mmode':'croise', 'bta-mpct':'50',
+                         'bta-mbonus':'20', 'bta-opp':'toujours' };
+    const absents = [];
     for(const id in (c.backtest || {})){
       const el = document.getElementById(id);
       if(el) el.value = c.backtest[id];
     }
+    for(const id in DEFAUTS_BT){
+      if((c.backtest || {})[id] === undefined){
+        const el = document.getElementById(id);
+        if(el && el.value !== DEFAUTS_BT[id]){ el.value = DEFAUTS_BT[id]; absents.push(id); }
+      }
+    }
+    if(absents.length && typeof toast === 'function'){
+      toast('\u26A0 Cette configuration est antérieure à ' + absents.length +
+            ' réglage(s) : remis à leur valeur par défaut.', '#FF9F1C');
+    }
+    if(window.majModeMargeBT) window.majModeMargeBT();
     state.cache = {};
     if(typeof saveConfig === 'function') saveConfig();
     if(typeof syncMenu === 'function') syncMenu();
