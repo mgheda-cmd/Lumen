@@ -1644,7 +1644,7 @@ footer{
 
         <label style="font-size:11px;color:#CBD5E1;font-weight:bold">3. 5. Jeton d'Accès Lumen ('X-Lumen-Token')
           <div style="position:relative;margin-top:4px;display:flex;align-items:center">
-            <input type="text" id="live-ex-token" placeholder="med1071038842Med" value="med1071038842Med" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent,#00E5FF);border-radius:6px;color:#00E5FF;padding:9px 80px 9px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:bold" oninput="this.value=this.value.replace(/^['&quot;]|['&quot;]$/g,'')" onblur="this.value=this.value.trim().replace(/^['&quot;]|['&quot;]$/g,'')">
+            <input type="text" id="live-ex-token" placeholder="votre jeton X-Lumen-Token" value="" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--accent,#00E5FF);border-radius:6px;color:#00E5FF;padding:9px 80px 9px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:bold" oninput="this.value=this.value.replace(/^['&quot;]|['&quot;]$/g,'')" onblur="this.value=this.value.trim().replace(/^['&quot;]|['&quot;]$/g,'')">
             <button type="button" onclick="toggleTokenVisibility()" id="live-ex-token-toggle" style="position:absolute;right:6px;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.4);border-radius:4px;color:#00E5FF;cursor:pointer;font-size:11px;padding:4px 8px;font-weight:bold" title="Masquer / Afficher">👁️ <span id="live-ex-token-toggle-label">Clair</span></button>
           </div>
         </label>
@@ -21093,6 +21093,53 @@ window.selectZZBtLev = function(l) {
 };
 
 /* ===== GESTION ONGLET & HUBS MEXC DIRECT ===== */
+window.calcMexcVolSync = function(rawBudget, unit, px, lev, contractSize) {
+  rawBudget = Number(rawBudget || 0);
+  lev = Number(lev || 1);
+  px = Number(px || 1);
+  contractSize = Number(contractSize || 0.0001);
+
+  let calcVol = 1;
+  let notionalUsdt = 0;
+  let marginUsdt = 0;
+  let sizeBtc = 0;
+
+  if (unit === 'BTC') {
+    // Si l'unité est BTC : rawBudget représente la TAILLE DE POSITION EN BTC (Size in BTC)
+    // Exemple : rawBudget = 0.02 BTC -> vol = 0.02 / 0.0001 = 200 contrats (Exemple du screenshot MEXC)
+    // Exemple : rawBudget = 0.0005 BTC -> vol = 0.0005 / 0.0001 = 5 contrats
+    sizeBtc = rawBudget;
+    calcVol = Math.max(1, Math.round(sizeBtc / contractSize));
+    const actualSizeBtc = calcVol * contractSize;
+    notionalUsdt = actualSizeBtc * px;
+    marginUsdt = lev > 0 ? (notionalUsdt / lev) : notionalUsdt;
+  } else {
+    // Si l'unité est USDT : rawBudget représente la MARGE EN USDT (Capital engagé)
+    // Exemple : rawBudget = 10 USDT, lev = 200x -> Notionnel = 2000 USDT
+    marginUsdt = rawBudget;
+    const targetNotional = marginUsdt * lev;
+    calcVol = Math.max(1, Math.round(targetNotional / (px * contractSize)));
+    const actualSizeBtc = calcVol * contractSize;
+    notionalUsdt = actualSizeBtc * px;
+    sizeBtc = actualSizeBtc;
+  }
+
+  return {
+    vol: calcVol,
+    notionalUsdt: notionalUsdt,
+    marginUsdt: marginUsdt,
+    sizeBtc: sizeBtc,
+    contractSize: contractSize,
+    px: px,
+    lev: lev
+  };
+};
+
+window.calcMexcVol = async function(symbol, rawBudget, unit, px, lev) {
+  const cs = (await window.getContractSize(symbol)) || 0.0001;
+  return window.calcMexcVolSync(rawBudget, unit, px, lev, cs);
+};
+
 window.onMexcManualUnitChange = function() {
   const unit = document.getElementById('mexc-trade-unit')?.value || 'USDT';
   const labelEl = document.getElementById('mexc-unit-display-label');
@@ -21104,10 +21151,10 @@ window.onMexcManualUnitChange = function() {
     if (presetsContainer) {
       presetsContainer.innerHTML = `
         <button type="button" onclick="setMexcBudget(0.0001)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.0001₿</button>
-        <button type="button" onclick="setMexcBudget(0.0002)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.0002₿</button>
         <button type="button" onclick="setMexcBudget(0.0005)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.0005₿</button>
         <button type="button" onclick="setMexcBudget(0.001)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.001₿</button>
-        <button type="button" onclick="setMexcBudget(0.005)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.005₿</button>
+        <button type="button" onclick="setMexcBudget(0.01)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.01₿</button>
+        <button type="button" onclick="setMexcBudget(0.02)" style="background:rgba(245,158,11,0.15);border:1px solid #F59E0B;color:#F59E0B;padding:6px 8px;border-radius:6px;font-weight:bold;font-size:11px;cursor:pointer">0.02₿</button>
       `;
     }
   } else {
@@ -21130,12 +21177,14 @@ window.onLiveTradeUnitChange = function() {
   if (!budgetSelect) return;
   if (unit === 'BTC') {
     budgetSelect.innerHTML = `
-      <option value="0.0001">₿ 0.0001 BTC</option>
-      <option value="0.0002">₿ 0.0002 BTC</option>
-      <option value="0.0005" selected>₿ 0.0005 BTC</option>
-      <option value="0.001">₿ 0.001 BTC</option>
-      <option value="0.005">₿ 0.005 BTC</option>
-      <option value="0.01">₿ 0.01 BTC</option>
+      <option value="0.0001">₿ 0.0001 BTC (1 contrat)</option>
+      <option value="0.0005" selected>₿ 0.0005 BTC (5 contrats)</option>
+      <option value="0.001">₿ 0.001 BTC (10 contrats)</option>
+      <option value="0.005">₿ 0.005 BTC (50 contrats)</option>
+      <option value="0.01">₿ 0.01 BTC (100 contrats)</option>
+      <option value="0.02">₿ 0.02 BTC (200 contrats)</option>
+      <option value="0.05">₿ 0.05 BTC (500 contrats)</option>
+      <option value="0.1">₿ 0.1 BTC (1000 contrats)</option>
     `;
   } else {
     budgetSelect.innerHTML = `
@@ -21208,24 +21257,7 @@ window.updateMexcTradeCalc = async function() {
 
   const currentPx = livePrice(symbol) || 65000;
   const contractSize = (await window.getContractSize(symbol)) || 0.0001;
-
-  /* En BTC, le montant saisi est la TAILLE de position, comme sur MEXC :
-     0,02 BTC à 63 500 fait 1270 USDT de notionnel et 6,35 USDT de marge à
-     200x. L'ancien calcul le traitait comme une marge puis le multipliait
-     par le levier, soit un notionnel 200 fois trop grand — d'où le rejet
-     de l'ordre par MEXC. En USDT, le montant reste la marge. */
-  let targetNotional, marginUsdt;
-  if (unit === 'BTC') {
-    targetNotional = rawBudget * currentPx;
-    marginUsdt = targetNotional / lev;
-  } else {
-    marginUsdt = rawBudget;
-    targetNotional = marginUsdt * lev;
-  }
-  const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
-  const estNotional = calcVol * contractSize * currentPx;
-  const estMarginUsdt = lev > 0 ? estNotional / lev : estNotional;
-  const estMarginBtc = currentPx > 0 ? estMarginUsdt / currentPx : 0;
+  const calc = window.calcMexcVolSync(rawBudget, unit, currentPx, lev, contractSize);
 
   const isLong = (side === '1');
   const sideColor = isLong ? '#10B981' : '#EF4444';
@@ -21236,12 +21268,12 @@ window.updateMexcTradeCalc = async function() {
       Aperçu de l'Ordre : <span style="color:#FFF">${symbol}</span> — ${sideName}
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
-      <div>• Marge Demandée : <b style="color:#38BDF8">${rawBudget} ${unit}</b> ${unit === 'BTC' ? `<span style="color:#A78BFA">(≈ $${marginUsdt.toFixed(2)} USDT)</span>` : `<span style="color:#A78BFA">(≈ ${currentPx > 0 ? (rawBudget / currentPx).toFixed(6) : 0} BTC)</span>`}</div>
+      <div>• Taille de Trade : <b style="color:#38BDF8">${rawBudget} ${unit}</b> ${unit === 'BTC' ? `<span style="color:#A78BFA">(Size BTC)</span>` : `<span style="color:#A78BFA">(Marge USDT)</span>`}</div>
       <div>• Levier Appliqué : <b style="color:#FFD700">${lev}x</b></div>
+      <div>• Marge Estimée : <b style="color:#38BDF8">$${calc.marginUsdt.toFixed(2)} USDT</b></div>
       <div>• Prix Estimé : <b style="color:#FFF">$${currentPx.toFixed(2)}</b></div>
-      <div>• Taille Contrat : <b style="color:#FFF">${contractSize}</b></div>
-      <div>• Volume à Commander : <b style="color:#00E5FF;font-size:12.5px">${calcVol} contrat(s)</b></div>
-      <div>• Notionnel Total : <b style="color:#10B981">$${estNotional.toFixed(2)} USDT</b> (≈ ${estMarginBtc.toFixed(6)} BTC)</div>
+      <div>• Volume à Commander : <b style="color:#00E5FF;font-size:12.5px">${calc.vol} contrat(s) (${calc.sizeBtc.toFixed(4)} BTC)</b></div>
+      <div>• Notionnel Total (Position) : <b style="color:#10B981">$${calc.notionalUsdt.toFixed(2)} USDT</b></div>
     </div>
   `;
 };
@@ -21255,52 +21287,29 @@ window.submitMexcManualTrade = async function() {
   const unit = document.getElementById('mexc-trade-unit')?.value || 'USDT';
   const rawBudget = Number(document.getElementById('mexc-trade-budget')?.value || (unit === 'BTC' ? 0.0005 : 10));
   const resEl = document.getElementById('mexc-manual-trade-result');
-  const currentPx = (type === 1 && priceInput) ? Number(priceInput) : (livePrice(symbol) || 0);
+  const currentPx = (type === 1 && priceInput) ? Number(priceInput) : (livePrice(symbol) || (state.data && state.data.length ? state.data[state.data.length - 1].c : 0) || 65000);
 
   if (!currentPx) {
-    toast('❌ Prix du marché indisponible. Vérifiez que le graphique affiche bien ce symbole.', '#FF5252');
+    toast('❌ Prix du marché non disponible pour le symbole choisi.', '#FF5252');
     return;
   }
-  const contractSize = await window.getContractSize(symbol);
-  if (!contractSize) {
-    toast(`❌ Taille de contrat introuvable pour ${symbol}`, '#FF5252');
-    return;
-  }
-  const marginUsdt = unit === 'BTC' ? (rawBudget * currentPx) : rawBudget;
-  const targetNotional = marginUsdt * lev;
-  const calcVol = Math.max(1, Math.round(targetNotional / (currentPx * contractSize)));
+  const calc = await window.calcMexcVol(symbol, rawBudget, unit, currentPx, lev);
   const actionTxt = side === 1 ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
 
-  /* MEXC refuse les ordres trop petits. Plutôt qu'un rejet obscur côté
-     serveur, on prévient ici avec le montant qui manque. */
-  const MIN_NOTIONNEL = 5;      // USDT, seuil observé sur les contrats BTC
-  if (targetNotional < MIN_NOTIONNEL) {
-    toast('❌ Ordre trop petit : notionnel de ' + targetNotional.toFixed(2) +
-          ' USDT, minimum ' + MIN_NOTIONNEL + ' USDT. Augmentez la taille.', '#FF5252');
-    if (resEl) {
-      resEl.style.display = 'block';
-      resEl.style.background = 'rgba(245,158,11,0.12)';
-      resEl.style.border = '1px solid #F59E0B';
-      resEl.style.color = '#FCD34D';
-      resEl.innerHTML = '⚠️ <b>Ordre trop petit.</b><br>Notionnel demandé : ' +
-        targetNotional.toFixed(2) + ' USDT (' + calcVol + ' contrat(s)).<br>' +
-        'MEXC exige au moins ' + MIN_NOTIONNEL + ' USDT de notionnel.<br>' +
-        'Avec un prix de ' + currentPx.toFixed(0) + ' $, il faut au minimum ' +
-        (MIN_NOTIONNEL / currentPx).toFixed(5) + ' BTC de taille.';
-    }
-    return;
-  }
+  const msgConfirm =
+    `\u{1F680} CONFIRMER L'ENVOI DE L'ORDRE R\u00c9EL SUR MEXC FUTURES ?\n\n` +
+    `\u2022 Paire : ${symbol}\n` +
+    `\u2022 Sens : ${actionTxt}\n` +
+    `\u2022 Taille de Trade : ${rawBudget} ${unit}\n` +
+    `\u2022 Marge Engag\u00e9e : $${calc.marginUsdt.toFixed(2)} USDT\n` +
+    `\u2022 Notionnel : $${calc.notionalUsdt.toFixed(2)} USDT\n` +
+    `\u2022 Levier : ${lev}x\n` +
+    `\u2022 Volume Calcul\u00e9 : ${calc.vol} contrat(s)\n` +
+    `\u2022 Prix Estim\u00e9 : $${currentPx.toFixed(2)}\n\n` +
+    `Souhaitez-vous envoyer cet ordre directement sur votre compte MEXC ?`;
 
-  if (!confirm(`🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?
+  if (!confirm(msgConfirm)) { toast('Ordre annul\u00e9.', '#94A3B8'); return; }
 
-• Action : ${actionTxt}
-• Symbole : ${symbol}
-• Levier : ${lev}x
-• Marge Engagée : ${rawBudget} ${unit} (≈ $${marginUsdt.toFixed(2)} USDT)
-• Volume : ${calcVol} contrat(s)
-• Prix : $${currentPx.toFixed(2)}`)) {
-    return;
-  }
   if (resEl) {
     resEl.style.display = 'block';
     resEl.style.background = 'rgba(255,215,0,0.12)';
@@ -21308,30 +21317,44 @@ window.submitMexcManualTrade = async function() {
     resEl.style.color = '#FFD700';
     resEl.innerHTML = '⏳ Transmission de l\'ordre manuel à MEXC Futures...';
   }
-  const res = await window.sendRealMexcFuturesOrder({
-    symbol,
-    side,
-    type,
-    price: currentPx,
-    vol: calcVol,
-    leverage: lev,
-    tradeBudget: marginUsdt,
-    tradeBudgetVal: rawBudget,
-    tradeUnit: unit,
-    openType: 1
-  });
-  if (resEl) {
-    if (res && res.success) {
-      resEl.style.background = 'rgba(16,185,129,0.15)';
-      resEl.style.border = '1px solid #10B981';
-      resEl.style.color = '#10B981';
-      resEl.innerHTML = `✅ <b>ORDRE RÉEL EXÉCUTÉ SUR MEXC FUTURES !</b><br>Symbole: ${symbol} | Side: ${actionTxt} | Marge: ${rawBudget} ${unit} | Contrats: ${calcVol} | Levier: ${lev}x`;
-      fetchMexcAccountAndPositions();
-    } else {
+  try {
+    const res = await window.sendRealMexcFuturesOrder({
+      symbol,
+      side,
+      type,
+      price: currentPx,
+      vol: calc.vol,
+      leverage: lev,
+      tradeBudget: calc.marginUsdt,
+      tradeBudgetVal: rawBudget,
+      tradeUnit: unit,
+      openType: 1
+    });
+    if (resEl) {
+      if (res && res.success) {
+        resEl.style.background = 'rgba(16,185,129,0.15)';
+        resEl.style.border = '1px solid #10B981';
+        resEl.style.color = '#10B981';
+        resEl.innerHTML = `✅ <b>ORDRE RÉEL EXÉCUTÉ SUR MEXC FUTURES !</b><br>Symbole: ${symbol} | Side: ${actionTxt} | Taille: ${rawBudget} ${unit} | Contrats: ${calc.vol} (${calc.sizeBtc.toFixed(4)} BTC) | Marge: $${calc.marginUsdt.toFixed(2)} USDT | Levier: ${lev}x`;
+        if (typeof window.fetchMexcAccountAndPositions === 'function') window.fetchMexcAccountAndPositions();
+      } else {
+        resEl.style.background = 'rgba(239,68,68,0.15)';
+        resEl.style.border = '1px solid #FF5252';
+        resEl.style.color = '#FF5252';
+        let errText = res.error || 'Erreur inconnue';
+        if (errText.includes('Clés API MEXC manquantes') || errText.includes('API Key')) {
+          errText += `<br><button onclick="switchMexcTab('config')" style="margin-top:8px;background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:bold;cursor:pointer">🔑 Saisir vos clés API MEXC dans l'onglet Clés & API</button>`;
+        }
+        resEl.innerHTML = `❌ <b>REJET MEXC :</b> ${errText}`;
+      }
+    }
+  } catch (err) {
+    if (resEl) {
+      resEl.style.display = 'block';
       resEl.style.background = 'rgba(239,68,68,0.15)';
       resEl.style.border = '1px solid #FF5252';
       resEl.style.color = '#FF5252';
-      resEl.innerHTML = `❌ <b>REJET MEXC :</b> ${res.error || 'Erreur inconnue'}`;
+      resEl.innerHTML = `❌ <b>ERREUR D'EXÉCUTION :</b> ${err.message || String(err)}`;
     }
   }
 };
@@ -21340,9 +21363,9 @@ window.fetchMexcAccountAndPositions = async function() {
   const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
   const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
   const inputUrl = document.getElementById('live-ex-serviceurl')?.value?.trim();
-  const serviceUrl = inputUrl || serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
+  const serviceUrl = inputUrl || serviceConfig.serviceUrl || botConfig.serviceUrl || 'https://mexc-signer.vercel.app/api/mexc';
   const inputToken = document.getElementById('live-ex-token')?.value?.trim()?.replace(/^['"]|['"]$/g, '');
-  const lumenToken = inputToken !== undefined && inputToken !== '' ? inputToken : (serviceConfig.lumenToken || botConfig.lumenToken || '');
+  const lumenToken = (inputToken || serviceConfig.lumenToken || botConfig.lumenToken || '').trim();
   const apiKey = (document.getElementById('live-ex-apikey')?.value || serviceConfig.apiKey || botConfig.apiKey || '').trim();
   const apiSecret = (document.getElementById('live-ex-apisecret')?.value || serviceConfig.apiSecret || botConfig.apiSecret || '').trim();
 
@@ -21360,16 +21383,24 @@ window.fetchMexcAccountAndPositions = async function() {
   if (posContainer) posContainer.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px;text-align:center">⏳ Chargement des positions ouvertes...</div>';
 
   try {
+    const futuresBody = { endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} };
+    if (apiKey) futuresBody.apiKey = apiKey;
+    if (apiSecret) futuresBody.apiSecret = apiSecret;
+
     const futuresPromise = fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ apiKey, apiSecret, endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
+      body: JSON.stringify(futuresBody)
     }).then(r => r.json()).catch(err => ({ success: false, error: err.message }));
+
+    const spotBody = { endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} };
+    if (apiKey) spotBody.apiKey = apiKey;
+    if (apiSecret) spotBody.apiSecret = apiSecret;
 
     const spotPromise = fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ apiKey, apiSecret, endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
+      body: JSON.stringify(spotBody)
     }).then(r => r.json()).catch(err => ({ success: false, error: err.message }));
 
     const posPromise = window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken, apiKey, apiSecret);
@@ -21502,7 +21533,6 @@ window.fetchMexcAccountAndPositions = async function() {
 };
 
 window.closeMexcPosition = async function(symbol, sideStr, vol) {
-  if (!confirm(`Fermer la position ${sideStr.toUpperCase()} sur ${symbol} (${vol} contrats) au marché ?`)) return;
   const isLong = (sideStr === 'long');
   const closeSide = isLong ? 2 : 4; // 2 = Close Long, 4 = Close Short
   toast(`⏳ Clôture de la position ${symbol}...`, '#00E5FF');
@@ -21525,7 +21555,7 @@ window.closeAllMexcPositions = async function() {
   const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
   const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
   const inputUrl = document.getElementById('live-ex-serviceurl')?.value?.trim();
-  const serviceUrl = inputUrl || serviceConfig.serviceUrl || botConfig.serviceUrl || '/api/mexc/signed';
+  const serviceUrl = inputUrl || serviceConfig.serviceUrl || botConfig.serviceUrl || 'https://mexc-signer.vercel.app/api/mexc';
   const inputToken = document.getElementById('live-ex-token')?.value?.trim()?.replace(/^['"]|['"]$/g, '');
   const lumenToken = inputToken !== undefined && inputToken !== '' ? inputToken : (serviceConfig.lumenToken || botConfig.lumenToken || '');
 
@@ -21536,8 +21566,6 @@ window.closeAllMexcPositions = async function() {
     toast('ℹ️ Aucune position ouverte à clôturer.', '#38BDF8');
     return;
   }
-
-  if (!confirm(`Fermer TOUTES les ${posData.length} position(s) ouverte(s) sur MEXC Futures au marché ?`)) return;
 
   toast(`⏳ Clôture de ${posData.length} position(s)...`, '#00E5FF');
   let successCount = 0;
@@ -21621,12 +21649,9 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.exName && document.getElementById('live-ex-name')) document.getElementById('live-ex-name').value = parsed.exName;
-      if (parsed.serviceUrl && document.getElementById('live-ex-serviceurl')) {
-        if (!parsed.serviceUrl.includes('votre-mexc-signer')) {
-          document.getElementById('live-ex-serviceurl').value = parsed.serviceUrl;
-        } else {
-          document.getElementById('live-ex-serviceurl').value = 'https://mexc-signer.vercel.app/api/mexc';
-        }
+      if (document.getElementById('live-ex-serviceurl')) {
+        const savedUrl = (parsed?.serviceUrl || '').trim();
+        document.getElementById('live-ex-serviceurl').value = savedUrl || 'https://mexc-signer.vercel.app/api/mexc';
       }
       if (parsed.lumenToken && document.getElementById('live-ex-token')) document.getElementById('live-ex-token').value = parsed.lumenToken;
       if (parsed.apiKey && document.getElementById('live-ex-apikey')) document.getElementById('live-ex-apikey').value = parsed.apiKey;
@@ -21682,16 +21707,16 @@ window.recalcLiveModalNotional = function() {
 
   const sym = state.symbol || 'BTC_USDT';
   const px = livePrice(sym) || 65000;
-  const budgetUsdt = unit === 'BTC' ? (rawBudget * px) : rawBudget;
+  const cs = (clientContractSizeCache.get(sym)) || 0.0001;
+  const calc = window.calcMexcVolSync(rawBudget, unit, px, lev, cs);
 
-  const notional = Math.round(budgetUsdt * lev);
   const calcContent = document.getElementById('live-calc-content');
   const calcBadge = document.getElementById('live-calc-badge');
   const calcBox = document.getElementById('live-ex-calc-box');
 
   if (!calcContent) return;
 
-  const isBlocked = (maxUsdt < notional);
+  const isBlocked = (maxUsdt < calc.marginUsdt);
 
   if (isBlocked) {
     if (calcBox) {
@@ -21701,13 +21726,13 @@ window.recalcLiveModalNotional = function() {
     if (calcBadge) {
       calcBadge.style.background = '#FF5252';
       calcBadge.style.color = '#FFFFFF';
-      calcBadge.textContent = '⛔ BLOQUÉ - SÉCURITÉ PLAFOND';
+      calcBadge.textContent = '⛔ BLOQUÉ - SÉCURITÉ PLAFOND MARGE';
     }
     calcContent.innerHTML = `
-      <b style="color:#FF5252">⚠️ ORDRE INVALIDE : La position virtuelle ($${notional.toLocaleString()} USDT) dépasse votre Plafond Max (${maxUsdt} USDT).</b><br>
-      • Budget Marge : <b>${rawBudget} ${unit}</b> ${unit === 'BTC' ? `(≈ $${budgetUsdt.toFixed(2)} USDT)` : ''}<br>
-      • Levier : <b>${lev}x</b><br>
-      👉 <i>Augmentez votre Plafond Max Notionnel ou réduisez votre Budget par Trade.</i>
+      <b style="color:#FF5252">⚠️ ORDRE INVALIDE : La marge requise ($${calc.marginUsdt.toFixed(2)} USDT) dépasse votre Plafond Marge Max (${maxUsdt} USDT).</b><br>
+      • Taille de Trade : <b>${rawBudget} ${unit}</b> ${unit === 'BTC' ? `(Size BTC: ${calc.sizeBtc.toFixed(4)} BTC)` : `(Marge USDT: $${calc.marginUsdt.toFixed(2)} USDT)`}<br>
+      • Levier : <b>${lev}x</b> | Volume: <b>${calc.vol} contrats</b><br>
+      👉 <i>Augmentez votre Plafond Marge ou réduisez votre Taille de Trade.</i>
     `;
   } else {
     if (calcBox) {
@@ -21719,11 +21744,10 @@ window.recalcLiveModalNotional = function() {
       calcBadge.style.color = '#FFFFFF';
       calcBadge.textContent = '✅ SIMULATION CONFORME AUX SÉCURITÉS';
     }
-    const btcEquiv = px > 0 ? (budgetUsdt / px).toFixed(6) : '0';
     calcContent.innerHTML = `
-      • Budget Marge par Trade : <b style="color:#38BDF8">${rawBudget} ${unit}</b> ${unit === 'BTC' ? `<span style="color:#A78BFA">(≈ $${budgetUsdt.toFixed(2)} USDT)</span>` : `<span style="color:#A78BFA">(≈ ${btcEquiv} BTC)</span>`}<br>
-      • Levier Sélectionné : <b style="color:#FFD700">${lev}x</b><br>
-      • Notionnel Total de la Position : <b style="color:#10B981">$${notional.toLocaleString()} USDT</b> (Inférieur au Plafond de ${maxUsdt} USDT)
+      • Taille de Trade : <b style="color:#38BDF8">${rawBudget} ${unit}</b> ${unit === 'BTC' ? `<span style="color:#A78BFA">(Taille Position: ${calc.sizeBtc.toFixed(4)} BTC)</span>` : `<span style="color:#A78BFA">(Marge Engagée: $${calc.marginUsdt.toFixed(2)} USDT)</span>`}<br>
+      • Levier Sélectionné : <b style="color:#FFD700">${lev}x</b> | Marge Estimée : <b style="color:#38BDF8">$${calc.marginUsdt.toFixed(2)} USDT</b> (Plafond Max: ${maxUsdt} USDT)<br>
+      • Volume : <b style="color:#00E5FF">${calc.vol} contrat(s)</b> | Notionnel Total Position : <b style="color:#10B981">$${calc.notionalUsdt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USDT</b>
     `;
   }
 };
@@ -21750,9 +21774,9 @@ window.closeLiveExchangeModal = function() {
 
 window.testLiveExchangeConnection = async function() {
   const exName = document.getElementById('live-ex-name')?.value || 'MEXC';
-  const serviceUrl = (document.getElementById('live-ex-serviceurl')?.value || '').trim();
+  const serviceUrl = (document.getElementById('live-ex-serviceurl')?.value || 'https://mexc-signer.vercel.app/api/mexc').trim();
   const rawToken = (document.getElementById('live-ex-token')?.value || '').trim();
-  const lumenToken = rawToken.replace(/^['"]|['"]$/g, '');
+  const lumenToken = (rawToken || '').replace(/^['"]|['"]$/g, '');
   const resEl = document.getElementById('live-ex-test-result');
 
   if (!serviceUrl) {
@@ -21769,7 +21793,7 @@ window.testLiveExchangeConnection = async function() {
   const apiKey = (document.getElementById('live-ex-apikey')?.value || '').trim();
   const apiSecret = (document.getElementById('live-ex-apisecret')?.value || '').trim();
   try {
-    localStorage.setItem('lumen_live_exchange_config', JSON.stringify({ exName, serviceUrl, lumenToken, apiKey, apiSecret }));
+    localStorage.setItem('lumen_live_exchange_config', JSON.stringify({ exName, serviceUrl, lumenToken }));
   } catch(e){}
 
   if (resEl) {
@@ -21781,17 +21805,25 @@ window.testLiveExchangeConnection = async function() {
   }
 
   try {
+    const futuresBody = { endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} };
+    if (apiKey) futuresBody.apiKey = apiKey;
+    if (apiSecret) futuresBody.apiSecret = apiSecret;
+
     const futuresResp = await fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ apiKey, apiSecret, endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
+      body: JSON.stringify(futuresBody)
     });
     const futuresRes = await futuresResp.json();
+
+    const spotBody = { endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} };
+    if (apiKey) spotBody.apiKey = apiKey;
+    if (apiSecret) spotBody.apiSecret = apiSecret;
 
     const spotResp = await fetch(serviceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': lumenToken },
-      body: JSON.stringify({ apiKey, apiSecret, endpoint: '/api/v3/account', method: 'GET', isFutures: false, params: {} })
+      body: JSON.stringify(spotBody)
     });
     const spotRes = await spotResp.json();
 
@@ -21904,15 +21936,7 @@ window.startLiveExchangeTrading = function() {
     long_only: '🟢 LONGs Uniquement',
     short_only: '🔴 SHORTs Uniquement'
   };
-    /* kk bis doit être actif si le mode de sortie en dépend. */
-  if(String(mode).indexOf('kk_') === 0 && state.indicators && state.indicators.kk_bis && !state.indicators.kk_bis.on){
-    state.indicators.kk_bis.on = true;
-    delete state.cache['kk_bis'];
-    try{ if(typeof saveConfig === 'function') saveConfig(); }catch(e){}
-    try{ if(typeof syncMenu === 'function') syncMenu(); }catch(e){}
-  }
-
-const botConfig = {
+  const botConfig = {
     active: true,
     exName,
     serviceUrl,
@@ -22126,22 +22150,25 @@ window.getRealMexcFuturesOpenPositions = async function(serviceUrl, lumenToken, 
   if (!serviceUrl) return [];
   try {
     const cfg = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+    const token = lumenToken || cfg.lumenToken || document.getElementById('live-ex-token')?.value || '';
     const key = apiKey || cfg.apiKey || document.getElementById('live-ex-apikey')?.value || '';
     const sec = apiSecret || cfg.apiSecret || document.getElementById('live-ex-apisecret')?.value || '';
+    const bodyObj = {
+      endpoint: '/api/v1/private/position/open_positions',
+      method: 'GET',
+      isFutures: true,
+      params: {}
+    };
+    if (key) bodyObj.apiKey = key;
+    if (sec) bodyObj.apiSecret = sec;
+
     const resp = await fetch(serviceUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Lumen-Token': lumenToken || ''
+        'X-Lumen-Token': token
       },
-      body: JSON.stringify({
-        apiKey: key,
-        apiSecret: sec,
-        endpoint: '/api/v1/private/position/open_positions',
-        method: 'GET',
-        isFutures: true,
-        params: {}
-      })
+      body: JSON.stringify(bodyObj)
     });
     const res = await resp.json();
     if (res) {
@@ -22161,7 +22188,7 @@ window.getRealMexcFuturesOpenPositions = async function(serviceUrl, lumenToken, 
 const clientContractSizeCache = new Map();
 
 window.getContractSize = async function(symbol) {
-  if (!symbol) return null;
+  if (!symbol) return 0.0001;
   let sym = String(symbol).replace('/', '').replace('-', '').toUpperCase();
   if (sym.endsWith('USDT') && !sym.includes('_')) {
     sym = sym.replace('USDT', '_USDT');
@@ -22169,46 +22196,68 @@ window.getContractSize = async function(symbol) {
   if (clientContractSizeCache.has(sym)) {
     return clientContractSizeCache.get(sym);
   }
-  /* L'appel direct à contract.mexc.com est bloqué par la politique CORS du
-     navigateur : la promesse ne se résolvait jamais et le bouton d'envoi
-     restait figé. On passe par le microservice de signature, qui n'a pas
-     cette contrainte, avec un délai maximal et un repli connu. */
-  const REPLI = { 'BTC_USDT': 0.0001, 'ETH_USDT': 0.01 };
 
-  const avecDelai = function(p, ms){
-    return Promise.race([p, new Promise(function(_, rej){
-      setTimeout(function(){ rej(new Error('délai dépassé')); }, ms);
-    })]);
-  };
-
+  // 1. Tenter la récupération via le microservice de signature / API backend Express (timeout 8s)
   try {
-    const cfg = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
-    const url = (document.getElementById('live-ex-serviceurl') || {}).value || cfg.serviceUrl || '';
-    if (url) {
-      const jeton = (document.getElementById('live-ex-token') || {}).value || cfg.lumenToken || '';
-      const res = await avecDelai(fetch(url, {
+    const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+    const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
+    const serviceUrl = serviceConfig.serviceUrl || botConfig.serviceUrl || document.getElementById('live-ex-serviceurl')?.value || 'https://mexc-signer.vercel.app/api/mexc';
+    const rawToken = serviceConfig.lumenToken || botConfig.lumenToken || document.getElementById('live-ex-token')?.value || '';
+    const lumenToken = (rawToken || '').trim().replace(/^['"]|['"]$/g, '');
+    const apiKey = (serviceConfig.apiKey || botConfig.apiKey || document.getElementById('live-ex-apikey')?.value || '').trim();
+    const apiSecret = (serviceConfig.apiSecret || botConfig.apiSecret || document.getElementById('live-ex-apisecret')?.value || '').trim();
+
+    if (serviceUrl) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+
+      const bodyObj = {
+        endpoint: '/api/v1/contract/detail',
+        method: 'GET',
+        isFutures: true,
+        params: { symbol: sym }
+      };
+      if (apiKey) bodyObj.apiKey = apiKey;
+      if (apiSecret) bodyObj.apiSecret = apiSecret;
+
+      const resp = await fetch(serviceUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-lumen-token': jeton },
-        body: JSON.stringify({ endpoint: '/api/v1/contract/detail', method: 'GET', params: { symbol: sym } })
-      }), 8000);
-      if (res.ok) {
-        const json = await res.json();
-        const data = (json && json.data && json.data.data) ? json.data.data : (json.data || json);
-        const detail = Array.isArray(data) ? (data.find(d => d.symbol === sym) || data[0]) : data;
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Lumen-Token': lumenToken
+        },
+        body: JSON.stringify(bodyObj),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+
+      if (resp.ok) {
+        const json = await resp.json();
+        const rawData = json.data?.data || json.data;
+        const detail = Array.isArray(rawData) ? rawData.find(d => d.symbol === sym) || rawData[0] : rawData;
         if (detail && detail.contractSize) {
           const size = parseFloat(detail.contractSize);
-          if (size > 0) { clientContractSizeCache.set(sym, size); return size; }
+          if (size > 0) {
+            clientContractSizeCache.set(sym, size);
+            return size;
+          }
         }
       }
     }
-  } catch (err) {
-    console.warn('[getContractSize] échec, repli utilisé :', err && err.message);
+  } catch (e) {
+    // Échec silencieux ou timeout 8s -> passage aux fallbacks connus
   }
 
-  // repli : les tailles usuelles, plutôt que de bloquer l'envoi
-  if (REPLI[sym]) { clientContractSizeCache.set(sym, REPLI[sym]); return REPLI[sym]; }
-  clientContractSizeCache.set(sym, 0.0001);
-  return 0.0001;
+  // 2. Fallbacks par défaut si l'API ou le microservice ne répond pas
+  let fallbackSize = 0.0001;
+  if (sym.startsWith('BTC')) fallbackSize = 0.0001;
+  else if (sym.startsWith('ETH')) fallbackSize = 0.01;
+  else if (sym.startsWith('SOL')) fallbackSize = 1;
+  else if (sym.startsWith('XRP')) fallbackSize = 10;
+  else if (sym.startsWith('DOGE')) fallbackSize = 100;
+
+  clientContractSizeCache.set(sym, fallbackSize);
+  return fallbackSize;
 };
 
 /**
@@ -22221,16 +22270,11 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
   const botConfig = window.__liveBotActive || JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
   const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
   
-  const serviceUrl = orderConfig.serviceUrl || botConfig.serviceUrl || serviceConfig.serviceUrl;
-  const lumenToken = orderConfig.lumenToken || botConfig.lumenToken || serviceConfig.lumenToken || '';
-  const apiKey = (orderConfig.apiKey || document.getElementById('live-ex-apikey')?.value || botConfig.apiKey || serviceConfig.apiKey || '').trim();
-  const apiSecret = (orderConfig.apiSecret || document.getElementById('live-ex-apisecret')?.value || botConfig.apiSecret || serviceConfig.apiSecret || '').trim();
-
-  if (!serviceUrl) {
-    const err = '❌ Service URL non spécifié pour MEXC Futures.';
-    toast(err, '#FF5252');
-    return { success: false, error: err };
-  }
+  const serviceUrl = orderConfig.serviceUrl || document.getElementById('live-ex-serviceurl')?.value || serviceConfig.serviceUrl || botConfig.serviceUrl || 'https://mexc-signer.vercel.app/api/mexc';
+  const rawToken = orderConfig.lumenToken || document.getElementById('live-ex-token')?.value || serviceConfig.lumenToken || botConfig.lumenToken || '';
+  const lumenToken = (rawToken || '').trim().replace(/^['"]|['"]$/g, '');
+  const apiKey = (orderConfig.apiKey || document.getElementById('live-ex-apikey')?.value || serviceConfig.apiKey || botConfig.apiKey || '').trim();
+  const apiSecret = (orderConfig.apiSecret || document.getElementById('live-ex-apisecret')?.value || serviceConfig.apiSecret || botConfig.apiSecret || '').trim();
 
   const rawSym = orderConfig.symbol || state.symbol || 'BTCUSDT';
   let mexcSymbol = rawSym.replace('/', '').replace('-', '').toUpperCase();
@@ -22285,6 +22329,23 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
     return { success: false, error: reason };
   }
 
+  // --- PROTECTION 1.5 : NOTIONNEL MINIMUM (5 USDT) ---
+  const MIN_NOTIONAL = 5;
+  if (isOpening && notional < MIN_NOTIONAL) {
+    const minMarginNeeded = (MIN_NOTIONAL / leverage).toFixed(2);
+    const minVolNeeded = Math.ceil(MIN_NOTIONAL / (price * contractSize));
+    const reason = `[Notionnel Minimum Refusé] Le montant notionnel de l'ordre (${notional.toFixed(2)} USDT) est inférieur au minimum requis par MEXC (5 USDT). Pour un levier de ${leverage}x, saisissez une marge d'au moins ${minMarginNeeded} USDT (soit au moins ${minVolNeeded} contrat(s)).`;
+    toast(`🛡️ ${reason}`, '#FF5252');
+    logMexcClientOrder({
+      timestamp: now,
+      endpoint: '/api/v1/private/order/submit',
+      status: 'REJECTED_PROTECTION',
+      rejectionReason: reason,
+      params: { symbol: mexcSymbol, price, vol, side, sideLabel, openType, leverage, notional, margin }
+    });
+    return { success: false, error: reason };
+  }
+
   // --- PROTECTION 2 : ANTI-DOUBLON (5 SECONDES) ---
   const orderHash = `${mexcSymbol}_${side}_${vol}_${price}`;
   if (now - window.__lastMexcOrderTime < 5000 && window.__lastMexcOrderHash === orderHash) {
@@ -22326,20 +22387,22 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
   toast(`⏳ Transmission de l'ordre à MEXC Futures [${sideLabel}] ${vol} contrat(s) ${mexcSymbol} @ $${price.toFixed(2)} (${leverage}x)...`, '#00E5FF');
 
   try {
+    const bodyObj = {
+      endpoint: '/api/v1/private/order/submit',
+      method: 'POST',
+      isFutures: true,
+      params: payloadParams
+    };
+    if (apiKey) bodyObj.apiKey = apiKey;
+    if (apiSecret) bodyObj.apiSecret = apiSecret;
+
     const resp = await fetch(serviceUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Lumen-Token': lumenToken
       },
-      body: JSON.stringify({
-        apiKey,
-        apiSecret,
-        endpoint: '/api/v1/private/order/submit',
-        method: 'POST',
-        isFutures: true,
-        params: payloadParams
-      })
+      body: JSON.stringify(bodyObj)
     });
 
     const data = await resp.json();
@@ -22456,63 +22519,39 @@ window.pushManualMexcTrade = async function(side) {
   }
   const tradeUnit = botConfig.tradeUnit || 'USDT';
   const rawBudget = Number(botConfig.tradeBudget || (tradeUnit === 'BTC' ? 0.0005 : 1));
-  const tradeBudgetUsdt = tradeUnit === 'BTC' ? (rawBudget * px) : rawBudget;
-
   const maxUsdt = Number(botConfig.maxUsdt || 500);
   const lev = Number(botConfig.lev || 200);
-  const contractSize = await window.getContractSize(rawSym);
-  if (!contractSize) {
-    toast(`❌ Impossible de récupérer la taille du contrat (contractSize) pour ${rawSym} depuis MEXC Futures.`, '#FF5252');
-    return;
-  }
-  const targetNotional = tradeBudgetUsdt * lev;
-  const calcVol = Math.max(1, Math.round(targetNotional / (px * contractSize)));
-  const estNotional = calcVol * contractSize * px;
-  const estMarginUsdt = lev > 0 ? estNotional / lev : estNotional;
+
+  const calc = await window.calcMexcVol(rawSym, rawBudget, tradeUnit, px, lev);
   const isLong = (side === 1 || side === 'long');
   const sideNum = isLong ? 1 : 3; // 1 = Open Long, 3 = Open Short
   const actionTxt = isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
 
-  const confirmMsg = `⚡ EXÉCUTER UN PUSH DE TRADE EN DIRECT SUR MEXC FUTURES ?
-
-` +
-    `• Action : ${actionTxt}
-` +
-    `• Paire : ${rawSym}
-` +
-    `• Prix du Marché : $${px.toFixed(2)}
-` +
-    `• Taille de Contrat : ${contractSize}
-` +
-    `• Budget Marge Cible : ${rawBudget} ${tradeUnit} ${tradeUnit === 'BTC' ? `(≈ $${tradeBudgetUsdt.toFixed(2)} USDT)` : ''}
-` +
-    `• Marge Estimée : $${estMarginUsdt.toFixed(2)} USDT
-` +
-    `• Notionnel Estimé : $${estNotional.toFixed(2)} USDT
-` +
-    `• Plafond Sécurité Marge : ${maxUsdt} USDT
-` +
-    `• Levier : ${lev}x
-` +
-    `• Volume Calculé : ${calcVol} contrat(s)
-
-` +
+  const msgConfirm =
+    `🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?\n\n` +
+    `• Sens : ${actionTxt}\n` +
+    `• Taille de Trade : ${rawBudget} ${tradeUnit}\n` +
+    `• Marge Engagée : $${calc.marginUsdt.toFixed(2)} USDT\n` +
+    `• Notionnel : $${calc.notionalUsdt.toFixed(2)} USDT\n` +
+    `• Plafond Sécurité Marge : ${maxUsdt} USDT\n` +
+    `• Levier : ${lev}x\n` +
+    `• Volume Calculé : ${calc.vol} contrat(s)\n\n` +
     `Souhaitez-vous envoyer cet ordre au marché directement sur votre compte MEXC ?`;
 
-  if (!confirm(confirmMsg)) return;
+  if (!confirm(msgConfirm)) { toast('Ordre annulé.', '#94A3B8'); return; }
 
-  toast(`⏳ [Push Marché Direct] Envoi de l'ordre ${actionTxt} ${calcVol} contrat(s) (${rawBudget} ${tradeUnit} @ ${lev}x) @ $${px.toFixed(2)}...`, '#00E5FF');
+  toast(`⏳ [Push Marché Direct] Envoi de l'ordre ${actionTxt} ${calc.vol} contrat(s) (${rawBudget} ${tradeUnit} @ ${lev}x) @ $${px.toFixed(2)}...`, '#00E5FF');
 
   const res = await window.sendRealMexcFuturesOrder({
     symbol: rawSym,
     side: sideNum,
     price: px,
-    vol: calcVol,
+    vol: calc.vol,
     leverage: lev,
-    tradeBudget: tradeBudgetUsdt,
+    tradeBudget: calc.marginUsdt,
     tradeBudgetVal: rawBudget,
     tradeUnit: tradeUnit,
-    notional: estNotional,
+    notional: calc.notionalUsdt,
     maxUsdt: maxUsdt,
     openType: 1
   });
@@ -25427,7 +25466,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1308-2140';
+  window.__LUMEN_BUILD = 'B-1408-0135';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
