@@ -21432,8 +21432,9 @@ window.fetchMexcAccountAndPositions = async function() {
         equityUsdt = parseFloat(usdtFutures.equity ?? usdtFutures.cashBalance ?? availUsdt) || 0;
         posMarginUsdt = parseFloat(usdtFutures.positionMargin ?? usdtFutures.frozenBalance ?? 0) || 0;
       }
-      window.__mexcAvailUsdt  = availUsdt;    // plafond de ce qu'on peut ajouter
-      window.__mexcEquityUsdt = equityUsdt;  // capital total, base du pourcentage
+      window.__mexcAvailUsdt   = availUsdt;    // plafond de ce qu'on peut ajouter
+      window.__mexcEquityUsdt  = equityUsdt;   // capital total, base du pourcentage
+      window.__mexcBalanceUsdt = parseFloat(usdtFutures?.cashBalance ?? usdtFutures?.availableBalance ?? availUsdt) || availUsdt;
       if (elFuturesAvail) elFuturesAvail.innerHTML = `${availUsdt.toFixed(2)} <span style="font-size:12px;color:#94A3B8">USDT</span>`;
       if (elFuturesEquity) elFuturesEquity.innerHTML = `${equityUsdt.toFixed(2)} USDT`;
     } else {
@@ -21455,6 +21456,9 @@ window.fetchMexcAccountAndPositions = async function() {
     if (elPosBadge) elPosBadge.innerText = String(positionsList.length);
 
     if (!posMarginUsdt && positionsList.length > 0) {
+    /* Nombre de positions ouvertes : sert à savoir si le PnL latent global
+       du compte peut être attribué à une position unique. */
+    window.__mexcNbPositions = positionsList.length;
       positionsList.forEach(p => {
         posMarginUsdt += parseFloat(p.im || p.positionMargin || p.oim || 0) || 0;
       });
@@ -21486,7 +21490,25 @@ window.fetchMexcAccountAndPositions = async function() {
           if(!(markPx > 0)){
             try{ markPx = Number(livePrice(p.symbol) || livePrice(state.symbol) || 0); }catch(e){ markPx = 0; }
           }
-          if(!(markPx > 0)) markPx = entryPx;
+          /* Dernier recours : le PnL latent total du compte vaut equity
+             moins solde. Avec une seule position ouverte, il EST le PnL de
+             cette position, et on en déduit le prix repère. */
+          let prixEstime = false;
+          if(!(markPx > 0)){
+            const eq = Number(window.__mexcEquityUsdt || 0);
+            const sol = Number(window.__mexcBalanceUsdt || 0);
+            const cszTmp = Number(p.contractSize ?? (window.__csz && window.__csz[p.symbol]) ?? 0.0001);
+            const tailleTmp = Number(vol) * cszTmp;
+            if(eq > 0 && sol > 0 && tailleTmp > 0 && window.__mexcNbPositions === 1){
+              const latent = eq - sol;
+              markPx = entryPx + (latent / tailleTmp) * (isLong ? 1 : -1);
+              prixEstime = true;
+            }
+          }
+          /* Toujours rien : on n'affiche pas un PnL de zéro, qui ferait
+             croire à une position à l'équilibre. On affiche un tiret. */
+          let pnlInconnu = false;
+          if(!(markPx > 0)){ markPx = entryPx; pnlInconnu = true; }
 
           // taille réelle en actif : contrats × taille du contrat
           const cszP = Number(p.contractSize ?? (window.__csz && window.__csz[p.symbol]) ?? 0.0001);
@@ -21518,7 +21540,7 @@ window.fetchMexcAccountAndPositions = async function() {
                 <b style="color:#FFF;margin-left:6px">${p.symbol}</b>
                 <span style="color:var(--muted);font-size:11px;margin-left:6px">${tailleBase.toFixed(4)} ${(p.symbol||'BTC_USDT').split('_')[0]} (${vol} ct) @ $${entryPx > 0 ? entryPx.toFixed(dP) : '—'}${lev ? ' · ' + lev + 'x' : ''}</span>
                 <div style="margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94A3B8;line-height:1.6">
-                  Repère <b style="color:#7DD3FC">${markPx > 0 ? '$' + markPx.toFixed(dP) : '—'}</b> ·
+                  Repère <b style="color:${prixEstime ? '#F59E0B' : '#7DD3FC'}">${(markPx > 0 && !pnlInconnu) ? ('$' + markPx.toFixed(dP) + (prixEstime ? ' *' : '')) : '—'}</b> ·
                   Liquidation <b style="color:#FF9F1C">${liqPx > 0 ? '$' + liqPx.toFixed(dP) : '—'}</b> ·
                   Marge <b style="color:#FFD700">${margeN.toFixed(2)} $</b> ·
                   Frais <b style="color:#F472B6">${fraisT !== 0 ? f6(fraisT) : '—'}</b>
@@ -21526,9 +21548,9 @@ window.fetchMexcAccountAndPositions = async function() {
               </div>
               <div style="display:flex;align-items:center;gap:12px">
                 <div style="text-align:right">
-                  <div style="font-weight:bold;color:${pnlCol};font-size:12px">PNL: ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} USDT</div>
-                  <div style="font-size:10px;color:${roeCol};font-family:'IBM Plex Mono',monospace">${roe >= 0 ? '+' : ''}${roe.toFixed(2)} % sur marge</div>
-                  <div style="font-size:10.5px;font-weight:800;color:${netCol};font-family:'IBM Plex Mono',monospace">net ${pnlNet >= 0 ? '+' : ''}${pnlNet.toFixed(2)}</div>
+                  <div style="font-weight:bold;color:${pnlInconnu ? '#94A3B8' : pnlCol};font-size:12px">PNL: ${pnlInconnu ? '\u2014 prix indisponible' : ((pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT')}</div>
+                  <div style="font-size:10px;color:${pnlInconnu ? '#64748B' : roeCol};font-family:'IBM Plex Mono',monospace">${pnlInconnu ? '\u2014' : ((roe >= 0 ? '+' : '') + roe.toFixed(2) + ' % sur marge')}${prixEstime ? ' \u00b7 estim\u00e9' : ''}</div>
+                  <div style="font-size:10.5px;font-weight:800;color:${pnlInconnu ? '#64748B' : netCol};font-family:'IBM Plex Mono',monospace">${pnlInconnu ? 'net \u2014' : ('net ' + (pnlNet >= 0 ? '+' : '') + pnlNet.toFixed(2))}</div>
                 </div>
                 <button onclick="window.closeMexcPosition('${p.symbol}', '${posSide.toLowerCase()}', ${vol})" style="background:rgba(239,68,68,0.2);border:1px solid #EF4444;color:#FF5252;padding:4px 8px;border-radius:5px;font-weight:bold;font-size:10.5px;cursor:pointer">Clôturer Market</button>
               </div>
@@ -25624,7 +25646,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1830';
+  window.__LUMEN_BUILD = 'B-1408-1905';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
