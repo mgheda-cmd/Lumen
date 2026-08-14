@@ -4628,6 +4628,7 @@ function applyTickPrice(px){
     updateHeader();
     if(typeof updatePaper === 'function') updatePaper();
     if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+    if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
     scheduleRender();
   }
 }
@@ -4640,6 +4641,7 @@ function applyKline(k){
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
   if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+  if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   scheduleRender();
 }
 let lastTick=0, wsRetry=0, watchdog=null;
@@ -4842,6 +4844,7 @@ async function loadData(){
     startStream(g);
     ensureSR();
     if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+    if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   }catch(e){
     if(g!==gen)return;
     // nouvelle tentative avant de basculer en démo (rate limit temporaire ?)
@@ -22020,6 +22023,7 @@ window.startLiveExchangeTrading = function() {
 };
 
 window.stopLiveExchangeTrading = function() {
+  if(typeof window.arreterVeille === "function") window.arreterVeille();
   try {
     localStorage.removeItem('lumen_live_exchange_bot');
   } catch(e){}
@@ -22338,6 +22342,134 @@ window.renforcerMargeIsolee = async function(opts){
           ' — la position garde sa marge d\'origine', '#FF9F1C');
     return { success: false, error: e.message };
   }
+};
+
+
+/* ===================== VEILLE DES SIGNAUX =====================
+   Surveille en direct les entrées Z.Z. et les sorties kk bis de la
+   stratégie appliquée, et pousse chacune sur Telegram — que le bot
+   exécute réellement ou non.
+
+   Raison d'être : les ordres passés par l'API MEXC sont facturés à une
+   grille plus chère que ceux passés depuis l'application. Recevoir le
+   signal et exécuter soi-même coûte moins cher que laisser le bot le
+   faire. La veille sert donc de télécommande, pas d'automate.
+
+   Elle lit exactement les mêmes fonctions que le backtest et que les
+   pastilles du graphique : computeZZSignals pour les entrées, kk bis
+   pour les sorties. Aucune logique parallèle. */
+
+window.__veille = { active: false, vus: {}, sens: 0, entree: null };
+
+window.demarrerVeille = function(reelle){
+  window.__veille.active = true;
+  window.__veille.reelle = !!reelle;
+  window.__veille.vus = {};
+  window.__veille.sens = 0;
+  window.__veille.entree = null;
+  try{ localStorage.setItem('lumen_veille', JSON.stringify({ active:true, reelle:!!reelle })); }catch(e){}
+
+  const kb = (state.indicators && state.indicators.kk_bis) || {};
+  const msg = (reelle ? '\u{1F534} <b>STRAT\u00c9GIE EN R\u00c9EL</b>' : '\u{1F7E1} <b>STRAT\u00c9GIE EN VEILLE</b>') +
+    '\n\n\u{1F4C8} Paire : <b>' + (state.symbol || '?') + '</b>' +
+    '\n\u23F1 Unit\u00e9s kk bis : <b>' + (kb.tf || '?') + 'm \u00d7 ' + (kb.tf2 || '?') + 'm</b>' +
+    '\n\u{1F3AF} Sorties : <b>' + ((document.getElementById('bta-sor') || {}).value || 'toutes') + '</b>' +
+    '\n\u{1F4B0} Montant : <b>' + ((document.getElementById('bta-marge') || {}).value || '?') + ' ' +
+      ((document.getElementById('bta-unite') || {}).value === 'USDT' ? 'USDT' : baseAsset(state.symbol)) +
+      '</b> \u00b7 levier <b>' + ((document.getElementById('bta-lev') || {}).value || '?') + 'x</b>' +
+    (reelle
+      ? '\n\n\u26A0 Le bot passe les ordres lui-m\u00eame.'
+      : '\n\n\u2139 Aucun ordre ne sera pass\u00e9. Vous recevrez chaque entr\u00e9e et chaque sortie \u00e0 ex\u00e9cuter vous-m\u00eame.');
+
+  if(typeof sendTelegramNotification === 'function') sendTelegramNotification(msg);
+  if(typeof toast === 'function') toast(reelle ? 'Veille r\u00e9elle activ\u00e9e' : 'Veille activ\u00e9e \u2014 notifications seules', '#38BDF8');
+  window.verifierVeille();
+};
+
+window.arreterVeille = function(){
+  if(!window.__veille.active) return;
+  window.__veille.active = false;
+  try{ localStorage.removeItem('lumen_veille'); }catch(e){}
+  if(typeof sendTelegramNotification === 'function')
+    sendTelegramNotification('\u26AA <b>Veille arr\u00eat\u00e9e</b>\n\nPlus aucune notification de signal.');
+  if(typeof toast === 'function') toast('Veille arr\u00eat\u00e9e', '#94A3B8');
+};
+
+window.verifierVeille = function(){
+  const v = window.__veille;
+  if(!v || !v.active) return;
+  const d = state.data;
+  if(!d || d.length < 5) return;
+
+  const prefixe = v.reelle ? '\u{1F534} R\u00c9EL' : '\u{1F7E1} VEILLE';
+  const lastIdx = d.length - 1;
+  const px = (typeof livePrice === 'function' ? livePrice(state.symbol) : 0) || d[lastIdx].c;
+
+  /* ENTRÉES : même source que le backtest, même fenêtre de trois bougies
+     que checkAutoTrade — la pastille naît sur la bougie qui vient de
+     clôturer, laquelle n'est déjà plus la dernière. */
+  let sigs = [];
+  try{
+    const ind = Object.assign({}, (state.indicators && state.indicators.strat_zz) || {});
+    sigs = (computeZZSignals(d, ind) || []).filter(x => !x.isExit);
+  }catch(e){ sigs = []; }
+
+  sigs.filter(x => x.i >= lastIdx - 2).forEach(function(sg){
+    const bougie = d[sg.i]; if(!bougie) return;
+    const cle = 'E' + bougie.t;
+    if(v.vus[cle]) return;
+    if(sg.dir === v.sens) return;          // même sens que la position en cours
+    v.vus[cle] = 1;
+
+    /* Une entrée opposée ferme la position en cours : c'est la règle
+       retenue dans le backtest, la première des deux ferme. */
+    if(v.sens !== 0 && sg.dir !== v.sens){
+      window.__notifSortie(prefixe, px, 'signal oppos\u00e9');
+    }
+
+    v.sens = sg.dir;
+    v.entree = { px: sg.price || px, t: bougie.t, dir: sg.dir };
+    const sens = sg.dir === 1 ? '\u{1F7E2} ACHAT / LONG' : '\u{1F534} VENTE / SHORT';
+    if(typeof sendTelegramNotification === 'function') sendTelegramNotification(
+      prefixe + ' \u00b7 <b>ENTR\u00c9E</b>\n\n' + sens +
+      '\n\u{1F4C8} ' + (state.symbol || '?') +
+      '\n\u{1F4B5} Prix : <b>' + Number(v.entree.px).toFixed(2) + '</b>' +
+      '\n\u{1F4CF} Taille : <b>' + ((document.getElementById('bta-marge') || {}).value || '?') +
+        '</b> \u00b7 levier <b>' + ((document.getElementById('bta-lev') || {}).value || '?') + 'x</b>' +
+      '\n\u{1F550} ' + new Date(bougie.t).toLocaleTimeString('fr-FR') +
+      (v.reelle ? '' : '\n\n\u{1F449} \u00c0 passer vous-m\u00eame sur MEXC'));
+  });
+
+  /* SORTIES kk bis : même indicateur que le backtest. */
+  if(v.sens !== 0){
+    let exits = [];
+    try{
+      const kb = (typeof getInd === 'function') ? getInd('kk_bis') : null;
+      exits = (kb && Array.isArray(kb.exits)) ? kb.exits : [];
+    }catch(e){ exits = []; }
+    exits.filter(x => x.i != null && x.i >= lastIdx - 2).forEach(function(ex){
+      const bougie = d[ex.i]; if(!bougie) return;
+      const cle = 'S' + bougie.t;
+      if(v.vus[cle]) return;
+      v.vus[cle] = 1;
+      window.__notifSortie(prefixe, ex.price || px, 'sortie kk bis');
+    });
+  }
+};
+
+window.__notifSortie = function(prefixe, px, motif){
+  const v = window.__veille;
+  if(!v.entree) { v.sens = 0; return; }
+  const gain = (px - v.entree.px) * (v.entree.dir === 1 ? 1 : -1);
+  const sens = v.entree.dir === 1 ? 'LONG' : 'SHORT';
+  if(typeof sendTelegramNotification === 'function') sendTelegramNotification(
+    prefixe + ' \u00b7 <b>SORTIE</b>\n\n\u{1F6AA} Fermer le ' + sens +
+    '\n\u{1F4C8} ' + (state.symbol || '?') +
+    '\n\u{1F4B5} Entr\u00e9e ' + Number(v.entree.px).toFixed(2) + ' \u2192 <b>' + Number(px).toFixed(2) + '</b>' +
+    '\n' + (gain >= 0 ? '\u2705' : '\u274C') + ' \u00c9cart : <b>' + (gain >= 0 ? '+' : '') + gain.toFixed(2) + ' pts</b>' +
+    '\n\u{1F4DD} Motif : ' + motif +
+    (v.reelle ? '' : '\n\n\u{1F449} \u00c0 fermer vous-m\u00eame sur MEXC'));
+  v.sens = 0; v.entree = null;
 };
 
 /**
@@ -25651,7 +25783,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-2305';
+  window.__LUMEN_BUILD = 'B-1408-2350';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
