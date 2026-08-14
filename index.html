@@ -25466,7 +25466,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-0135';
+  window.__LUMEN_BUILD = 'B-1408-0230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25677,6 +25677,18 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       let motif = isOppExit ? ('Entrée opposée' + (ex.num != null ? ' #' + ex.num : '')) : (ex.div ? 'Divergence' : 'Seuil + pente');
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
 
+      /* Liquidation. À 200x, une variation adverse d'environ 0,475 % suffit
+         à emporter la position. Le seuil retenu est la perte de 95 % de la
+         marge, le même que le moteur runZZBacktest. On regarde les mèches,
+         bougie par bougie, entre l'entrée et la sortie. */
+      const seuilLiq = 0.95 / lev;
+      const pLiq = (dir === 1) ? pe * (1 - seuilLiq) : pe * (1 + seuilLiq);
+      let iLiq = -1;
+      for(let k = en.i + 1; k <= ex.i; k++){
+        const b = d[k]; if(!b) continue;
+        if((dir === 1) ? (b.l <= pLiq) : (b.h >= pLiq)){ iLiq = k; break; }
+      }
+
       /* Objectif de gain : on parcourt les bougies entre l'entrée et la
          sortie. Si le prix atteint la cible, on ferme là — le plus haut
          pour un achat, le plus bas pour une vente. Le TP prime donc sur la
@@ -25698,6 +25710,18 @@ function updateActiveBacktestSignals(tradesList, stratName) {
            marge × levier.
          L'erreur précédente traitait 0,02 BTC comme une marge de 1280 USDT
          puis la multipliait par le levier : 200 fois trop. */
+      /* La liquidation prime sur tout : si elle survient avant la sortie
+         retenue — objectif de gain compris — c'est elle qui ferme le trade.
+         À égalité de bougie, on tranche en sa faveur : on ne peut pas savoir
+         lequel des deux prix a été touché en premier dans la minute. */
+      let liquide = false;
+      if(iLiq >= 0 && iLiq <= iS){
+        liquide = true;
+        ps = pLiq;
+        iS = iLiq;
+        motif = '\u{1F480} Liquidation';
+      }
+
       let marge, notionnel;
       if(unite === 'BASE'){
         notionnel = margeIn * pe;
@@ -25709,10 +25733,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const variation = (ps - pe) / pe;
       const brut = notionnel * variation * dir;
       const frais = notionnel * fraisP * 2;      // ouverture + fermeture
-      const net = brut - frais;
+      let net = brut - frais;
+      // on ne peut pas perdre plus que la marge immobilisée
+      if(net < -marge) net = -marge;
 
       trades.push({
-        num: en.num, dir: dir, iE: en.i, iS: iS,
+        num: en.num, dir: dir, iE: en.i, iS: iS, liquide: liquide,
         pe: pe, ps: ps, brut: brut, frais: frais, net: net, marge: marge, notionnel: notionnel,
         motif: motif,
         duree: Math.round((d[iS].t - d[en.i].t) / 60000),
@@ -25735,6 +25761,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const moyG = gains.length ? (somGain / gains.length) : 0;
     const moyP = pertes.length ? (somPerte / pertes.length) : 0;
     const dureeMoy = Math.round(trades.reduce((a,t) => a + t.duree, 0) / trades.length);
+    const nbLiq = trades.filter(t => t.liquide).length;
 
     // repli maximal sur la courbe cumulée
     let cum = 0, pic = 0, dd = 0;
@@ -25768,9 +25795,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     /* Conditions minimales avant d'envisager du réel. Elles reprennent les
        seuils qu'on s'est fixés : échantillon suffisant, profit factor
        supérieur à 1, et tenue sur les trois tranches. */
-    const conforme = (trades.length >= 30) && (pf >= 1) && stable && (pnl > 0);
+    const conforme = (trades.length >= 30) && (pf >= 1) && stable && (pnl > 0) && (nbLiq === 0);
     window.__btDernier = {
       conforme: conforme, manques: [], trades: trades.length, pf: pf, pnl: pnl, dd: dd, tp: tpVal,
+      liq: nbLiq,
       wr: wr, dirF: dirF, sens: sens, mEnt: mEnt, mSor: mSor,
       marge: margeIn, unite: unite, lev: lev, tri: tri, stable: stable,
       jours: (d.length * state.tf / 1440)
@@ -25785,6 +25813,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += carte('Trades', trades.length);
     h += carte('Réussite', wr.toFixed(1) + ' %', wr >= 50 ? '#10B981' : '#F59E0B');
     h += carte('Profit factor', isFinite(pf) ? pf.toFixed(2) : '∞', pf >= 1 ? '#10B981' : '#FF5252');
+    h += carte('Liquidations', nbLiq === 0 ? '0' : ('\u{1F480} ' + nbLiq), nbLiq === 0 ? '#10B981' : '#FF5252');
     h += carte('PnL net', (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' $', c(pnl));
     h += carte('Gain moyen', '+' + moyG.toFixed(2) + ' $', '#10B981');
     h += carte('Perte moyenne', '−' + moyP.toFixed(2) + ' $', '#FF5252');
@@ -26497,12 +26526,12 @@ window.envoyerVersMexc = function(){
         if(r && r.trades > 0){
           const dd2 = window.__btDirs || null;
           res.push({ a:a, b:b, trades:r.trades, wr:r.wr, pnl:r.pnl, dd:r.dd,
-                     pf:r.pf, conforme:r.conforme, dirs:dd2 });
+                     pf:r.pf, conforme:r.conforme, liq:(r.liq || 0), dirs:dd2 });
         } else {
-          res.push({ a:a, b:b, trades:0, wr:0, pnl:0, dd:0, pf:0, conforme:false });
+          res.push({ a:a, b:b, trades:0, wr:0, pnl:0, dd:0, pf:0, conforme:false, liq:0 });
         }
       }catch(e){
-        res.push({ a:a, b:b, trades:0, wr:0, pnl:0, dd:0, pf:0, conforme:false, err:true });
+        res.push({ a:a, b:b, trades:0, wr:0, pnl:0, dd:0, pf:0, conforme:false, liq:0, err:true });
       }
     }
 
@@ -26578,6 +26607,7 @@ window.envoyerVersMexc = function(){
       '<th style="padding:6px">Unités</th><th style="padding:6px">Trades</th>' +
       '<th style="padding:6px">Réussite</th><th style="padding:6px">PnL net</th>' +
       '<th style="padding:6px">Repli max</th>' +
+      '<th style="padding:6px" title="Nombre de trades liquides pendant la periode. Une seule liquidation disqualifie la combinaison.">Liquid.</th>' +
       '<th style="padding:6px" title="Sens auquel cette combinaison profite le plus">Convient à</th>' +
       '<th style="padding:6px"></th></tr>';
 
@@ -26598,6 +26628,8 @@ window.envoyerVersMexc = function(){
         '<td style="padding:5px 6px;font-weight:700;color:' + cw + '">' + x.wr.toFixed(1) + ' %</td>' +
         '<td style="padding:5px 6px;font-weight:800;color:' + cp + '">' + (x.pnl >= 0 ? '+' : '') + x.pnl.toFixed(2) + ' $</td>' +
         '<td style="padding:5px 6px;color:#FF9F1C">−' + x.dd.toFixed(2) + ' $</td>' +
+        '<td style="padding:5px 6px;font-weight:800;color:' + (x.liq ? '#FF5252' : '#10B981') + '">' +
+          (x.liq ? '\u{1F480} ' + x.liq : '0') + '</td>' +
         '<td style="padding:5px 6px">' + (function(){
           const o = x.orient;
           if(!o) return '<span style="color:#64748B">—</span>';
@@ -26621,6 +26653,7 @@ window.envoyerVersMexc = function(){
       'Le taux de réussite n\'entre dans aucune des deux : seul, il ne dit rien de la rentabilité.<br>' +
       '<b style="color:#CBD5E1">Convient à</b> — sens dont le PnL domine, avec au moins 5 trades de chaque côté. ' +
       '« équilibrée » quand l\'écart reste sous 25 %. Les deux chiffres sont les PnL comparés.<br>' +
+      '<b style="color:#FF5252">Liquid.</b> — trades emportés en cours de route : la mèche a touché le prix de liquidation avant la sortie. Calculé à 95 % de la marge perdue, au levier choisi. Une seule suffit à retirer le ✓ de conformité.<br>' +
       'Cliquez sur « Choisir » pour appliquer une combinaison et obtenir le détail complet.</div>';
 
     if(box) box.innerHTML = h;
@@ -26652,6 +26685,15 @@ window.envoyerVersMexc = function(){
         '<td style="padding:5px 6px;font-weight:700;color:' + cw + '">' + x.wr.toFixed(1) + ' %</td>' +
         '<td style="padding:5px 6px;font-weight:800;color:' + cp + '">' + (x.pnl >= 0 ? '+' : '') + x.pnl.toFixed(2) + ' $</td>' +
         '<td style="padding:5px 6px;color:#FF9F1C">−' + x.dd.toFixed(2) + ' $</td>' +
+        '<td style="padding:5px 6px;font-weight:800;color:' + (x.liq ? '#FF5252' : '#10B981') + '">' +
+          (x.liq ? '\u{1F480} ' + x.liq : '0') + '</td>' +
+        '<td style="padding:5px 6px">' + (function(){
+          const o = x.orient;
+          if(!o) return '<span style="color:#64748B">\u2014</span>';
+          const col = o.s === 'L' ? '#10B981' : o.s === 'S' ? '#FF5252' : '#94A3B8';
+          const ico = o.s === 'L' ? '\u25b2' : o.s === 'S' ? '\u25bc' : '=';
+          return '<span style="color:' + col + ';font-weight:800">' + ico + ' ' + o.txt + '</span>';
+        })() + '</td>' +
         '<td style="padding:5px 6px;text-align:right"><button onclick="window.appliquerCombi(' + i + ')" style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Choisir</button></td></tr>';
     });
     const tbl = box.querySelector('table');
