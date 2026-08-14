@@ -1580,6 +1580,13 @@ footer{
           </select>
         </label>
 
+        <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block" title="Croisée : tout le solde du compte adosse la position ; la liquidation est loin mais elle emporte tout. Isolée : seule la marge du trade répond ; la perte est bornée mais la liquidation est proche. Le mode doit aussi être réglé sur MEXC pour la paire.">Mode de marge
+          <select id="live-ex-margin" style="width:100%;background:#0B132B;border:1.5px solid #A78BFA;border-radius:8px;color:#C4B5FD;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12px">
+            <option value="2" selected>Croisée (tout le solde)</option>
+            <option value="1">Isolée (perte bornée)</option>
+          </select>
+        </label>
+
         <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block">Stop Loss
           <select id="live-ex-sl" style="width:100%;background:#0B132B;border:1.5px solid #FF5252;border-radius:8px;color:#FF5252;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12.5px;cursor:pointer">
             <option value="0">Pastille inverse (Pas de SL fixe)</option>
@@ -12750,7 +12757,7 @@ function checkAutoTrade(inputSignals){
               tradeBudget: liveCap,
               maxUsdt: liveMax,
               notional: targetNotional,
-              openType: 2 // 2 = Croisee (le solde entier adosse la position)
+              openType: Number((window.__liveBotActive || {}).openType || 2) // 2 = croisee, 1 = isolee
             });
           })();
         }
@@ -12801,7 +12808,7 @@ function checkAutoTrade(inputSignals){
               tradeBudget: liveCap,
               maxUsdt: liveMax,
               notional: targetNotional,
-              openType: 2 // 2 = Croisee (le solde entier adosse la position)
+              openType: Number((window.__liveBotActive || {}).openType || 2) // 2 = croisee, 1 = isolee
             });
           })();
         }
@@ -21328,7 +21335,8 @@ window.submitMexcManualTrade = async function() {
       tradeBudget: calc.marginUsdt,
       tradeBudgetVal: rawBudget,
       tradeUnit: unit,
-      openType: 2
+      openType: Number(document.getElementById('live-ex-margin')?.value ||
+        (JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}').openType) || 2)
     });
     if (resEl) {
       if (res && res.success) {
@@ -21673,6 +21681,9 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
       }
       if (bot.lev && !levOverride) {
         window.setSelectValueOrAddOption(document.getElementById('live-ex-lev'), bot.lev, v => v + 'x');
+        if(bot.openType && document.getElementById('live-ex-margin')){
+          document.getElementById('live-ex-margin').value = String(bot.openType);
+        }
       }
       if (bot.sl && slValOverride === undefined) {
         window.setSelectValueOrAddOption(document.getElementById('live-ex-sl'), bot.sl, v => v === '0' ? 'Pastille inverse (Pas de SL fixe)' : '🛑 SL -' + v + ' pts');
@@ -21936,11 +21947,16 @@ window.startLiveExchangeTrading = function() {
     long_only: '🟢 LONGs Uniquement',
     short_only: '🔴 SHORTs Uniquement'
   };
+  /* Mode de marge choisi dans le panneau : 2 = croisee, 1 = isolee.
+     Il voyage avec la configuration du bot et accompagne chaque ordre. */
+  const openType = Number(document.getElementById('live-ex-margin')?.value || 2);
+
   const botConfig = {
     active: true,
     exName,
     serviceUrl,
     lumenToken,
+    openType,
     autoCapital,
     mode,
     modeLabel: scenarioNamesMap[mode] || mode,
@@ -22557,7 +22573,7 @@ window.pushManualMexcTrade = async function(side) {
     tradeUnit: tradeUnit,
     notional: calc.notionalUsdt,
     maxUsdt: maxUsdt,
-    openType: 2
+    openType: Number(botConfig.openType || document.getElementById('live-ex-margin')?.value || 2)
   });
 
   if (res && res.success) {
@@ -25470,7 +25486,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1515';
+  window.__LUMEN_BUILD = 'B-1408-1620';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
