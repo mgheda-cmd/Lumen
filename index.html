@@ -25466,7 +25466,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-0940';
+  window.__LUMEN_BUILD = 'B-1408-1005';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25907,7 +25907,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
       '<th style="padding:5px">N°</th><th style="padding:5px">#</th><th style="padding:5px">Sens</th><th style="padding:5px">Entrée</th>' +
       '<th style="padding:5px">Sortie</th><th style="padding:5px">Motif</th><th style="padding:5px">Durée</th>' +
-      '<th style="padding:5px">Frais</th><th style="padding:5px;color:#FF5252">DD Trade</th><th style="padding:5px">Net</th><th style="padding:5px;color:#00E5FF">Solde</th></tr>';
+      '<th style="padding:5px">Frais</th><th style="padding:5px;color:#FF5252">DD Trade</th><th style="padding:5px">Net</th><th style="padding:5px;color:#00E5FF">Solde</th>' +
+      '<th style="padding:5px;color:#FF5252" title="Trade emporte par la liquidation avant sa sortie">Liq.</th></tr>';
     trades.forEach(function(t, k){
       h += '<tr style="border-top:1px solid ' + (t.liquide ? '#FF5252' : '#1E293B') + ';background:' +
         (t.liquide ? 'rgba(239,68,68,.22)' : (k % 2 ? 'rgba(255,255,255,.02)' : 'transparent')) + '">' +
@@ -25921,7 +25922,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<td style="padding:4px 5px"><span style="color:#000000;background:#FCA5A5;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">−' + t.frais.toFixed(3) + ' $</span></td>' +
         '<td style="padding:4px 5px"><span style="color:#000000;background:' + ((t.ddPct||0)>0 ? '#FCA5A5' : '#A7F3D0') + ';font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + ((t.ddPct||0)>0 ? '-' + (t.ddPct||0).toFixed(1) + '%' : '0.0%') + '</span><div style="font-size:9.5px;color:' + ((t.ddDollar||0)>0 ? '#FF5252' : '#94A3B8') + ';font-weight:bold;margin-top:2px">' + ((t.ddDollar||0)>0 ? '−' + t.ddDollar.toFixed(2) + ' $' : '0.00 $') + '</div></td>' +
         '<td style="padding:4px 5px;font-weight:800;color:' + c(t.net) + '">' + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + ' $</td>' +
-        '<td style="padding:4px 5px"><span style="color:#000000;background:#BAE6FD;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + (t.solde != null ? t.solde.toFixed(2) : '100.00') + ' $</span></td></tr>';
+        '<td style="padding:4px 5px"><span style="color:#000000;background:#BAE6FD;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + (t.solde != null ? t.solde.toFixed(2) : '100.00') + ' $</span></td>' +
+        '<td style="padding:4px 5px;text-align:center;font-weight:900;color:#FF5252">' +
+          (t.liquide ? '\u{1F480}' : '<span style="color:#334155">\u00b7</span>') + '</td></tr>';
     });
     h += '</table></div>';
     if(sansSortie.length){
