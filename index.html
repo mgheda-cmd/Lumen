@@ -22226,12 +22226,6 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
   const apiKey = (orderConfig.apiKey || document.getElementById('live-ex-apikey')?.value || botConfig.apiKey || serviceConfig.apiKey || '').trim();
   const apiSecret = (orderConfig.apiSecret || document.getElementById('live-ex-apisecret')?.value || botConfig.apiSecret || serviceConfig.apiSecret || '').trim();
 
-  if (!apiKey || !apiSecret) {
-    const err = '❌ Clés API MEXC absentes. Renseignez-les dans le panneau Clés API puis réessayez.';
-    toast(err, '#FF5252');
-    return { success: false, error: err };
-  }
-
   if (!serviceUrl) {
     const err = '❌ Service URL non spécifié pour MEXC Futures.';
     toast(err, '#FF5252');
@@ -25433,7 +25427,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1308-2115';
+  window.__LUMEN_BUILD = 'B-1308-2140';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
