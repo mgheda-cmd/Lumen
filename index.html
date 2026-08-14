@@ -25466,7 +25466,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-0230';
+  window.__LUMEN_BUILD = 'B-1408-0310';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25589,6 +25589,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const margeIn = +document.getElementById('bta-marge').value || 0.02;
     const unite   = (document.getElementById('bta-unite') || {}).value || 'BASE';
     const fraisP = (+document.getElementById('bta-frais').value || 0.016) / 100;
+    /* Capital adosse a la position. A 0, on reste en marge isolee : seule la
+       marge du trade absorbe la perte, et la liquidation tombe a 0,475 % au
+       levier 200. Renseigne, il joue le role du solde en marge croisee. */
+    const capital = +((document.getElementById('bta-capital') || {}).value) || 0;
     const sens   = document.getElementById('bta-sens').value;
     const dirF   = (document.getElementById('bta-dir') || {}).value || 'tout';
     const tpVal  = +((document.getElementById('bta-tp') || {}).value) || 0;
@@ -25677,16 +25681,43 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       let motif = isOppExit ? ('Entrée opposée' + (ex.num != null ? ' #' + ex.num : '')) : (ex.div ? 'Divergence' : 'Seuil + pente');
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
 
+      /* Deux façons de dimensionner la position, comme sur MEXC :
+         — en actif de base, le montant saisi est la TAILLE de position.
+           0,02 BTC à 63 500 fait 1270 USDT de notionnel, et la marge
+           immobilisée vaut 1270 / 200 = 6,35 USDT.
+         — en USDT, le montant saisi est la marge, et le notionnel vaut
+           marge × levier.
+         L'erreur précédente traitait 0,02 BTC comme une marge de 1280 USDT
+         puis la multipliait par le levier : 200 fois trop. */
+      let marge, notionnel;
+      if(unite === 'BASE'){
+        notionnel = margeIn * pe;
+        marge = notionnel / lev;
+      } else {
+        marge = margeIn;
+        notionnel = marge * lev;
+      }
+
       /* Liquidation. À 200x, une variation adverse d'environ 0,475 % suffit
-         à emporter la position. Le seuil retenu est la perte de 95 % de la
-         marge, le même que le moteur runZZBacktest. On regarde les mèches,
-         bougie par bougie, entre l'entrée et la sortie. */
-      const seuilLiq = 0.95 / lev;
+         à emporter la position quand rien d'autre ne l'adosse. Le seuil est
+         la perte de 95 % de ce qui la soutient : la marge du trade seule en
+         marge isolée, le capital du compte entier si le champ est renseigné,
+         comme en marge croisée. On regarde les mèches, bougie par bougie. */
+      const adosse = capital > 0 ? capital : marge;
+      const seuilLiq = (0.95 * adosse) / notionnel;
       const pLiq = (dir === 1) ? pe * (1 - seuilLiq) : pe * (1 + seuilLiq);
       let iLiq = -1;
+      /* Excursion adverse maximale, en dollars : le pire moment du trade.
+         C'est elle qui dicte le capital necessaire pour ne jamais sauter. */
+      let excursion = 0;
       for(let k = en.i + 1; k <= ex.i; k++){
         const b = d[k]; if(!b) continue;
-        if((dir === 1) ? (b.l <= pLiq) : (b.h >= pLiq)){ iLiq = k; break; }
+        const pire = (dir === 1) ? (pe - b.l) : (b.h - pe);
+        if(pire > 0){
+          const perte = notionnel * (pire / pe);
+          if(perte > excursion) excursion = perte;
+        }
+        if(iLiq < 0 && ((dir === 1) ? (b.l <= pLiq) : (b.h >= pLiq))) iLiq = k;
       }
 
       /* Objectif de gain : on parcourt les bougies entre l'entrée et la
@@ -25702,14 +25733,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         }
       }
 
-      /* Deux façons de dimensionner la position, comme sur MEXC :
-         — en actif de base, le montant saisi est la TAILLE de position.
-           0,02 BTC à 63 500 fait 1270 USDT de notionnel, et la marge
-           immobilisée vaut 1270 / 200 = 6,35 USDT.
-         — en USDT, le montant saisi est la marge, et le notionnel vaut
-           marge × levier.
-         L'erreur précédente traitait 0,02 BTC comme une marge de 1280 USDT
-         puis la multipliait par le levier : 200 fois trop. */
       /* La liquidation prime sur tout : si elle survient avant la sortie
          retenue — objectif de gain compris — c'est elle qui ferme le trade.
          À égalité de bougie, on tranche en sa faveur : on ne peut pas savoir
@@ -25722,23 +25745,16 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         motif = '\u{1F480} Liquidation';
       }
 
-      let marge, notionnel;
-      if(unite === 'BASE'){
-        notionnel = margeIn * pe;
-        marge = notionnel / lev;
-      } else {
-        marge = margeIn;
-        notionnel = marge * lev;
-      }
       const variation = (ps - pe) / pe;
       const brut = notionnel * variation * dir;
       const frais = notionnel * fraisP * 2;      // ouverture + fermeture
       let net = brut - frais;
-      // on ne peut pas perdre plus que la marge immobilisée
-      if(net < -marge) net = -marge;
+      // on ne peut pas perdre plus que ce qui est engagé derrière la position
+      const plancher = capital > 0 ? capital : marge;
+      if(net < -plancher) net = -plancher;
 
       trades.push({
-        num: en.num, dir: dir, iE: en.i, iS: iS, liquide: liquide,
+        num: en.num, dir: dir, iE: en.i, iS: iS, liquide: liquide, excursion: excursion,
         pe: pe, ps: ps, brut: brut, frais: frais, net: net, marge: marge, notionnel: notionnel,
         motif: motif,
         duree: Math.round((d[iS].t - d[en.i].t) / 60000),
@@ -25762,6 +25778,19 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const moyP = pertes.length ? (somPerte / pertes.length) : 0;
     const dureeMoy = Math.round(trades.reduce((a,t) => a + t.duree, 0) / trades.length);
     const nbLiq = trades.filter(t => t.liquide).length;
+
+    /* Capital minimum : celui qui aurait absorbe la pire excursion adverse
+       de toute la periode sans declencher de liquidation. La liquidation
+       survenant a 95 % du capital consomme, on divise par 0,95. */
+    const pireExc = trades.reduce((a, t) => Math.max(a, t.excursion || 0), 0);
+    const capMin = pireExc / 0.95;
+
+    /* Ruine : le capital renseigne est-il epuise en cours de route ? */
+    let ruine = false;
+    if(capital > 0){
+      let solde = capital;
+      for(const t of trades){ solde += t.net; if(solde <= 0){ ruine = true; break; } }
+    }
 
     // repli maximal sur la courbe cumulée
     let cum = 0, pic = 0, dd = 0;
@@ -25798,7 +25827,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const conforme = (trades.length >= 30) && (pf >= 1) && stable && (pnl > 0) && (nbLiq === 0);
     window.__btDernier = {
       conforme: conforme, manques: [], trades: trades.length, pf: pf, pnl: pnl, dd: dd, tp: tpVal,
-      liq: nbLiq,
+      liq: nbLiq, capMin: capMin, capital: capital, ruine: ruine,
       wr: wr, dirF: dirF, sens: sens, mEnt: mEnt, mSor: mSor,
       marge: margeIn, unite: unite, lev: lev, tri: tri, stable: stable,
       jours: (d.length * state.tf / 1440)
@@ -25814,6 +25843,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += carte('Réussite', wr.toFixed(1) + ' %', wr >= 50 ? '#10B981' : '#F59E0B');
     h += carte('Profit factor', isFinite(pf) ? pf.toFixed(2) : '∞', pf >= 1 ? '#10B981' : '#FF5252');
     h += carte('Liquidations', nbLiq === 0 ? '0' : ('\u{1F480} ' + nbLiq), nbLiq === 0 ? '#10B981' : '#FF5252');
+    h += carte('Capital minimum', '$' + capMin.toFixed(2),
+      (capital > 0 && capital >= capMin) ? '#10B981' : '#F59E0B');
+    if(capital > 0) h += carte('Capital saisi', '$' + capital.toFixed(2) + (ruine ? ' \u2620' : ''),
+      ruine ? '#FF5252' : (capital >= capMin ? '#10B981' : '#F59E0B'));
     h += carte('PnL net', (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' $', c(pnl));
     h += carte('Gain moyen', '+' + moyG.toFixed(2) + ' $', '#10B981');
     h += carte('Perte moyenne', '−' + moyP.toFixed(2) + ' $', '#FF5252');
@@ -26190,6 +26223,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Capital du compte adosse a la position, en marge croisee. Plus il est eleve, plus le prix de liquidation est loin. 0 = marge isolee : seule la marge du trade protege.">Capital ($)<br><input id="bta-capital" type="number" value="0" step="any" style="' + sel + ';width:80px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix. 0 = pas d\'objectif, la sortie kk bis decide seule.">TP ($)<br><input id="bta-tp" type="number" value="0" step="10" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Quand plusieurs sorties suivent une entree, laquelle retenir">Sortie retenue<br><select id="bta-rang" style="' + sel + '">' +
         '<option value="1">La 1re qui suit</option>' +
