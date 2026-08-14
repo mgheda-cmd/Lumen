@@ -25466,7 +25466,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-0310';
+  window.__LUMEN_BUILD = 'B-1408-0940';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25843,6 +25843,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += carte('Réussite', wr.toFixed(1) + ' %', wr >= 50 ? '#10B981' : '#F59E0B');
     h += carte('Profit factor', isFinite(pf) ? pf.toFixed(2) : '∞', pf >= 1 ? '#10B981' : '#FF5252');
     h += carte('Liquidations', nbLiq === 0 ? '0' : ('\u{1F480} ' + nbLiq), nbLiq === 0 ? '#10B981' : '#FF5252');
+    if(nbLiq){
+      const rangs = trades.map(function(t, k){ return t.liquide ? (k + 1) : null; }).filter(Boolean);
+      window.__btRangsLiq = rangs;
+    } else { window.__btRangsLiq = []; }
     h += carte('Capital minimum', '$' + capMin.toFixed(2),
       (capital > 0 && capital >= capMin) ? '#10B981' : '#F59E0B');
     if(capital > 0) h += carte('Capital saisi', '$' + capital.toFixed(2) + (ruine ? ' \u2620' : ''),
@@ -25890,6 +25894,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     });
     h += '</div>';
 
+    if(nbLiq){
+      h += '<div style="margin:0 0 8px;padding:8px 11px;border:1px solid #FF5252;border-radius:8px;' +
+        'background:rgba(239,68,68,.10);color:#FF9F9F;font-size:11.5px;line-height:1.5">' +
+        '\u{1F480} <b>' + nbLiq + ' trade' + (nbLiq > 1 ? 's' : '') + ' liquid\u00e9' + (nbLiq > 1 ? 's' : '') +
+        '</b> \u2014 rang' + (nbLiq > 1 ? 's' : '') + ' <b>n\u00b0 ' + (window.__btRangsLiq || []).join(', n\u00b0 ') + '</b> ' +
+        'dans le tableau ci-dessous, sur fond rouge. La m\u00e8che a touch\u00e9 le prix de liquidation avant la sortie.' +
+        '</div>';
+    }
     h += '<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
       '<table style="width:100%;border-collapse:collapse;font-size:10.5px;font-family:\'IBM Plex Mono\',monospace">' +
       '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
@@ -25897,7 +25909,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<th style="padding:5px">Sortie</th><th style="padding:5px">Motif</th><th style="padding:5px">Durée</th>' +
       '<th style="padding:5px">Frais</th><th style="padding:5px;color:#FF5252">DD Trade</th><th style="padding:5px">Net</th><th style="padding:5px;color:#00E5FF">Solde</th></tr>';
     trades.forEach(function(t, k){
-      h += '<tr style="border-top:1px solid #1E293B;background:' + (k % 2 ? 'rgba(255,255,255,.02)' : 'transparent') + '">' +
+      h += '<tr style="border-top:1px solid ' + (t.liquide ? '#FF5252' : '#1E293B') + ';background:' +
+        (t.liquide ? 'rgba(239,68,68,.22)' : (k % 2 ? 'rgba(255,255,255,.02)' : 'transparent')) + '">' +
         '<td style="padding:4px 5px;color:#94A3B8;font-weight:700">' + (k + 1) + '</td>' +
         '<td style="padding:4px 5px;color:#00E5FF;font-weight:700">#' + t.num + '</td>' +
         '<td style="padding:4px 5px;color:' + (t.dir === 1 ? '#10B981' : '#FF5252') + ';font-weight:700">' + (t.dir === 1 ? 'ACHAT' : 'VENTE') + '</td>' +
