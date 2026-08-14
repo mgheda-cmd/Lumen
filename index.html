@@ -1581,21 +1581,21 @@ footer{
         </label>
 
         <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block" title="Croisée : tout le solde du compte adosse la position ; la liquidation est loin mais elle emporte tout. Isolée : seule la marge du trade répond ; la perte est bornée mais la liquidation est proche. Le mode doit aussi être réglé sur MEXC pour la paire.">Mode de marge
-          <select id="live-ex-margin" style="width:100%;background:#0B132B;border:1.5px solid #A78BFA;border-radius:8px;color:#C4B5FD;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12px">
+          <select id="live-ex-margin" onchange="window.majModeMargeLive()" style="width:100%;background:#0B132B;border:1.5px solid #A78BFA;border-radius:8px;color:#C4B5FD;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12px">
             <option value="2" selected>Croisée (tout le solde)</option>
             <option value="1">Isolée (perte bornée)</option>
           </select>
         </label>
 
-        <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block" title="Isolée uniquement. Après l'ouverture, la marge de la position est portée à ce pourcentage du CAPITAL TOTAL du compte, ce qui éloigne le prix de liquidation. L'ajout est plafonné au solde disponible. 0 laisse la marge d'origine.">Marge isolée — % du capital
+        <label id="live-ex-marginpct-lbl" style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:none" title="Isolée uniquement. Après l'ouverture, la marge de la position est portée à ce pourcentage du CAPITAL TOTAL du compte, ce qui éloigne le prix de liquidation. L'ajout est plafonné au solde disponible. 0 laisse la marge d'origine.">Marge isolée — % du capital
           <input id="live-ex-marginpct" type="number" value="50" min="0" max="100" step="1" style="width:100%;background:#0B132B;border:1.5px solid #A78BFA;border-radius:8px;color:#C4B5FD;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12px">
         </label>
 
         <label style="font-size:11.5px;color:#94A3B8;font-weight:800;letter-spacing:0.3px;display:block">Stop Loss
           <select id="live-ex-sl" style="width:100%;background:#0B132B;border:1.5px solid #FF5252;border-radius:8px;color:#FF5252;padding:9px 12px;margin-top:5px;font-weight:800;font-size:12.5px;cursor:pointer">
-            <option value="0">Pastille inverse (Pas de SL fixe)</option>
+            <option value="0" selected>Pastille inverse (Pas de SL fixe)</option>
             <option value="50">🛑 SL -50 pts</option>
-            <option value="100" selected>🛑 SL -100 pts</option>
+            <option value="100">🛑 SL -100 pts</option>
             <option value="150">🛑 SL -150 pts</option>
           </select>
         </label>
@@ -21712,6 +21712,7 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
         if(bot.openType && document.getElementById('live-ex-margin')){
           document.getElementById('live-ex-margin').value = String(bot.openType);
         }
+        if(window.majModeMargeLive) window.majModeMargeLive();
       }
       if (bot.sl && slValOverride === undefined) {
         window.setSelectValueOrAddOption(document.getElementById('live-ex-sl'), bot.sl, v => v === '0' ? 'Pastille inverse (Pas de SL fixe)' : '🛑 SL -' + v + ' pts');
@@ -25646,7 +25647,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1955';
+  window.__LUMEN_BUILD = 'B-1408-2040';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -26392,6 +26393,24 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     return '0.02';
   };
 
+  /* Les réglages propres à la marge isolée n'ont aucun effet en croisée :
+     on les cache plutôt que de laisser des champs inertes sous les yeux. */
+  window.majModeMargeBT = function(){
+    const el = document.getElementById('bta-mmode');
+    const isole = !!el && el.value === 'isole';
+    ['bta-lbl-mpct', 'bta-lbl-mbonus'].forEach(function(id){
+      const l = document.getElementById(id);
+      if(l) l.style.display = isole ? '' : 'none';
+    });
+  };
+
+  window.majModeMargeLive = function(){
+    const el = document.getElementById('live-ex-margin');
+    const isole = !!el && String(el.value) === '1';
+    const l = document.getElementById('live-ex-marginpct-lbl');
+    if(l) l.style.display = isole ? 'block' : 'none';
+  };
+
   window.libererHistorique = function(){
     window.__btFreeze = false;
     const info = document.getElementById('bta-charge');
@@ -26474,10 +26493,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Capital du compte adosse a la position, en marge croisee. Plus il est eleve, plus le prix de liquidation est loin. 0 = marge isolee : seule la marge du trade protege.">Capital ($)<br><input id="bta-capital" type="number" value="100" step="any" style="' + sel + ';width:80px"></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="Croisee : tout le solde adosse la position. Isolee : seule la marge du trade repond, et la perte y est bornee.">Mode marge<br><select id="bta-mmode" style="' + sel + '">' +
+      '<label style="font-size:11px;color:#94A3B8" title="Croisee : tout le solde adosse la position. Isolee : seule la marge du trade repond, et la perte y est bornee.">Mode marge<br><select id="bta-mmode" onchange="window.majModeMargeBT()" style="' + sel + '">' +
         '<option value="croise" selected>Croisée</option><option value="isole">Isolée</option></select></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="Isolee seulement : part du capital engagee en marge sur chaque trade. Sur MEXC, cela revient a ouvrir au levier regle puis a ajouter de la marge a la position : le reglage de levier ne change pas.">Marge % cap.<br><input id="bta-mpct" type="number" value="50" step="1" min="1" max="100" style="' + sel + ';width:76px"></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="Isolee seulement : part du gain du trade precedent ajoutee a la marge du suivant. 0 pour desactiver.">Bonus % gain<br><input id="bta-mbonus" type="number" value="20" step="1" min="0" max="100" style="' + sel + ';width:78px"></label>' +
+      '<label id="bta-lbl-mpct" style="font-size:11px;color:#94A3B8;display:none" title="Isolee seulement : part du capital engagee en marge sur chaque trade. Sur MEXC, cela revient a ouvrir au levier regle puis a ajouter de la marge a la position : le reglage de levier ne change pas.">Marge % cap.<br><input id="bta-mpct" type="number" value="50" step="1" min="1" max="100" style="' + sel + ';width:76px"></label>' +
+      '<label id="bta-lbl-mbonus" style="font-size:11px;color:#94A3B8;display:none" title="Isolee seulement : part du gain du trade precedent ajoutee a la marge du suivant. 0 pour desactiver.">Bonus % gain<br><input id="bta-mbonus" type="number" value="20" step="1" min="0" max="100" style="' + sel + ';width:78px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix. 0 = pas d\'objectif, la sortie kk bis decide seule.">TP ($)<br><input id="bta-tp" type="number" value="0" step="10" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Quand plusieurs sorties suivent une entree, laquelle retenir">Sortie retenue<br><select id="bta-rang" style="' + sel + '">' +
         '<option value="1">La 1re qui suit</option>' +
