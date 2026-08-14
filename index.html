@@ -12750,7 +12750,7 @@ function checkAutoTrade(inputSignals){
               tradeBudget: liveCap,
               maxUsdt: liveMax,
               notional: targetNotional,
-              openType: 1 // 1 = Isolated
+              openType: 2 // 2 = Croisee (le solde entier adosse la position)
             });
           })();
         }
@@ -12801,7 +12801,7 @@ function checkAutoTrade(inputSignals){
               tradeBudget: liveCap,
               maxUsdt: liveMax,
               notional: targetNotional,
-              openType: 1 // 1 = Isolated
+              openType: 2 // 2 = Croisee (le solde entier adosse la position)
             });
           })();
         }
@@ -21328,7 +21328,7 @@ window.submitMexcManualTrade = async function() {
       tradeBudget: calc.marginUsdt,
       tradeBudgetVal: rawBudget,
       tradeUnit: unit,
-      openType: 1
+      openType: 2
     });
     if (resEl) {
       if (res && res.success) {
@@ -21541,7 +21541,7 @@ window.closeMexcPosition = async function(symbol, sideStr, vol) {
     side: closeSide,
     vol,
     price: livePrice(symbol) || 0,
-    openType: 1
+    openType: 2
   });
   if (res && res.success) {
     toast(`✅ Position ${symbol} clôturée avec succès !`, '#10B981');
@@ -21578,7 +21578,7 @@ window.closeAllMexcPositions = async function() {
       side: closeSide,
       vol,
       price: livePrice(p.symbol) || 0,
-      openType: 1
+      openType: 2
     });
     if (res && res.success) successCount++;
   }
@@ -22286,7 +22286,11 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
   const vol = Number(orderConfig.vol || orderConfig.contracts || 1);
   const side = Number(orderConfig.side); // 1 = Open Long, 2 = Close Long, 3 = Open Short, 4 = Close Short
   const type = Number(orderConfig.type || 5); // 5 = Ordre au marché
-  const openType = Number(orderConfig.openType || 1); // 1 = Isolée, 2 = Croisée (CHAMP OBLIGATOIRE)
+  /* Marge croisée par défaut : le solde entier du compte adosse la position,
+     ce qui éloigne fortement le prix de liquidation mais met tout le capital
+     en jeu. C'est le mode que simule le backtest. Le mode doit aussi être
+     réglé sur croisé côté MEXC pour la paire, sinon l'ordre est refusé. */
+  const openType = Number(orderConfig.openType || 2); // 1 = Isolée, 2 = Croisée (CHAMP OBLIGATOIRE)
   const leverage = Number(orderConfig.leverage || botConfig.lev || 200);
   const stopLossPrice = orderConfig.stopLossPrice ? Number(orderConfig.stopLossPrice) : null;
   const takeProfitPrice = orderConfig.takeProfitPrice ? Number(orderConfig.takeProfitPrice) : null;
@@ -22468,7 +22472,7 @@ window.closeRealMexcFuturesPosition = async function(posInfo) {
     vol: posInfo.vol || posInfo.qty || 1,
     price: posInfo.price || livePrice(state.symbol) || 0,
     leverage: posInfo.leverage || 200,
-    openType: posInfo.openType || 1
+    openType: posInfo.openType || 2
   });
 };
 
@@ -22493,7 +22497,7 @@ window.viewMexcOrderLogs = async function() {
       msg += `[${timeStr}] #${allLogs.length - idx} ${ep} -> Statut : ${l.status}\n`;
       if (l.params && l.params.side) {
         const sideTxt = l.params.side === 1 ? 'OPEN LONG' : l.params.side === 2 ? 'CLOSE LONG' : l.params.side === 3 ? 'OPEN SHORT' : 'CLOSE SHORT';
-        msg += `   🎯 Action : ${sideTxt} (${l.params.symbol || 'SYMBOL'}) - Vol: ${l.params.vol || 1} @ Levier ${l.params.leverage || 200}x (openType: ${l.params.openType || 1})\n`;
+        msg += `   🎯 Action : ${sideTxt} (${l.params.symbol || 'SYMBOL'}) - Vol: ${l.params.vol || 1} @ Levier ${l.params.leverage || 200}x (openType: ${l.params.openType || 2})\n`;
       }
       if (l.rejectionReason) msg += `   🛡️ BLOCAGE DE SÉCURITÉ : ${l.rejectionReason}\n`;
       if (l.mexcResponse) msg += `   📬 Réponse MEXC : ${JSON.stringify(l.mexcResponse)}\n`;
@@ -22553,7 +22557,7 @@ window.pushManualMexcTrade = async function(side) {
     tradeUnit: tradeUnit,
     notional: calc.notionalUsdt,
     maxUsdt: maxUsdt,
-    openType: 1
+    openType: 2
   });
 
   if (res && res.success) {
@@ -25466,7 +25470,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1305';
+  window.__LUMEN_BUILD = 'B-1408-1350';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
