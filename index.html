@@ -25646,7 +25646,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1905';
+  window.__LUMEN_BUILD = 'B-1408-1955';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -26051,7 +26051,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       reinj: reinj * 100, capFinal: capCourant, nonFinances: nonFinances,
       wr: wr, dirF: dirF, sens: sens, mEnt: mEnt, mSor: mSor,
       marge: margeIn, unite: unite, lev: lev, tri: tri, stable: stable,
-      jours: (d.length * state.tf / 1440)
+      jours: (d.length * state.tf / 1440),
+      /* Liste complète des trades, exposée pour permettre une vérification
+         indépendante du moteur : chaque ligne peut être recalculée à partir
+         des bougies et comparée. */
+      liste: trades
     };
 
     const c = v => v >= 0 ? '#10B981' : '#FF5252';
