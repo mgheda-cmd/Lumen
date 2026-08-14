@@ -10833,6 +10833,10 @@ symList.addEventListener('click',e=>{
   symMenu.classList.remove('open');
   saveConfig();
   loadData();
+  /* Le montant du backtest est libellé dans l'actif : il doit suivre la
+     paire. On attend que les premières bougies arrivent, sinon le prix
+     n'est pas encore connu et le réajustement ne peut pas se faire. */
+  setTimeout(function(){ if(window.majPaireBT) window.majPaireBT(); }, 1200);
 });
 document.querySelectorAll('.tf-group button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tf-group button').forEach(x=>x.classList.remove('active'));
@@ -25647,7 +25651,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-2210';
+  window.__LUMEN_BUILD = 'B-1408-2305';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -26399,6 +26403,71 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
   /* Les réglages propres à la marge isolée n'ont aucun effet en croisée :
      on les cache plutôt que de laisser des champs inertes sous les yeux. */
+  /* Le montant du backtest est exprimé dans l'actif affiché. Passer de BTC
+     à ETH sans rien changer conserverait « 0,02 », qui ne veut plus rien dire :
+     0,02 BTC vaut environ 1 290 $, 0,02 ETH environ 60 $. On réajuste donc la
+     quantité pour garder le même notionnel, et on renomme l'unité.
+     Le montant en USDT, lui, ne dépend pas de l'actif : on n'y touche pas. */
+  window.majPaireBT = function(force){
+    const selU = document.getElementById('bta-unite');
+    const inM  = document.getElementById('bta-marge');
+    const info = document.getElementById('bta-paire-info');
+    if(!selU || !inM) return;
+
+    const sym  = String(state.symbol || 'BTCUSDT').toUpperCase().replace(/_/g, '');
+    const base = sym.replace(/(USDT|USDC|USD|BUSD)$/, '') || 'BTC';
+    const opt  = selU.options[0];
+    const ancienneBase = (opt.textContent.match(/^([A-Z0-9]+)/) || [])[1] || 'BTC';
+
+    /* Le repère n'existe pas tant que l'utilisateur n'a rien modifié.
+       On le calcule alors sur la paire encore affichée, avant de bouger. */
+    if(!(Number(window.__btNotionnelRef) > 0) && ancienneBase === base){
+      window.majNotionnelRefBT();
+    }
+
+    if(ancienneBase === base && !force){ if(info) info.textContent = ''; return; }
+
+    /* Changement de paire sans repère : on le reconstitue avec le dernier
+       prix connu de l'ancien actif plutôt que d'abandonner. */
+    if(!(Number(window.__btNotionnelRef) > 0) && selU.value === 'BASE'){
+      let pxOld = 0;
+      try{ pxOld = Number(livePrice(ancienneBase + 'USDT') || 0); }catch(e){}
+      if(pxOld > 0) window.__btNotionnelRef = (+inM.value || 0) * pxOld;
+    }
+
+    // Prix courant de l'ancienne et de la nouvelle paire
+    let pxNew = 0;
+    try{ pxNew = Number(livePrice(sym) || 0); }catch(e){ pxNew = 0; }
+
+    opt.textContent = base + ' (taille)';
+
+    if(selU.value === 'BASE' && pxNew > 0){
+      const notionnel = Number(window.__btNotionnelRef || 0);
+      if(notionnel > 0){
+        let q = notionnel / pxNew;
+        // arrondi lisible : 4 décimales sous 1, 2 au-dessus
+        q = q < 1 ? Math.round(q * 10000) / 10000 : Math.round(q * 100) / 100;
+        inM.value = String(q);
+        if(info) info.textContent = '\u21bb ' + base + ' \u00b7 \u2248 $' + Math.round(notionnel);
+      }
+    } else if(info) info.textContent = base;
+  };
+
+  /* Notionnel de référence : ce que vaut le montant saisi, en dollars.
+     Il sert de repère quand on change de paire. Mis à jour dès que
+     l'utilisateur modifie le montant lui-même. */
+  window.majNotionnelRefBT = function(){
+    const inM = document.getElementById('bta-marge');
+    const selU = document.getElementById('bta-unite');
+    const lev = +((document.getElementById('bta-lev') || {}).value) || 200;
+    if(!inM || !selU) return;
+    const v = +inM.value || 0;
+    let px = 0;
+    try{ px = Number(livePrice(String(state.symbol || 'BTCUSDT')) || 0); }catch(e){}
+    if(selU.value === 'BASE' && px > 0) window.__btNotionnelRef = v * px;
+    else if(selU.value === 'USDT')      window.__btNotionnelRef = v * lev;
+  };
+
   window.majModeMargeBT = function(){
     const el = document.getElementById('bta-mmode');
     const isole = !!el && el.value === 'isole';
@@ -26492,9 +26561,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="toujours" selected>Dès qu\'elle arrive — la 1re des deux ferme</option>' +
         '<option value="sans_sortie">Seulement si aucune sortie kk bis</option>' +
         '<option value="non">Jamais — attendre kk bis uniquement</option></select></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="En USDT : marge engagée. En actif : taille de position, comme sur MEXC">Montant<br><input id="bta-marge" type="number" value="0.02" step="any" style="' + sel + ';width:88px"></label>' +
-      '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
+      '<label style="font-size:11px;color:#94A3B8" title="En USDT : marge engagée. En actif : taille de position, comme sur MEXC">Montant<br><input id="bta-marge" type="number" value="0.02" step="any" onchange="window.majNotionnelRefBT()" style="' + sel + ';width:88px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" onchange="window.majNotionnelRefBT(); window.majPaireBT(true);" style="' + sel + '">' +
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
+      '<span id="bta-paire-info" style="font-size:10px;color:#7E8CA8;align-self:flex-end;padding-bottom:3px"></span>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Capital du compte adosse a la position, en marge croisee. Plus il est eleve, plus le prix de liquidation est loin. 0 = marge isolee : seule la marge du trade protege.">Capital ($)<br><input id="bta-capital" type="number" value="100" step="any" style="' + sel + ';width:80px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Croisee : tout le solde adosse la position. Isolee : seule la marge du trade repond, et la perte y est bornee.">Mode marge<br><select id="bta-mmode" onchange="window.majModeMargeBT()" style="' + sel + '">' +
