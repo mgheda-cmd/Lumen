@@ -25466,7 +25466,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1210';
+  window.__LUMEN_BUILD = 'B-1408-1305';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25595,12 +25595,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const capital = +((document.getElementById('bta-capital') || {}).value) || 0;
     /* Part de chaque gain remise dans le capital adosse. Les pertes en sont
        toujours retirees en entier : sinon le capital ne ferait que monter. */
-    /* Part de chaque gain laissee sur le compte. En marge croisee, le solde
-       entier adosse chaque position : 100 % est donc le comportement reel.
-       Une valeur inferieure decrit un retrait regulier des benefices. */
-    const elReinj = document.getElementById('bta-reinj');
-    const reinj = Math.max(0, Math.min(100,
-      (!elReinj || elReinj.value === '') ? 100 : (+elReinj.value || 0))) / 100;
+    /* Marge croisee : le solde entier adosse chaque position, et chaque gain
+       y reste en totalite. Il n'y a donc rien a reinjecter — le champ qui
+       proposait ce reglage a ete retire. La constante est conservee pour
+       laisser la porte ouverte a une modelisation des retraits. */
+    const reinj = 1;
     let capCourant = capital;
     let ruine = false;
     let nonFinances = 0;
@@ -26266,7 +26265,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Capital du compte adosse a la position, en marge croisee. Plus il est eleve, plus le prix de liquidation est loin. 0 = marge isolee : seule la marge du trade protege.">Capital ($)<br><input id="bta-capital" type="number" value="100" step="any" style="' + sel + ';width:80px"></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="Part de chaque gain laissee sur le compte. 100 % = marge croisee reelle, tout le solde adosse les positions suivantes. En dessous, le reste est retire du compte : le capital se renforce moins vite et la liquidation reste plus proche. Les pertes sortent toujours en entier.">Gains laiss\u00e9s %<br><input id="bta-reinj" type="number" value="100" step="1" min="0" max="100" style="' + sel + ';width:82px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix. 0 = pas d\'objectif, la sortie kk bis decide seule.">TP ($)<br><input id="bta-tp" type="number" value="0" step="10" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Quand plusieurs sorties suivent une entree, laquelle retenir">Sortie retenue<br><select id="bta-rang" style="' + sel + '">' +
         '<option value="1">La 1re qui suit</option>' +
