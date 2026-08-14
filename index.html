@@ -25470,7 +25470,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1440';
+  window.__LUMEN_BUILD = 'B-1408-1515';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25722,8 +25722,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       }
 
       /* En isolée, la marge n'est plus notionnel / levier : c'est une part
-         du capital, plus une part du gain précédent. Le levier réel s'en
-         déduit — c'est lui qu'il faudra envoyer à MEXC. */
+         du capital, plus une part du gain précédent. Sur MEXC cela se fait en
+         ouvrant au levier réglé, puis en ajoutant de la marge à la position.
+         Le réglage de levier ne bouge pas ; le levier effectif, lui, baisse,
+         et c'est lui qui fixe la distance à la liquidation. */
       if(mMode === 'isole' && capital > 0){
         marge = capCourant * mPct + Math.max(0, dernierGain) * mBonus;
         if(marge > capCourant) marge = capCourant;
@@ -25933,7 +25935,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     }
     h += carte('Sans sortie', sansSortie.length, sansSortie.length ? '#F59E0B' : '#94A3B8');
     if(nonFinances) h += carte('Non financés', nonFinances, '#F59E0B');
-    if(mMode === 'isole' && nLev) h += carte('Levier réel moy.', (sommeLev / nLev).toFixed(1) + 'x', '#FFD700');
+    if(mMode === 'isole' && nLev) h += carte('Levier effectif', (sommeLev / nLev).toFixed(1) + 'x', '#FFD700');
     if(tpVal > 0){
       const nTp = trades.filter(t => String(t.motif).indexOf('TP') === 0).length;
       h += carte('Fermés par TP', nTp + ' / ' + trades.length, nTp ? '#10B981' : '#94A3B8');
@@ -26292,7 +26294,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<label style="font-size:11px;color:#94A3B8" title="Capital du compte adosse a la position, en marge croisee. Plus il est eleve, plus le prix de liquidation est loin. 0 = marge isolee : seule la marge du trade protege.">Capital ($)<br><input id="bta-capital" type="number" value="100" step="any" style="' + sel + ';width:80px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Croisee : tout le solde adosse la position. Isolee : seule la marge du trade repond, et la perte y est bornee.">Mode marge<br><select id="bta-mmode" style="' + sel + '">' +
         '<option value="croise" selected>Croisée</option><option value="isole">Isolée</option></select></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="Isolee seulement : part du capital engagee en marge sur chaque trade.">Marge % cap.<br><input id="bta-mpct" type="number" value="50" step="1" min="1" max="100" style="' + sel + ';width:76px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Isolee seulement : part du capital engagee en marge sur chaque trade. Sur MEXC, cela revient a ouvrir au levier regle puis a ajouter de la marge a la position : le reglage de levier ne change pas.">Marge % cap.<br><input id="bta-mpct" type="number" value="50" step="1" min="1" max="100" style="' + sel + ';width:76px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Isolee seulement : part du gain du trade precedent ajoutee a la marge du suivant. 0 pour desactiver.">Bonus % gain<br><input id="bta-mbonus" type="number" value="20" step="1" min="0" max="100" style="' + sel + ';width:78px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix. 0 = pas d\'objectif, la sortie kk bis decide seule.">TP ($)<br><input id="bta-tp" type="number" value="0" step="10" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Quand plusieurs sorties suivent une entree, laquelle retenir">Sortie retenue<br><select id="bta-rang" style="' + sel + '">' +
