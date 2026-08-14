@@ -25466,7 +25466,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1050';
+  window.__LUMEN_BUILD = 'B-1408-1125';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25600,6 +25600,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         : (document.getElementById('bta-reinj') || {}).value) || 0)) / 100;
     let capCourant = capital;
     let ruine = false;
+    let nonFinances = 0;
     const sens   = document.getElementById('bta-sens').value;
     const dirF   = (document.getElementById('bta-dir') || {}).value || 'tout';
     const tpVal  = +((document.getElementById('bta-tp') || {}).value) || 0;
@@ -25705,6 +25706,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         notionnel = marge * lev;
       }
 
+      /* La marge sort du capital : si le capital courant ne la couvre pas,
+         la position n'aurait pas pu être ouverte. On ne l'invente pas. */
+      if(capital > 0 && marge > capCourant){ nonFinances++; continue; }
+
       /* Liquidation. À 200x, une variation adverse d'environ 0,475 % suffit
          à emporter la position quand rien d'autre ne l'adosse. Le seuil est
          la perte de 95 % de ce qui la soutient : la marge du trade seule en
@@ -25804,7 +25809,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     // repli maximal sur la courbe cumulée
     let cum = 0, pic = 0, dd = 0;
-    let btaSolde = 100, btaPeak = 100;
+    const soldeDep = capital > 0 ? capital : 100;
+    let btaSolde = soldeDep, btaPeak = soldeDep;
     for(const t of trades){
       cum += t.net;
       btaSolde += t.net;
@@ -25838,7 +25844,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     window.__btDernier = {
       conforme: conforme, manques: [], trades: trades.length, pf: pf, pnl: pnl, dd: dd, tp: tpVal,
       liq: nbLiq, capMin: capMin, capital: capital, ruine: ruine,
-      reinj: reinj * 100, capFinal: capCourant,
+      reinj: reinj * 100, capFinal: capCourant, nonFinances: nonFinances,
       wr: wr, dirF: dirF, sens: sens, mEnt: mEnt, mSor: mSor,
       marge: margeIn, unite: unite, lev: lev, tri: tri, stable: stable,
       jours: (d.length * state.tf / 1440)
@@ -25900,6 +25906,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       h += carte('Shorts', sh.length + ' · ' + (pnlSh >= 0 ? '+' : '') + pnlSh.toFixed(2) + ' $', c(pnlSh));
     }
     h += carte('Sans sortie', sansSortie.length, sansSortie.length ? '#F59E0B' : '#94A3B8');
+    if(nonFinances) h += carte('Non financés', nonFinances, '#F59E0B');
     if(tpVal > 0){
       const nTp = trades.filter(t => String(t.motif).indexOf('TP') === 0).length;
       h += carte('Fermés par TP', nTp + ' / ' + trades.length, nTp ? '#10B981' : '#94A3B8');
@@ -25938,7 +25945,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<td style="padding:4px 5px"><span style="color:#000000;background:#FCA5A5;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">−' + t.frais.toFixed(3) + ' $</span></td>' +
         '<td style="padding:4px 5px"><span style="color:#000000;background:' + ((t.ddPct||0)>0 ? '#FCA5A5' : '#A7F3D0') + ';font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + ((t.ddPct||0)>0 ? '-' + (t.ddPct||0).toFixed(1) + '%' : '0.0%') + '</span><div style="font-size:9.5px;color:' + ((t.ddDollar||0)>0 ? '#FF5252' : '#94A3B8') + ';font-weight:bold;margin-top:2px">' + ((t.ddDollar||0)>0 ? '−' + t.ddDollar.toFixed(2) + ' $' : '0.00 $') + '</div></td>' +
         '<td style="padding:4px 5px;font-weight:800;color:' + c(t.net) + '">' + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + ' $</td>' +
-        '<td style="padding:4px 5px"><span style="color:#000000;background:#BAE6FD;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + (t.solde != null ? t.solde.toFixed(2) : '100.00') + ' $</span></td>' +
+        '<td style="padding:4px 5px"><span style="color:#000000;background:#BAE6FD;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + (t.solde != null ? t.solde.toFixed(2) : soldeDep.toFixed(2)) + ' $</span></td>' +
         '<td style="padding:4px 5px;text-align:center;font-weight:900;color:#FF5252">' +
           (t.liquide ? '\u{1F480}' : '<span style="color:#334155">\u00b7</span>') + '</td></tr>';
     });
@@ -26255,7 +26262,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="bta-unite" style="' + sel + '">' +
         '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="bta-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="Capital du compte adosse a la position, en marge croisee. Plus il est eleve, plus le prix de liquidation est loin. 0 = marge isolee : seule la marge du trade protege.">Capital ($)<br><input id="bta-capital" type="number" value="0" step="any" style="' + sel + ';width:80px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Capital du compte adosse a la position, en marge croisee. Plus il est eleve, plus le prix de liquidation est loin. 0 = marge isolee : seule la marge du trade protege.">Capital ($)<br><input id="bta-capital" type="number" value="100" step="any" style="' + sel + ';width:80px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Part de chaque gain remise dans le capital qui adosse les positions suivantes. Les pertes sont toujours retirees en entier. Sans effet si Capital vaut 0.">R\u00e9inj. gains %<br><input id="bta-reinj" type="number" value="20" step="1" min="0" max="100" style="' + sel + ';width:78px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix. 0 = pas d\'objectif, la sortie kk bis decide seule.">TP ($)<br><input id="bta-tp" type="number" value="0" step="10" style="' + sel + ';width:72px"></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Quand plusieurs sorties suivent une entree, laquelle retenir">Sortie retenue<br><select id="bta-rang" style="' + sel + '">' +
