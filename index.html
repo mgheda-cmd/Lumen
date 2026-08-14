@@ -22198,6 +22198,100 @@ window.getRealMexcFuturesOpenPositions = async function(serviceUrl, lumenToken, 
   }
 };
 
+
+/**
+ * Renforcement de la marge d'une position isolée.
+ *
+ * En marge isolée, MEXC ouvre la position avec notionnel / levier — soit
+ * 6,45 $ pour 0,02 BTC à 200x. Le prix de liquidation est alors à 0,475 %.
+ * Ajouter de la marge à la position l'éloigne d'autant, sans toucher au
+ * réglage de levier ni à la taille.
+ *
+ * Endpoint : POST /api/v1/private/position/change_margin
+ * Paramètres : positionId, amount, type ('ADD' ou 'SUB').
+ *
+ * La position est DÉJÀ ouverte quand cette fonction est appelée. Un échec
+ * ici ne doit donc jamais faire échouer l'ordre : on signale, on journalise,
+ * on laisse la position telle quelle avec sa marge d'origine.
+ */
+window.renforcerMargeIsolee = async function(opts){
+  const { serviceUrl, lumenToken, apiKey, apiSecret, symbol, margeCible } = opts || {};
+  if (!serviceUrl || !margeCible || margeCible <= 0) return { success: false, error: 'Paramètres manquants' };
+
+  try {
+    /* 1. Retrouver la position et sa marge actuelle. MEXC met un court
+       instant à l'enregistrer : on laisse passer un délai avant de lire. */
+    await new Promise(r => setTimeout(r, 1200));
+    const positions = await window.getRealMexcFuturesOpenPositions(serviceUrl, lumenToken, apiKey, apiSecret);
+    const cible = String(symbol || '').toUpperCase().replace('-', '_');
+    const pos = (positions || []).find(p =>
+      String(p.symbol || '').toUpperCase().replace('-', '_') === cible);
+
+    if (!pos) return { success: false, error: 'Position introuvable, marge inchangée' };
+    if (Number(pos.openType) !== 1) return { success: false, error: 'Position en croisée, renforcement sans objet' };
+
+    const positionId = pos.positionId ?? pos.id;
+    if (!positionId) return { success: false, error: 'positionId absent de la réponse MEXC' };
+
+    const margeActuelle = parseFloat(pos.im ?? pos.initialMargin ?? pos.margin ?? 0) || 0;
+    const ajout = Math.round((margeCible - margeActuelle) * 100) / 100;
+
+    if (ajout <= 0) {
+      return { success: true, ajout: 0, message: 'Marge déjà suffisante (' + margeActuelle.toFixed(2) + ' $)' };
+    }
+
+    /* 2. Ne jamais engager plus que le disponible : MEXC refuserait, mais
+       autant ne pas envoyer un ordre voué à l'échec. */
+    const cfg = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+    const token = lumenToken || cfg.lumenToken || document.getElementById('live-ex-token')?.value || '';
+    const key = apiKey || cfg.apiKey || document.getElementById('live-ex-apikey')?.value || '';
+    const sec = apiSecret || cfg.apiSecret || document.getElementById('live-ex-apisecret')?.value || '';
+
+    const bodyObj = {
+      endpoint: '/api/v1/private/position/change_margin',
+      method: 'POST',
+      isFutures: true,
+      params: { positionId: positionId, amount: ajout, type: 'ADD' }
+    };
+    if (key) bodyObj.apiKey = key;
+    if (sec) bodyObj.apiSecret = sec;
+
+    const resp = await fetch(serviceUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Lumen-Token': token },
+      body: JSON.stringify(bodyObj)
+    });
+    const res = await resp.json();
+
+    const ok = resp.ok && (res.success === true || res.data?.success === true ||
+                           res.data?.code === 0 || res.data?.code === 200);
+
+    if (window.logMexcClientOrder) {
+      window.logMexcClientOrder({
+        type: 'CHANGE_MARGIN', symbol: cible, positionId: positionId,
+        margeAvant: margeActuelle, margeCible: margeCible, ajout: ajout,
+        status: ok ? 'SUCCESS' : 'ERROR', response: res
+      });
+    }
+
+    if (!ok) {
+      const err = res.error || res.data?.msg || 'Refus MEXC';
+      toast('\u26A0 Marge non renforcée : ' + err + ' — la position reste à ' +
+            margeActuelle.toFixed(2) + ' $', '#FF9F1C');
+      return { success: false, error: err, margeActuelle: margeActuelle };
+    }
+
+    toast('\u2705 Marge renforcée : +' + ajout.toFixed(2) + ' $ (total ' +
+          margeCible.toFixed(2) + ' $)', '#10B981');
+    return { success: true, ajout: ajout, margeFinale: margeCible };
+
+  } catch (e) {
+    toast('\u26A0 Renforcement de marge impossible : ' + e.message +
+          ' — la position garde sa marge d\'origine', '#FF9F1C');
+    return { success: false, error: e.message };
+  }
+};
+
 /**
  * Taille de contrat dynamique MEXC Futures
  */
@@ -22440,6 +22534,26 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
 
     if (isSuccess) {
       toast(`🚀 ORDRE MEXC FUTURES EXÉCUTÉ AVEC SUCCÈS ! (${sideLabel} ${mexcSymbol})`, '#10B981');
+
+      /* Renforcement de la marge en isolée. La position est déjà ouverte :
+         un échec ici ne remet pas l'ordre en cause, il laisse simplement la
+         marge d'origine et la liquidation à sa distance initiale. */
+      if (openType === 1) {
+        const pctMarge = Number(document.getElementById('live-ex-marginpct')?.value || 0);
+        if (pctMarge > 0) {
+          const soldeDispo = Number(window.__mexcAvailUsdt || 0);
+          const margeCible = soldeDispo * pctMarge / 100;
+          if (margeCible > 0) {
+            window.renforcerMargeIsolee({
+              serviceUrl: serviceUrl, lumenToken: lumenToken,
+              apiKey: apiKey, apiSecret: apiSecret,
+              symbol: mexcSymbol, margeCible: margeCible
+            }).catch(function(e){ console.warn('Renforcement de marge :', e); });
+          } else {
+            toast('\u26A0 Solde disponible inconnu, marge non renforcée', '#FF9F1C');
+          }
+        }
+      }
 
       if (typeof window.triggerInsistentMexcTradeAlert === 'function') {
         window.triggerInsistentMexcTradeAlert({
@@ -25486,7 +25600,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-1620';
+  window.__LUMEN_BUILD = 'B-1408-1745';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -25608,7 +25722,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const lev    = +document.getElementById('bta-lev').value || 200;
     const margeIn = +document.getElementById('bta-marge').value || 0.02;
     const unite   = (document.getElementById('bta-unite') || {}).value || 'BASE';
-    const fraisP = (+document.getElementById('bta-frais').value || 0.016) / 100;
+    const fraisP = (+document.getElementById('bta-frais').value || 0.02) / 100;
     /* Capital adosse a la position. A 0, on reste en marge isolee : seule la
        marge du trade absorbe la perte, et la liquidation tombe a 0,475 % au
        levier 200. Renseigne, il joue le role du solde en marge croisee. */
@@ -26219,11 +26333,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   /* Taux taker relevés sur le compte MEXC, sans remise MX.
      Le maker est à 0 %, mais les ordres partent au marché : on est taker
      des deux côtés, à l'entrée comme à la sortie. */
-  const FRAIS_TAKER = { BTC: 0.016, ETH: 0.008, XAU: 0.008 };
+  /* Taux plein, sans la remise de 20 % liée au paiement des frais en MX :
+     0,02 % taker sur BTC. Les paires ETH et XAU suivent le même rapport. */
+  const FRAIS_TAKER = { BTC: 0.02, ETH: 0.01, XAU: 0.01 };
   window.fraisTakerDefaut = function(){
     const sym = (state.symbol || 'BTCUSDT').toUpperCase();
     for(const k in FRAIS_TAKER){ if(sym.indexOf(k) === 0) return String(FRAIS_TAKER[k]); }
-    return '0.016';
+    return '0.02';
   };
 
   window.libererHistorique = function(){
@@ -26318,7 +26434,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="2">La 2e qui suit</option>' +
         '<option value="3">La 3e qui suit</option>' +
         '</select></label>' +
-      '<label style="font-size:11px;color:#94A3B8" title="Taux taker MEXC : 0,016 % sur BTC, 0,008 % sur ETH. Appliqué à l\'entrée et à la sortie.">Frais % (taker)<br><input id="bta-frais" type="number" value="' + (window.fraisTakerDefaut ? window.fraisTakerDefaut() : '0.016') + '" step="0.001" style="' + sel + ';width:84px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8" title="Taux taker MEXC plein : 0,02 % sur BTC, 0,01 % sur ETH. La remise de 20 % (frais payés en MX) n\'est pas appliquée. Compté à l\'entrée et à la sortie.">Frais % (taker)<br><input id="bta-frais" type="number" value="' + (window.fraisTakerDefaut ? window.fraisTakerDefaut() : '0.02') + '" step="0.001" style="' + sel + ';width:84px"></label>' +
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
         '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
         '<option value="14">2 semaines</option><option value="22">22 jours</option>' +
