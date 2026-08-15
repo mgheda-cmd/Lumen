@@ -14038,6 +14038,44 @@ const SCHEMA={
     {k:'cPurp',t:'col',lab:'Couleur basse',def:'#F472B6'},
     {k:'cSig',t:'col',lab:'Couleur signal',def:'#FFFFFF'},
   ]},
+  kk_bis2:{title:'kk bis 2 — seuils fixes (75 / -75)',fields:[{k:'upper',la:'Seuil haut',t:'num',min:1,max:500,step:1},{k:'lower',la:'Seuil bas',t:'num',min:-500,max:-1,step:1},
+    {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'tf2',t:'choice',lab:'Seconde unité de temps',opts:[{v:'off',t:'Aucune'},{v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off',ind:1},
+    {k:'cLine2Up',t:'col',lab:'2ᵉ ligne — haussier',def:'#00E5FF'},
+    {k:'cLine2Dn',t:'col',lab:'2ᵉ ligne — baissier',def:'#FF9F1C'},
+    {k:'showSig2',t:'bool',lab:'Signal de la seconde ligne',def:false},
+    {k:'showCross',t:'bool',lab:'Croisements entre les deux lignes',def:true},
+    {k:'showCrossOnPrice',t:'bool',lab:'Reporter les croisements sur le prix',def:true},
+    {k:'cSig2',t:'col',lab:'Couleur signal seconde ligne',def:'#FFD59E'},
+    
+    
+    {k:'armBars',t:'num',lab:'Bougies de confirmation',min:1,max:10,def:2,ind:1},
+    {k:'cool',t:'num',lab:'Délai de garde (bougies)',min:0,max:30,def:3,ind:1},
+    {k:'spacing',t:'num',lab:'Dispersion cluster',min:1,max:20,def:3,ind:1},
+    {k:'phase',t:'num',lab:'Phase PhiSmoother',min:0,max:10,def:3.7,ind:1},
+    {k:'sigLen',t:'num',lab:'Signal — longueur',min:1,max:100,def:20,ind:1},
+    {k:'postLen',t:'num',lab:'Post-lissage — longueur',min:1,max:50,def:1,ind:1},
+    {k:'showExits',t:'bool',lab:'Marqueurs de sortie',def:true},
+    {k:'showDiv',t:'bool',lab:'Divergences prix / score',def:true},
+    {k:'showDivOnPrice',t:'bool',lab:'Reporter les divergences sur le prix',def:true},
+    {k:'showSeuilOnPrice',t:'bool',lab:'Reporter les sorties par seuil sur le prix (Pastilles Vente/Achat)',def:true},
+    {k:'showPivotsOnPrice',t:'bool',lab:'Reporter les sommets et creux (triangles) sur le prix',def:true},
+    {k:'rangeImpMin',t:'num',lab:'Range Impulse — durée minimale',min:1,max:50,def:3,ind:1},
+    {k:'noiseTf',t:'choice',lab:'Bruit — unité de temps du score',opts:[{v:'chart',t:'Celle du graphique'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart',ind:1},
+    {k:'noiseWin',t:'num',lab:'Bruit — fenêtre d\'amplitude',min:10,max:200,def:40,ind:1},
+    {k:'noiseAmp',t:'num',lab:'Bruit — amplitude minimale',min:5,max:150,def:45,ind:1},
+    {k:'noiseElan',t:'num',lab:'Bruit — fraction du seuil',min:0.1,max:1,def:0.45,ind:1},
+    {k:'noiseGap',t:'num',lab:'Bruit — écart minimal entre entrées',min:2,max:200,def:25,ind:1},
+    {k:'showPivots',t:'bool',lab:'Sommets et creux du score',def:true},
+    {k:'pivotLen',t:'num',lab:'Largeur du sommet (bougies)',min:1,max:15,def:3,ind:1},
+    {k:'divMinBars',t:'num',lab:'Écart minimum entre sommets',min:2,max:50,def:5,ind:1},
+    {k:'divMaxBars',t:'num',lab:'Écart maximum entre sommets',min:10,max:300,def:60,ind:1},
+    {k:'showZero',t:'bool',lab:'Ligne zéro',def:true},
+    {k:'fillBg',t:'bool',lab:'Fond coloré',def:true},
+    {k:'cGold',t:'col',lab:'Couleur haute',def:'#22D3EE'},
+    {k:'cPurp',t:'col',lab:'Couleur basse',def:'#F472B6'},
+    {k:'cSig',t:'col',lab:'Couleur signal',def:'#FFFFFF'},
+  ]},
   two_ind:{title:'kk',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'src',t:'choice',lab:'Source',opts:[{v:'close',t:'Clôt'},{v:'open',t:'Ouv'},{v:'high',t:'Haut'},{v:'low',t:'Bas'},{v:'hl2',t:'HL2'},{v:'hlc3',t:'HLC3'}],def:'close',ind:1},
@@ -14325,6 +14363,28 @@ try{
   const cur = String((state.indicators.kk_bis && state.indicators.kk_bis.tf2) || 'off');
   menu.querySelectorAll('[data-kkbis2]').forEach(function(x){
     x.classList.toggle('on', x.dataset.kkbis2 === cur);
+  });
+}catch(e){}
+
+/* Même chose pour kk bis 2. Ses boutons portent leur propre attribut,
+   sinon les deux indicateurs se partageraient les mêmes réglages. */
+try{
+  menu.querySelectorAll('[data-kkbis2b]').forEach(function(el){
+    el.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      const v = el.dataset.kkbis2b;
+      if(state.indicators.kk_bis2) state.indicators.kk_bis2.tf2 = v;
+      menu.querySelectorAll('[data-kkbis2b]').forEach(function(x){
+        x.classList.toggle('on', x.dataset.kkbis2b === v);
+      });
+      state.cache = {};
+      saveConfig();
+      render();
+    });
+  });
+  const cur2 = String((state.indicators.kk_bis2 && state.indicators.kk_bis2.tf2) || 'off');
+  menu.querySelectorAll('[data-kkbis2b]').forEach(function(x){
+    x.classList.toggle('on', x.dataset.kkbis2b === cur2);
   });
 }catch(e){}
 
@@ -27105,7 +27165,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1608-0035';
+  window.__LUMEN_BUILD = 'B-1608-0140';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
