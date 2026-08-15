@@ -7085,6 +7085,28 @@ function render(){
     }
     ctx.restore();
   }
+  /* Prolongement des pointillés des pastilles Z.Z. jusqu'en bas du
+     graphique, à travers tous les indicateurs affichés. Tracé ici, après
+     tous les panneaux, sans quoi ceux-ci le recouvriraient. */
+  if(Array.isArray(window.__zzVerticales) && window.__zzVerticales.length){
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    ctx.lineWidth = 1;
+    const basV = H - AXIS_H;
+    for(const v of window.__zzVerticales){
+      if(v.x < 0 || v.x > W - AXIS_W) continue;
+      ctx.strokeStyle = v.col;
+      ctx.globalAlpha = 0.45;
+      ctx.beginPath();
+      ctx.moveTo(v.x, v.y);
+      ctx.lineTo(v.x, basV);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
   updateChips();
   updatePaper();
   saveView();
@@ -26968,7 +26990,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-1945';
+  window.__LUMEN_BUILD = 'B-1508-2015';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

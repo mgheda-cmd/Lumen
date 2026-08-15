@@ -64,5 +64,8 @@ const src=fs.readFileSync('index.html','utf8');
 t('collecte posee 3 fois', (src.match(/__zzVerticales\.push/g)||[]).length===3,
   (src.match(/__zzVerticales\.push/g)||[]).length+' fois');
 t('liste videe a chaque rendu', /function render\(\)\{[\s\S]{0,200}__zzVerticales = \[\]/.test(src));
+t('bloc de trace present dans le fichier', /const basV = H - AXIS_H/.test(src));
+t('   il boucle sur les verticales', /for\(const v of window\.__zzVerticales\)/.test(src));
+t('   il descend jusqu au bas', /ctx\.lineTo\(v\.x, basV\)/.test(src));
 
 console.log('\n'+(ko===0?'Les pointilles traversent tous les indicateurs.':ko+' probleme(s).'));
