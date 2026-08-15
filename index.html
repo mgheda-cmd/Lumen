@@ -5339,6 +5339,71 @@ function getInd(key){
         }
       }
 
+
+      /* ---------- FUSION DE LA SECONDE UNITÉ DE TEMPS ----------
+         Par défaut, tf2 ne sert qu'à superposer une seconde courbe sur le
+         panneau : elle ne produit aucune sortie, et le balayage testait donc
+         21 combinaisons dont seules 7 différaient.
+
+         Quand ind.fusionTf2 vaut 'union', on refait le même calcul de sorties
+         sur les bougies de la seconde échelle, on ramène les index sur le
+         graphique, et on ajoute ces sorties aux premières. Une sortie de l'une
+         ou l'autre courbe ferme alors le trade.
+
+         'accord' est plus strict : une sortie n'est retenue que si l'autre
+         courbe en signale une de même sens à moins de tolAccord bougies. */
+      const fusion = ind.fusionTf2 || 'off';
+      if(fusion !== 'off' && tf2 && tf2 > 0){
+        try{
+          const bars2 = (tf2 === state.tf) ? d : getMTFBars(tf2);
+          if(bars2 && bars2.length > 30){
+            const r2b = calc.twoIndicator(bars2, ind);
+            const n2 = r2b.net || [], s2 = r2b.signal || [];
+            const up2 = new Array(n2.length).fill(null), lo2 = new Array(n2.length).fill(null);
+            const q2 = []; let acc2 = 0;
+            for(let j=0;j<n2.length;j++){
+              const v=n2[j];
+              if(v!=null){ q2.push(v*v); acc2+=v*v; if(q2.length>win){acc2-=q2.shift();} }
+              if(q2.length>10){ const r=Math.sqrt(acc2/q2.length); up2[j]=kM*r; lo2[j]=-kM*r; }
+            }
+            const ex2=[]; let bU=0,bD=0,lastb=-999;
+            for(let j=2;j<bars2.length;j++){
+              const n=n2[j],p=n2[j-1],p2v=n2[j-2],u=up2[j],l=lo2[j],si=s2[j];
+              if(n==null||p==null||p2v==null||u==null) continue;
+              if(n>=u) bU++; if(n<=l) bD++;
+              if(j-lastb<cool) continue;
+              if(bU>=arm && n<u && n<p && p<=p2v && (si==null||n<si)){
+                ex2.push({t:bars2[j].t, price:bars2[j].c, type:'SORTIE_ACHAT', tf2:true}); lastb=j; bU=0;
+              }
+              if(bD>=arm && n>l && n>p && p>=p2v && (si==null||n>si)){
+                ex2.push({t:bars2[j].t, price:bars2[j].c, type:'SORTIE_VENTE', tf2:true}); lastb=j; bD=0;
+              }
+            }
+            /* Ramener chaque sortie de la seconde échelle sur l'index du
+               graphique. Sans cela les index appartiendraient à un autre
+               tableau de bougies et tomberaient n'importe où. */
+            const ex2g = ex2.map(function(x){
+              const gi = (typeof idxOfTime === 'function') ? idxOfTime(x.t) : null;
+              return gi != null ? Object.assign({}, x, { i: gi }) : null;
+            }).filter(Boolean);
+
+            if(fusion === 'union'){
+              ex2g.forEach(function(x){ exits.push(x); });
+            } else if(fusion === 'accord'){
+              const tol = +ind.tolAccord || Math.max(3, Math.round(tf2 / (state.tf || 1)));
+              const gardees = [];
+              exits.forEach(function(a){
+                if(ex2g.some(function(b){ return b.type === a.type && Math.abs(b.i - a.i) <= tol; }))
+                  gardees.push(a);
+              });
+              exits.length = 0;
+              gardees.forEach(function(x){ exits.push(x); });
+            }
+            exits.sort(function(a,b){ return a.i - b.i; });
+          }
+        }catch(e){ /* la fusion échoue : on garde les sorties de la première échelle */ }
+      }
+
       if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs,net2,sg2,tf2};
       else{
         const M=a=>mapHTF(src,a,d);
@@ -25901,7 +25966,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-0045';
+  window.__LUMEN_BUILD = 'B-1508-0210';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -26836,6 +26901,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value, true)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
       '<button onclick="window.balayerKK()" title="Teste toutes les combinaisons d\'unites de temps de kk bis et classe les resultats" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔎 Balayer kk bis</button>' +
+      '<button onclick="window.balayerKKFusion(\'union\')" title="Meme balayage, mais la seconde unite de temps produit elle aussi des sorties, fusionnees avec les premieres. Les 21 combinaisons deviennent reellement distinctes. Attention : cela modifie aussi les pastilles kk bis affichees." style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔗 Balayer fusionné</button>' +
       '<button onclick="window.reinitBt()" title="Libère les verrous de chargement si un lancement est resté bloqué" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer">↺ Débloquer</button>' +
       '</div><div id="bta-charge" style="font-size:11px;color:#94A3B8;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace"></div>' +
       '<div id="bta-configs" style="margin-bottom:12px;padding:10px;border:1px solid #312E81;border-radius:9px;background:rgba(49,46,129,.12)"></div>' +
@@ -27143,7 +27209,12 @@ window.envoyerVersMexc = function(){
 
   const UTS = ['1','2','3','5','15','30','60'];
 
-  window.balayerKK = async function(){
+  window.balayerKKFusion = function(mode){ return window.balayerKK(mode || 'union'); };
+
+  window.balayerKK = async function(fusion){
+    /* fusion vaut 'off' pour le balayage d'origine, ou 'union' / 'accord'
+       pour faire produire des sorties à la seconde unité de temps. */
+    fusion = fusion || 'off';
     const box = document.getElementById('bta-res');
     const info = document.getElementById('bta-charge');
     if(!state.indicators || !state.indicators.kk_bis){
@@ -27154,6 +27225,8 @@ window.envoyerVersMexc = function(){
     // on mémorise pour restaurer si l'utilisateur ne choisit rien
     const av1 = state.indicators.kk_bis.tf;
     const av2 = state.indicators.kk_bis.tf2;
+    const avF = state.indicators.kk_bis.fusionTf2;
+    window.__balayageFusion = fusion;
 
     const combis = [];
     for(const a of UTS){
@@ -27171,6 +27244,7 @@ window.envoyerVersMexc = function(){
         combis.length + ' · ' + a + 'm × ' + b + 'm…</span>';
       state.indicators.kk_bis.tf = a;
       state.indicators.kk_bis.tf2 = b;
+      state.indicators.kk_bis.fusionTf2 = fusion;
       state.cache = {};
       // laisse respirer l'interface entre deux calculs
       await new Promise(r => setTimeout(r, 12));
@@ -27192,6 +27266,7 @@ window.envoyerVersMexc = function(){
     // restauration, l'utilisateur appliquera lui-même ce qu'il retient
     state.indicators.kk_bis.tf = av1;
     state.indicators.kk_bis.tf2 = av2;
+    state.indicators.kk_bis.fusionTf2 = avF;
     state.cache = {};
 
     /* Note sur 10, pondérée selon ce qui compte vraiment pour tenir une
@@ -27361,6 +27436,10 @@ window.envoyerVersMexc = function(){
     if(!x) return;
     state.indicators.kk_bis.tf = x.a;
     state.indicators.kk_bis.tf2 = x.b;
+    /* Le mode de fusion fait partie de la combinaison : sans lui, choisir une
+       ligne issue du balayage fusionné appliquerait d'autres sorties que
+       celles qui ont produit le chiffre affiché. */
+    state.indicators.kk_bis.fusionTf2 = window.__balayageFusion || 'off';
     state.cache = {};
     try{ if(typeof saveConfig === 'function') saveConfig(); }catch(e){}
     try{ if(typeof syncMenu === 'function') syncMenu(); }catch(e){}
