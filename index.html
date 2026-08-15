@@ -555,6 +555,26 @@ footer{
         <span class="srtf" data-kkbis2="60" title="Seconde ligne en 1H">1H</span>
         <span class="state">on</span>
       </div>
+      <div class="ind-item" data-ind="kk_bis2" id="item-kk_bis2" style="background:var(--panel-2,#0F172A);border:1.5px solid #F59E0B;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(34,211,238,0.15)">
+        <span class="dot" style="background:#F59E0B;box-shadow:0 0 6px #F59E0B;flex:none"></span>
+        <span class="nm">kk bis 2 <span class="sub">seuils fixes 75 / −75 · sans adaptation à la volatilité</span></span>
+        <span class="srtf mtf on" data-ind2="kk_bis2" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="kk_bis2" data-tf="2">2m</span>
+        <span class="srtf mtf" data-ind2="kk_bis2" data-tf="3">3m</span>
+        <span class="srtf mtf" data-ind2="kk_bis2" data-tf="5">5m</span>
+        <span class="srtf mtf" data-ind2="kk_bis2" data-tf="15">15m</span>
+        <span class="srtf mtf" data-ind2="kk_bis2" data-tf="20">20m</span>
+        <span class="srtf mtf" data-ind2="kk_bis2" data-tf="30">30m</span>
+        <span class="sub" style="opacity:.7;margin-left:8px;font-size:9px">2ᵉ ligne</span>
+        <span class="srtf" data-kkbis2b="off" title="Aucune seconde ligne">—</span>
+        <span class="srtf" data-kkbis2b="3" title="Seconde ligne en 3m">3m</span>
+        <span class="srtf" data-kkbis2b="5" title="Seconde ligne en 5m">5m</span>
+        <span class="srtf" data-kkbis2b="15" title="Seconde ligne en 15m">15m</span>
+        <span class="srtf" data-kkbis2b="20" title="Seconde ligne en 20m">20m</span>
+        <span class="srtf" data-kkbis2b="30" title="Seconde ligne en 30m">30m</span>
+        <span class="srtf" data-kkbis2b="60" title="Seconde ligne en 1H">1H</span>
+        <span class="state">on</span>
+      </div>
       <div class="ind-item on" data-ind="signal_exit_ob" id="item-signal_exit_ob" style="background:var(--panel-2,#0F172A);border:1.5px solid #C084FC;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(192,132,252,0.25)">
         <span class="dot" style="background:#C084FC;box-shadow:0 0 6px #C084FC;flex:none"></span>
         <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12px">Sortie Order Block <span style="background:#C084FC;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🎯 PASTILLE VIOLETTE ($100)</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Pastille violette de sortie dès que le prix touche ou s'approche d'un Order Block à $100 près</span></span>
@@ -4252,6 +4272,7 @@ const state = {
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
     kk_bis:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,rangeImpTfs:{'3':false,'5':true,'15':true,'30':false,'60':false},rangeImpMin:3,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false,showCross:true,showCrossOnPrice:true},
+    kk_bis2:{on:false,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',cGold:'#22D3EE',cPurp:'#F472B6',cScoreUp:'#00FF00',cScoreDn:'#FF0000',fillBg:true,fillAlpha:85,showZero:true,showOscillator:true,upper:75,lower:-75,kMult:1.2,rmsWin:100,armBars:2,cool:3,showExits:true,showDiv:true,showDivOnPrice:true,showSeuilOnPrice:true,rangeImpTfs:{'3':false,'5':true,'15':true,'30':false,'60':false},rangeImpMin:3,showPivotsOnPrice:true,noiseTf:'chart',noiseWin:40,noiseAmp:45,noiseElan:0.45,noiseGap:25,showPivots:true,pivotLen:3,divMinBars:5,divMaxBars:60,tf2:'off',cLine2Up:'#00E5FF',cLine2Dn:'#FF9F1C',cSig2:'#FFD59E',showSig2:false,showCross:true,showCrossOnPrice:true},
     signal_exit_ob:{on:true,distThreshold:100,showAchat:true,showVente:true},
   },
   cache:{},
@@ -4322,7 +4343,7 @@ function mergeConfig(c){
   if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
-    for(const k of ['rsi','macd','imp','stoch','atr','rosc','macdsr','rangeDet','rangeDet2','two_ind','kk_bis'])
+    for(const k of ['rsi','macd','imp','stoch','atr','rosc','macdsr','rangeDet','rangeDet2','two_ind','kk_bis','kk_bis2'])
       if(typeof c.paneH[k]==='number'&&c.paneH[k]>=34&&c.paneH[k]<=800)
         state.paneH[k]=c.paneH[k];
   }
@@ -5405,6 +5426,171 @@ function getInd(key){
       }
 
       if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs,net2,sg2,tf2};
+      return state.cache[ck];
+    }
+
+    if(key==='kk_bis2'){
+      /* kk bis 2 : identique à kk bis, sauf les seuils.
+         kk bis calcule une bande adaptative, kMult fois l'écart quadratique
+         moyen glissant : elle se resserre quand le marché est calme et
+         s'élargit quand il s'agite, donc les sorties suivent la volatilité.
+         Ici on revient aux seuils fixes de l'indicateur d'origine, upper et
+         lower, 75 et -75 par défaut. Le score doit franchir la même valeur
+         quelles que soient les conditions. Plus lisible, moins réactif. */
+      const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
+      const src = mtf ? getMTFBars(mtf) : d;
+      if(!src||!src.length){ state.cache[ck]={net:[],signal:[],up:[],lo:[],exits:[]}; return state.cache[ck]; }
+      const base = calc.twoIndicator(src, ind);
+      const net = base.net||[], sg = base.signal||[];
+      const kM=+ind.kMult||1.2, win=+ind.rmsWin||100, arm=+ind.armBars||2, cool=+ind.cool||3;
+
+      // seuils fixes de l'indicateur d'origine, aucune adaptation
+      const seuilH = (ind.upper != null) ? +ind.upper : 75;
+      const seuilB = (ind.lower != null) ? +ind.lower : -75;
+      const up=new Array(net.length).fill(seuilH), lo=new Array(net.length).fill(seuilB);
+
+      // ---------- SOMMETS ET CREUX DU SCORE ----------
+      // Un sommet local marque la fin de l'accélération. C'est le premier
+      // avertissement d'essoufflement, bien avant le retour sous le seuil.
+      const L=+ind.pivotLen||3;
+      const peaks=[], troughs=[];
+      for(let j=L;j<net.length-L;j++){
+        const v=net[j]; if(v==null) continue;
+        let isP=true,isT=true;
+        for(let q=1;q<=L;q++){
+          const a=net[j-q], b=net[j+q];
+          if(a==null||b==null){ isP=isT=false; break; }
+          if(!(v>=a&&v>=b)) isP=false;
+          if(!(v<=a&&v<=b)) isT=false;
+        }
+        if(isP) peaks.push(j);
+        if(isT) troughs.push(j);
+      }
+
+      // ---------- DIVERGENCES PRIX / SCORE ----------
+      // Le prix fait un plus haut, le score un plus bas : l'élan s'épuise
+      // alors que le prix monte encore. Signal de sortie d'achat classique,
+      // et le plus lisible à l'œil sur un oscillateur.
+      const divs=[];
+      const minGap=+ind.divMinBars||5, maxGap=+ind.divMaxBars||60;
+      for(let a=1;a<peaks.length;a++){
+        const p1=peaks[a-1], p2=peaks[a];
+        if(p2-p1<minGap||p2-p1>maxGap) continue;
+        if(net[p1]<=0||net[p2]<=0) continue;                 // uniquement en zone haute
+        if(src[p2].h>src[p1].h && net[p2]<net[p1]){
+          divs.push({i1:p1,i2:p2,dir:1,t:src[p2].t,price:src[p2].c});
+        }
+      }
+      for(let a=1;a<troughs.length;a++){
+        const t1=troughs[a-1], t2=troughs[a];
+        if(t2-t1<minGap||t2-t1>maxGap) continue;
+        if(net[t1]>=0||net[t2]>=0) continue;
+        if(src[t2].l<src[t1].l && net[t2]>net[t1]){
+          divs.push({i1:t1,i2:t2,dir:-1,t:src[t2].t,price:src[t2].c});
+        }
+      }
+
+      const exits=[]; let aU=0,aD=0,last=-999;
+      for(let j=2;j<src.length;j++){
+        const n=net[j],p=net[j-1],p2=net[j-2],u=up[j],l=lo[j],si=sg[j];
+        if(n==null||p==null||p2==null||u==null) continue;
+        if(n>=u) aU++; if(n<=l) aD++;
+        if(j-last<cool) continue;
+        if(aU>=arm && n<u && n<p && p<=p2 && (si==null||n<si)){
+          exits.push({i:j,t:src[j].t,price:src[j].c,type:'SORTIE_ACHAT'}); last=j; aU=0;
+        }
+        if(aD>=arm && n>l && n>p && p>=p2 && (si==null||n>si)){
+          exits.push({i:j,t:src[j].t,price:src[j].c,type:'SORTIE_VENTE'}); last=j; aD=0;
+        }
+      }
+
+      // Les divergences deviennent des sorties à part entière
+      divs.forEach(function(dv){
+        exits.push({i:dv.i2,t:dv.t,price:dv.price,
+                    type: dv.dir===1?'SORTIE_ACHAT':'SORTIE_VENTE', div:true});
+      });
+      exits.sort(function(a,b){return a.i-b.i;});
+
+      // ---------- SECONDE UNITÉ DE TEMPS ----------
+      // Même indicateur, autre échelle de temps, superposé sur le même panneau.
+      // Permet de voir d'un coup si le 5m et le 15m disent la même chose.
+      let net2=null, sg2=null;
+      const tf2raw = ind.tf2;
+      const tf2 = (tf2raw && tf2raw !== 'off') ? +tf2raw : null;
+      if(tf2 && tf2 > 0){
+        const bars2 = (tf2 === state.tf) ? d : getMTFBars(tf2);
+        if(bars2 && bars2.length > 30){
+          try{
+            const r2 = calc.twoIndicator(bars2, ind);
+            net2 = (bars2 === d) ? (r2.net||[]) : mapHTF(bars2, r2.net||[], d);
+            sg2  = (bars2 === d) ? (r2.signal||[]) : mapHTF(bars2, r2.signal||[], d);
+          }catch(e){ net2 = sg2 = null; }
+        }
+      }
+
+
+      /* ---------- FUSION DE LA SECONDE UNITÉ DE TEMPS ----------
+         Par défaut, tf2 ne sert qu'à superposer une seconde courbe sur le
+         panneau : elle ne produit aucune sortie, et le balayage testait donc
+         21 combinaisons dont seules 7 différaient.
+
+         Quand ind.fusionTf2 vaut 'union', on refait le même calcul de sorties
+         sur les bougies de la seconde échelle, on ramène les index sur le
+         graphique, et on ajoute ces sorties aux premières. Une sortie de l'une
+         ou l'autre courbe ferme alors le trade.
+
+         'accord' est plus strict : une sortie n'est retenue que si l'autre
+         courbe en signale une de même sens à moins de tolAccord bougies. */
+      const fusion = ind.fusionTf2 || 'off';
+      if(fusion !== 'off' && tf2 && tf2 > 0){
+        try{
+          const bars2 = (tf2 === state.tf) ? d : getMTFBars(tf2);
+          if(bars2 && bars2.length > 30){
+            const r2b = calc.twoIndicator(bars2, ind);
+            const n2 = r2b.net || [], s2 = r2b.signal || [];
+            /* Seuils fixes ici aussi : la seconde échelle doit suivre la même
+               règle que la première, sinon l'indicateur mélangerait deux
+               logiques de seuil dans un seul jeu de sorties. */
+            const up2 = new Array(n2.length).fill(seuilH), lo2 = new Array(n2.length).fill(seuilB);
+            const ex2=[]; let bU=0,bD=0,lastb=-999;
+            for(let j=2;j<bars2.length;j++){
+              const n=n2[j],p=n2[j-1],p2v=n2[j-2],u=up2[j],l=lo2[j],si=s2[j];
+              if(n==null||p==null||p2v==null||u==null) continue;
+              if(n>=u) bU++; if(n<=l) bD++;
+              if(j-lastb<cool) continue;
+              if(bU>=arm && n<u && n<p && p<=p2v && (si==null||n<si)){
+                ex2.push({t:bars2[j].t, price:bars2[j].c, type:'SORTIE_ACHAT', tf2:true}); lastb=j; bU=0;
+              }
+              if(bD>=arm && n>l && n>p && p>=p2v && (si==null||n>si)){
+                ex2.push({t:bars2[j].t, price:bars2[j].c, type:'SORTIE_VENTE', tf2:true}); lastb=j; bD=0;
+              }
+            }
+            /* Ramener chaque sortie de la seconde échelle sur l'index du
+               graphique. Sans cela les index appartiendraient à un autre
+               tableau de bougies et tomberaient n'importe où. */
+            const ex2g = ex2.map(function(x){
+              const gi = (typeof idxOfTime === 'function') ? idxOfTime(x.t) : null;
+              return gi != null ? Object.assign({}, x, { i: gi }) : null;
+            }).filter(Boolean);
+
+            if(fusion === 'union'){
+              ex2g.forEach(function(x){ exits.push(x); });
+            } else if(fusion === 'accord'){
+              const tol = +ind.tolAccord || Math.max(3, Math.round(tf2 / (state.tf || 1)));
+              const gardees = [];
+              exits.forEach(function(a){
+                if(ex2g.some(function(b){ return b.type === a.type && Math.abs(b.i - a.i) <= tol; }))
+                  gardees.push(a);
+              });
+              exits.length = 0;
+              gardees.forEach(function(x){ exits.push(x); });
+            }
+            exits.sort(function(a,b){ return a.i - b.i; });
+          }
+        }catch(e){ /* la fusion échoue : on garde les sorties de la première échelle */ }
+      }
+
+      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs,net2,sg2,tf2};
       else{
         const M=a=>mapHTF(src,a,d);
         const R=x=>{const gi=idxOfTime(x.t!=null?x.t:(src[x]||{}).t); return gi;};
@@ -5716,6 +5902,7 @@ function computePanes(){
   if(vis('rangeDet') && S('rangeDet','showSubpane')!==false) subs.push('rangeDet');
   if(vis('two_ind') && state.indicators.two_ind.showOscillator!==false) subs.push('two_ind');
   if(vis('kk_bis') && state.indicators.kk_bis.showOscillator!==false) subs.push('kk_bis');
+  if(vis('kk_bis2') && state.indicators.kk_bis2 && state.indicators.kk_bis2.showOscillator!==false) subs.push('kk_bis2');
   // appliquer l'ordre personnalisé (les clés connues d'abord, dans l'ordre choisi)
   if(state.subOrder&&state.subOrder.length){
     const known=state.subOrder.filter(k=>subs.includes(k));
@@ -6071,7 +6258,7 @@ function render(){
     ctx.beginPath();ctx.rect(0,p.y,W,p.h);ctx.clip();
     if(p.key==='price') drawPrice(p,s,e,cw,mainBadgeStack);
     else {
-      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:drawKKBisSub,sqz_mom:drawSqzMom};
+      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:drawKKBisSub,kk_bis2:drawKKBisSub,sqz_mom:drawSqzMom};
       let members=(p.members||[p.key]).slice();
       // membre au premier plan -> dessiné en dernier (au-dessus)
       const front=state.subFront&&state.subFront[p.key];
@@ -25999,7 +26186,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-1010';
+  window.__LUMEN_BUILD = 'B-1508-1135';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -26970,6 +27157,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   const INDICS = {
     strat_zz: ['emaPeriod','haTf','haPeriod','mode','roscPeriod','impTf','impPeriod',
                'invertSignal','strictEmaHa','yellowMode','skipRosc','cloudTrigger'],
+    kk_bis2:  ['tf','tf2','src','mode','phase','spacing','sigLen','upper','lower',
+               'armBars','cool','showExits','showDiv','pivotLen','divMinBars','divMaxBars'],
     kk_bis:   ['tf','tf2','src','mode','phase','spacing','sigLen','kMult','rmsWin',
                'armBars','cool','upper','lower','pivotLen','divMinBars','divMaxBars'],
     two_ind:  ['tf','mode','phase','spacing','sigLen','upper','lower'],
