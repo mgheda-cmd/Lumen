@@ -6,7 +6,7 @@ const vals={'bta-ent':'classique','bta-sens':'tel','bta-dir':'both','bta-modeap'
  'bta-tp':'0','bta-frais':'0.02','bta-jours':'7','bta-capital':'100','bta-mmode':'croise',
  'bta-mpct':'50','bta-mbonus':'20','bta-opp':'toujours'};
 const appels=[];
-const faux=()=>({measureText:()=>({width:30}),fillRect(){},clearRect(){},beginPath(){},
+const faux=()=>({measureText:()=>({width:30}),roundRect(){},fillRect(){},clearRect(){},beginPath(){},
  moveTo(){},lineTo(){},stroke(){},fill(){},arc(){},save(){},restore(){},translate(){},
  rotate(){},scale(){},setLineDash(){},closePath(){},strokeRect(){},
  fillText:(t,x,y)=>appels.push({t,x,y})});
@@ -42,23 +42,29 @@ global.toast=()=>{};
   // contexte de dessin factice
   global.ctx = faux();
   global.xOf = (i)=> i*0.5;
+  global.W = 1200; global.AXIS_W = 60; global.placeBadge = (x,w,y)=>y;
   const yOf = (p)=> 600 - (p-60000)/20;
 
   appels.length=0;
   window.__btMarks = true;
   window.drawMarquesBT(0, tout.length-1, yOf);
 
-  const pnl = appels.filter(a=>/\$/.test(a.t));
-  const marques = appels.filter(a=>/^BACKTEST/.test(a.t));
-  const ronds = appels.filter(a=>/^(\u25b2|\u25bc|S|\u2715)$/.test(a.t));
-  t('une étiquette BACKTEST par trade', marques.length===L.length, marques.length+' / '+L.length);
-  t('une pastille d entrée + une de sortie', ronds.length===L.length*2, ronds.length+' / '+(L.length*2));
-  t('un PnL par trade', pnl.length===L.length, pnl.length+' / '+L.length);
+  const titresE = appels.filter(a=>/^BT (\u25b2 ACHAT|\u25bc VENTE) #/.test(a.t));
+  const titresS = appels.filter(a=>/^BT SORTIE /.test(a.t));
+  const pxE = appels.filter(a=>/^entree /.test(a.t));
+  const pxS = appels.filter(a=>/^sortie /.test(a.t));
+  const motifs = appels.filter(a=>/(Seuil \+ pente|Divergence|Entr\u00e9e oppos\u00e9e|TP \+|Liquidation)/.test(a.t));
+  t('un titre d entrée avec numéro par trade', titresE.length===L.length, titresE.length+' / '+L.length);
+  t('un titre de sortie avec PnL par trade', titresS.length===L.length, titresS.length+' / '+L.length);
+  t('prix d entrée affiché', pxE.length===L.length, pxE.length+' / '+L.length);
+  t('prix de sortie affiché', pxS.length===L.length, pxS.length+' / '+L.length);
+  t('motif de sortie affiché', motifs.length===L.length, motifs.length+' / '+L.length);
+  const pnl = titresS;
 
   // les valeurs affichees correspondent-elles aux nets du moteur ?
   let ecarts=0;
   L.forEach((tr,k)=>{
-    const attendu=(tr.net>=0?'+':'')+tr.net.toFixed(2)+' $';
+    const attendu='BT SORTIE '+(tr.net>=0?'+':'')+tr.net.toFixed(2)+' $';
     const trouve=pnl[k] ? pnl[k].t : '';
     if(trouve!==attendu) ecarts++;
   });
