@@ -11287,7 +11287,7 @@ if(notifBtn && notifMenuEl){
     sendTelegramNotification('<b>🔔 Test Lumen Charts</b>\nVos notifications Telegram fonctionnent parfaitement sur votre téléphone !').then(res => {
       if(res && res.ok){
         if(statusMsg) statusMsg.textContent = '✅ Message envoyé sur Telegram ! Check ton tel 📲';
-        toast('Message de test envoyé sur Telegram !', '#38BDF8');
+        toast('Message de test envoyé sur Telegram !', '#38BDF8', 'test');
       } else {
         const desc = (res && res.description) ? res.description : 'Erreur réseau/envoi';
         let detail = '❌ Échec : ' + desc;
@@ -14154,6 +14154,10 @@ function getPhoneNotifConfig(){
     fullAlerts: true,
     obAlerts: true,
     exitAlerts: false,
+    /* Ne laisser passer que les notifications du module MEXC : veille des
+       signaux, ordres réels, surveillance du bot. Le compte démo et les
+       alertes de zones sont muets. Mettre à false pour tout recevoir. */
+    mexcOnly: true,
     telegramToken: '',
     telegramChatId: '',
     webhookUrl: '',
@@ -14173,8 +14177,19 @@ function savePhoneNotifConfig(cfg){
   } catch(e){}
 }
 
-function sendTelegramNotification(text){
+function sendTelegramNotification(text, source){
   const cfg = getPhoneNotifConfig();
+
+  /* Filtre de provenance. Le compte démo, les alertes de zones et les
+     notifications générales partagent le même canal Telegram que le module
+     MEXC, ce qui noyait les signaux utiles. Quand mexcOnly est actif, seuls
+     les messages marqués 'mexc' partent : veille des signaux, ordres réels
+     et surveillance du bot. Le test de connexion passe toujours. */
+  const provenance = source || 'autre';
+  if(cfg.mexcOnly !== false && provenance !== 'mexc' && provenance !== 'test'){
+    return Promise.resolve({ ok: false, description: 'Filtré : notifications limitées au module MEXC' });
+  }
+
   if(!cfg.telegramToken || !cfg.telegramChatId) return Promise.resolve({ ok: false, description: 'Token ou Chat ID manquant' });
   const url = `https://api.telegram.org/bot${cfg.telegramToken.trim()}/sendMessage`;
   return fetch(url, {
@@ -22196,7 +22211,7 @@ window.triggerInsistentMexcTradeAlert = function(details) {
       `<b>Levier :</b> ${lev}x (Marge Isolée)\n` +
       `<b>Heure :</b> ${timeStr}\n` +
       `<b>Statut :</b> ORDRE RÉEL TRANSMIS ET VALIDÉ PAR MEXC 🚀`;
-    sendTelegramNotification(tgMsg);
+    sendTelegramNotification(tgMsg, 'mexc');
   }
 
   // 5. Notification Webhook (si configurée)
@@ -22447,7 +22462,7 @@ window.demarrerVeille = function(reelle){
       ? '\n\n\u26A0 Le bot passe les ordres lui-m\u00eame.'
       : '\n\n\u2139 Aucun ordre ne sera pass\u00e9. Vous recevrez chaque entr\u00e9e et chaque sortie \u00e0 ex\u00e9cuter vous-m\u00eame.');
 
-  if(typeof sendTelegramNotification === 'function') sendTelegramNotification(msg);
+  if(typeof sendTelegramNotification === 'function') sendTelegramNotification(msg, 'mexc');
   if(typeof toast === 'function') toast(reelle ? 'Veille r\u00e9elle activ\u00e9e' : 'Veille activ\u00e9e \u2014 notifications seules', '#38BDF8');
   window.verifierVeille();
 };
@@ -22457,7 +22472,7 @@ window.arreterVeille = function(){
   window.__veille.active = false;
   try{ localStorage.removeItem('lumen_veille'); }catch(e){}
   if(typeof sendTelegramNotification === 'function')
-    sendTelegramNotification('\u26AA <b>Veille arr\u00eat\u00e9e</b>\n\nPlus aucune notification de signal.');
+    sendTelegramNotification('\u26AA <b>Veille arr\u00eat\u00e9e</b>\n\nPlus aucune notification de signal.', 'mexc');
   if(typeof toast === 'function') toast('Veille arr\u00eat\u00e9e', '#94A3B8');
 };
 
@@ -22503,7 +22518,7 @@ window.verifierVeille = function(){
       '\n\u{1F4CF} Taille : <b>' + ((document.getElementById('bta-marge') || {}).value || '?') +
         '</b> \u00b7 levier <b>' + ((document.getElementById('bta-lev') || {}).value || '?') + 'x</b>' +
       '\n\u{1F550} ' + new Date(bougie.t).toLocaleTimeString('fr-FR') +
-      (v.reelle ? '' : '\n\n\u{1F449} \u00c0 passer vous-m\u00eame sur MEXC'));
+      (v.reelle ? '' : '\n\n\u{1F449} \u00c0 passer vous-m\u00eame sur MEXC'), 'mexc');
   });
 
   /* SORTIES kk bis : même indicateur que le backtest. */
@@ -22534,7 +22549,7 @@ window.__notifSortie = function(prefixe, px, motif){
     '\n\u{1F4B5} Entr\u00e9e ' + Number(v.entree.px).toFixed(2) + ' \u2192 <b>' + Number(px).toFixed(2) + '</b>' +
     '\n' + (gain >= 0 ? '\u2705' : '\u274C') + ' \u00c9cart : <b>' + (gain >= 0 ? '+' : '') + gain.toFixed(2) + ' pts</b>' +
     '\n\u{1F4DD} Motif : ' + motif +
-    (v.reelle ? '' : '\n\n\u{1F449} \u00c0 fermer vous-m\u00eame sur MEXC'));
+    (v.reelle ? '' : '\n\n\u{1F449} \u00c0 fermer vous-m\u00eame sur MEXC'), 'mexc');
   v.sens = 0; v.entree = null;
 };
 
@@ -25984,7 +25999,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-0320';
+  window.__LUMEN_BUILD = 'B-1508-1010';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -27570,7 +27585,7 @@ window.trierBalayage = function(mode){
             ? ('\n<i>Sans réponse de votre part, le bot s\'arrêtera après ' + reste +
                ' alerte' + (reste > 1 ? 's' : '') + ' supplémentaire' + (reste > 1 ? 's' : '') + '.</i>')
             : '\n<b>Arrêt automatique du bot.</b>');
-        sendTelegramNotification(tg);
+        sendTelegramNotification(tg, 'mexc');
       }
     }catch(e){}
 
@@ -27601,7 +27616,7 @@ window.trierBalayage = function(mode){
         if(typeof stopLiveExchangeTrading === 'function') stopLiveExchangeTrading();
         toast('Bot arrêté suite à l\'alerte', '#F59E0B');
         if(typeof sendTelegramNotification === 'function'){
-          sendTelegramNotification('🛑 <b>Bot arrêté</b> à votre demande après alerte.');
+          sendTelegramNotification('🛑 <b>Bot arrêté</b> à votre demande après alerte.', 'mexc');
         }
       }catch(e){}
     } else {
