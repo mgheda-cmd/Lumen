@@ -6278,6 +6278,7 @@ function placeBadge(bx, bw, by, bh, dir) {
 function render(){
   /* Les lignes verticales des pastilles sont recollectées à chaque rendu. */
   window.__zzVerticales = [];
+  window.__zz2Cases = [];
 
   // mise en pause pendant un backtest, pour ne pas recalculer inutilement
   if(window.__btNoRender) return;
@@ -10392,6 +10393,12 @@ function paneHeightOf(key){
 }
 canvas.addEventListener('mousedown',e=>{
   const x=e.offsetX,y=e.offsetY;
+  /* Cases à cocher des pastilles Z.Z. 2 : testées en premier, sinon le clic
+     serait pris par le déplacement du graphique. */
+  if(Array.isArray(window.__zz2Cases)){
+    const c2 = window.__zz2Cases.find(c=>x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h);
+    if(c2){ window.zz2BasculerRejet(c2.uid); e.preventDefault(); return; }
+  }
   if(state.wantMode&&wantTapAt(x,y)){return;}
   if((state.zoneMode|| false)&&zoneTapAt(x,y)){return;}
   const gh=ghostHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
@@ -10956,6 +10963,32 @@ function toggleZZInvert() {
 /* Bascules propres à Z.Z. 2 : elles agissent sur strat_zz2 et ne touchent
    jamais strat_zz. Les deux indicateurs restent séparés jusque dans leurs
    boutons, qui portaient les mêmes identifiants et se marchaient dessus. */
+/* Entrées de Z.Z. 2 écartées à la main, repérées par l'horodatage de leur
+   bougie. Conservées dans le navigateur pour survivre à un rechargement :
+   le travail de tri ne doit pas être à refaire à chaque fois. */
+window.__zz2Rejets = (function(){
+  try{ return JSON.parse(localStorage.getItem('lumen_zz2_rejets') || '{}') || {}; }
+  catch(e){ return {}; }
+})();
+
+window.zz2BasculerRejet = function(uid){
+  if(!uid) return;
+  if(window.__zz2Rejets[uid]) delete window.__zz2Rejets[uid];
+  else window.__zz2Rejets[uid] = 1;
+  try{ localStorage.setItem('lumen_zz2_rejets', JSON.stringify(window.__zz2Rejets)); }catch(e){}
+  const n = Object.keys(window.__zz2Rejets).length;
+  if(typeof toast === 'function')
+    toast(n + ' entrée' + (n > 1 ? 's' : '') + ' Z.Z. 2 écartée' + (n > 1 ? 's' : ''), '#38BDF8');
+  render();
+};
+
+window.zz2ViderRejets = function(){
+  window.__zz2Rejets = {};
+  try{ localStorage.removeItem('lumen_zz2_rejets'); }catch(e){}
+  if(typeof toast === 'function') toast('Sélection Z.Z. 2 remise à zéro', '#94A3B8');
+  render();
+};
+
 function toggleZZ2Entries() {
   if (!state.indicators.strat_zz2) return;
   state.indicators.strat_zz2.showEntries = !(state.indicators.strat_zz2.showEntries !== false);
@@ -24184,11 +24217,41 @@ function drawZZ2Signals(signals, s, e, yOf, cw) {
       roundRect(x - bw / 2, by, bw, bh, bh / 2); ctx.fill(); ctx.stroke();
       ctx.restore();
 
+      /* Case à cocher : elle sert à écarter une entrée dont on ne veut pas.
+         Le repère est l'horodatage de la bougie, stable d'un rendu à l'autre
+         et d'une session à l'autre, contrairement à l'index qui se décale
+         quand l'historique se recharge. */
+      const uid2 = 'B' + (sig.t != null ? sig.t : (d[sig.i] ? d[sig.i].t : sig.i));
+      const ecarte = !!(window.__zz2Rejets && window.__zz2Rejets[uid2]);
+      const cSz = 13, cX = x - bw / 2 + 7, cY = by + (bh - cSz) / 2;
+
+      ctx.save();
+      ctx.fillStyle = ecarte ? '#EF4444' : 'rgba(255,255,255,0.10)';
+      ctx.strokeStyle = ecarte ? '#EF4444' : '#94A3B8';
+      ctx.lineWidth = 1.4;
+      roundRect(cX, cY, cSz, cSz, 3); ctx.fill(); ctx.stroke();
+      if(ecarte){
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cX + 3, cY + 3); ctx.lineTo(cX + cSz - 3, cY + cSz - 3);
+        ctx.moveTo(cX + cSz - 3, cY + 3); ctx.lineTo(cX + 3, cY + cSz - 3);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      if(!Array.isArray(window.__zz2Cases)) window.__zz2Cases = [];
+      window.__zz2Cases.push({ x: cX - 4, y: cY - 4, w: cSz + 8, h: cSz + 8, uid: uid2 });
+
+      /* Une entrée écartée reste visible mais s'efface : on doit pouvoir la
+         retrouver pour la remettre, et voir ce qu'on a exclu. */
+      if(ecarte) ctx.globalAlpha = 0.45;
+
       ctx.fillStyle = textColor; ctx.font = 'bold 10.5px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
       ctx.fillText(mainText, x, by + 12);
       ctx.fillStyle = '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
       ctx.fillText('Prix: ' + fmtP(entryP) + ' $  |  ' + (sig.trigger || 'Alignement Z.Z.').substring(0, 20), x, by + 24);
       ctx.textAlign = 'left';
+      ctx.globalAlpha = 1;
 
       if (typeof labelHits !== 'undefined') {
         labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'strat_zz'});
@@ -27022,7 +27085,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-2230';
+  window.__LUMEN_BUILD = 'B-1508-2340';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
