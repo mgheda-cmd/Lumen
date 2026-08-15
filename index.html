@@ -10510,6 +10510,12 @@ canvas.addEventListener('touchstart',e=>{
   if(e.touches.length!==1)return;
   const r=canvas.getBoundingClientRect();
   const tx=e.touches[0].clientX-r.left, ty=e.touches[0].clientY-r.top;
+  /* Cases à cocher des pastilles Z.Z. 2, testées avant tout le reste :
+     sinon la zone de la bulle prend le doigt et ouvre les réglages. */
+  if(Array.isArray(window.__zz2Cases)){
+    const c2=window.__zz2Cases.find(c=>tx>=c.x&&tx<=c.x+c.w&&ty>=c.y&&ty<=c.y+c.h);
+    if(c2){ if(e.cancelable)e.preventDefault(); window.zz2BasculerRejet(c2.uid); return; }
+  }
   if(state.wantMode&&wantTapAt(tx,ty)){ if(e.cancelable)e.preventDefault(); return; }
   if(state.zoneMode&&zoneTapAt(tx,ty)){ if(e.cancelable)e.preventDefault(); return; }
   const gh=ghostHits.find(h=>tx>=h.x&&tx<=h.x+h.w&&ty>=h.y&&ty<=h.y+h.h);
@@ -13863,6 +13869,16 @@ const SCHEMA={
     ]}
   ]},
   strat_zz:{title:'Indicateur Z. Z. (Pastilles Confluence)',fields:[
+    {k:'showEntries',t:'bool',lab:'Afficher les pastilles d\'Entrée (⚡ ACHAT / VENTE)',def:true},
+    {k:'showExits',t:'bool',lab:'Afficher les pastilles de Sortie (🎯 SORTIE ACHAT / SORTIE VENTE)',def:true},
+    {k:'emaPeriod',t:'num',lab:'Période EMA',min:2,max:200,ind:1},
+    {k:'haTf',t:'num',lab:'UT Heikin Ashi (minutes)',min:1,max:240,ind:1},
+    {k:'haPeriod',t:'num',lab:'Lissage HA',min:2,max:50,ind:1},
+    {k:'roscPeriod',t:'num',lab:'Période Range Osc',min:10,max:200,ind:1},
+    {k:'impTf',t:'num',lab:'UT Impulse MACD (minutes)',min:1,max:240,ind:1},
+    {k:'impPeriod',t:'num',lab:'Période Impulse MACD',min:5,max:200,ind:1}
+  ]},
+  strat_zz2:{title:'Indicateur Z. Z. 2 (Pastilles Confluence)',fields:[
     {k:'showEntries',t:'bool',lab:'Afficher les pastilles d\'Entrée (⚡ ACHAT / VENTE)',def:true},
     {k:'showExits',t:'bool',lab:'Afficher les pastilles de Sortie (🎯 SORTIE ACHAT / SORTIE VENTE)',def:true},
     {k:'emaPeriod',t:'num',lab:'Période EMA',min:2,max:200,ind:1},
@@ -24162,8 +24178,10 @@ function drawZZ2Signals(signals, s, e, yOf, cw) {
       ctx.textAlign = 'left';
 
       if (typeof labelHits !== 'undefined') {
-        labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'strat_zz'});
-        labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'strat_zz'});
+        /* La zone d'ouverture des réglages commence après la case à cocher,
+           sinon un appui sur la case ouvrirait le panneau au lieu de cocher. */
+        labelHits.push({x: x - bw / 2 + 26, y: by, w: bw - 26, h: bh, key: 'strat_zz2'});
+        labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'strat_zz2'});
       }
     } else {
       // Pastille d'Entrée Z.Z. (Achat = vert #10B981, Vente = rouge #EF4444, Inversé = jaune #FBBF24)
@@ -24254,8 +24272,10 @@ function drawZZ2Signals(signals, s, e, yOf, cw) {
       ctx.globalAlpha = 1;
 
       if (typeof labelHits !== 'undefined') {
-        labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'strat_zz'});
-        labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'strat_zz'});
+        /* La zone d'ouverture des réglages commence après la case à cocher,
+           sinon un appui sur la case ouvrirait le panneau au lieu de cocher. */
+        labelHits.push({x: x - bw / 2 + 26, y: by, w: bw - 26, h: bh, key: 'strat_zz2'});
+        labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'strat_zz2'});
       }
     }
   }
@@ -27085,7 +27105,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-2340';
+  window.__LUMEN_BUILD = 'B-1608-0035';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

@@ -49,4 +49,21 @@ t('liste videe a chaque rendu', /__zz2Cases = \[\]/.test(src));
 t('entree ecartee estompee', /if\(ecarte\) ctx\.globalAlpha = 0\.45/.test(src));
 t('repere sur l horodatage, pas l index', /const uid2 = 'B' \+ \(sig\.t != null/.test(src));
 
+// La case ne doit pas ouvrir les reglages
+t('le tactile teste les cases aussi',
+  /if\(Array\.isArray\(window\.__zz2Cases\)\)\{[\s\S]{0,200}tx>=c\.x/.test(src));
+t('   avant tout le reste au toucher',
+  src.indexOf('tx>=c.x') < src.indexOf('state.wantMode&&wantTapAt(tx,ty)'));
+t('la zone des reglages epargne la case', /x: x - bw \/ 2 \+ 26, y: by, w: bw - 26/.test(src));
+(function(){
+  const i0=src.indexOf('function drawZZ2Signals');
+  let j0=src.indexOf('{',i0), prof=0, k0=j0;
+  while(k0<src.length){ if(src[k0]==='{')prof++; else if(src[k0]==='}'){prof--; if(prof===0)break;} k0++; }
+  const corps=src.slice(i0,k0+1);
+  const cles=(corps.match(/key: '(strat_zz2?)'/g)||[]);
+  t('les bulles Z.Z. 2 ouvrent LEURS reglages',
+    cles.length===4 && cles.every(c=>/strat_zz2/.test(c)), cles.join(' '));
+})();
+t('Z.Z. 2 a son schema de reglages', /strat_zz2:\{/.test(src));
+
 console.log('\n'+(ko===0?'Les cases fonctionnent.':ko+' probleme(s).'));
