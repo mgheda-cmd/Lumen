@@ -5466,6 +5466,16 @@ function getInd(key){
       }
 
       if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs,net2,sg2,tf2};
+      else{
+        const M=a=>mapHTF(src,a,d);
+        state.cache[ck]={net:M(net),signal:M(sg),up:M(up),lo:M(lo),
+          exits:exits.map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean),
+          peaks:peaks.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
+          troughs:troughs.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
+          divs:divs.map(dv=>{const a=idxOfTime(src[dv.i1].t),b=idxOfTime(src[dv.i2].t);
+            return (a!=null&&b!=null)?Object.assign({},dv,{i1:a,i2:b}):null;}).filter(Boolean),
+          net2:net2, sg2:sg2, tf2:tf2};
+      }
       return state.cache[ck];
     }
 
@@ -26937,7 +26947,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-1420';
+  window.__LUMEN_BUILD = 'B-1508-1830';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
