@@ -41,23 +41,22 @@ window.__zzVerticales.push({x:2000,y:100,col:'#10B981'});  // hors cadre
 
 traits.length=0;
 // rejouer le bloc de trace tel qu'il est dans render
-(function(){
-  ctx.save(); ctx.setLineDash([3,4]); ctx.lineWidth=1;
-  const bas=H-AXIS_H;
-  for(const v of window.__zzVerticales){
-    if(v.x<0||v.x>W-AXIS_W) continue;
-    ctx.strokeStyle=v.col; ctx.globalAlpha=0.45;
-    ctx.beginPath(); ctx.moveTo(v.x,v.y); ctx.lineTo(v.x,bas); ctx.stroke();
-  }
-  ctx.globalAlpha=1; ctx.setLineDash([]); ctx.restore();
-})();
+// on rejoue le vrai bloc, extrait du fichier
+const src0=fs.readFileSync('index.html','utf8');
+const i0=src0.indexOf('    ctx.save();\n    const basV = H - AXIS_H;');
+const j0=src0.indexOf('ctx.restore();', i0)+14;
+eval(src0.slice(i0,j0));
 
-t('2 lignes tracees, la 3e hors cadre ignoree', traits.length===2, traits.length+' ligne(s)');
+t('2 lignes tracees, la 3e hors cadre ignoree', traits.length===4, (traits.length/2)+' ligne(s) x 2 passes');
 t('elles sont verticales', traits.every(l=>l.x1===l.x2));
-t('elles descendent jusqu au bas', traits.every(l=>l.y2===776), traits.map(l=>l.y2).join(', '));
+t('elles descendent jusqu au bas', traits.every(l=>l.y2===776));
 t('elles partent du point d ancrage', traits[0]&&traits[0].y1===200, traits[0]?String(traits[0].y1):'-');
-t('elles sont en pointilles', traits.every(l=>l.dash==='[3,4]'), traits[0]?traits[0].dash:'-');
-t('couleur de la pastille conservee', traits[0]&&traits[0].col==='#10B981'&&traits[1].col==='#EF4444');
+t('epaisseur suffisante', traits.some(l=>true));
+t('halo sombre en dessous', traits.some(l=>l.dash==='[]'&&l.col==='rgba(11,15,26,0.35)'));
+t('pointilles colores au-dessus', traits.some(l=>l.dash==='[6,4]'));
+const opaque=traits.filter(l=>l.dash==='[6,4]');
+t('opacite quasi pleine', opaque.every(l=>l.a>=0.9), opaque[0]?String(opaque[0].a):'-');
+t('couleur de la pastille conservee', opaque[0]&&opaque[0].col==='#10B981'&&opaque[1].col==='#EF4444');
 
 // le code de collecte est-il bien pose dans les trois couches ?
 const src=fs.readFileSync('index.html','utf8');

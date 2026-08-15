@@ -7090,19 +7090,25 @@ function render(){
      tous les panneaux, sans quoi ceux-ci le recouvriraient. */
   if(Array.isArray(window.__zzVerticales) && window.__zzVerticales.length){
     ctx.save();
-    ctx.setLineDash([3, 4]);
-    ctx.lineWidth = 1;
     const basV = H - AXIS_H;
     for(const v of window.__zzVerticales){
       if(v.x < 0 || v.x > W - AXIS_W) continue;
+
+      /* Deux passes : un halo sombre dessous, la ligne colorée par-dessus.
+         Sans le halo, un trait fin se perd dans les courbes des indicateurs,
+         surtout sur fond clair. */
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(11,15,26,0.35)';
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(v.x, v.y); ctx.lineTo(v.x, basV); ctx.stroke();
+
+      ctx.setLineDash([6, 4]);
       ctx.strokeStyle = v.col;
-      ctx.globalAlpha = 0.45;
-      ctx.beginPath();
-      ctx.moveTo(v.x, v.y);
-      ctx.lineTo(v.x, basV);
-      ctx.stroke();
+      ctx.globalAlpha = 0.95;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(v.x, v.y); ctx.lineTo(v.x, basV); ctx.stroke();
+      ctx.globalAlpha = 1;
     }
-    ctx.globalAlpha = 1;
     ctx.setLineDash([]);
     ctx.restore();
   }
@@ -26990,7 +26996,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-2015';
+  window.__LUMEN_BUILD = 'B-1508-2110';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
