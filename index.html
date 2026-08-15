@@ -4842,9 +4842,18 @@ async function loadData(){
   /* Verrou de backtest : loadData vide state.data et ne recharge que N_BARS
      bougies. Appelée par le flux temps réel ou une reconnexion, elle
      effaçait l'historique péniblement chargé pour le backtest. */
-  if(window.__btFreeze){
+  if(window.__btFreeze && !window.__btForceReload){
     console.log('[Lumen] rechargement ignoré : historique figé pour le backtest');
     return;
+  }
+  /* Changement voulu de paire ou d'unité de temps : le verrou est levé.
+     Il n'existe que pour empêcher le flux temps réel d'effacer l'historique
+     chargé, pas pour bloquer une action de l'utilisateur. */
+  if(window.__btForceReload){
+    window.__btFreeze = false;
+    window.__btForceReload = false;
+    const info = document.getElementById('bta-charge');
+    if(info) info.textContent = 'Historique libéré : changement de paire ou d\'unité de temps.';
   }
   const g=++gen; stopFeeds(); setStatus('loading');
   state.data=[]; state.cache={}; histBusy=false; histDone=false;
@@ -11088,6 +11097,7 @@ symList.addEventListener('click',e=>{
   symBtn.textContent=labelOf(state.symbol)+' ▾';
   symMenu.classList.remove('open');
   saveConfig();
+  window.__btForceReload = true;
   loadData();
   /* Le montant du backtest est libellé dans l'actif : il doit suivre la
      paire. On attend que les premières bougies arrivent, sinon le prix
@@ -11096,7 +11106,8 @@ symList.addEventListener('click',e=>{
 });
 document.querySelectorAll('.tf-group button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tf-group button').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');state.tf=+b.dataset.tf;saveConfig();loadData();
+  b.classList.add('active');state.tf=+b.dataset.tf;saveConfig();
+  window.__btForceReload = true; loadData();
 }));
 document.querySelectorAll('.type-group button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.type-group button').forEach(x=>x.classList.remove('active'));
@@ -23353,11 +23364,27 @@ window.drawMarquesBT = function(s, e, yOf){
     const ancreE = long ? yOf(bE.l) + 5 : yOf(bE.h) - 5;
     const ancreS = long ? yOf(bS.h) - 5 : yOf(bS.l) + 5;
 
-    // trait entre l'entrée et la sortie, sur les prix retenus
-    ctx.strokeStyle = colS; ctx.globalAlpha = 0.4; ctx.lineWidth = 1.3;
-    ctx.setLineDash([4,3]);
-    ctx.beginPath(); ctx.moveTo(xE, yOf(t.pe)); ctx.lineTo(xS, yOf(t.ps)); ctx.stroke();
-    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    /* Trait plein noir reliant l'entrée à la sortie, avec le PnL net écrit
+       au milieu. Le montant reste aussi sur la pastille de sortie : l'un se
+       lit d'un coup d'oeil sur le graphique, l'autre dans le détail. */
+    const yE2 = yOf(t.pe), yS2 = yOf(t.ps);
+    ctx.strokeStyle = '#0B0F1A'; ctx.globalAlpha = 1; ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(xE, yE2); ctx.lineTo(xS, yS2); ctx.stroke();
+
+    const txtPnl = (t.net >= 0 ? '+' : '') + Number(t.net).toFixed(2) + ' $';
+    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+    const wp = ctx.measureText(txtPnl).width + 10;
+    const xm = (xE + xS) / 2, ym = (yE2 + yS2) / 2;
+    ctx.fillStyle = '#0B0F1A';
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(xm - wp/2, ym - 8, wp, 15, 4); ctx.fill(); }
+    else ctx.fillRect(xm - wp/2, ym - 8, wp, 15);
+    ctx.strokeStyle = colS; ctx.lineWidth = 1;
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(xm - wp/2, ym - 8, wp, 15, 4); ctx.stroke(); }
+    else ctx.strokeRect(xm - wp/2, ym - 8, wp, 15);
+    ctx.fillStyle = colS;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(txtPnl, xm, ym);
 
     bulle(xE, ancreE, long ? 1 : -1, colE,
       'BT ' + (long ? '\u25b2 ACHAT' : '\u25bc VENTE') + ' #' + (t.num || '?'),
@@ -26186,7 +26213,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-1135';
+  window.__LUMEN_BUILD = 'B-1508-1230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
