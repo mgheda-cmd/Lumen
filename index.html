@@ -381,6 +381,28 @@ footer{
           <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
         </div>
       </div>
+      <div class="ind-item" data-ind="strat_zz2" id="item-strat_zz2" style="background:linear-gradient(135deg, rgba(56,189,248,0.16), rgba(16,185,129,0.12));border:1.5px solid #38BDF8;border-radius:10px;padding:10px 12px;margin-bottom:10px;box-shadow:0 3px 12px rgba(56,189,248,0.22);display:flex;flex-direction:column;align-items:stretch;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+            <span class="dot" style="background:#38BDF8;box-shadow:0 0 8px #38BDF8;flex:none;width:10px;height:10px"></span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-weight:800;color:#FFFFFF;font-size:13px;letter-spacing:0.2px">Indicateur Z. Z.</span>
+              <span style="background:linear-gradient(135deg,#38BDF8,#10B981);color:#0F172A;font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:800;white-space:nowrap">⚡ STRATÉGIE CONFLUENCE</span>
+            </div>
+          </div>
+          <span class="state" style="margin-left:8px;flex:none">on</span>
+        </div>
+        <div class="desc" style="color:#CBD5E1;font-size:11px;line-height:1.4">
+          EMA 9 / HA 5m + Nuage EMA + Range Osc + Impulse MACD 15m
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px solid rgba(255,255,255,0.12);margin-top:2px;width:100%">
+          <button id="btn-toggle-zz-entries" onclick="toggleZ.Z. 2Entries()" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles d'Entrée Achat et Vente">⚡ Entrées: ON</button>
+          <button id="btn-toggle-zz-exits" onclick="toggleZZExits()" style="background:rgba(236,72,153,0.25);border:1px solid #EC4899;color:#EC4899;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles de Sortie Achat et Vente">🎯 Sorties: ON</button>
+          <button id="btn-toggle-zz-invert" onclick="toggleZZInvert()" style="background:rgba(56,189,248,0.3);border:1px solid #38BDF8;color:#38BDF8;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Inverser les signaux Achat/Vente (Pastilles Jaunes d'Or)">🟡 Inversé: ON</button>
+          <button id="btn-bt-strat-zz" onclick="openZZBacktestModal()" style="background:linear-gradient(135deg,#10B981,#059669);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(16,185,129,0.3);margin-left:auto" title="Lancer le Backtest Pastilles & Sortie Déplacement de Prix (200, 300, 400, 500 pts)">🚀 Backtest</button>
+          <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
+        </div>
+      </div>
       <div id="new-ind-banner" style="background:linear-gradient(135deg, rgba(236,72,153,0.22), rgba(99,102,241,0.22));border:1px solid #EC4899;border-radius:8px;padding:8px 10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
         <div>
           <div style="font-size:11px;font-weight:700;color:#FBCFE8">✨ NOUVEAUX DÉTECTEURS DE RANGE</div>
@@ -4268,6 +4290,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
+    strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
     signal_exit_kk:{on:true,tf:'chart',tfs:{chart:true,'3':false,'5':false,'15':false,'20':false,'30':false,'60':false,'240':false},upper:64,lower:-64,lookback:12,minExhaustion:0},
@@ -5272,6 +5295,14 @@ function getInd(key){
       }
       return state.cache[ckExitOb];
     }
+    if(key==='strat_zz2'){
+      /* Z.Z. 2 lit ses propres réglages et son propre moteur : rien de ce
+         qui est fait ici ne peut modifier les pastilles de Z.Z. */
+      const r = computeZZ2Signals(d, ind);
+      state.cache[ck] = r;
+      return r;
+    }
+
     if(key==='kk_bis'){
       // Même score que le Pine, mais seuils adaptatifs et détection de sortie renforcée.
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
@@ -6693,6 +6724,7 @@ function render(){
   }
   drawWantMarks(s, e, yOf);
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf, cw);
+  if(vis('strat_zz2')) drawZZ2Signals(getInd('strat_zz2'), s, e, yOf, cw);
   if(window.__btMarks && typeof window.drawMarquesBT === 'function') window.drawMarquesBT(s, e, yOf);
   // Couche supplémentaire : pastilles corrigées (mode strict). Les originales sont conservées.
   if(vis('strat_zz') && window.__zzShowCorrected && typeof window.drawZZCorrected === 'function') window.drawZZCorrected(s, e, yOf, cw);
@@ -18613,6 +18645,488 @@ function findBarIndexByTime(dArr, tVal) {
   return null;
 }
 
+/* ============================================================
+   Z.Z. 2 — copie indépendante du moteur de pastilles
+   ------------------------------------------------------------
+   Mêmes règles que Z.Z. à la naissance : EMA 9, Heikin Ashi 5m,
+   nuage EMA 30/90, filtre Impulse 15m, alternance des sens.
+
+   Elle est volontairement séparée, pas paramétrée : toute condition
+   ajoutée ici ne touchera jamais Z.Z., et le backtest pourra comparer
+   les deux côte à côte sur les mêmes bougies.
+
+   Le bloc CONDITIONS SUPPLÉMENTAIRES, à la fin, est l'endroit prévu
+   pour filtrer ou enrichir les signaux. Il ne fait rien pour l'instant.
+   ============================================================ */
+function computeZZ2Signals(d, ind, strictMode, strictEmaHa){
+  if(!d || d.length < 2) return [];
+  ind = ind || {};
+  const isStrict = (strictMode !== undefined) ? !!strictMode : !!(ind.strictMode);
+  const isStrictEmaHa = (strictEmaHa !== undefined) ? !!strictEmaHa : !!(ind.strictEmaHa);
+  const invertSignal = (ind && ind.invertSignal !== undefined) ? !!ind.invertSignal : (state && state.indicators && state.indicators.strat_zz && state.indicators.strat_zz.invertSignal !== undefined ? !!state.indicators.strat_zz.invertSignal : true);
+  /* cloudTrigger : le signal se déclenche sur le croisement du Nuage EMA
+     (calculé sur les bougies de base, jamais décalé), les trois autres
+     conditions servant d'autorisation. Supprime l'attente de clôture HTF. */
+  const cloudTrigger = !!(ind && ind.cloudTrigger);
+  const emaPeriod = ind.emaPeriod || 9;
+  const haTf = ind.haTf || 5;
+  const haPeriod = ind.haPeriod || 10;
+  const mode = ind.mode || 'lisse';
+  const roscPeriod = ind.roscPeriod || 50;
+  const impTf = ind.impTf || 15;
+  const impPeriod = ind.impPeriod || 34;
+
+  // Déterminer l'unité de temps de base de d
+  const baseTf = (ind && (ind.tf || ind.baseTf)) ? +(ind.tf || ind.baseTf) : ((d && d.length >= 2 && d[1].t > d[0].t) ? Math.max(1, Math.round((d[1].t - d[0].t) / 60000)) : (state.tf || 1));
+
+  // 1. EMA 9
+  const ema9 = calc.ema(d, emaPeriod);
+
+  // 2. HA 5m
+  const bars5 = (baseTf === haTf) ? d : (baseTf > haTf ? d : aggregateData(d, haTf, baseTf));
+  if(!bars5 || !bars5.length) return [];
+  const plainHA5 = calc.plainHA(bars5);
+  const smoothHA5 = (mode === 'lisse') ? calc.smoothHA(bars5, haPeriod, haPeriod) : plainHA5;
+  const haSeries5 = bars5.map((b, idx) => (smoothHA5 && smoothHA5[idx]) ? smoothHA5[idx] : plainHA5[idx]);
+  if(!haSeries5 || !haSeries5.length) return [];
+  const haMapped = (baseTf === haTf) ? haSeries5 : (isStrict ? mapHTF_strict(bars5, haSeries5, d, haTf * 60000) : mapHTF(bars5, haSeries5, d));
+
+  // 3. Nuage EMA 30/90
+  const fastCloud = calc.ema(d, 30);
+  const slowCloud = calc.ema(d, 90);
+
+  // 4. Range Oscillator
+  let roscMapped = null;
+  const rosc5 = calc.rangeOsc(bars5, roscPeriod, 2);
+  if(rosc5 && rosc5.length){
+    roscMapped = (baseTf === haTf) ? rosc5 : (isStrict ? mapHTF_strict(bars5, rosc5, d, haTf * 60000) : mapHTF(bars5, rosc5, d));
+  }
+
+  // 5. Impulse MACD 15m & 5m
+  const bars15 = (baseTf === impTf) ? d : (baseTf > impTf ? d : aggregateData(d, impTf, baseTf));
+  let imp15_col = null;
+  let imp15_histo = null;   // Impulse histo 15m : md - signal
+  if(bars15 && bars15.length >= 2){
+    const imp15 = calc.impmacd(bars15, impPeriod, 9);
+    if(imp15 && imp15.col){
+      imp15_col = (baseTf === impTf) ? imp15.col : (isStrict ? mapHTF_strict(bars15, imp15.col, d, impTf * 60000) : mapHTF(bars15, imp15.col, d));
+    }
+    if(imp15 && imp15.sh){
+      imp15_histo = (baseTf === impTf) ? imp15.sh : (isStrict ? mapHTF_strict(bars15, imp15.sh, d, impTf * 60000) : mapHTF(bars15, imp15.sh, d));
+    }
+  }
+
+  // 6. Impulse MACD 5m & MACD S/R 15m pour Sorties ZZ
+  const imp5 = calc.impmacd(bars5, ind.impPeriod || 34, 9);
+  const imp5_sh = (imp5 && imp5.sh) ? ((baseTf === haTf) ? imp5.sh : (isStrict ? mapHTF_strict(bars5, imp5.sh, d, haTf * 60000) : mapHTF(bars5, imp5.sh, d))) : null;
+
+  const msr15 = calc.macdSR(bars15, 12, 26, 9);
+  /* Direction du MACD S/R 15m : la ligne au-dessus de son signal = haussier,
+     en dessous = baissier. Sert à trancher le sens quand l'Impulse est jaune. */
+  let msr15_dir = null;
+  if(msr15 && msr15.macd && msr15.sg){
+    const dirArr = msr15.macd.map(function(v, k){
+      const sv = msr15.sg[k];
+      if(v == null || sv == null) return null;
+      return (v > sv) ? 1 : -1;
+    });
+    msr15_dir = (baseTf === impTf) ? dirArr
+      : (isStrict ? mapHTF_strict(bars15, dirArr, d, impTf * 60000) : mapHTF(bars15, dirArr, d));
+  }
+  const msr15_redDot = new Array(d.length).fill(false);
+  const msr15_greenDot = new Array(d.length).fill(false);
+  if (msr15 && msr15.levels) {
+    const barMs = (impTf || 15) * 60 * 1000;
+    for (const lvl of msr15.levels) {
+      if (!lvl || lvl.i == null || !bars15[lvl.i]) continue;
+      const t0 = bars15[lvl.i].t;
+      const tStart = isStrict ? (t0 + barMs) : t0;
+      const idx0 = findBarIndexByTime(d, tStart);
+      if (idx0 != null) {
+        for (let k = idx0; k < d.length && d[k].t < tStart + barMs; k++) {
+          if (lvl.type === 'res') msr15_redDot[k] = true;
+          if (lvl.type === 'sup') msr15_greenDot[k] = true;
+        }
+      }
+    }
+  }
+
+  const signals = [];
+  let currentPosition = null;
+  let entryPrice = null;
+  let entryIdx = null;
+  let tradeCount = 0;
+  let jourCourant = null;   // jour local courant, pour la numérotation quotidienne
+  let currentTradeNum = null;
+
+  const condSellEmaHa = new Array(d.length).fill(false);
+  const condSellCloud = new Array(d.length).fill(false);
+  const condSellRosc  = new Array(d.length).fill(true);
+  const condSellImp   = new Array(d.length).fill(true);
+
+  const condBuyEmaHa  = new Array(d.length).fill(false);
+  const condBuyCloud  = new Array(d.length).fill(false);
+  const condBuyRosc   = new Array(d.length).fill(true);
+  const condBuyImp    = new Array(d.length).fill(true);
+
+  for(let i = 0; i < d.length; i++){
+    const e = ema9[i];
+    const ha = haMapped[i];
+    const fc = fastCloud[i];
+    const sc = slowCloud[i];
+    const r = roscMapped ? roscMapped[i] : null;
+    const cImp = imp15_col ? imp15_col[i] : null;
+
+    if(e != null && ha != null){
+      const haTop = Math.max(ha.o, ha.c);
+      const haBot = Math.min(ha.o, ha.c);
+      if (isStrictEmaHa) {
+        condSellEmaHa[i] = (e < haBot);
+        condBuyEmaHa[i]  = (e > haTop);
+      } else {
+        condSellEmaHa[i] = (e < haBot || e < haTop);
+        condBuyEmaHa[i]  = (e > haTop || e > haBot);
+      }
+    }
+
+    if(fc != null && sc != null){
+      condSellCloud[i] = (fc < sc);
+      condBuyCloud[i]  = (fc > sc);
+    }
+
+    if(ind && ind.skipRosc){
+      /* Range Oscillator neutralisé : la condition reste vraie dans les deux
+         sens, les trois autres décident seules. Sert à mesurer si cet
+         oscillateur retarde réellement les entrées. */
+      condSellRosc[i] = true;
+      condBuyRosc[i]  = true;
+    } else if(r != null){
+      condSellRosc[i] = (r < 0);
+      condBuyRosc[i]  = (r > 0);
+    }
+
+    if(cImp != null){
+      /* Condition 4 — Impulse MACD 15m
+         Vert clair (0) et vert foncé (1) : achat.
+         Rouge (3) : vente.
+         Jaune (2) : dépend de yellowMode — 'sell' pour l'ancienne règle où le
+         jaune vendait toujours, 'msr' pour la nouvelle où le MACD S/R 15m
+         tranche. La couleur est lue telle qu'elle est au moment où les trois
+         autres conditions s'alignent, sans attendre la clôture de la bougie. */
+      if(cImp === 2){
+        /* JAUNE — l'Impulse ne tranche pas de lui-même. C'est le MACD S/R 15m
+           qui donne le sens : au-dessus de son signal le jaune est haussier,
+           en dessous il est baissier. Si le MACD S/R n'a pas encore de valeur,
+           le jaune reste neutre et les trois premières conditions décident. */
+        const yMode = (ind && ind.yellowMode) ? ind.yellowMode : 'sell';
+        if(yMode === 'sell'){
+          // ancienne interprétation : le jaune vendait toujours
+          condBuyImp[i]  = false;
+          condSellImp[i] = true;
+        } else if(yMode === 'neutre'){
+          condBuyImp[i]  = true;
+          condSellImp[i] = true;
+        } else {
+          const md = msr15_dir ? msr15_dir[i] : null;
+          if(md === 1){        condBuyImp[i] = true;  condSellImp[i] = false; }
+          else if(md === -1){  condBuyImp[i] = false; condSellImp[i] = true;  }
+          else {               condBuyImp[i] = true;  condSellImp[i] = true;  }
+        }
+      } else {
+        condBuyImp[i]  = (cImp === 0 || cImp === 1);
+        condSellImp[i] = (cImp === 3);
+      }
+    } else {
+      /* AUCUNE COULEUR — l'Impulse ne dessine rien ici.
+         Règle d'origine (yellowMode 'sell') : les conditions restent vraies
+         dans les deux sens, la condition 4 ne filtre rien.
+         Nouvelle règle ('msr') : le MACD S/R 15m tranche, comme pour le jaune. */
+      const yModeN = (ind && ind.yellowMode) ? ind.yellowMode : 'sell';
+      if(yModeN === 'msr'){
+        const mdN = msr15_dir ? msr15_dir[i] : null;
+        if(mdN === 1){        condBuyImp[i] = true;  condSellImp[i] = false; }
+        else if(mdN === -1){  condBuyImp[i] = false; condSellImp[i] = true;  }
+      }
+    }
+  }
+  const pendingRuns = [];   // configurations à 3/4, pour l'affichage anticipé
+
+  let buyTransitionsCount = 0;
+  let sellTransitionsCount = 0;
+  let buy4CondCount = 0;
+  let sell4CondCount = 0;
+
+  for(let i = 1; i < d.length; i++){
+    const isSellMet = condSellEmaHa[i] && condSellCloud[i] && condSellRosc[i] && condSellImp[i];
+    const isBuyMet  = condBuyEmaHa[i] && condBuyCloud[i] && condBuyRosc[i] && condBuyImp[i];
+
+    if(isBuyMet) buy4CondCount++;
+    if(isSellMet) sell4CondCount++;
+
+    const isSellMetPrev = cloudTrigger ? condSellCloud[i-1]
+                        : (condSellEmaHa[i-1] && condSellCloud[i-1] && condSellRosc[i-1] && condSellImp[i-1]);
+    const isSellTransition = isSellMet && !isSellMetPrev;
+
+    const isBuyMetPrev = cloudTrigger ? condBuyCloud[i-1]
+                       : (condBuyEmaHa[i-1] && condBuyCloud[i-1] && condBuyRosc[i-1] && condBuyImp[i-1]);
+    const isBuyTransition = isBuyMet && !isBuyMetPrev;
+
+    if(isBuyTransition) buyTransitionsCount++;
+    if(isSellTransition) sellTransitionsCount++;
+
+    /* ANTICIPATION — trois conditions sur quatre réunies.
+       Le signal n'est pas encore valide, mais la configuration se met en
+       place. On note laquelle manque, pour l'afficher en orange clignotant.
+       Rien n'est ajouté aux signaux réels : cette liste est séparée. */
+    {
+      const bA = [condBuyEmaHa[i], condBuyCloud[i], condBuyRosc[i], condBuyImp[i]];
+      const sA = [condSellEmaHa[i], condSellCloud[i], condSellRosc[i], condSellImp[i]];
+      const NOMS = ['EMA 9 / HA', 'Nuage EMA', 'Range Osc', 'Impulse 15m'];
+      const nB = bA.filter(Boolean).length, nS = sA.filter(Boolean).length;
+      if(nB === 3){
+        pendingRuns.push({ i, t: d[i].t, dir: invertSignal ? -1 : 1,
+          manque: NOMS.filter((_, k) => !bA[k]).join(', ') });
+      } else if(nS === 3){
+        pendingRuns.push({ i, t: d[i].t, dir: invertSignal ? 1 : -1,
+          manque: NOMS.filter((_, k) => !sA[k]).join(', ') });
+      }
+    }
+
+    const impGapAbove0 = (imp5_sh && imp5_sh[i] != null && imp5_sh[i] > 0);
+    const impGapBelow0 = (imp5_sh && imp5_sh[i] != null && imp5_sh[i] < 0);
+    const redDot15 = (msr15_redDot && msr15_redDot[i] === true);
+    const greenDot15 = (msr15_greenDot && msr15_greenDot[i] === true);
+
+    const exitSellCond = impGapAbove0 && redDot15;
+    const exitBuyCond = impGapBelow0 && greenDot15;
+
+    const isBuyOppositeTrans = invertSignal ? isBuyTransition : isSellTransition;
+    const isSellOppositeTrans = invertSignal ? isSellTransition : isBuyTransition;
+
+    // 1. Sortie d'une position Achat (BUY) si ouverte
+    if (currentPosition === 'buy' && entryIdx != null && i > entryIdx) {
+      if (exitBuyCond || isBuyOppositeTrans) {
+        const exitPrice = d[i].c;
+        const pnlPct = entryPrice ? ((exitPrice - entryPrice) / entryPrice) * 100 : 0;
+        const tradeCap = ind.capital || 100;
+        const pnlDollar = (pnlPct / 100) * tradeCap;
+
+        signals.push({
+          i,
+          t: d[i].t,
+          num: currentTradeNum,
+          tradeNum: currentTradeNum,
+          uid: jourCourt(d[i].t) + "-" + currentTradeNum,   // identifiant unique, ex. 10ao26-3
+          dir: 1,
+          isExit: true,
+          type: 'SORTIE_ACHAT',
+          price: exitPrice,
+          entryPrice: entryPrice,
+          pnlPct: pnlPct,
+          pnlDollar: pnlDollar,
+          trigger: isBuyOppositeTrans ? 'Signal Inverse (Vente Z.Z.)' : 'Impulse 5m < 0 + MACD S/R 15m Pt Vert',
+          isTemp: (i === d.length - 1)
+        });
+        currentPosition = null;
+        entryPrice = null;
+        entryIdx = null;
+      }
+    }
+    // 2. Sortie d'une position Vente (SELL) si ouverte
+    else if (currentPosition === 'sell' && entryIdx != null && i > entryIdx) {
+      if (exitSellCond || isSellOppositeTrans) {
+        const exitPrice = d[i].c;
+        const pnlPct = entryPrice ? ((entryPrice - exitPrice) / entryPrice) * 100 : 0;
+        const tradeCap = ind.capital || 100;
+        const pnlDollar = (pnlPct / 100) * tradeCap;
+
+        signals.push({
+          i,
+          t: d[i].t,
+          num: currentTradeNum,
+          tradeNum: currentTradeNum,
+          uid: jourCourt(d[i].t) + "-" + currentTradeNum,   // identifiant unique, ex. 10ao26-3
+          dir: -1,
+          isExit: true,
+          type: 'SORTIE_VENTE',
+          price: exitPrice,
+          entryPrice: entryPrice,
+          pnlPct: pnlPct,
+          pnlDollar: pnlDollar,
+          trigger: isSellOppositeTrans ? 'Signal Inverse (Achat Z.Z.)' : 'Impulse 5m > 0 + MACD S/R 15m Pt Rouge',
+          isTemp: (i === d.length - 1)
+        });
+        currentPosition = null;
+        entryPrice = null;
+        entryIdx = null;
+      }
+    }
+
+    // 3. Déclenchement d'entrée en position
+    const targetSellPos = invertSignal ? 'buy' : 'sell';
+    if (isSellTransition && !exitSellCond && currentPosition !== targetSellPos) {
+      const wasEmaHa = condSellEmaHa[i-1];
+      const wasCloud = condSellCloud[i-1];
+      const wasRosc  = condSellRosc[i-1];
+      const wasImp   = condSellImp[i-1];
+      let triggerName = "Alignement Z. Z.";
+      if(!wasImp && wasEmaHa && wasCloud && wasRosc){
+        triggerName = "Impulse MACD 15m";
+      } else if(!wasEmaHa && wasCloud && wasRosc && wasImp){
+        triggerName = "EMA 9 / HA 5m";
+      } else if(wasEmaHa && !wasCloud && wasRosc && wasImp){
+        triggerName = "Nuage EMA";
+      } else if(wasEmaHa && wasCloud && !wasRosc && wasImp){
+        triggerName = "Range Oscillator";
+      } else {
+        const trigList = [];
+        if(!wasImp) trigList.push("Impulse MACD 15m");
+        if(!wasEmaHa) trigList.push("EMA 9/HA");
+        if(!wasCloud) trigList.push("Nuage EMA");
+        if(!wasRosc) trigList.push("Range Osc");
+        triggerName = trigList.join(" + ") || "Alignement Z. Z.";
+      }
+      tradeCount++;
+      currentTradeNum = numHeure(d[i].t);   // #1214 pour une entrée à 12h14
+      const sigDir = invertSignal ? 1 : -1;
+      signals.push({
+        i,
+        t: d[i].t,
+        num: currentTradeNum,
+        tradeNum: currentTradeNum,
+        uid: jourCourt(d[i].t) + "-" + currentTradeNum,   // identifiant unique, ex. 10ao26-3
+        dir: sigDir,
+        price: d[i].c,
+        trigger: triggerName + (invertSignal ? ' (Inversé)' : ''),
+        isInverted: invertSignal,
+        isTemp: (i === d.length - 1),
+        // Une donnée 5m ou 15m manquait à cette bougie : la condition
+        // correspondante valait « vrai » par défaut, pas par mesure.
+        // Le signal est donc potentiel tant que l'historique ne remonte
+        // pas assez loin pour l'alimenter.
+        potential: ((roscMapped ? roscMapped[i] == null : true) ||
+                    (imp15_col  ? imp15_col[i]  == null : true)),
+        missing: [(roscMapped && roscMapped[i] != null) ? null : 'Range Osc 5m',
+                  (imp15_col && imp15_col[i] != null) ? null : 'Impulse 15m'].filter(Boolean).join(' + ')
+      });
+      currentPosition = targetSellPos;
+      entryPrice = d[i].c;
+      entryIdx = i;
+    }
+
+    const targetBuyPos = invertSignal ? 'sell' : 'buy';
+    if (isBuyTransition && !exitBuyCond && currentPosition !== targetBuyPos) {
+      const wasEmaHa = condBuyEmaHa[i-1];
+      const wasCloud = condBuyCloud[i-1];
+      const wasRosc  = condBuyRosc[i-1];
+      const wasImp   = condBuyImp[i-1];
+      let triggerName = "Alignement Z. Z.";
+      if(!wasImp && wasEmaHa && wasCloud && wasRosc){
+        triggerName = "Impulse MACD 15m";
+      } else if(!wasEmaHa && wasCloud && wasRosc && wasImp){
+        triggerName = "EMA 9 / HA 5m";
+      } else if(wasEmaHa && !wasCloud && wasRosc && wasImp){
+        triggerName = "Nuage EMA";
+      } else if(wasEmaHa && wasCloud && !wasRosc && wasImp){
+        triggerName = "Range Oscillator";
+      } else {
+        const trigList = [];
+        if(!wasImp) trigList.push("Impulse MACD 15m");
+        if(!wasEmaHa) trigList.push("EMA 9/HA");
+        if(!wasCloud) trigList.push("Nuage EMA");
+        if(!wasRosc) trigList.push("Range Osc");
+        triggerName = trigList.join(" + ") || "Alignement Z. Z.";
+      }
+      tradeCount++;
+      currentTradeNum = numHeure(d[i].t);   // #1214 pour une entrée à 12h14
+      const sigDir = invertSignal ? -1 : 1;
+      signals.push({
+        i,
+        t: d[i].t,
+        num: currentTradeNum,
+        tradeNum: currentTradeNum,
+        uid: jourCourt(d[i].t) + "-" + currentTradeNum,   // identifiant unique, ex. 10ao26-3
+        dir: sigDir,
+        price: d[i].c,
+        trigger: triggerName + (invertSignal ? ' (Inversé)' : ''),
+        isInverted: invertSignal,
+        isTemp: (i === d.length - 1),
+        potential: ((roscMapped ? roscMapped[i] == null : true) ||
+                    (imp15_col  ? imp15_col[i]  == null : true)),
+        missing: [(roscMapped && roscMapped[i] != null) ? null : 'Range Osc 5m',
+                  (imp15_col && imp15_col[i] != null) ? null : 'Impulse 15m'].filter(Boolean).join(' + ')
+      });
+      currentPosition = targetBuyPos;
+      entryPrice = d[i].c;
+      entryIdx = i;
+    }
+  }
+
+  let buyEmaHaCount = 0;
+  let sellEmaHaCount = 0;
+  for(let i = 0; i < d.length; i++){
+    if(condBuyEmaHa[i]) buyEmaHaCount++;
+    if(condSellEmaHa[i]) sellEmaHaCount++;
+  }
+  signals.countBuyEmaHa = buyEmaHaCount;
+  signals.countSellEmaHa = sellEmaHaCount;
+  signals.buy4CondCount = buy4CondCount;
+  signals.sell4CondCount = sell4CondCount;
+  signals.buyTransitionsCount = buyTransitionsCount;
+  signals.sellTransitionsCount = sellTransitionsCount;
+  signals.totalTransitionsCount = buyTransitionsCount + sellTransitionsCount;
+  signals.isStrictEmaHaUsed = isStrictEmaHa;
+
+  /* On ne garde qu'un marqueur par plage continue de configuration à 3/4,
+     et seulement si elle n'a pas immédiatement abouti à un vrai signal :
+     sinon la pastille définitive dit déjà tout. */
+  const sigIdx = new Set(signals.filter(x => !x.isExit).map(x => x.i));
+  const runs = [];
+  let cur = null;
+  for(const p of pendingRuns){
+    if(cur && p.i === cur.fin + 1 && p.dir === cur.dir){ cur.fin = p.i; cur.manque = p.manque; }
+    else { if(cur) runs.push(cur); cur = { debut: p.i, fin: p.i, dir: p.dir, t: p.t, manque: p.manque }; }
+  }
+  if(cur) runs.push(cur);
+
+  signals.pending = runs.filter(function(r){
+    // abouti dans les 3 bougies qui suivent : inutile de l'annoncer
+    for(let k = r.fin; k <= r.fin + 3; k++) if(sigIdx.has(k)) return false;
+    return true;
+  }).map(function(r){
+    return { i: r.fin, t: d[r.fin] ? d[r.fin].t : r.t, dir: r.dir,
+             manque: r.manque, duree: r.fin - r.debut + 1 };
+  });
+
+  
+  /* ---------- CONDITIONS SUPPLÉMENTAIRES ----------
+     Point d'accroche propre à Z.Z. 2. Chaque règle reçoit la liste des
+     signaux et renvoie celle qu'elle garde, ce qui permet de les empiler.
+     Tant que rien n'est ajouté, Z.Z. 2 produit exactement les mêmes
+     pastilles que Z.Z., ce qui sert de point de comparaison. */
+  const regles2 = (window.__zz2Regles && window.__zz2Regles.length) ? window.__zz2Regles : [];
+  if(regles2.length){
+    let gardes = signals.filter(function(x){ return true; });
+    for(const r of regles2){
+      try{ const res = r(gardes, d, ind); if(Array.isArray(res)) gardes = res; }
+      catch(err){ console.warn('[Z.Z. 2] règle ignorée :', err && err.message); }
+    }
+    /* Retirer un signal peut laisser deux entrées de même sens qui se
+       suivent : on rétablit l'alternance, qui est la règle de base. */
+    let dernierSens = 0;
+    const finales = gardes.filter(function(x){
+      if(x.isExit) return true;
+      if(x.dir === dernierSens) return false;
+      dernierSens = x.dir; return true;
+    });
+    finales.pending = signals.pending;
+    finales.isStrictEmaHaUsed = signals.isStrictEmaHaUsed;
+    return finales;
+  }
+
+  return signals;
+}
+
 function computeZZSignals(d, ind, strictMode, strictEmaHa){
   if(!d || d.length < 2) return [];
   ind = ind || {};
@@ -23401,6 +23915,216 @@ window.drawMarquesBT = function(s, e, yOf){
 
 
 
+/* Dessin des pastilles Z.Z. 2. Même contenu que celles de Z.Z., mais en
+   cercle plutôt qu'en rectangle, pour les distinguer d'un coup d'oeil
+   quand les deux sont affichées ensemble. */
+function drawZZ2Signals(signals, s, e, yOf, cw) {
+  if (!Array.isArray(signals) || !signals.length) return;
+
+  /* ANTICIPATIONS — configurations à 3 conditions sur 4. La pastille
+     clignote en orange et nomme la condition manquante. Dès que la
+     quatrième arrive, un vrai signal Z.Z. prend le relais avec sa
+     couleur définitive. Ce sont des repères, pas des entrées. */
+  const pending = signals.pending;
+  if (Array.isArray(pending) && S('strat_zz','showPending') !== false) {
+    for (const p of pending) {
+      const pi = (p.t != null && typeof idxOfTime === 'function' ? idxOfTime(p.t) : null) ?? p.i;
+      if (pi == null || pi < s - 1 || pi > e + 1) continue;
+      const bar = state.data[pi]; if (!bar) continue;
+      const isBuy = (p.dir === 1);
+      const px = xOf(pi);
+      const col = '#F59E0B';
+      const anchorY = isBuy ? yOf(bar.l) + 6 : yOf(bar.h) - 6;
+      const txt = isBuy ? '⏳ POTENTIEL ACHAT' : '⏳ POTENTIEL VENTE';
+      const sub = 'manque : ' + (p.manque || '?');
+
+      const puls = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(Date.now() / 190));
+      if (typeof __zzPulse === 'function') __zzPulse();
+
+      ctx.save();
+      ctx.globalAlpha = puls;
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      const q1 = ctx.measureText(txt).width;
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      const q2 = ctx.measureText(sub).width;
+      const pbw = Math.max(q1, q2) + 12, pbh = 22;
+
+      let pby = isBuy ? (anchorY + 8) : (anchorY - pbh - 8);
+      if (typeof placeBadge === 'function') pby = placeBadge(px - pbw/2, pbw, pby, pbh, isBuy ? 1 : -1);
+      const pbx = Math.max(2, Math.min(W - AXIS_W - pbw - 2, px - pbw/2));
+
+      ctx.strokeStyle = col; ctx.lineWidth = 1.1; ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.moveTo(px, anchorY); ctx.lineTo(px, isBuy ? pby : pby + pbh); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(48,30,4,.92)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      if (typeof roundRect === 'function') roundRect(pbx, pby, pbw, pbh, (pbh)/2);
+      else { ctx.beginPath(); ctx.rect(pbx, pby, pbw, pbh); }
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = col;
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, pbx + pbw/2, pby + 10);
+      ctx.fillStyle = '#FCD34D';
+      ctx.font = '8px "IBM Plex Mono",monospace';
+      ctx.fillText(sub, pbx + pbw/2, pby + 18);
+      ctx.textAlign = 'left';
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+  }
+
+  /* Filtre de position : un seul signal par changement de sens.
+     Tant qu'un achat est en cours, les achats suivants sont masqués ; il faut
+     une vente pour rouvrir dans l'autre sens. C'est le comportement du moteur
+     de backtest et de la protection serveur MEXC, qui refusent toute entrée
+     lorsqu'une position est déjà ouverte. Filtrage à l'affichage uniquement :
+     computeZZSignals et le backtest ne sont pas modifiés. */
+  {
+    let lastDir = 0;
+    signals = signals.filter(function(sg){
+      if (sg.isExit) {
+        lastDir = 0;
+        return true;
+      }
+      if (sg.dir === lastDir) return false;
+      lastDir = sg.dir;
+      return true;
+    });
+    if (!signals.length) return;
+  }
+
+  const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+  const ind = state.indicators && state.indicators.strat_zz;
+  const showEntries = ind ? (ind.showEntries !== false) : true;
+  const showExits = ind ? (ind.showExits !== false) : true;
+
+  for (const sig of signals) {
+    if (sig.isExit && !showExits) continue;
+    if (!sig.isExit && !showEntries) continue;
+    const i = (sig.t != null && typeof idxOfTime === 'function' ? idxOfTime(sig.t) : null) ?? sig.i;
+    if (i == null || i < s - 1 || i > e + 1) continue;
+    const x = xOf(i);
+    if (x < -180 || x > W - AXIS_W + 180) continue;
+
+    const numStr = (sig.num != null ? '#' + sig.num + ' ' : (sig.tradeNum != null ? '#' + sig.tradeNum + ' ' : ''));
+
+    if (sig.isExit) {
+      // Pastille de Sortie Z.Z.
+      const isBuyExit = (sig.type === 'SORTIE_ACHAT' || sig.dir === 1);
+      const pnlDollar = sig.pnlDollar != null ? sig.pnlDollar : 0;
+      const pnlPct = sig.pnlPct != null ? sig.pnlPct : 0;
+      const isWin = pnlDollar >= 0;
+      const pnlColor = isWin ? '#10B981' : '#EF4444';
+      const color = isBuyExit ? '#EC4899' : '#F59E0B';
+      const bgFill = 'rgba(25, 14, 52, 0.95)';
+      const mainText = isBuyExit ? ('🎯 ' + numStr + 'SORTIE ACHAT (Z.Z.)') : ('🎯 ' + numStr + 'SORTIE VENTE (Z.Z.)');
+
+      const entryP = sig.price;
+      const yDot = isBuyExit ? (yOf(entryP) - 26) : (yOf(entryP) + 26);
+
+      ctx.fillStyle = isWin ? '#10B981' : '#EF4444';
+      ctx.beginPath();
+      ctx.moveTo(x, yDot - 6); ctx.lineTo(x + 6, yDot); ctx.lineTo(x, yDot + 6); ctx.lineTo(x - 6, yDot); ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.stroke();
+
+      const pnlSign = pnlPct >= 0 ? '+' : '';
+      const pnlPctTxt = pnlSign + pnlPct.toFixed(2) + '%';
+      const pnlDolSign = pnlDollar >= 0 ? '+' : '-';
+      const pnlDollarTxt = pnlDolSign + '$' + Math.abs(pnlDollar).toFixed(2);
+      const bh = 38;
+      const bw = 185;
+      const by = placeBadge(x - bw / 2, bw, isBuyExit ? (yDot - 55 - bh) : (yDot + 55), bh, isBuyExit ? -1 : 1);
+
+      ctx.save();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, isBuyExit ? yDot - 6 : yDot + 6);
+      ctx.lineTo(x, isBuyExit ? by + bh : by);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = bgFill;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+      ctx.setLineDash([5, 3]); roundRect(x - bw / 2, by, bw, bh, bh / 2); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore();
+
+      ctx.fillStyle = color; ctx.font = 'bold 10.5px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
+      ctx.fillText(mainText, x, by + 12);
+      ctx.fillStyle = pnlColor; ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      ctx.fillText('PnL: ' + pnlPctTxt + '  |  Gain: ' + pnlDollarTxt, x, by + 24);
+      ctx.fillStyle = '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
+      ctx.fillText('Prix: ' + fmtP(sig.price) + ' $  ·  ' + (sig.trigger || '').substring(0, 20), x, by + 33);
+      ctx.textAlign = 'left';
+
+      if (typeof labelHits !== 'undefined') {
+        labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'strat_zz'});
+        labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'strat_zz'});
+      }
+    } else {
+      // Pastille d'Entrée Z.Z. (Achat = vert #10B981, Vente = rouge #EF4444, Inversé = jaune #FBBF24)
+      const isInverted = !!(sig.isInverted || (sig.trigger && sig.trigger.includes('Inversé')) || (ind && ind.invertSignal));
+      const isBuy = (sig.dir === 1);
+      const entryP = sig.price;
+      const yDot = isBuy ? (yOf(entryP) + 26) : (yOf(entryP) - 26);
+      let color = isBuy ? '#10B981' : '#EF4444';
+      let textColor = isBuy ? '#10B981' : '#EF4444';
+      let bgFill = isBuy ? 'rgba(6, 30, 20, 0.95)' : 'rgba(38, 8, 12, 0.95)';
+      let mainText = isBuy ? ('⚡ ' + numStr + 'ACHAT Z.Z.') : ('⚡ ' + numStr + 'VENTE Z.Z.');
+
+      if (isInverted) {
+        color = '#FBBF24'; // Jaune d'or lumineux (bordure et losange)
+        bgFill = 'rgba(42, 34, 10, 0.95)'; // Fond sombre doré
+        mainText = isBuy ? ('⚡ ' + numStr + 'ACHAT INVERSÉ') : ('⚡ ' + numStr + 'VENTE INVERSÉE');
+        textColor = isBuy ? '#10B981' : '#EF4444'; // Vert si Long (Achat), Rouge si Short (Vente)
+      }
+
+      // Les pastilles Z.Z. gardent leur couleur définitive : vert pour un
+      // achat, rouge pour une vente. Aucun clignotement.
+      const isPotentiel = false;
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, yDot - 6); ctx.lineTo(x + 6, yDot); ctx.lineTo(x, yDot + 6); ctx.lineTo(x - 6, yDot); ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5; ctx.stroke();
+
+      const bh = 32;
+      const bw = 175;
+      const by = placeBadge(x - bw / 2, bw, isBuy ? (yDot + 50) : (yDot - 50 - bh), bh, isBuy ? 1 : -1);
+
+      ctx.save();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, isBuy ? yDot + 6 : yDot - 6);
+      ctx.lineTo(x, isBuy ? by : by + bh);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = bgFill;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+      roundRect(x - bw / 2, by, bw, bh, bh / 2); ctx.fill(); ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = textColor; ctx.font = 'bold 10.5px "IBM Plex Mono",monospace'; ctx.textAlign = 'center';
+      ctx.fillText(mainText, x, by + 12);
+      ctx.fillStyle = '#CBD5E1'; ctx.font = '8.5px "IBM Plex Mono",monospace';
+      ctx.fillText('Prix: ' + fmtP(entryP) + ' $  |  ' + (sig.trigger || 'Alignement Z.Z.').substring(0, 20), x, by + 24);
+      ctx.textAlign = 'left';
+
+      if (typeof labelHits !== 'undefined') {
+        labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'strat_zz'});
+        labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'strat_zz'});
+      }
+    }
+  }
+}
+
 function drawZZSignals(signals, s, e, yOf, cw) {
   if (!Array.isArray(signals) || !signals.length) return;
 
@@ -26213,7 +26937,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-1230';
+  window.__LUMEN_BUILD = 'B-1508-1420';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -27182,6 +27906,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 (function(){
 
   const INDICS = {
+    strat_zz2: ['emaPeriod','haTf','haPeriod','mode','roscPeriod','impTf','impPeriod',
+               'invertSignal','strictEmaHa','yellowMode','skipRosc','cloudTrigger'],
     strat_zz: ['emaPeriod','haTf','haPeriod','mode','roscPeriod','impTf','impPeriod',
                'invertSignal','strictEmaHa','yellowMode','skipRosc','cloudTrigger'],
     kk_bis2:  ['tf','tf2','src','mode','phase','spacing','sigLen','upper','lower',
