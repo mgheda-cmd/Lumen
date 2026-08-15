@@ -23087,72 +23087,77 @@ window.drawMarquesBT = function(s, e, yOf){
   if(!bt || !Array.isArray(bt.liste)) return;
   const d = state.data; if(!d || !d.length) return;
 
+  /* Pastilles rondes marquées BACKTEST, posées à côté des pastilles
+     d'origine sans les remplacer. Une à l'entrée, une à la sortie, reliées
+     par un trait. Le but est la comparaison visuelle : si une pastille
+     ronde ne tombe pas sur une pastille Z.Z. ou kk bis, le moteur ne suit
+     pas ce qui est affiché. */
+  const R = 11;
+
+  const pastille = function(x, y, remplissage, bord, lettre, etiquette, couleurTexte){
+    ctx.beginPath();
+    ctx.arc(x, y, R, 0, Math.PI * 2);
+    ctx.fillStyle = remplissage;
+    ctx.fill();
+    ctx.strokeStyle = bord;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = couleurTexte || '#0B132B';
+    ctx.font = 'bold 11px "IBM Plex Mono",monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(lettre, x, y + 0.5);
+
+    // étiquette BACKTEST sous la pastille
+    ctx.font = 'bold 7.5px "IBM Plex Mono",monospace';
+    const w = ctx.measureText(etiquette).width + 8;
+    const ey = y + R + 3;
+    ctx.fillStyle = 'rgba(11,19,43,0.9)';
+    ctx.fillRect(x - w / 2, ey, w, 11);
+    ctx.strokeStyle = bord;
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(x - w / 2, ey, w, 11);
+    ctx.fillStyle = bord;
+    ctx.fillText(etiquette, x, ey + 6);
+  };
+
   ctx.save();
   for(const t of bt.liste){
     const iE = t.iE, iS = t.iS;
     if(iE == null || iS == null) continue;
-    if(iS < s - 2 || iE > e + 2) continue;          // hors de la vue
+    if(iS < s - 2 || iE > e + 2) continue;
 
-    const bE = d[iE], bS = d[iS];
-    if(!bE || !bS) continue;
+    if(!d[iE] || !d[iS]) continue;
 
     const xE = xOf(iE), xS = xOf(iS);
     const yE = yOf(t.pe), yS = yOf(t.ps);
     const gagne = t.net >= 0;
-    const col = t.liquide ? '#FF3B3B' : (gagne ? '#10B981' : '#FF5252');
     const long = t.dir === 1;
+    const colEntree = long ? '#10B981' : '#FF5252';
+    const colSortie = t.liquide ? '#FF3B3B' : (gagne ? '#10B981' : '#FF5252');
 
-    // trait entrée -> sortie
-    ctx.strokeStyle = col;
-    ctx.globalAlpha = 0.75;
+    // trait reliant l'entrée à la sortie
+    ctx.strokeStyle = colSortie;
+    ctx.globalAlpha = 0.55;
     ctx.lineWidth = t.liquide ? 2.2 : 1.4;
-    ctx.setLineDash(t.liquide ? [5,3] : []);
+    ctx.setLineDash(t.liquide ? [5, 3] : [3, 3]);
     ctx.beginPath(); ctx.moveTo(xE, yE); ctx.lineTo(xS, yS); ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
 
-    // repère d'entrée : triangle dans le sens du trade
-    ctx.fillStyle = long ? '#10B981' : '#FF5252';
-    ctx.beginPath();
-    if(long){ ctx.moveTo(xE, yE - 9); ctx.lineTo(xE - 5, yE + 1); ctx.lineTo(xE + 5, yE + 1); }
-    else    { ctx.moveTo(xE, yE + 9); ctx.lineTo(xE - 5, yE - 1); ctx.lineTo(xE + 5, yE - 1); }
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#0B132B'; ctx.lineWidth = 0.8; ctx.stroke();
+    // pastille d'entrée : creuse, la lettre dans la couleur du sens
+    pastille(xE, yE, 'rgba(11,19,43,0.92)', colEntree,
+             long ? '\u25b2' : '\u25bc', 'BACKTEST #' + (t.num || ''), colEntree);
 
-    // repère de sortie : carré, ou croix si liquidé
-    ctx.fillStyle = col;
-    if(t.liquide){
-      ctx.strokeStyle = col; ctx.lineWidth = 2.4;
-      ctx.beginPath();
-      ctx.moveTo(xS - 5, yS - 5); ctx.lineTo(xS + 5, yS + 5);
-      ctx.moveTo(xS + 5, yS - 5); ctx.lineTo(xS - 5, yS + 5);
-      ctx.stroke();
-    } else {
-      ctx.fillRect(xS - 4, yS - 4, 8, 8);
-      ctx.strokeStyle = '#0B132B'; ctx.lineWidth = 0.8;
-      ctx.strokeRect(xS - 4, yS - 4, 8, 8);
-    }
-
-    // PnL net au-dessus du milieu du trait
-    const txt = (t.liquide ? '\u{1F480} ' : '') + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + ' $';
-    ctx.font = 'bold 9px "IBM Plex Mono",monospace';
-    const w = ctx.measureText(txt).width + 8;
-    const xm = (xE + xS) / 2, ym = (yE + yS) / 2 - 12;
-    ctx.fillStyle = 'rgba(11,19,43,0.85)';
-    ctx.fillRect(xm - w/2, ym - 11, w, 14);
-    ctx.strokeStyle = col; ctx.lineWidth = 0.9;
-    ctx.strokeRect(xm - w/2, ym - 11, w, 14);
-    ctx.fillStyle = col;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(txt, xm, ym - 4);
-
-    // numéro du trade sous l'entrée
-    ctx.font = '8px "IBM Plex Mono",monospace';
-    ctx.fillStyle = '#7E8CA8';
-    ctx.fillText('#' + (t.num || ''), xE, long ? yE + 12 : yE - 12);
+    // pastille de sortie : pleine, avec le PnL net en étiquette
+    const lettre = t.liquide ? '\u2715' : 'S';
+    const etiq = (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + ' $';
+    pastille(xS, yS, colSortie, colSortie, lettre, etiq, '#0B132B');
   }
   ctx.restore();
 };
+
 
 function drawZZSignals(signals, s, e, yOf, cw) {
   if (!Array.isArray(signals) || !signals.length) return;
@@ -25966,7 +25971,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-0210';
+  window.__LUMEN_BUILD = 'B-1508-0245';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

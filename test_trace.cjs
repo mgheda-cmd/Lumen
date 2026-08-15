@@ -49,15 +49,17 @@ global.toast=()=>{};
   window.drawMarquesBT(0, tout.length-1, yOf);
 
   const pnl = appels.filter(a=>/\$/.test(a.t));
-  const nums = appels.filter(a=>/^#/.test(a.t));
-  t('un PnL écrit par trade', pnl.length===L.length, pnl.length+' / '+L.length);
-  t('un numéro écrit par trade', nums.length===L.length, nums.length+' / '+L.length);
+  const marques = appels.filter(a=>/^BACKTEST/.test(a.t));
+  const ronds = appels.filter(a=>/^(\u25b2|\u25bc|S|\u2715)$/.test(a.t));
+  t('une étiquette BACKTEST par trade', marques.length===L.length, marques.length+' / '+L.length);
+  t('une pastille d entrée + une de sortie', ronds.length===L.length*2, ronds.length+' / '+(L.length*2));
+  t('un PnL par trade', pnl.length===L.length, pnl.length+' / '+L.length);
 
   // les valeurs affichees correspondent-elles aux nets du moteur ?
   let ecarts=0;
   L.forEach((tr,k)=>{
     const attendu=(tr.net>=0?'+':'')+tr.net.toFixed(2)+' $';
-    const trouve=pnl[k] ? pnl[k].t.replace('\u{1F480} ','') : '';
+    const trouve=pnl[k] ? pnl[k].t : '';
     if(trouve!==attendu) ecarts++;
   });
   t('les montants tracés = les nets du moteur', ecarts===0, ecarts+' écart(s)');
