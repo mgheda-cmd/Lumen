@@ -396,9 +396,9 @@ footer{
           EMA 9 / HA 5m + Nuage EMA + Range Osc + Impulse MACD 15m
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px solid rgba(255,255,255,0.12);margin-top:2px;width:100%">
-          <button id="btn-toggle-zz-entries" onclick="toggleZ.Z. 2Entries()" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles d'Entrée Achat et Vente">⚡ Entrées: ON</button>
-          <button id="btn-toggle-zz-exits" onclick="toggleZZExits()" style="background:rgba(236,72,153,0.25);border:1px solid #EC4899;color:#EC4899;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles de Sortie Achat et Vente">🎯 Sorties: ON</button>
-          <button id="btn-toggle-zz-invert" onclick="toggleZZInvert()" style="background:rgba(56,189,248,0.3);border:1px solid #38BDF8;color:#38BDF8;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Inverser les signaux Achat/Vente (Pastilles Jaunes d'Or)">🟡 Inversé: ON</button>
+          <button id="btn-toggle-zz2-entries" onclick="toggleZ.Z. 2Entries()" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles d'Entrée Achat et Vente">⚡ Entrées: ON</button>
+          <button id="btn-toggle-zz2-exits" onclick="toggleZZ2Exits()" style="background:rgba(236,72,153,0.25);border:1px solid #EC4899;color:#EC4899;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles de Sortie Achat et Vente">🎯 Sorties: ON</button>
+          <button id="btn-toggle-zz2-invert" onclick="toggleZZ2Invert()" style="background:rgba(56,189,248,0.3);border:1px solid #38BDF8;color:#38BDF8;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Inverser les signaux Achat/Vente (Pastilles Jaunes d'Or)">🟡 Inversé: ON</button>
           <button id="btn-bt-strat-zz" onclick="openZZBacktestModal()" style="background:linear-gradient(135deg,#10B981,#059669);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(16,185,129,0.3);margin-left:auto" title="Lancer le Backtest Pastilles & Sortie Déplacement de Prix (200, 300, 400, 500 pts)">🚀 Backtest</button>
           <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
         </div>
@@ -10953,34 +10953,60 @@ function toggleZZInvert() {
   render();
 }
 
-function updateZZToggleButtons() {
-  const btnEntries = document.getElementById('btn-toggle-zz-entries');
-  const btnExits = document.getElementById('btn-toggle-zz-exits');
-  const btnInvert = document.getElementById('btn-toggle-zz-invert');
-  const ind = state.indicators && state.indicators.strat_zz;
-  if (!ind) return;
-  const showE = ind.showEntries !== false;
-  const showX = ind.showExits !== false;
-  const showInv = ind.invertSignal !== false;
+/* Bascules propres à Z.Z. 2 : elles agissent sur strat_zz2 et ne touchent
+   jamais strat_zz. Les deux indicateurs restent séparés jusque dans leurs
+   boutons, qui portaient les mêmes identifiants et se marchaient dessus. */
+function toggleZZ2Entries() {
+  if (!state.indicators.strat_zz2) return;
+  state.indicators.strat_zz2.showEntries = !(state.indicators.strat_zz2.showEntries !== false);
+  delete state.cache['strat_zz2'];
+  saveConfig(); syncMenu(); updateChips(); render();
+}
+function toggleZZ2Exits() {
+  if (!state.indicators.strat_zz2) return;
+  state.indicators.strat_zz2.showExits = !(state.indicators.strat_zz2.showExits !== false);
+  delete state.cache['strat_zz2'];
+  saveConfig(); syncMenu(); updateChips(); render();
+}
+function toggleZZ2Invert() {
+  if (!state.indicators.strat_zz2) state.indicators.strat_zz2 = {};
+  state.indicators.strat_zz2.invertSignal = !(state.indicators.strat_zz2.invertSignal !== false);
+  delete state.cache['strat_zz2'];
+  saveConfig(); syncMenu(); updateChips(); render();
+}
 
-  if (btnEntries) {
-    btnEntries.textContent = showE ? '⚡ Entrées: ON' : '⚡ Entrées: OFF';
-    btnEntries.style.background = showE ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.08)';
-    btnEntries.style.borderColor = showE ? '#10B981' : '#94A3B8';
-    btnEntries.style.color = showE ? '#10B981' : '#94A3B8';
+/* Apparence des trois boutons d'un indicateur : allumés dans leur couleur,
+   gris et légèrement estompés quand ils sont éteints. */
+function majBoutonsBascule(prefixe, ind, couleurs) {
+  if (!ind) return;
+  const etats = [
+    ['entries', ind.showEntries  !== false, '\u26A1 Entrées', couleurs.e],
+    ['exits',   ind.showExits    !== false, '\u{1F3AF} Sorties', couleurs.x],
+    ['invert',  ind.invertSignal !== false, 'Inversé', couleurs.i]
+  ];
+  for (const [cle, actif, libelle, col] of etats) {
+    const b = document.getElementById('btn-toggle-' + prefixe + '-' + cle);
+    if (!b) continue;
+    const pastille = (cle === 'invert') ? (actif ? '\u{1F7E1} ' : '\u26AA ') : '';
+    b.textContent = pastille + libelle + ': ' + (actif ? 'ON' : 'OFF');
+    b.style.background  = actif ? col.fond : 'rgba(148,163,184,0.10)';
+    b.style.borderColor = actif ? col.bord : '#64748B';
+    b.style.color       = actif ? col.bord : '#94A3B8';
+    b.style.opacity     = actif ? '1' : '0.65';
   }
-  if (btnExits) {
-    btnExits.textContent = showX ? '🎯 Sorties: ON' : '🎯 Sorties: OFF';
-    btnExits.style.background = showX ? 'rgba(236,72,153,0.25)' : 'rgba(255,255,255,0.08)';
-    btnExits.style.borderColor = showX ? '#EC4899' : '#94A3B8';
-    btnExits.style.color = showX ? '#EC4899' : '#94A3B8';
-  }
-  if (btnInvert) {
-    btnInvert.textContent = showInv ? '🟡 Inversé: ON' : '⚪ Inversé: OFF';
-    btnInvert.style.background = showInv ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)';
-    btnInvert.style.borderColor = showInv ? '#FBBF24' : '#94A3B8';
-    btnInvert.style.color = showInv ? '#FBBF24' : '#94A3B8';
-  }
+}
+
+function updateZZToggleButtons() {
+  majBoutonsBascule('zz', state.indicators && state.indicators.strat_zz, {
+    e: { fond: 'rgba(16,185,129,0.25)', bord: '#10B981' },
+    x: { fond: 'rgba(236,72,153,0.25)', bord: '#EC4899' },
+    i: { fond: 'rgba(251,191,36,0.30)', bord: '#FBBF24' }
+  });
+  majBoutonsBascule('zz2', state.indicators && state.indicators.strat_zz2, {
+    e: { fond: 'rgba(16,185,129,0.25)', bord: '#10B981' },
+    x: { fond: 'rgba(236,72,153,0.25)', bord: '#EC4899' },
+    i: { fond: 'rgba(56,189,248,0.30)', bord: '#38BDF8' }
+  });
 }
 
 function syncMenu(){
@@ -26996,7 +27022,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-2110';
+  window.__LUMEN_BUILD = 'B-1508-2230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
