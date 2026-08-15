@@ -6276,6 +6276,9 @@ function placeBadge(bx, bw, by, bh, dir) {
   return y;
 }
 function render(){
+  /* Les lignes verticales des pastilles sont recollectées à chaque rendu. */
+  window.__zzVerticales = [];
+
   // mise en pause pendant un backtest, pour ne pas recalculer inutilement
   if(window.__btNoRender) return;
   if(!W || !H){
@@ -24115,6 +24118,12 @@ function drawZZ2Signals(signals, s, e, yOf, cw) {
       ctx.stroke();
       ctx.restore();
 
+      /* Le point d'ancrage est retenu pour prolonger les pointillés vers le
+         bas, à travers tous les sous-panneaux. Le tracé se fait à la toute
+         fin du rendu, sinon les panneaux dessinés ensuite l'effaceraient. */
+      if(!Array.isArray(window.__zzVerticales)) window.__zzVerticales = [];
+      window.__zzVerticales.push({ x: x, y: yDot, col: color });
+
       ctx.save();
       ctx.fillStyle = bgFill;
       ctx.strokeStyle = color; ctx.lineWidth = 1.8;
@@ -24322,6 +24331,12 @@ function drawZZSignals(signals, s, e, yOf, cw) {
       ctx.stroke();
       ctx.restore();
 
+      /* Le point d'ancrage est retenu pour prolonger les pointillés vers le
+         bas, à travers tous les sous-panneaux. Le tracé se fait à la toute
+         fin du rendu, sinon les panneaux dessinés ensuite l'effaceraient. */
+      if(!Array.isArray(window.__zzVerticales)) window.__zzVerticales = [];
+      window.__zzVerticales.push({ x: x, y: yDot, col: color });
+
       ctx.save();
       ctx.fillStyle = bgFill;
       ctx.strokeStyle = color; ctx.lineWidth = 1.8;
@@ -24454,6 +24469,12 @@ function drawBacktestSignals(signals, s, e, yOf, cw) {
       ctx.lineTo(x, isBuy ? by : by + bh);
       ctx.stroke();
       ctx.restore();
+
+      /* Le point d'ancrage est retenu pour prolonger les pointillés vers le
+         bas, à travers tous les sous-panneaux. Le tracé se fait à la toute
+         fin du rendu, sinon les panneaux dessinés ensuite l'effaceraient. */
+      if(!Array.isArray(window.__zzVerticales)) window.__zzVerticales = [];
+      window.__zzVerticales.push({ x: x, y: yDot, col: color });
 
       ctx.save();
       ctx.fillStyle = bgFill;
@@ -26947,7 +26968,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1508-1830';
+  window.__LUMEN_BUILD = 'B-1508-1945';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
