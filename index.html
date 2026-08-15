@@ -6432,6 +6432,7 @@ function render(){
   }
   drawWantMarks(s, e, yOf);
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf, cw);
+  if(window.__btMarks && typeof window.drawMarquesBT === 'function') window.drawMarquesBT(s, e, yOf);
   // Couche supplémentaire : pastilles corrigées (mode strict). Les originales sont conservées.
   if(vis('strat_zz') && window.__zzShowCorrected && typeof window.drawZZCorrected === 'function') window.drawZZCorrected(s, e, yOf, cw);
   // Marqueurs de bruit : ajoutés au-dessus des pastilles, sans les modifier.
@@ -22971,6 +22972,123 @@ if(modalTable){
 
 
 /* ===== Pastilles de la Stratégie Z.Z. sur le graphique ===== */
+
+/* ============ TRADES DU BACKTEST SUR LE GRAPHIQUE ============
+   Dessine les entrées et les sorties du dernier backtest par-dessus les
+   pastilles, pour vérifier à l'oeil que le moteur suit bien les signaux
+   affichés. Un trait relie l'entrée à la sortie, vert si le trade est
+   gagnant frais déduits, rouge sinon, et le PnL net est écrit dessus.
+
+   Rien n'est recalculé ici : on lit window.__btDernier.liste, produit par
+   __runBtInterne. Si les marques ne tombent pas sur les pastilles, c'est
+   le moteur qu'il faut regarder, pas le dessin. */
+window.__btMarks = false;
+
+window.appliquerCombiEtTracer = async function(i){
+  if(typeof window.appliquerCombi === 'function') window.appliquerCombi(i);
+  /* appliquerCombi relance le backtest de son côté : on attend qu'il ait
+     produit sa liste avant de demander le tracé, sinon on afficherait les
+     trades de la combinaison précédente. */
+  const t0 = Date.now();
+  const attendre = setInterval(function(){
+    const pret = window.__btDernier && Array.isArray(window.__btDernier.liste) && window.__btDernier.liste.length;
+    if(pret || Date.now() - t0 > 20000){
+      clearInterval(attendre);
+      if(pret){
+        window.__btMarks = true;
+        if(typeof toast === 'function') toast(window.__btDernier.liste.length + ' trades tracés sur le graphique', '#38BDF8');
+        if(typeof render === 'function') render();
+      } else if(typeof toast === 'function') toast('Backtest trop long, tracé annulé.', '#FF9F1C');
+    }
+  }, 400);
+};
+
+window.basculerMarquesBT = function(){
+  const bt = window.__btDernier;
+  if(!bt || !Array.isArray(bt.liste) || !bt.liste.length){
+    if(typeof toast === 'function') toast('Lancez d\'abord un backtest.', '#FF9F1C');
+    return;
+  }
+  window.__btMarks = !window.__btMarks;
+  if(typeof toast === 'function')
+    toast(window.__btMarks
+      ? bt.liste.length + ' trades affichés sur le graphique'
+      : 'Marques du backtest retirées', window.__btMarks ? '#A78BFA' : '#94A3B8');
+  if(typeof render === 'function') render();
+};
+
+window.drawMarquesBT = function(s, e, yOf){
+  const bt = window.__btDernier;
+  if(!bt || !Array.isArray(bt.liste)) return;
+  const d = state.data; if(!d || !d.length) return;
+
+  ctx.save();
+  for(const t of bt.liste){
+    const iE = t.iE, iS = t.iS;
+    if(iE == null || iS == null) continue;
+    if(iS < s - 2 || iE > e + 2) continue;          // hors de la vue
+
+    const bE = d[iE], bS = d[iS];
+    if(!bE || !bS) continue;
+
+    const xE = xOf(iE), xS = xOf(iS);
+    const yE = yOf(t.pe), yS = yOf(t.ps);
+    const gagne = t.net >= 0;
+    const col = t.liquide ? '#FF3B3B' : (gagne ? '#10B981' : '#FF5252');
+    const long = t.dir === 1;
+
+    // trait entrée -> sortie
+    ctx.strokeStyle = col;
+    ctx.globalAlpha = 0.75;
+    ctx.lineWidth = t.liquide ? 2.2 : 1.4;
+    ctx.setLineDash(t.liquide ? [5,3] : []);
+    ctx.beginPath(); ctx.moveTo(xE, yE); ctx.lineTo(xS, yS); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    // repère d'entrée : triangle dans le sens du trade
+    ctx.fillStyle = long ? '#10B981' : '#FF5252';
+    ctx.beginPath();
+    if(long){ ctx.moveTo(xE, yE - 9); ctx.lineTo(xE - 5, yE + 1); ctx.lineTo(xE + 5, yE + 1); }
+    else    { ctx.moveTo(xE, yE + 9); ctx.lineTo(xE - 5, yE - 1); ctx.lineTo(xE + 5, yE - 1); }
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#0B132B'; ctx.lineWidth = 0.8; ctx.stroke();
+
+    // repère de sortie : carré, ou croix si liquidé
+    ctx.fillStyle = col;
+    if(t.liquide){
+      ctx.strokeStyle = col; ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(xS - 5, yS - 5); ctx.lineTo(xS + 5, yS + 5);
+      ctx.moveTo(xS + 5, yS - 5); ctx.lineTo(xS - 5, yS + 5);
+      ctx.stroke();
+    } else {
+      ctx.fillRect(xS - 4, yS - 4, 8, 8);
+      ctx.strokeStyle = '#0B132B'; ctx.lineWidth = 0.8;
+      ctx.strokeRect(xS - 4, yS - 4, 8, 8);
+    }
+
+    // PnL net au-dessus du milieu du trait
+    const txt = (t.liquide ? '\u{1F480} ' : '') + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + ' $';
+    ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+    const w = ctx.measureText(txt).width + 8;
+    const xm = (xE + xS) / 2, ym = (yE + yS) / 2 - 12;
+    ctx.fillStyle = 'rgba(11,19,43,0.85)';
+    ctx.fillRect(xm - w/2, ym - 11, w, 14);
+    ctx.strokeStyle = col; ctx.lineWidth = 0.9;
+    ctx.strokeRect(xm - w/2, ym - 11, w, 14);
+    ctx.fillStyle = col;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(txt, xm, ym - 4);
+
+    // numéro du trade sous l'entrée
+    ctx.font = '8px "IBM Plex Mono",monospace';
+    ctx.fillStyle = '#7E8CA8';
+    ctx.fillText('#' + (t.num || ''), xE, long ? yE + 12 : yE - 12);
+  }
+  ctx.restore();
+};
+
 function drawZZSignals(signals, s, e, yOf, cw) {
   if (!Array.isArray(signals) || !signals.length) return;
 
@@ -25783,7 +25901,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1408-2350';
+  window.__LUMEN_BUILD = 'B-1508-0045';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -26208,6 +26326,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += carte('Trades', trades.length);
     h += carte('Réussite', wr.toFixed(1) + ' %', wr >= 50 ? '#10B981' : '#F59E0B');
     h += carte('Profit factor', isFinite(pf) ? pf.toFixed(2) : '∞', pf >= 1 ? '#10B981' : '#FF5252');
+    h += '<button onclick="window.basculerMarquesBT()" style="background:rgba(56,189,248,.14);border:1px solid #38BDF8;color:#7DD3FC;border-radius:7px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;margin-bottom:9px">\u{1F4CD} Tracer les trades sur le graphique</button>';
     h += carte('Liquidations', nbLiq === 0 ? '0' : ('\u{1F480} ' + nbLiq), nbLiq === 0 ? '#10B981' : '#FF5252');
     if(nbLiq){
       const rangs = trades.map(function(t, k){ return t.liquide ? (k + 1) : null; }).filter(Boolean);
@@ -27178,7 +27297,8 @@ window.envoyerVersMexc = function(){
         })() + '</td>' +
         '<td style="padding:5px 6px;text-align:right">' +
           '<button onclick="window.appliquerCombi(' + i + ')" style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Choisir</button>' +
-        '</td></tr>';
+          '<button onclick="window.appliquerCombiEtTracer(' + i + ')" title="Applique la combinaison, relance le backtest et trace les trades sur le graphique" style="background:rgba(56,189,248,.16);border:1px solid #38BDF8;color:#7DD3FC;border-radius:5px;padding:3px 8px;font-size:10.5px;font-weight:700;cursor:pointer;margin-left:4px">Tracer</button>' +
+                  '</td></tr>';
     });
     h += '</table></div>' +
       '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
@@ -27229,7 +27349,8 @@ window.envoyerVersMexc = function(){
           const ico = o.s === 'L' ? '\u25b2' : o.s === 'S' ? '\u25bc' : '=';
           return '<span style="color:' + col + ';font-weight:800">' + ico + ' ' + o.txt + '</span>';
         })() + '</td>' +
-        '<td style="padding:5px 6px;text-align:right"><button onclick="window.appliquerCombi(' + i + ')" style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Choisir</button></td></tr>';
+        '<td style="padding:5px 6px;text-align:right"><button onclick="window.appliquerCombi(' + i + ')" style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Choisir</button>' +
+        '<button onclick="window.appliquerCombiEtTracer(' + i + ')" title="Applique, relance et trace les trades sur le graphique" style="background:rgba(56,189,248,.16);border:1px solid #38BDF8;color:#7DD3FC;border-radius:5px;padding:3px 8px;font-size:10.5px;font-weight:700;cursor:pointer;margin-left:4px">Tracer</button></td></tr>';
     });
     const tbl = box.querySelector('table');
     if(tbl) tbl.innerHTML = tbl.querySelector('tr').outerHTML + h;
