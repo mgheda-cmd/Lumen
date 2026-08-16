@@ -6312,7 +6312,9 @@ function render(){
     ctx.beginPath();ctx.rect(0,p.y,W,p.h);ctx.clip();
     if(p.key==='price') drawPrice(p,s,e,cw,mainBadgeStack);
     else {
-      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:drawKKBisSub,kk_bis2:drawKKBisSub,sqz_mom:drawSqzMom};
+      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:(p,s,e,cw)=>drawKKBisSub(p,s,e,cw,'kk_bis'),
+        kk_bis2:(p,s,e,cw)=>drawKKBisSub(p,s,e,cw,'kk_bis2'),
+        sqz_mom:drawSqzMom};
       let members=(p.members||[p.key]).slice();
       // membre au premier plan -> dessiné en dernier (au-dessus)
       const front=state.subFront&&state.subFront[p.key];
@@ -9738,16 +9740,21 @@ function zzNumFor(idx, dir){
   return null;
 }
 
-function drawKKBisSub(p, s, e, cw) {
-  const res = getInd('kk_bis');
+function drawKKBisSub(p, s, e, cw, cle) {
+  /* La même fonction sert à kk bis et à kk bis 2. Sans cette clé, elle lisait
+     kk bis en dur : le panneau de kk bis 2 affichait les courbes, les seuils
+     et les sorties de kk bis, d'où l'impression que ses réglages ne
+     servaient à rien. La clé vient du panneau, avec repli sur kk bis. */
+  const K = cle || (p && p.key) || 'kk_bis';
+  const res = getInd(K);
   if (!res || !res.net) return;
 
-  const isVolB = (S('kk_bis','mode') === 'Volatility');
+  const isVolB = (S(K,'mode') === 'Volatility');
   const rgB = isVolB ? volAutoRange(res, s, e) : {lo: -100, hi: 100};
-  const yOf = subYOf(p, 'kk_bis', rgB.lo, rgB.hi, true, isVolB);
-  const cGold = S('kk_bis','cGold') || '#22D3EE';
-  const cPurp = S('kk_bis','cPurp') || '#F472B6';
-  const cSig  = S('kk_bis','cSig')  || '#FFFFFF';
+  const yOf = subYOf(p, K, rgB.lo, rgB.hi, true, isVolB);
+  const cGold = S(K,'cGold') || '#22D3EE';
+  const cPurp = S(K,'cPurp') || '#F472B6';
+  const cSig  = S(K,'cSig')  || '#FFFFFF';
   const last  = state.data.length - 1;
   // Repli sur les derniers seuils connus pour tracer les lignes fixes de fond
   let uL = 64, lL = -64;
@@ -9759,12 +9766,12 @@ function drawKKBisSub(p, s, e, cw) {
     left: 0, right: W - AXIS_W, top: p.y, height: p.h,
     upper: uL, lower: lL,
     autoScale: isVolB,
-    fillBg: S('kk_bis','fillBg') !== false && !isVolB,
-    fillAlpha: S('kk_bis','fillAlpha'),
-    showZero: S('kk_bis','showZero') !== false,
+    fillBg: S(K,'fillBg') !== false && !isVolB,
+    fillAlpha: S(K,'fillAlpha'),
+    showZero: S(K,'showZero') !== false,
     colors: { cGold: cGold, cPurp: cPurp, cSig: cSig,
-              cScoreUp: S('kk_bis','cScoreUp') || '#00FF00',
-              cScoreDn: S('kk_bis','cScoreDn') || '#FF0000' }
+              cScoreUp: S(K,'cScoreUp') || '#00FF00',
+              cScoreDn: S(K,'cScoreDn') || '#FF0000' }
   });
   ctx.restore();
 
@@ -9773,8 +9780,8 @@ function drawKKBisSub(p, s, e, cw) {
     // Même logique de couleur que la ligne principale : au-dessus de sa ligne
     // de signal = haussier, en dessous = baissier. Teintes différentes pour
     // qu'on distingue les deux unités de temps d'un coup d'œil.
-    const c2up = S('kk_bis','cLine2Up') || '#00E5FF';
-    const c2dn = S('kk_bis','cLine2Dn') || '#FF9F1C';
+    const c2up = S(K,'cLine2Up') || '#00E5FF';
+    const c2dn = S(K,'cLine2Dn') || '#FF9F1C';
     const clamp2 = v => isVolB ? v : Math.max(-100, Math.min(100, v));
     ctx.save();
     ctx.lineWidth = 2; ctx.globalAlpha = 0.95;
@@ -9791,8 +9798,8 @@ function drawKKBisSub(p, s, e, cw) {
       ctx.stroke();
     }
 
-    if (S('kk_bis','showSig2') === true && res.sg2) {
-      ctx.strokeStyle = S('kk_bis','cSig2') || '#FFD59E';
+    if (S(K,'showSig2') === true && res.sg2) {
+      ctx.strokeStyle = S(K,'cSig2') || '#FFD59E';
       ctx.lineWidth = 1; ctx.setLineDash([3, 2]);
       ctx.beginPath(); let st3 = false;
       for (let i = Math.max(0, s - 1); i < e; i++) {
@@ -9812,12 +9819,12 @@ function drawKKBisSub(p, s, e, cw) {
   /* Croisements des deux unités de temps, calculés sur tout l'historique
      pour pouvoir être reportés sur le graphique de prix. */
   window.__kkCross = [];
-  if (res.net2 && res.tf2 && S('kk_bis','showCross') !== false) {
+  if (res.net2 && res.tf2 && S(K,'showCross') !== false) {
     /* C'est toujours la PLUS COURTE qui croise la plus longue, quel que soit
        l'ordre dans lequel les deux unités ont été choisies. Si la seconde
        ligne est plus rapide que la principale, on inverse les rôles : le
        timing doit venir de l'unité la plus fine. */
-    const tfP = (S('kk_bis','tf') === 'chart' || !S('kk_bis','tf')) ? state.tf : +S('kk_bis','tf');
+    const tfP = (S(K,'tf') === 'chart' || !S(K,'tf')) ? state.tf : +S(K,'tf');
     const tfS = +res.tf2;
     const inverser = (tfS < tfP);                  // la seconde est plus courte
     const courte = inverser ? res.net2 : res.net;
@@ -9836,9 +9843,9 @@ function drawKKBisSub(p, s, e, cw) {
   }
 
   const crossList = [];
-  const tfPane = (S('kk_bis','tf') === 'chart' || !S('kk_bis','tf')) ? state.tf : +S('kk_bis','tf');
+  const tfPane = (S(K,'tf') === 'chart' || !S(K,'tf')) ? state.tf : +S(K,'tf');
   const inverserPane = res.tf2 ? (+res.tf2 < tfPane) : false;
-  if (res.net2 && res.tf2 && S('kk_bis','showCross') !== false) {
+  if (res.net2 && res.tf2 && S(K,'showCross') !== false) {
     const clampC = v => isVolB ? v : Math.max(-100, Math.min(100, v));
     for (let i = Math.max(1, s); i < e; i++) {
       const a1 = res.net[i - 1], a2 = res.net[i];
@@ -9904,7 +9911,7 @@ function drawKKBisSub(p, s, e, cw) {
 
   // DIVERGENCES : trait plein entre les deux sommets du score, et le même
   // trait reporté sur le prix. C'est le signal d'essoufflement le plus lisible.
-  if (S('kk_bis','showDiv') !== false && Array.isArray(res.divs)) {
+  if (S(K,'showDiv') !== false && Array.isArray(res.divs)) {
     for (const dv of res.divs) {
       if (dv.i2 < s || dv.i1 > e) continue;
       const c = dv.dir === 1 ? '#FF007A' : '#FFD700';
@@ -9928,7 +9935,7 @@ function drawKKBisSub(p, s, e, cw) {
   }
 
   // Sommets et creux du score : premiers signes d'essoufflement
-  if (S('kk_bis','showPivots') !== false && Array.isArray(res.peaks)) {
+  if (S(K,'showPivots') !== false && Array.isArray(res.peaks)) {
     ctx.save();
     ctx.globalAlpha = 0.75;
     const mk = (idx, isTop) => {
@@ -9947,7 +9954,7 @@ function drawKKBisSub(p, s, e, cw) {
 
   // Sorties détectées : pastilles nommées plutôt que losanges muets.
   // Le texte indique ce qui a déclenché la sortie, comme les pastilles Z.Z.
-  if (S('kk_bis','showExits') !== false && Array.isArray(res.exits)) {
+  if (S(K,'showExits') !== false && Array.isArray(res.exits)) {
     for (const ex of res.exits) {
       if (ex.i == null || ex.i < s || ex.i > e) continue;
       const isAchat = ex.type === 'SORTIE_ACHAT';
@@ -9992,7 +9999,7 @@ function drawKKBisSub(p, s, e, cw) {
       ctx.restore();
 
       if (typeof labelHits !== 'undefined' && labelHits) {
-        try { labelHits.push({ x: bx, y: by, w: bw, h: bh, key: 'kk_bis' }); } catch (err) {}
+        try { labelHits.push({ x: bx, y: by, w: bw, h: bh, key: K }); } catch (err) {}
       }
     }
   }
@@ -27165,7 +27172,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1608-0140';
+  window.__LUMEN_BUILD = 'B-1608-0230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
