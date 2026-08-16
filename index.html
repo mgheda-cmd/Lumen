@@ -5465,11 +5465,67 @@ function getInd(key){
         }catch(e){ /* la fusion échoue : on garde les sorties de la première échelle */ }
       }
 
-      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs,net2,sg2,tf2};
+
+      /* ---------- PASTILLES D'ENTRÉE ACHAT ----------
+         Trois conditions, dans l'ordre :
+           1. la ligne principale descend sous le seuil bas ;
+           2. un creux s'y forme, c'est-à-dire un point plus bas que ses
+              voisins de part et d'autre — les creux sont déjà calculés ;
+           3. la ligne repasse au-dessus de sa ligne de signal, ce qui la
+              fait virer au vert à l'écran.
+
+         L'entrée naît à la bougie où la ligne devient verte, pas au creux :
+         au creux, rien ne dit encore que le mouvement se retourne.
+
+         Le creux doit être récent. Sans limite, un creux d'il y a trois
+         heures armerait encore une entrée alors que le contexte a changé.
+         La fenêtre suit le délai de garde, avec un minimum de vingt bougies. */
+      const entries = [];
+      if(ind.showEntries !== false){
+        const fenetre = Math.max(20, cool * 6);
+        const estCreux = new Set(troughs);
+        let creuxArme = -1;
+        let derniereEntree = -999;
+
+        for(let j = 1; j < net.length; j++){
+          const n = net[j], p = net[j-1], si = sg[j], seuilBas = lo[j];
+          if(n == null || p == null || seuilBas == null) continue;
+
+          // 1 et 2 : un creux sous le seuil bas arme l'entrée
+          if(estCreux.has(j) && n <= seuilBas) creuxArme = j;
+
+          // le creux se périme
+          if(creuxArme >= 0 && j - creuxArme > fenetre) creuxArme = -1;
+
+          // 3 : la ligne vire au vert, elle passe au-dessus du signal
+          /* Le creux n'est confirmé que L bougies après son sommet, puisqu'il
+             faut voir les voisins de droite. Entrer avant, c'est utiliser une
+             information que le marché n'avait pas encore donnée. */
+          if(creuxArme >= 0 && si != null && j > creuxArme + L){
+            const vertMaintenant = n > si;
+            const vertAvant = (sg[j-1] != null) && (p > sg[j-1]);
+            if(vertMaintenant && !vertAvant && j - derniereEntree >= cool){
+              entries.push({
+                t: src[j].t,
+                price: src[j].c,
+                type: 'ENTREE_ACHAT',
+                dir: 1,
+                creux: src[creuxArme].t,
+                seuil: Math.round(seuilBas * 10) / 10,
+                trigger: 'Creux sous seuil puis passage au vert'
+              });
+              derniereEntree = j;
+              creuxArme = -1;
+            }
+          }
+        }
+      }
+      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,entries,peaks,troughs,divs,net2,sg2,tf2};
       else{
         const M=a=>mapHTF(src,a,d);
         state.cache[ck]={net:M(net),signal:M(sg),up:M(up),lo:M(lo),
           exits:exits.map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean),
+          entries:entries.map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean),
           peaks:peaks.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
           troughs:troughs.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
           divs:divs.map(dv=>{const a=idxOfTime(src[dv.i1].t),b=idxOfTime(src[dv.i2].t);
@@ -5640,12 +5696,68 @@ function getInd(key){
         }catch(e){ /* la fusion échoue : on garde les sorties de la première échelle */ }
       }
 
-      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,peaks,troughs,divs,net2,sg2,tf2};
+
+      /* ---------- PASTILLES D'ENTRÉE ACHAT ----------
+         Trois conditions, dans l'ordre :
+           1. la ligne principale descend sous le seuil bas ;
+           2. un creux s'y forme, c'est-à-dire un point plus bas que ses
+              voisins de part et d'autre — les creux sont déjà calculés ;
+           3. la ligne repasse au-dessus de sa ligne de signal, ce qui la
+              fait virer au vert à l'écran.
+
+         L'entrée naît à la bougie où la ligne devient verte, pas au creux :
+         au creux, rien ne dit encore que le mouvement se retourne.
+
+         Le creux doit être récent. Sans limite, un creux d'il y a trois
+         heures armerait encore une entrée alors que le contexte a changé.
+         La fenêtre suit le délai de garde, avec un minimum de vingt bougies. */
+      const entries = [];
+      if(ind.showEntries !== false){
+        const fenetre = Math.max(20, cool * 6);
+        const estCreux = new Set(troughs);
+        let creuxArme = -1;
+        let derniereEntree = -999;
+
+        for(let j = 1; j < net.length; j++){
+          const n = net[j], p = net[j-1], si = sg[j], seuilBas = lo[j];
+          if(n == null || p == null || seuilBas == null) continue;
+
+          // 1 et 2 : un creux sous le seuil bas arme l'entrée
+          if(estCreux.has(j) && n <= seuilBas) creuxArme = j;
+
+          // le creux se périme
+          if(creuxArme >= 0 && j - creuxArme > fenetre) creuxArme = -1;
+
+          // 3 : la ligne vire au vert, elle passe au-dessus du signal
+          /* Le creux n'est confirmé que L bougies après son sommet, puisqu'il
+             faut voir les voisins de droite. Entrer avant, c'est utiliser une
+             information que le marché n'avait pas encore donnée. */
+          if(creuxArme >= 0 && si != null && j > creuxArme + L){
+            const vertMaintenant = n > si;
+            const vertAvant = (sg[j-1] != null) && (p > sg[j-1]);
+            if(vertMaintenant && !vertAvant && j - derniereEntree >= cool){
+              entries.push({
+                t: src[j].t,
+                price: src[j].c,
+                type: 'ENTREE_ACHAT',
+                dir: 1,
+                creux: src[creuxArme].t,
+                seuil: Math.round(seuilBas * 10) / 10,
+                trigger: 'Creux sous seuil puis passage au vert'
+              });
+              derniereEntree = j;
+              creuxArme = -1;
+            }
+          }
+        }
+      }
+      if(!mtf) state.cache[ck]={net,signal:sg,up,lo,exits,entries,peaks,troughs,divs,net2,sg2,tf2};
       else{
         const M=a=>mapHTF(src,a,d);
         const R=x=>{const gi=idxOfTime(x.t!=null?x.t:(src[x]||{}).t); return gi;};
         state.cache[ck]={net:M(net),signal:M(sg),up:M(up),lo:M(lo),
           exits:exits.map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean),
+          entries:entries.map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean),
           peaks:peaks.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
           troughs:troughs.map(j=>idxOfTime(src[j].t)).filter(x=>x!=null),
           divs:divs.map(dv=>{const a=idxOfTime(src[dv.i1].t),b=idxOfTime(src[dv.i2].t);
@@ -9950,6 +10062,46 @@ function drawKKBisSub(p, s, e, cw, cle) {
     res.peaks.forEach(i => mk(i, true));
     (res.troughs || []).forEach(i => mk(i, false));
     ctx.restore();
+  }
+
+  /* Pastilles d'ENTRÉE ACHAT : creux sous le seuil bas, puis passage de la
+     ligne au-dessus de son signal. Posées sous la courbe, en vert, pour ne
+     pas se confondre avec les sorties qui sont au-dessus. */
+  if (S(K,'showEntries') !== false && Array.isArray(res.entries)) {
+    for (const en of res.entries) {
+      if (en.i == null || en.i < s || en.i > e) continue;
+      const lvl = res.lo[en.i] != null ? res.lo[en.i] : lL;
+      const cx = xOf(en.i);
+      const cy = yOf(isVolB ? lvl : Math.max(-100, Math.min(100, lvl)));
+      const col = '#10B981';
+      const num = zzNumFor(en.i, 1);
+      const txt = '\u25b2 ACHAT' + (num != null ? ' #' + num : '') + ' \u00b7 creux ' + en.seuil;
+
+      ctx.save();
+      ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+      const bw = ctx.measureText(txt).width + 12, bh = 15;
+      const by = cy + 8;
+      const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, cx - bw / 2));
+
+      ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([2, 2]);
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, by); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = col; ctx.fill();
+
+      ctx.fillStyle = 'rgba(6,32,24,0.94)';
+      ctx.strokeStyle = col; ctx.lineWidth = 1.4;
+      if (typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
+      else { ctx.beginPath(); ctx.rect(bx, by, bw, bh); }
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = col;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, bx + bw / 2, by + bh / 2);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
   }
 
   // Sorties détectées : pastilles nommées plutôt que losanges muets.
@@ -27172,7 +27324,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1608-0230';
+  window.__LUMEN_BUILD = 'B-1608-0420';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
