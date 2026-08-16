@@ -381,6 +381,31 @@ footer{
           <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
         </div>
       </div>
+      <div class="ind-item on" data-ind="strat_mm" id="item-strat_mm" style="background:linear-gradient(135deg,rgba(0,230,118,0.16),rgba(6,182,212,0.10));border:1.5px solid #00E676;border-radius:8px;padding:9px 10px;margin-top:8px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,230,118,0.20)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="dot" style="background:#00E676;box-shadow:0 0 7px #00E676;flex:none"></span>
+            <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Stratégie MM <span style="background:#00E676;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">✨ NEW</span><br><span class="desc" style="color:#A7F3D0;font-size:10.5px">Pastilles Entrée au Creux + Ligne Verte</span></span>
+          </div>
+          <span class="state">on</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap">
+          <span class="sub" style="opacity:.8;font-size:9px;margin-right:2px">UT:</span>
+          <span class="srtf mtf on" data-ind2="strat_mm" data-tf="chart" title="Unité de temps du graphique">UT</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="1" title="1 minute">1m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="2" title="2 minutes">2m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="3" title="3 minutes">3m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="5" title="5 minutes">5m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="6" title="6 minutes">6m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="9" title="9 minutes">9m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="10" title="10 minutes">10m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="12" title="12 minutes">12m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="15" title="15 minutes">15m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="30" title="30 minutes">30m</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="60" title="1 Heure">1H</span>
+          <span class="srtf mtf" data-ind2="strat_mm" data-tf="240" title="4 Heures">4H</span>
+        </div>
+      </div>
       <div class="ind-item" data-ind="strat_zz2" id="item-strat_zz2" style="background:linear-gradient(135deg, rgba(56,189,248,0.16), rgba(16,185,129,0.12));border:1.5px solid #38BDF8;border-radius:10px;padding:10px 12px;margin-bottom:10px;box-shadow:0 3px 12px rgba(56,189,248,0.22);display:flex;flex-direction:column;align-items:stretch;gap:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
           <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
@@ -4290,6 +4315,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
+    strat_mm:{on:true,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
@@ -5295,6 +5321,8 @@ function getInd(key){
       }
       return state.cache[ckExitOb];
     }
+    if(key==='strat_mm'){ state.cache[ck]=computeMMSignals(d,ind); return state.cache[ck]; }
+
     if(key==='strat_zz2'){
       /* Z.Z. 2 lit ses propres réglages et son propre moteur : rien de ce
          qui est fait ici ne peut modifier les pastilles de Z.Z. */
@@ -6853,6 +6881,7 @@ function render(){
   drawWantMarks(s, e, yOf);
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf, cw);
   if(vis('strat_zz2')) drawZZ2Signals(getInd('strat_zz2'), s, e, yOf, cw);
+  if(vis('strat_mm')){ try{ drawMMSignals(getInd('strat_mm'), s, e, yOf, cw); }catch(e){} }
   if(window.__btMarks && typeof window.drawMarquesBT === 'function') window.drawMarquesBT(s, e, yOf);
   // Couche supplémentaire : pastilles corrigées (mode strict). Les originales sont conservées.
   if(vis('strat_zz') && window.__zzShowCorrected && typeof window.drawZZCorrected === 'function') window.drawZZCorrected(s, e, yOf, cw);
@@ -10349,7 +10378,8 @@ const IND_META={
   signal_ema_ha:{label:()=>'Stratégie EMA 9 / HA 5m 🎯',color:'#00E5FF'},
   strat_master:{label:()=>'Stratégie Confluence Totale 🏆',color:'#FBBF24'},
   signal_triple:{label:()=>'Confluence Triple 🎯',color:'#00E676'},
-  strat_zz:{label:()=>'Indicateur Z. Z. ⚡',color:'#FBBF24'},
+  strat_mm:{label:()=>'Stratégie MM 🟢',color:'#00E676'},
+    strat_zz:{label:()=>'Indicateur Z. Z. ⚡',color:'#FBBF24'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
   lrc:{label:()=>{
@@ -14036,6 +14066,31 @@ const SCHEMA={
     {k:'roscPeriod',t:'num',lab:'Période Range Osc',min:10,max:200,ind:1},
     {k:'impTf',t:'num',lab:'UT Impulse MACD (minutes)',min:1,max:240,ind:1},
     {k:'impPeriod',t:'num',lab:'Période Impulse MACD',min:5,max:200,ind:1}
+  ]},
+  strat_mm:{title:'Stratégie Ligne Principale & 4 Confluences',fields:[
+    {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
+    {k:'oscThreshold',t:'num',lab:"Seuil extrême Long sous (ex: -75)",min:-95,max:-10,def:-75,ind:1},
+    {k:'maxLongLevel',t:'num',lab:"Seuil maximum déclenchement Long (ex: -65)",min:-95,max:-10,def:-65,ind:1},
+    {k:'allowShorts',t:'bool',lab:"Activer les entrées SHORT (Sommet > +75 ➔ Rouge)",def:true},
+    {k:'alternateSignals',t:'bool',lab:"Alternance stricte (1 Long ➔ 1 Short ➔ 1 Long)",def:true},
+    {k:'showBadges',t:'bool',lab:"Afficher les pastilles d'entrée Long / Short",def:true},    {k:'showVerticalLines',t:'bool',lab:"Afficher les lignes verticales de projection jusqu'en bas",def:true},
+    {k:'showOpt1',t:'bool',lab:"Afficher Pastille 💎 Option 1 (KK bis 2ᵉ UT)",def:true},
+    {k:'showOpt2',t:'bool',lab:"Afficher Pastille ⚡ Option 2 (iMACD)",def:true},
+    {k:'opt2Tf',t:'choice',lab:"⚡ Option 2 : Unité de Temps (iMACD)",opts:[
+      {v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'4',t:'4m'},{v:'5',t:'5m'},
+      {v:'6',t:'6m'},{v:'7',t:'7m'},{v:'8',t:'8m'},{v:'9',t:'9m'},{v:'10',t:'10m'},
+      {v:'12',t:'12m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},
+      {v:'60',t:'1H'},{v:'240',t:'4H'}
+    ],def:'5'},
+    {k:'showOpt3',t:'bool',lab:"Afficher Pastille 🛡️ Option 3 (Cassure High / Low)",def:true},
+    {k:'showOpt4',t:'bool',lab:"Afficher Pastille 🎯 Option 4 (Lissage Robuste 34)",def:true},
+    {k:'showBase',t:'bool',lab:"Afficher Pastille 🟢 Signal Base (Ligne Verte)",def:true},
+    {k:'showLineOnPrice',t:'bool',lab:"Afficher la ligne de tendance sur le prix",def:true},
+    {k:'showCreuxMarkers',t:'bool',lab:"Afficher les repères ▲ Creux et ▼ Sommets",def:true},
+    {k:'cBuy',t:'col',lab:"Couleur Entrée Long (Vert)",def:'#00E676'},
+    {k:'cSell',t:'col',lab:"Couleur Entrée Short (Rouge)",def:'#FF3366'},
+    {k:'tp',t:'num',lab:"Take Profit fixe (pts / USDT, 0=inactif)",min:0,max:5000,def:0,ind:1},
+    {k:'sl',t:'num',lab:"Stop Loss fixe (pts / USDT, 0=inactif)",min:0,max:5000,def:0,ind:1}
   ]},
   strat_zz2:{title:'Indicateur Z. Z. 2 (Pastilles Confluence)',fields:[
     {k:'showEntries',t:'bool',lab:'Afficher les pastilles d\'Entrée (⚡ ACHAT / VENTE)',def:true},
@@ -23600,6 +23655,1815 @@ window.__notifSortie = function(prefixe, px, motif){
   v.sens = 0; v.entree = null;
 };
 
+
+/* ===================== STRATÉGIE MM =====================
+   Ligne principale et quatre confluences. Reprise du dépôt Google-,
+   déposée le 16 août. Bloc autonome : il ne modifie ni Z.Z., ni kk bis,
+   ni le backtest apparié, qui gardent leurs corrections.
+
+   La ligne principale est celle de kk bis, calculée par twoIndicator.
+   Les seuils viennent de kk_bis2 quand il existe, sinon -75 / +75.
+   ========================================================= */
+
+function computeMMSignals(d, ind) {
+  if (!d || d.length < 5) return { signals: [], line: [], dir: [], net: [], creuxList: [], sommetsList: [] };
+  ind = ind || {};
+  const indKK = state.indicators.kk_bis2 || state.indicators.two_ind || {};
+  const mtf = (ind.tf && ind.tf !== "chart" && +ind.tf !== state.tf)
+    ? +ind.tf
+    : ((indKK.tf && indKK.tf !== "chart" && +indKK.tf !== state.tf) ? +indKK.tf : null);
+  const bars = mtf ? getMTFBars(mtf) : d;
+  if (!bars || !bars.length) return { signals: [], line: [], dir: [], net: [], creuxList: [], sommetsList: [] };
+
+  const oscThreshold = (ind.oscThreshold != null) ? +ind.oscThreshold : (indKK.lower != null ? +indKK.lower : -75);
+  const lowerThreshold = oscThreshold < 0 ? oscThreshold : -oscThreshold; // ex: -75
+  const upperThreshold = Math.abs(oscThreshold);                          // ex: +75
+
+  const maxLongLevel = ind.maxLongLevel != null ? +ind.maxLongLevel : -65;
+  const minShortLevel = ind.minShortLevel != null ? +ind.minShortLevel : 65;
+
+  const allowShorts = ind.allowShorts !== false;
+  const alternateSignals = ind.alternateSignals !== false;
+
+  // 1. Calcul de la ligne principale KK (Two Indicator - 1re UT)
+  const two = calc.twoIndicator(bars, {
+    src: indKK.src || "close",
+    mode: indKK.mode || "Trend Strength",
+    filter: indKK.filter || "PhiSmoother",
+    phase: indKK.phase != null ? indKK.phase : 3.7,
+    spacing: indKK.spacing != null ? indKK.spacing : 3,
+    trimUp: indKK.trimUp || 0,
+    trimLo: indKK.trimLo || 0,
+    postFilter: indKK.postFilter || "PhiSmoother",
+    postLen: indKK.postLen != null ? indKK.postLen : 1,
+    sigFilter: indKK.sigFilter || "PhiSmoother",
+    sigLen: indKK.sigLen != null ? indKK.sigLen : 20,
+    ssLen: indKK.ssLen != null ? indKK.ssLen : 21
+  });
+  const rawNet = two.net || [];
+  const rawSig = two.signal || [];
+  const rawSSWMA = two.ssWma || [];
+
+  // Mapping MTF si nécessaire
+  const net = mtf ? mapHTF(bars, rawNet, d) : rawNet;
+  const sig = mtf ? mapHTF(bars, rawSig, d) : rawSig;
+  const line = mtf ? mapHTF(bars, rawSSWMA, d) : rawSSWMA;
+
+  // Direction de la ligne principale : 1 = Vert (net > signal), -1 = Rouge (net <= signal)
+  const dir = new Array(d.length).fill(0);
+  for (let j = 0; j < d.length; j++) {
+    if (net[j] != null && sig[j] != null) {
+      dir[j] = net[j] > sig[j] ? 1 : -1;
+    }
+  }
+
+  // 2. Calcul Option 1 (2e UT - ex: 3m ou 5m si 1m, ou 15m si 5m)
+  const mtf2 = mtf ? (mtf >= 5 ? mtf * 3 : 5) : (state.tf === 1 ? 3 : (state.tf === 3 ? 5 : (state.tf <= 15 ? 15 : state.tf * 2)));
+  const bars2 = getMTFBars(mtf2) || bars;
+  const two2 = calc.twoIndicator(bars2, {
+    src: indKK.src || "close",
+    mode: indKK.mode || "Trend Strength",
+    filter: indKK.filter || "PhiSmoother",
+    phase: 3.7, spacing: 3, ssLen: 21, sigLen: 20
+  });
+  const net2 = (bars2 === d) ? (two2.net || []) : mapHTF(bars2, two2.net || [], d);
+  const sig2 = (bars2 === d) ? (two2.signal || []) : mapHTF(bars2, two2.signal || [], d);
+
+  // 3. Calcul Option 2 (Impulse MACD - iMACD avec la TF choisie dans les paramètres)
+  const indImp = state.indicators.imp || {};
+  const indMM = (typeof ind === 'object' && ind) ? ind : (state.indicators.strat_mm || {});
+  // Prendre la TF explicitement choisie pour l'Option 2 (défaut 5m), indépendamment du graphique
+  const opt2TfVal = indMM.opt2Tf || indMM.impTf || (indImp.tf && indImp.tf !== 'chart' ? indImp.tf : '5');
+  const impTf = (opt2TfVal && opt2TfVal !== 'chart') ? (+opt2TfVal || 5) : 5;
+  const impTfLabel = (impTf >= 60) ? ((impTf / 60) + "H") : (impTf + "m");
+  const impBars = (impTf !== state.tf) ? getMTFBars(impTf) : d;
+  const impPeriod = indMM.impPeriod != null ? +indMM.impPeriod : (indImp.period != null ? +indImp.period : 34);
+  const impSig = (typeof S === "function" ? S("imp", "sig") : null) || 9;
+  const rawImp = (impBars && impBars.length && typeof calc.impmacd === "function")
+    ? calc.impmacd(impBars, impPeriod, impSig)
+    : { md: [], sb: [], sh: [], col: [] };
+  const impMd = (impBars === d) ? rawImp.md : mapHTF(impBars, rawImp.md, d);
+  const impSb = (impBars === d) ? rawImp.sb : mapHTF(impBars, rawImp.sb, d);
+  const impCol = (impBars === d) ? rawImp.col : mapHTF(impBars, rawImp.col, d);
+
+  // 4. Calcul Option 4 (Lissage Robuste 34/28)
+  const twoRob = calc.twoIndicator(bars, {
+    src: indKK.src || "close",
+    mode: indKK.mode || "Trend Strength",
+    filter: indKK.filter || "PhiSmoother",
+    phase: 4.0, spacing: 3.8, ssLen: 34, sigLen: 28
+  });
+  const netRob = mtf ? mapHTF(bars, twoRob.net || [], d) : (twoRob.net || []);
+  const sigRob = mtf ? mapHTF(bars, twoRob.signal || [], d) : (twoRob.signal || []);
+
+  const signals = [];
+  const creuxList = [];
+  const sommetsList = [];
+
+  // ==========================================
+  // ÉTAPE 1 : DÉTECTION CHRONOLOGIQUE DES ÉPISODES EXTRÊMES (CREUX & SOMMETS)
+  // ==========================================
+  const allEpisodes = [];
+
+  // Détection des Creux (<= lowerThreshold, ex: -75)
+  let inLowZone = false;
+  let curCreux = null;
+  for (let i = 1; i < d.length; i++) {
+    const netCur = net[i];
+    if (netCur == null) continue;
+
+    if (netCur <= lowerThreshold) {
+      if (!inLowZone) {
+        inLowZone = true;
+        curCreux = { type: "CREUX", idx: i, price: d[i].l, t: d[i].t, score: netCur, high: d[i].h, startIdx: i };
+      } else {
+        if (!curCreux || d[i].l < curCreux.price || netCur < curCreux.score) {
+          curCreux = {
+            type: "CREUX",
+            idx: i,
+            price: Math.min(d[i].l, curCreux ? curCreux.price : d[i].l),
+            t: d[i].t,
+            score: Math.min(netCur, curCreux ? curCreux.score : netCur),
+            high: Math.max(d[i].h, curCreux ? curCreux.high : d[i].h),
+            startIdx: curCreux ? curCreux.startIdx : i
+          };
+        }
+      }
+    } else {
+      if (inLowZone) {
+        inLowZone = false;
+        if (curCreux && curCreux.score <= lowerThreshold) {
+          allEpisodes.push(curCreux);
+        }
+        curCreux = null;
+      }
+    }
+  }
+  if (inLowZone && curCreux && curCreux.score <= lowerThreshold) {
+    allEpisodes.push(curCreux);
+  }
+
+  // Détection des Sommets (>= upperThreshold, ex: +75)
+  if (allowShorts) {
+    let inHighZone = false;
+    let curSommet = null;
+    for (let i = 1; i < d.length; i++) {
+      const netCur = net[i];
+      if (netCur == null) continue;
+
+      if (netCur >= upperThreshold) {
+        if (!inHighZone) {
+          inHighZone = true;
+          curSommet = { type: "SOMMET", idx: i, price: d[i].h, t: d[i].t, score: netCur, low: d[i].l, startIdx: i };
+        } else {
+          if (!curSommet || d[i].h > curSommet.price || netCur > curSommet.score) {
+            curSommet = {
+              type: "SOMMET",
+              idx: i,
+              price: Math.max(d[i].h, curSommet ? curSommet.price : d[i].h),
+              t: d[i].t,
+              score: Math.max(netCur, curSommet ? curSommet.score : netCur),
+              low: Math.min(d[i].l, curSommet ? curSommet.low : d[i].l),
+              startIdx: curSommet ? curSommet.startIdx : i
+            };
+          }
+        }
+      } else {
+        if (inHighZone) {
+          inHighZone = false;
+          if (curSommet && curSommet.score >= upperThreshold) {
+            allEpisodes.push(curSommet);
+          }
+          curSommet = null;
+        }
+      }
+    }
+    if (inHighZone && curSommet && curSommet.score >= upperThreshold) {
+      allEpisodes.push(curSommet);
+    }
+  }
+
+  allEpisodes.sort((a, b) => a.idx - b.idx);
+
+  // ==========================================
+  // ÉTAPE 2 : SUIVI INDÉPENDANT PAR OPTION
+  // Chaque pastille (Base, Opt 1, Opt 2, Opt 3, Opt 4) a son propre état (LONG / SHORT).
+  // Aucune pastille ne bloque les autres.
+  // ==========================================
+  const lastState = {
+    base: null,
+    opt1: null,
+    opt2: null,
+    opt3: null,
+    opt4: null
+  };
+
+  for (let epIdx = 0; epIdx < allEpisodes.length; epIdx++) {
+    const ep = allEpisodes[epIdx];
+    // La recherche se poursuit jusqu'au prochain épisode OPPOSÉ (ou max 120 bougies)
+    const nextOppositeEp = allEpisodes.slice(epIdx + 1).find(e => e.type !== ep.type);
+    const maxScanIdx = nextOppositeEp ? nextOppositeEp.idx : Math.min(d.length, ep.idx + 120);
+
+    if (ep.type === "CREUX") {
+      const cIdx = ep.idx;
+      const cP = ep.price;
+      const cScore = ep.score;
+      const cHigh = ep.high;
+      const cScoreVal = cScore != null ? (cScore > 0 ? `+${cScore.toFixed(0)}` : `${cScore.toFixed(0)}`) : "";
+
+      let hasAnySignalInEp = false;
+
+      // --- OPTION BASE : Premier passage au Vert de la MM 21 ---
+      let idxBase = -1;
+      for (let j = cIdx; j < maxScanIdx; j++) {
+        if (dir[j] === 1 && (j === 0 || dir[j - 1] === -1)) {
+          if (net[j] != null && net[j] <= maxLongLevel) {
+            idxBase = j;
+          }
+          break;
+        }
+      }
+      if (idxBase !== -1) {
+        const canTriggerBase = !alternateSignals || (lastState.base !== "LONG");
+        if (canTriggerBase) {
+          const lvlBase = (net[idxBase] != null) ? (net[idxBase] > 0 ? `+${net[idxBase].toFixed(0)}` : `${net[idxBase].toFixed(0)}`) : cScoreVal;
+          signals.push({
+            i: idxBase,
+            t: d[idxBase].t,
+            dir: 1,
+            type: "ACHAT",
+            optKey: "base",
+            price: d[idxBase].c,
+            low: d[idxBase].l,
+            high: d[idxBase].h,
+            creuxIdx: cIdx,
+            creuxPrice: cP,
+            creuxTime: d[cIdx] ? d[cIdx].t : d[idxBase].t,
+            score: cScore,
+            triggerLevel: net[idxBase],
+            label: `ACHAT Base (Niv: ${lvlBase})`,
+            badge: `🟢 ACHAT (LONG) · BASE (${lvlBase})`,
+            sub: `Ligne Verte @ $${fmt(d[idxBase].c, 1)} · Niv: ${lvlBase} (Creux ${cScoreVal})`,
+            color: "#00E676",
+            bgFill: "rgba(6, 32, 20, 0.95)"
+          });
+          lastState.base = "LONG";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      // --- OPTION 1 : KK bis 2ᵉ UT ---
+      let idxOpt1 = -1;
+      for (let j = cIdx; j < maxScanIdx; j++) {
+        const n2 = net2[j], s2 = sig2[j], n2Prev = net2[j - 1], s2Prev = sig2[j - 1];
+        const n1 = net[j], n1Prev = net[j - 1];
+        const cross2 = (n2 != null && s2 != null && n2 > s2 && (n2Prev == null || s2Prev == null || n2Prev <= s2Prev));
+        const cross12 = (n1 != null && n2 != null && n1 > n2 && (n1Prev == null || n2Prev == null || n1Prev <= n2Prev));
+        if (cross2 || cross12) {
+          if (net[j] != null && net[j] <= maxLongLevel) {
+            idxOpt1 = j;
+          }
+          break;
+        }
+      }
+      if (idxOpt1 !== -1) {
+        const canTriggerOpt1 = !alternateSignals || (lastState.opt1 !== "LONG");
+        if (canTriggerOpt1) {
+          const lvlOpt1 = (net[idxOpt1] != null) ? (net[idxOpt1] > 0 ? `+${net[idxOpt1].toFixed(0)}` : `${net[idxOpt1].toFixed(0)}`) : cScoreVal;
+          signals.push({
+            i: idxOpt1,
+            t: d[idxOpt1].t,
+            dir: 1,
+            type: "ACHAT",
+            optKey: "opt1",
+            price: d[idxOpt1].c,
+            low: d[idxOpt1].l,
+            high: d[idxOpt1].h,
+            creuxIdx: cIdx,
+            creuxPrice: cP,
+            creuxTime: d[cIdx] ? d[cIdx].t : d[idxOpt1].t,
+            score: cScore,
+            triggerLevel: net[idxOpt1],
+            label: `ACHAT Option 1 (Niv: ${lvlOpt1})`,
+            badge: `💎 ACHAT (LONG) · OPT 1 KK (${lvlOpt1})`,
+            sub: `Croisement @ $${fmt(d[idxOpt1].c, 1)} · Niv: ${lvlOpt1} (Creux ${cScoreVal})`,
+            color: "#00E5FF",
+            bgFill: "rgba(4, 28, 44, 0.95)"
+          });
+          lastState.opt1 = "LONG";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      // --- OPTION 2 : Filtre Confluence Impulse MACD (Instantané au signal de base) ---
+      // Au moment précis où les conditions de base sont réunies (idxBase) :
+      // On regarde si l'iMACD est vert à cet instant précis.
+      // S'il est vert -> on déclenche Option 2 (au même index idxBase).
+      // S'il n'est pas vert -> on ne déclenche RIEN, on attend le prochain cycle (aucun déclenchement décalé ultérieur).
+      if (idxBase !== -1) {
+        const colVal = impCol[idxBase];
+        const isImpGreen = (colVal === 0 || colVal === 1);
+        if (isImpGreen) {
+          const canTriggerOpt2 = !alternateSignals || (lastState.opt2 !== "LONG");
+          if (canTriggerOpt2) {
+            const opt2ColNameLong = (colVal === 0) ? "Vert Vif" : "Vert";
+            const opt2PosLong = (impMd[idxBase] != null && impMd[idxBase] <= 0) ? " (<0)" : " (>0)";
+            const lvlOpt2 = (net[idxBase] != null) ? (net[idxBase] > 0 ? `+${net[idxBase].toFixed(0)}` : `${net[idxBase].toFixed(0)}`) : cScoreVal;
+            signals.push({
+              i: idxBase,
+              t: d[idxBase].t,
+              dir: 1,
+              type: "ACHAT",
+              optKey: "opt2",
+              price: d[idxBase].c,
+              low: d[idxBase].l,
+              high: d[idxBase].h,
+              creuxIdx: cIdx,
+              creuxPrice: cP,
+              creuxTime: d[cIdx] ? d[cIdx].t : d[idxBase].t,
+              score: cScore,
+              triggerLevel: net[idxBase],
+              label: `ACHAT Option 2 (iMACD ${impTfLabel} ${lvlOpt2})`,
+              badge: `⚡ ACHAT (LONG) · OPT 2 iMACD (${lvlOpt2})`,
+              sub: `iMACD @ $${fmt(d[idxBase].c, 1)} · Niv: ${lvlOpt2} (${impTfLabel} ${opt2ColNameLong}${opt2PosLong})`,
+              color: "#C084FC",
+              bgFill: "rgba(35, 12, 48, 0.95)"
+            });
+            lastState.opt2 = "LONG";
+            hasAnySignalInEp = true;
+          }
+        }
+      }
+
+      // --- OPTION 3 : Cassure High du Creux ---
+      let idxOpt3 = -1;
+      for (let j = cIdx + 1; j < maxScanIdx; j++) {
+        if (d[j].c > cHigh || d[j].h > cHigh) {
+          if (net[j] != null && net[j] <= maxLongLevel) {
+            idxOpt3 = j;
+          }
+          break;
+        }
+      }
+      if (idxOpt3 !== -1) {
+        const canTriggerOpt3 = !alternateSignals || (lastState.opt3 !== "LONG");
+        if (canTriggerOpt3) {
+          const lvlOpt3 = (net[idxOpt3] != null) ? (net[idxOpt3] > 0 ? `+${net[idxOpt3].toFixed(0)}` : `${net[idxOpt3].toFixed(0)}`) : cScoreVal;
+          signals.push({
+            i: idxOpt3,
+            t: d[idxOpt3].t,
+            dir: 1,
+            type: "ACHAT",
+            optKey: "opt3",
+            price: d[idxOpt3].c,
+            low: d[idxOpt3].l,
+            high: d[idxOpt3].h,
+            creuxIdx: cIdx,
+            creuxPrice: cP,
+            creuxTime: d[cIdx] ? d[cIdx].t : d[idxOpt3].t,
+            score: cScore,
+            triggerLevel: net[idxOpt3],
+            label: `ACHAT Option 3 (Niv: ${lvlOpt3})`,
+            badge: `🛡️ ACHAT (LONG) · OPT 3 BREAKOUT (${lvlOpt3})`,
+            sub: `Breakout > $${fmt(cHigh, 1)} · Niv: ${lvlOpt3} (Creux ${cScoreVal})`,
+            color: "#F59E0B",
+            bgFill: "rgba(42, 26, 4, 0.95)"
+          });
+          lastState.opt3 = "LONG";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      // --- OPTION 4 : Lissage Robuste 34/28 ---
+      let idxOpt4 = -1;
+      for (let j = cIdx; j < maxScanIdx; j++) {
+        const nR = netRob[j], sR = sigRob[j], nRPrev = netRob[j - 1], sRPrev = sigRob[j - 1];
+        if (nR != null && sR != null && nR > sR && (nRPrev == null || sRPrev == null || nRPrev <= sRPrev)) {
+          if (net[j] != null && net[j] <= maxLongLevel) {
+            idxOpt4 = j;
+          }
+          break;
+        }
+      }
+      if (idxOpt4 !== -1) {
+        const canTriggerOpt4 = !alternateSignals || (lastState.opt4 !== "LONG");
+        if (canTriggerOpt4) {
+          const lvlOpt4 = (net[idxOpt4] != null) ? (net[idxOpt4] > 0 ? `+${net[idxOpt4].toFixed(0)}` : `${net[idxOpt4].toFixed(0)}`) : cScoreVal;
+          signals.push({
+            i: idxOpt4,
+            t: d[idxOpt4].t,
+            dir: 1,
+            type: "ACHAT",
+            optKey: "opt4",
+            price: d[idxOpt4].c,
+            low: d[idxOpt4].l,
+            high: d[idxOpt4].h,
+            creuxIdx: cIdx,
+            creuxPrice: cP,
+            creuxTime: d[cIdx] ? d[cIdx].t : d[idxOpt4].t,
+            score: cScore,
+            triggerLevel: net[idxOpt4],
+            label: `ACHAT Option 4 (Niv: ${lvlOpt4})`,
+            badge: `🎯 ACHAT (LONG) · OPT 4 LISSAGE (${lvlOpt4})`,
+            sub: `Ligne 34 @ $${fmt(d[idxOpt4].c, 1)} · Niv: ${lvlOpt4} (Creux ${cScoreVal})`,
+            color: "#10B981",
+            bgFill: "rgba(6, 36, 26, 0.95)"
+          });
+          lastState.opt4 = "LONG";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      if (hasAnySignalInEp || !creuxList.some(c => c.i === cIdx)) {
+        creuxList.push({ i: cIdx, t: d[cIdx].t, price: cP, score: cScore });
+      }
+
+    } else if (ep.type === "SOMMET" && allowShorts) {
+      const sIdx = ep.idx;
+      const sP = ep.price;
+      const sScore = ep.score;
+      const sLow = ep.low;
+      const sScoreVal = sScore != null ? (sScore > 0 ? `+${sScore.toFixed(0)}` : `${sScore.toFixed(0)}`) : "";
+
+      let hasAnySignalInEp = false;
+
+      // --- OPTION BASE : Premier passage au Rouge de la MM 21 ---
+      let idxBase = -1;
+      for (let j = sIdx; j < maxScanIdx; j++) {
+        if (dir[j] === -1 && (j === 0 || dir[j - 1] === 1)) {
+          if (net[j] != null && net[j] >= minShortLevel) {
+            idxBase = j;
+          }
+          break;
+        }
+      }
+      if (idxBase !== -1) {
+        const canTriggerBase = !alternateSignals || (lastState.base !== "SHORT");
+        if (canTriggerBase) {
+          const lvlBase = (net[idxBase] != null) ? (net[idxBase] > 0 ? `+${net[idxBase].toFixed(0)}` : `${net[idxBase].toFixed(0)}`) : sScoreVal;
+          signals.push({
+            i: idxBase,
+            t: d[idxBase].t,
+            dir: -1,
+            type: "VENTE",
+            optKey: "base",
+            price: d[idxBase].c,
+            low: d[idxBase].l,
+            high: d[idxBase].h,
+            sommetIdx: sIdx,
+            sommetPrice: sP,
+            sommetTime: d[sIdx] ? d[sIdx].t : d[idxBase].t,
+            score: sScore,
+            triggerLevel: net[idxBase],
+            label: `VENTE Base (Niv: ${lvlBase})`,
+            badge: `🔴 VENTE (SHORT) · BASE (${lvlBase})`,
+            sub: `Ligne @ $${fmt(d[idxBase].c, 1)} · Niv: ${lvlBase} (Sommet ${sScoreVal})`,
+            color: "#FF3366",
+            bgFill: "rgba(38, 8, 16, 0.95)"
+          });
+          lastState.base = "SHORT";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      // --- OPTION 1 : KK bis 2ᵉ UT Short ---
+      let idxOpt1 = -1;
+      for (let j = sIdx; j < maxScanIdx; j++) {
+        const n2 = net2[j], s2 = sig2[j], n2Prev = net2[j - 1], s2Prev = sig2[j - 1];
+        const n1 = net[j], n1Prev = net[j - 1];
+        const cross2 = (n2 != null && s2 != null && n2 <= s2 && (n2Prev == null || s2Prev == null || n2Prev > s2Prev));
+        const cross12 = (n1 != null && n2 != null && n1 <= n2 && (n1Prev == null || n2Prev == null || n1Prev > n2Prev));
+        if (cross2 || cross12) {
+          if (net[j] != null && net[j] >= minShortLevel) {
+            idxOpt1 = j;
+          }
+          break;
+        }
+      }
+      if (idxOpt1 !== -1) {
+        const canTriggerOpt1 = !alternateSignals || (lastState.opt1 !== "SHORT");
+        if (canTriggerOpt1) {
+          const lvlOpt1 = (net[idxOpt1] != null) ? (net[idxOpt1] > 0 ? `+${net[idxOpt1].toFixed(0)}` : `${net[idxOpt1].toFixed(0)}`) : sScoreVal;
+          signals.push({
+            i: idxOpt1,
+            t: d[idxOpt1].t,
+            dir: -1,
+            type: "VENTE",
+            optKey: "opt1",
+            price: d[idxOpt1].c,
+            low: d[idxOpt1].l,
+            high: d[idxOpt1].h,
+            sommetIdx: sIdx,
+            sommetPrice: sP,
+            sommetTime: d[sIdx] ? d[sIdx].t : d[idxOpt1].t,
+            score: sScore,
+            triggerLevel: net[idxOpt1],
+            label: `VENTE Option 1 (Niv: ${lvlOpt1})`,
+            badge: `💎 VENTE (SHORT) · OPT 1 KK (${lvlOpt1})`,
+            sub: `Croisement @ $${fmt(d[idxOpt1].c, 1)} · Niv: ${lvlOpt1} (Sommet ${sScoreVal})`,
+            color: "#00E5FF",
+            bgFill: "rgba(4, 28, 44, 0.95)"
+          });
+          lastState.opt1 = "SHORT";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      // --- OPTION 2 : Filtre Confluence Impulse MACD Short (Instantané au signal de base) ---
+      // Au moment précis où les conditions de base sont réunies (idxBase) :
+      // On regarde si l'iMACD est rouge/orange à cet instant précis.
+      // S'il est rouge/orange -> on déclenche Option 2 Short (au même index idxBase).
+      // S'il n'est pas rouge/orange -> on ne déclenche RIEN, on attend le prochain cycle (aucun déclenchement décalé ultérieur).
+      if (idxBase !== -1) {
+        const colVal = impCol[idxBase];
+        const isImpRed = (colVal === 2 || colVal === 3);
+        if (isImpRed) {
+          const canTriggerOpt2 = !alternateSignals || (lastState.opt2 !== "SHORT");
+          if (canTriggerOpt2) {
+            const opt2ColNameShort = (colVal === 2) ? "Orange" : "Rouge";
+            const opt2PosShort = (impMd[idxBase] != null && impMd[idxBase] >= 0) ? " (>0)" : " (<0)";
+            const lvlOpt2 = (net[idxBase] != null) ? (net[idxBase] > 0 ? `+${net[idxBase].toFixed(0)}` : `${net[idxBase].toFixed(0)}`) : sScoreVal;
+            signals.push({
+              i: idxBase,
+              t: d[idxBase].t,
+              dir: -1,
+              type: "VENTE",
+              optKey: "opt2",
+              price: d[idxBase].c,
+              low: d[idxBase].l,
+              high: d[idxBase].h,
+              sommetIdx: sIdx,
+              sommetPrice: sP,
+              sommetTime: d[sIdx] ? d[sIdx].t : d[idxBase].t,
+              score: sScore,
+              triggerLevel: net[idxBase],
+              label: `VENTE Option 2 (iMACD ${impTfLabel} ${lvlOpt2})`,
+              badge: `⚡ VENTE (SHORT) · OPT 2 iMACD (${lvlOpt2})`,
+              sub: `iMACD @ $${fmt(d[idxBase].c, 1)} · Niv: ${lvlOpt2} (${impTfLabel} ${opt2ColNameShort}${opt2PosShort})`,
+              color: "#C084FC",
+              bgFill: "rgba(35, 12, 48, 0.95)"
+            });
+            lastState.opt2 = "SHORT";
+            hasAnySignalInEp = true;
+          }
+        }
+      }
+
+      // --- OPTION 3 : Cassure Low du Sommet ---
+      let idxOpt3 = -1;
+      for (let j = sIdx + 1; j < maxScanIdx; j++) {
+        if (d[j].c < sLow || d[j].l < sLow) {
+          if (net[j] != null && net[j] >= minShortLevel) {
+            idxOpt3 = j;
+          }
+          break;
+        }
+      }
+      if (idxOpt3 !== -1) {
+        const canTriggerOpt3 = !alternateSignals || (lastState.opt3 !== "SHORT");
+        if (canTriggerOpt3) {
+          const lvlOpt3 = (net[idxOpt3] != null) ? (net[idxOpt3] > 0 ? `+${net[idxOpt3].toFixed(0)}` : `${net[idxOpt3].toFixed(0)}`) : sScoreVal;
+          signals.push({
+            i: idxOpt3,
+            t: d[idxOpt3].t,
+            dir: -1,
+            type: "VENTE",
+            optKey: "opt3",
+            price: d[idxOpt3].c,
+            low: d[idxOpt3].l,
+            high: d[idxOpt3].h,
+            sommetIdx: sIdx,
+            sommetPrice: sP,
+            sommetTime: d[sIdx] ? d[sIdx].t : d[idxOpt3].t,
+            score: sScore,
+            triggerLevel: net[idxOpt3],
+            label: `VENTE Option 3 (Niv: ${lvlOpt3})`,
+            badge: `🛡️ VENTE (SHORT) · OPT 3 BREAKOUT (${lvlOpt3})`,
+            sub: `Breakout < $${fmt(sLow, 1)} · Niv: ${lvlOpt3} (Sommet ${sScoreVal})`,
+            color: "#F59E0B",
+            bgFill: "rgba(42, 26, 4, 0.95)"
+          });
+          lastState.opt3 = "SHORT";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      // --- OPTION 4 : Lissage Robuste 34/28 ---
+      let idxOpt4 = -1;
+      for (let j = sIdx; j < maxScanIdx; j++) {
+        const nR = netRob[j], sR = sigRob[j], nRPrev = netRob[j - 1], sRPrev = sigRob[j - 1];
+        if (nR != null && sR != null && nR <= sR && (nRPrev == null || sRPrev == null || nRPrev > sRPrev)) {
+          if (net[j] != null && net[j] >= minShortLevel) {
+            idxOpt4 = j;
+          }
+          break;
+        }
+      }
+      if (idxOpt4 !== -1) {
+        const canTriggerOpt4 = !alternateSignals || (lastState.opt4 !== "SHORT");
+        if (canTriggerOpt4) {
+          const lvlOpt4 = (net[idxOpt4] != null) ? (net[idxOpt4] > 0 ? `+${net[idxOpt4].toFixed(0)}` : `${net[idxOpt4].toFixed(0)}`) : sScoreVal;
+          signals.push({
+            i: idxOpt4,
+            t: d[idxOpt4].t,
+            dir: -1,
+            type: "VENTE",
+            optKey: "opt4",
+            price: d[idxOpt4].c,
+            low: d[idxOpt4].l,
+            high: d[idxOpt4].h,
+            sommetIdx: sIdx,
+            sommetPrice: sP,
+            sommetTime: d[sIdx] ? d[sIdx].t : d[idxOpt4].t,
+            score: sScore,
+            triggerLevel: net[idxOpt4],
+            label: `VENTE Option 4 (Niv: ${lvlOpt4})`,
+            badge: `🎯 VENTE (SHORT) · OPT 4 LISSAGE (${lvlOpt4})`,
+            sub: `Ligne 34 @ $${fmt(d[idxOpt4].c, 1)} · Niv: ${lvlOpt4} (Sommet ${sScoreVal})`,
+            color: "#10B981",
+            bgFill: "rgba(6, 36, 26, 0.95)"
+          });
+          lastState.opt4 = "SHORT";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      if (hasAnySignalInEp || !sommetsList.some(sm => sm.i === sIdx)) {
+        sommetsList.push({ i: sIdx, t: d[sIdx].t, price: sP, score: sScore });
+      }
+    }
+  }
+
+  creuxList.sort((a, b) => a.i - b.i);
+  sommetsList.sort((a, b) => a.i - b.i);
+  signals.sort((a, b) => a.i - b.i);
+
+  return {
+    signals,
+    line,
+    dir,
+    net,
+    creuxList,
+    sommetsList
+  };
+}
+
+function drawMMSignals(res, s, e, yOf, cw) {
+  if (!res) return;
+  const ind = state.indicators.strat_mm || {};
+  const cBuy = S("strat_mm", "cBuy") || "#00E676";
+  const cSell = S("strat_mm", "cSell") || "#FF3366";
+
+  // 1. Tracé de la ligne MM sur le prix
+  if (ind.showLineOnPrice !== false && Array.isArray(res.line) && res.line.length) {
+    const L = res.line, D = res.dir || [];
+    ctx.save();
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (let i = Math.max(1, s - 1); i < e && i < L.length; i++) {
+      if (L[i] == null || L[i - 1] == null || !isFinite(L[i]) || !isFinite(L[i - 1])) continue;
+      const isUp = (D[i] === 1);
+      ctx.strokeStyle = isUp ? cBuy : cSell;
+      ctx.beginPath();
+      ctx.moveTo(xOf(i - 1), yOf(L[i - 1]));
+      ctx.lineTo(xOf(i), yOf(L[i]));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 2. Repères des Creux sous -75 (▲) et Sommets au-dessus de +75 (▼)
+  if (ind.showCreuxMarkers !== false) {
+    ctx.save();
+    // Creux sous -75 (en-dessous de la bougie)
+    if (Array.isArray(res.creuxList)) {
+      for (const cr of res.creuxList) {
+        if (cr.i < s - 1 || cr.i > e + 1) continue;
+        const x = xOf(cr.i);
+        const y = yOf(cr.price) + 12;
+        ctx.fillStyle = cBuy;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 6);
+        ctx.lineTo(x + 5, y + 4);
+        ctx.lineTo(x - 5, y + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.font = 'bold 8.5px "IBM Plex Mono", monospace';
+        ctx.fillStyle = cBuy;
+        ctx.textAlign = "center";
+        ctx.fillText(`${cr.score.toFixed(0)}`, x, y + 14);
+      }
+    }
+    // Sommets au-dessus de +75 (au-dessus de la bougie)
+    if (ind.allowShorts !== false && Array.isArray(res.sommetsList)) {
+      for (const sm of res.sommetsList) {
+        if (sm.i < s - 1 || sm.i > e + 1) continue;
+        const x = xOf(sm.i);
+        const y = yOf(sm.price) - 12;
+        ctx.fillStyle = cSell;
+        ctx.beginPath();
+        ctx.moveTo(x, y + 6);
+        ctx.lineTo(x + 5, y - 4);
+        ctx.lineTo(x - 5, y - 4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.font = 'bold 8.5px "IBM Plex Mono", monospace';
+        ctx.fillStyle = cSell;
+        ctx.textAlign = "center";
+        ctx.fillText(`+${sm.score.toFixed(0)}`, x, y - 8);
+      }
+    }
+    ctx.restore();
+  }
+
+  // 3. Pastilles d Entrée : Base + 4 Confluences positionnées sur leur bougie respective
+  if (ind.showBadges !== false && Array.isArray(res.signals) && res.signals.length) {
+    const cFilter = ind.confluenceFilter || "all";
+
+    for (const sig of res.signals) {
+      // Vérification du filtre de confluence
+      if (cFilter !== "all" && sig.optKey !== cFilter) continue;
+      if (cFilter === "all") {
+        if (sig.optKey === "opt1" && ind.showOpt1 === false) continue;
+        if (sig.optKey === "opt2" && ind.showOpt2 === false) continue;
+        if (sig.optKey === "opt3" && ind.showOpt3 === false) continue;
+        if (sig.optKey === "opt4" && ind.showOpt4 === false) continue;
+        if (sig.optKey === "base" && ind.showBase === false) continue;
+      }
+
+      const i = (sig.t != null && typeof idxOfTime === "function" ? idxOfTime(sig.t) : null) ?? sig.i;
+      if (i == null || i < s - 2 || i > e + 2) continue;
+      const x = xOf(i);
+      if (x < -220 || x > W - AXIS_W + 220) continue;
+
+      const isLong = (sig.dir === 1 || sig.type === "LONG");
+      const baseCandle = state.data[i];
+      if (!baseCandle) continue;
+
+      const color = sig.color || (isLong ? cBuy : cSell);
+      const bgFill = sig.bgFill || (isLong ? "rgba(6, 32, 20, 0.95)" : "rgba(38, 8, 16, 0.95)");
+      const anchorY = isLong ? yOf(baseCandle.l) : yOf(baseCandle.h);
+
+      const bw = 260;
+      const bh = 36;
+      const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
+
+      let by;
+      if (isLong) {
+        // EN-DESSOUS DU GRAPHIQUE
+        by = anchorY + 24;
+        if (typeof placeBadge === "function") {
+          by = placeBadge(bx, bw, by, bh, 1);
+        }
+      } else {
+        // AU-DESSUS DU GRAPHIQUE
+        const targetAboveY = anchorY - bh - 24;
+        by = Math.max(6, targetAboveY);
+        if (typeof _badgeRects !== "undefined" && Array.isArray(_badgeRects)) {
+          let testY = by, n = 0;
+          const hit = (cy) => _badgeRects.find(q =>
+            bx < q.x + q.w + 4 && bx + bw + 4 > q.x && cy < q.y + q.h + 4 && cy + bh + 4 > q.y
+          );
+          while (hit(testY) && n < 20) {
+            testY = hit(testY).y - bh - 4;
+            if (testY < 6) {
+              testY = 6;
+              break;
+            }
+            n++;
+          }
+          by = testY;
+          _badgeRects.push({ x: bx, y: by, w: bw, h: bh });
+        }
+      }
+
+      ctx.save();
+
+      // Trait pointillé liant le creux/sommet à la bougie d entrée
+      if (isLong && sig.creuxIdx != null && sig.creuxPrice != null) {
+        const cx = xOf(sig.creuxIdx);
+        const cy = yOf(sig.creuxPrice);
+        ctx.strokeStyle = hexA(color, 0.45);
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(x, anchorY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (!isLong && sig.sommetIdx != null && sig.sommetPrice != null) {
+        const sx = xOf(sig.sommetIdx);
+        const sy = yOf(sig.sommetPrice);
+        ctx.strokeStyle = hexA(color, 0.45);
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(x, anchorY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Ligne de liaison verticale vers le badge
+      ctx.strokeStyle = hexA(color, 0.80);
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, anchorY);
+      ctx.lineTo(x, isLong ? by : (by + bh));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Repère triangle pointeur sur la mèche de la bougie d entrée
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (isLong) {
+        ctx.moveTo(x, anchorY);
+        ctx.lineTo(x + 4, anchorY + 6);
+        ctx.lineTo(x - 4, anchorY + 6);
+      } else {
+        ctx.moveTo(x, anchorY);
+        ctx.lineTo(x + 4, anchorY - 6);
+        ctx.lineTo(x - 4, anchorY - 6);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Fond de pastille avec lueur
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = bgFill;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === "function") {
+        ctx.roundRect(bx, by, bw, bh, 6);
+      } else {
+        ctx.rect(bx, by, bw, bh);
+      }
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Textes dans la pastille
+      ctx.font = 'bold 10px "IBM Plex Sans", -apple-system, sans-serif';
+      ctx.fillStyle = color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(sig.badge || (isLong ? "🟢 ENTRÉE LONG" : "🔴 ENTRÉE SHORT"), bx + bw / 2, by + 4.5);
+
+      ctx.font = '8px "IBM Plex Mono", monospace';
+      ctx.fillStyle = "#E2E8F0";
+      ctx.fillText(sig.sub || "", bx + bw / 2, by + 18.5);
+
+      ctx.restore();
+
+      if (typeof labelHits !== "undefined" && Array.isArray(labelHits)) {
+        labelHits.push({ x: bx, y: by, w: bw, h: bh, key: "strat_mm" });
+      }
+    }
+  }
+}
+
+function entreesMM(optFiltre, customTf) {
+    const d = state.data || [];
+    if (!d || !d.length) return [];
+    const base = (state.indicators && state.indicators.strat_mm) || {};
+    let cfg = Object.assign({}, base);
+    if (customTf != null && customTf !== 'chart' && +customTf > 0) {
+      cfg = Object.assign(cfg, { tf: customTf });
+    }
+    let srcData = d;
+    const targetTf = (cfg && cfg.tf && cfg.tf !== 'chart') ? +cfg.tf : (state.tf || 1);
+    if (targetTf > (state.tf || 1) && typeof aggregateData === 'function') {
+      srcData = aggregateData(d, targetTf, state.tf || 1);
+    }
+    let mmRes = null;
+    try {
+      mmRes = computeMMSignals(srcData, cfg);
+    } catch (e) {
+      return [];
+    }
+    if (!mmRes || !Array.isArray(mmRes.signals)) return [];
+
+    let sg = mmRes.signals.slice();
+    // Ne conserver que les options autorisées (base et opt2)
+    sg = sg.filter(s => s.optKey === 'base' || s.optKey === 'opt2');
+    if (optFiltre && optFiltre !== 'toutes') {
+      sg = sg.filter(s => s.optKey === optFiltre);
+    }
+
+    let numSeq = 1;
+    const out = [];
+    for (const s of sg) {
+      const realIdx = (s.t != null && typeof idxOfTime === 'function') ? idxOfTime(s.t) : s.i;
+      if (realIdx != null && realIdx >= 0 && realIdx < d.length) {
+        out.push({
+          i: realIdx,
+          dir: s.dir,
+          num: numSeq++,
+          price: s.price || d[realIdx].c,
+          t: s.t || d[realIdx].t,
+          optKey: s.optKey,
+          label: s.label || s.badge || (s.dir === 1 ? 'LONG' : 'SHORT'),
+          trigger: s.sub || s.label || ('MM ' + (s.optKey || ''))
+        });
+      }
+    }
+    return out.sort((a, b) => a.i - b.i);
+  }
+
+function sortiesMM(filtre, mmTfVal){
+    const d = state.data || [];
+    if (!d || !d.length) return [];
+
+    // Sorties issues de la Stratégie MM (Base MM 21 ou Opt 2 iMACD)
+    if(filtre === 'opt2' || filtre === 'base' || filtre === 'mm_toutes'){
+      const mmSig = computeMMSignals(d, Object.assign({}, (state.indicators && state.indicators.strat_mm) || {}, { tf: mmTfVal || 'chart' }));
+      const sigs = (mmSig && Array.isArray(mmSig.signals)) ? mmSig.signals : [];
+      const list = [];
+      for(const s of sigs){
+        if(s.optKey !== 'base' && s.optKey !== 'opt2') continue;
+        if(filtre !== 'mm_toutes' && s.optKey !== filtre) continue;
+        const realIdx = (s.t != null && typeof idxOfTime === 'function') ? idxOfTime(s.t) : s.i;
+        if(realIdx != null && realIdx >= 0 && realIdx < d.length){
+          // Un signal MM ACHAT (dir=1) clôture une position SHORT -> type SORTIE_VENTE
+          // Un signal MM VENTE (dir=-1) clôture une position LONG -> type SORTIE_ACHAT
+          list.push({
+            i: realIdx,
+            t: s.t || d[realIdx].t,
+            price: s.price || d[realIdx].c,
+            type: s.dir === 1 ? 'SORTIE_VENTE' : 'SORTIE_ACHAT',
+            optKey: s.optKey,
+            isMM: true,
+            label: 'MM ' + (s.optKey ? s.optKey.toUpperCase() : '') + ' (' + (s.dir === 1 ? 'LONG' : 'SHORT') + ')'
+          });
+        }
+      }
+      return list.sort((a,b) => a.i - b.i);
+    }
+
+    // Sorties issues de KK Bis (Divergences, seuils...)
+    const kb = getInd('kk_bis');
+    let out = (kb && Array.isArray(kb.exits)) ? kb.exits.slice() : [];
+    if(filtre === 'div')   out = out.filter(x => x.div);
+    if(filtre === 'seuil') out = out.filter(x => !x.div);
+    return out.filter(x => x.i != null).sort((a,b) => a.i - b.i);
+  }
+
+async function runMMBacktest(){
+  const modal = document.getElementById('mmbt-modal');
+  const resDiv = document.getElementById('mmbt-res');
+  const btnRun = document.getElementById('mmbt-run');
+  if(!resDiv || !btnRun) return;
+  
+  const days = +(document.getElementById('mmbt-days')?.value || 7);
+  const capital = +(document.getElementById('mmbt-capital')?.value || 100);
+  const feePct = (+document.getElementById('mmbt-fee')?.value || 0.04) / 100;
+  const lev = +(document.getElementById('mmbt-lev')?.value || 1);
+  const lineType = document.getElementById('mmbt-linetype')?.value || 'alma';
+  const period = +(document.getElementById('mmbt-period')?.value || 21);
+  const pivotLen = +(document.getElementById('mmbt-pivotlen')?.value || 2);
+  const oscThreshold = +(document.getElementById('mmbt-threshold')?.value || -75);
+  const tpVal = +(document.getElementById('mmbt-tp')?.value || 0);
+  const slVal = +(document.getElementById('mmbt-sl')?.value || 0);
+  const allowShortBtn = document.getElementById('mmbt-short');
+  const allowShort = allowShortBtn ? allowShortBtn.classList.contains('on') : true;
+  const filterOscBtn = document.getElementById('mmbt-filterosc');
+  const filterOsc = filterOscBtn ? filterOscBtn.classList.contains('on') : true;
+  
+  btnRun.textContent = `⏳ Chargement de ${days} jour(s) d'historique…`;
+  btnRun.style.pointerEvents = 'none';
+  
+  let d;
+  try {
+    d = await fetchBigHistory(days);
+  } catch(e) {
+    d = state.data;
+  }
+  
+  btnRun.textContent = '▶ Lancer le Backtest MM';
+  btnRun.style.pointerEvents = 'auto';
+  
+  if (!d || d.length < 50) {
+    resDiv.innerHTML = '<div style="color:#FF5252;padding:10px">Données insuffisantes pour le backtest.</div>';
+    return;
+  }
+  
+  state.indicators.strat_mm = {
+    ...state.indicators.strat_mm,
+    on: true,
+    lineType,
+    period,
+    pivotLen,
+    oscThreshold,
+    filterOsc,
+    allowShorts: allowShort,
+    tp: tpVal,
+    sl: slVal
+  };
+  
+  const mmData = computeMMSignals(d, state.indicators.strat_mm);
+  const signals = mmData.signals || [];
+  const sigMap = {};
+  signals.forEach(s => {
+    const idx = (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i;
+    if (idx != null) sigMap[idx] = s;
+  });
+  
+  let curCap = capital;
+  let peakCap = capital;
+  let maxDD = 0;
+  const trades = [];
+  let pos = null;
+  
+  for (let i = 2; i < d.length; i++) {
+    const b = d[i];
+    const sig = sigMap[i];
+    
+    // Si position ouverte, vérification des sorties
+    if (pos) {
+      let exitTrigger = false;
+      let exitPrice = b.c;
+      let exitReason = '';
+      
+      if (pos.dir === 1) {
+        // TP / SL
+        if (tpVal > 0 && b.h >= pos.entryPrice + tpVal) {
+          exitTrigger = true; exitPrice = pos.entryPrice + tpVal; exitReason = 'Take Profit';
+        } else if (slVal > 0 && b.l <= pos.entryPrice - slVal) {
+          exitTrigger = true; exitPrice = pos.entryPrice - slVal; exitReason = 'Stop Loss';
+        } else if (sig && sig.dir === -1) {
+          exitTrigger = true; exitPrice = b.c; exitReason = 'Inversion Signal Vente';
+        }
+      } else {
+        if (tpVal > 0 && b.l <= pos.entryPrice - tpVal) {
+          exitTrigger = true; exitPrice = pos.entryPrice - tpVal; exitReason = 'Take Profit';
+        } else if (slVal > 0 && b.h >= pos.entryPrice + slVal) {
+          exitTrigger = true; exitPrice = pos.entryPrice + slVal; exitReason = 'Stop Loss';
+        } else if (sig && sig.dir === 1) {
+          exitTrigger = true; exitPrice = b.c; exitReason = 'Inversion Signal Achat';
+        }
+      }
+      
+      if (exitTrigger) {
+        const rawPnlPct = pos.dir === 1 ? (exitPrice - pos.entryPrice) / pos.entryPrice : (pos.entryPrice - exitPrice) / pos.entryPrice;
+        const levPnlPct = rawPnlPct * lev - 2 * feePct;
+        const netPnlUsdt = pos.sizeUsdt * levPnlPct;
+        curCap += netPnlUsdt;
+        if (curCap > peakCap) peakCap = curCap;
+        const dd = (peakCap - curCap) / peakCap;
+        if (dd > maxDD) maxDD = dd;
+        
+        trades.push({
+          dir: pos.dir,
+          entryTime: pos.entryTime,
+          exitTime: b.t,
+          entryPrice: pos.entryPrice,
+          exitPrice: exitPrice,
+          pnlPct: levPnlPct * 100,
+          pnlUsdt: netPnlUsdt,
+          reason: exitReason,
+          capitalAfter: curCap
+        });
+        pos = null;
+      }
+    }
+    
+    // Nouvelle entrée
+    if (!pos && sig) {
+      pos = {
+        dir: sig.dir,
+        entryPrice: b.c,
+        entryTime: b.t,
+        sizeUsdt: curCap
+      };
+    }
+  }
+  
+  // Clôture du dernier trade si encore ouvert
+  if (pos && d.length > 0) {
+    const lastB = d[d.length - 1];
+    const rawPnlPct = pos.dir === 1 ? (lastB.c - pos.entryPrice) / pos.entryPrice : (pos.entryPrice - lastB.c) / pos.entryPrice;
+    const levPnlPct = rawPnlPct * lev - 2 * feePct;
+    const netPnlUsdt = pos.sizeUsdt * levPnlPct;
+    curCap += netPnlUsdt;
+    trades.push({
+      dir: pos.dir,
+      entryTime: pos.entryTime,
+      exitTime: lastB.t,
+      entryPrice: pos.entryPrice,
+      exitPrice: lastB.c,
+      pnlPct: levPnlPct * 100,
+      pnlUsdt: netPnlUsdt,
+      reason: 'Fin d\'historique',
+      capitalAfter: curCap
+    });
+  }
+  
+  // Calcul des métriques KPI
+  const winTrades = trades.filter(t => t.pnlUsdt > 0);
+  const lossTrades = trades.filter(t => t.pnlUsdt <= 0);
+  const winRate = trades.length ? ((winTrades.length / trades.length) * 100).toFixed(1) : 0;
+  const totPnlUsdt = curCap - capital;
+  const totPnlPct = ((totPnlUsdt / capital) * 100).toFixed(2);
+  const grossWin = winTrades.reduce((s, t) => s + t.pnlUsdt, 0);
+  const grossLoss = Math.abs(lossTrades.reduce((s, t) => s + t.pnlUsdt, 0));
+  const profitFactor = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : (grossWin > 0 ? '∞' : '0.00');
+  
+  resDiv.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px">
+      <div style="background:var(--panel-2,#0F172A);border:1px solid rgba(0,230,118,0.3);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted)">GAIN NET</div>
+        <div style="font-size:15px;font-weight:800;color:${totPnlUsdt>=0?'#00E676':'#FF5252'}">${totPnlUsdt>=0?'+':''}$${totPnlUsdt.toFixed(2)} (${totPnlPct}%)</div>
+      </div>
+      <div style="background:var(--panel-2,#0F172A);border:1px solid rgba(0,230,118,0.3);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted)">WIN RATE</div>
+        <div style="font-size:15px;font-weight:800;color:#00E676">${winRate}%</div>
+      </div>
+      <div style="background:var(--panel-2,#0F172A);border:1px solid rgba(0,230,118,0.3);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted)">TRADES</div>
+        <div style="font-size:15px;font-weight:800;color:#FFFFFF">${trades.length} <span style="font-size:10px;color:var(--muted)">(${winTrades.length}W / ${lossTrades.length}L)</span></div>
+      </div>
+      <div style="background:var(--panel-2,#0F172A);border:1px solid rgba(0,230,118,0.3);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted)">PROFIT FACTOR</div>
+        <div style="font-size:15px;font-weight:800;color:#FFFFFF">${profitFactor}</div>
+      </div>
+      <div style="background:var(--panel-2,#0F172A);border:1px solid rgba(0,230,118,0.3);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:var(--muted)">MAX DRAWDOWN</div>
+        <div style="font-size:15px;font-weight:800;color:#FF5252">${(maxDD*100).toFixed(1)}%</div>
+      </div>
+    </div>
+    <div style="max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px;font-size:10px">
+      <table style="width:100%;border-collapse:collapse;text-align:left">
+        <thead>
+          <tr style="background:var(--panel-2);color:var(--muted);border-bottom:1px solid var(--line)">
+            <th style="padding:4px 6px">Sens</th>
+            <th style="padding:4px 6px">Entrée</th>
+            <th style="padding:4px 6px">Sortie</th>
+            <th style="padding:4px 6px">PnL ($)</th>
+            <th style="padding:4px 6px">Raison</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${trades.map(t => `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+              <td style="padding:4px 6px;color:${t.dir===1?'#00E676':'#FF5252'};font-weight:bold">${t.dir===1?'▲ ACHAT':'▼ VENTE'}</td>
+              <td style="padding:4px 6px">$${t.entryPrice.toFixed(2)}</td>
+              <td style="padding:4px 6px">$${t.exitPrice.toFixed(2)}</td>
+              <td style="padding:4px 6px;color:${t.pnlUsdt>=0?'#00E676':'#FF5252'};font-weight:bold">${t.pnlUsdt>=0?'+':''}$${t.pnlUsdt.toFixed(2)}</td>
+              <td style="padding:4px 6px;color:var(--muted)">${t.reason}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function openMMBacktestModal(){
+  const modal = document.getElementById('mmbt-modal');
+  if(!modal) return;
+  modal.style.display = 'flex';
+  const ind = state.indicators.strat_mm || {};
+  if(ind.lineType && document.getElementById('mmbt-linetype')) document.getElementById('mmbt-linetype').value = ind.lineType;
+  if(ind.period && document.getElementById('mmbt-period')) document.getElementById('mmbt-period').value = ind.period;
+  if(ind.pivotLen && document.getElementById('mmbt-pivotlen')) document.getElementById('mmbt-pivotlen').value = ind.pivotLen;
+  if(ind.oscThreshold != null && document.getElementById('mmbt-threshold')) document.getElementById('mmbt-threshold').value = ind.oscThreshold;
+  if(ind.tp != null && document.getElementById('mmbt-tp')) document.getElementById('mmbt-tp').value = ind.tp;
+  if(ind.sl != null && document.getElementById('mmbt-sl')) document.getElementById('mmbt-sl').value = ind.sl;
+  runMMBacktest();
+}
+
+window.runBtMM = async function(){
+    try { return await window.__runBtInterneMM(); }
+    catch(err){
+      const b = document.getElementById('btm-res');
+      if(b) b.innerHTML = '<div style="padding:11px;border:1px solid #FF5252;border-radius:8px;' +
+        'background:rgba(239,68,68,.08);color:#FF5252;font-size:11.5px">Le calcul s\'est interrompu : ' +
+        ((err && err.message) ? err.message : String(err)) +
+        '<br><span style="color:#CBD5E1">Vous pouvez relancer sans recharger la page.</span></div>';
+      try{ if(typeof histBusy !== 'undefined') histBusy = false; }catch(e){}
+      window.__btNoRender = false;
+      state.cache = {};
+      return null;
+    }
+  }
+
+window.openBtMM = function(){
+    let m = document.getElementById('btm-back');
+    if(m){ m.style.display = 'flex'; return; }
+    m = document.createElement('div');
+    m.id = 'btm-back';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,20,.92);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px';
+    const sel = 'background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 8px;font-size:12px';
+    m.innerHTML =
+      '<div style="background:var(--panel,#0A111F);border:2px solid #10B981;border-radius:14px;max-width:1050px;width:100%;padding:16px;color:#E2E8F0">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<div><div style="font-size:16px;font-weight:800;color:#10B981;display:flex;align-items:center;gap:6px">🎯 Backtest Apparié — Stratégie MM</div>' +
+      '<div style="font-size:11px;color:#94A3B8">Simulation et appariement fidèle des signaux MM (🟢 Base MM 21 & ⚡ Opt 2 iMACD)</div></div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      '<button onclick="window.resetBtMMConfig()" style="background:rgba(239,68,68,.14);border:1px solid #EF4444;color:#FCA5A5;border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer" title="Rétablir les valeurs par défaut">⟲ Réglages Usine</button>' +
+      '<button id="btm-tracer-btn" onclick="window.tracerBTMM()" style="background:rgba(16,185,129,.14);border:1px solid #10B981;color:#10B981;border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer">📈 Tracer sur le graphique</button>' +
+      '<button onclick="window.effacerPastillesBacktest()" style="background:rgba(239,68,68,.12);border:1px solid #EF4444;color:#F87171;border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer">🧹 Effacer du graphique</button>' +
+      '<button onclick="window.fermerBTMM()" style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;cursor:pointer">Fermer</button>' +
+      '</div></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">' +
+      '<label style="font-size:11px;color:#94A3B8">Option MM Entrée<br><select id="btm-opt" style="' + sel + '">' +
+        '<option value="toutes" selected>Toutes les options actives</option>' +
+        '<option value="base">🟢 Base (MM 21)</option>' +
+        '<option value="opt2">⚡ Option 2 (iMACD MTF)</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">UT Entrée MM<br><select id="btm-mmtf" style="' + sel + '">' +
+        '<option value="chart" selected>Graphique</option><option value="1">1m</option><option value="2">2m</option><option value="3">3m</option><option value="5">5m</option><option value="6">6m</option><option value="9">9m</option><option value="10">10m</option><option value="12">12m</option><option value="15">15m</option><option value="30">30m</option><option value="60">1H</option><option value="240">4H</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Sens<br><select id="btm-sens" style="' + sel + '">' +
+        '<option value="normal" selected>Normal</option><option value="inverse">Inversé</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Direction<br><select id="btm-dir" style="' + sel + '">' +
+        '<option value="tout" selected>Longs et shorts</option><option value="long">Longs seuls</option><option value="short">Shorts seuls</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Sorties<br><select id="btm-sor" style="' + sel + '">' +
+        '<option value="tout" selected>kk bis — toutes</option>' +
+        '<option value="div">Divergences seules</option>' +
+        '<option value="seuil">Seuil + pente seul</option>' +
+        '<option value="opt2">⚡ Option 2 (iMACD MTF)</option>' +
+        '<option value="oppose">Signal MM opposé</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Montant<br><input id="btm-marge" type="number" value="0.02" step="any" style="' + sel + ';width:80px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Unité<br><select id="btm-unite" style="' + sel + '">' +
+        '<option value="BASE" selected>BTC (taille)</option><option value="USDT">USDT (marge)</option></select></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Levier<br><input id="btm-lev" type="number" value="200" step="1" style="' + sel + ';width:66px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Capital ($)<br><input id="btm-capital" type="number" value="100" step="any" style="' + sel + ';width:76px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Mode marge<br><select id="btm-mmode" onchange="window.majModeMargeBTMM()" style="' + sel + '">' +
+        '<option value="croise" selected>Croisée</option><option value="isole">Isolée</option></select></label>' +
+      '<label id="btm-lbl-mpct" style="font-size:11px;color:#94A3B8;display:none">Marge % cap.<br><input id="btm-mpct" type="number" value="50" step="1" min="1" max="100" style="' + sel + ';width:70px"></label>' +
+      '<label id="btm-lbl-mbonus" style="font-size:11px;color:#94A3B8;display:none">Bonus % gain<br><input id="btm-mbonus" type="number" value="20" step="1" min="0" max="100" style="' + sel + ';width:70px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">TP ($)<br><input id="btm-tp" type="number" value="0" step="10" style="' + sel + ';width:68px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">SL ($)<br><input id="btm-sl" type="number" value="0" step="10" style="' + sel + ';width:68px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Frais %<br><input id="btm-frais" type="number" value="' + (window.fraisTakerDefaut ? window.fraisTakerDefaut() : '0.02') + '" step="0.001" style="' + sel + ';width:76px"></label>' +
+      '<label style="font-size:11px;color:#94A3B8">Période<br><select id="btm-jours" style="' + sel + '">' +
+        '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
+        '<option value="14">2 semaines</option><option value="22">22 jours</option>' +
+        '<option value="30">1 mois</option></select></label>' +
+      '<button onclick="window.chargerHistoriqueBTMM()" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
+      '<button onclick="window.runBtMM()" style="background:linear-gradient(135deg,#10B981,#059669);color:#FFFFFF;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer;box-shadow:0 0 10px rgba(16,185,129,.35)">▶ Lancer</button>' +
+      '<button onclick="window.balayerMM()" title="Balayer toutes les options MM et unités de temps pour identifier le meilleur rendement" style="background:linear-gradient(135deg,rgba(0,229,255,.2),rgba(16,185,129,.25));border:1.5px solid #10B981;color:#10B981;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer">🔎 Balayer Options MM</button>' +
+      '<button onclick="window.reinitBt()" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer">↺ Débloquer</button>' +
+      '</div><div id="btm-charge" style="font-size:11px;color:#94A3B8;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace"></div>' +
+      '<div id="btm-configs" style="margin-bottom:12px;padding:10px;border:1px solid #065F46;border-radius:9px;background:rgba(6,95,70,.12)"></div>' +
+      '<div id="btm-res"></div></div>';
+    document.body.appendChild(m);
+    setTimeout(function(){ if(typeof window.afficherConfigsBTMM === 'function') window.afficherConfigsBTMM(); }, 60);
+  }
+
+window.balayerMM = async function(){
+    const box = document.getElementById('btm-res');
+    if(box) box.innerHTML = '<div style="color:#00E5FF;padding:12px">Balayage de toutes les options MM en cours…</div>';
+    
+    const d = state.data || [];
+    if(!d.length){ if(box) box.innerHTML = '<div style="color:#F59E0B">Aucune donnée chargée.</div>'; return; }
+
+    const optionsToTest = ['toutes', 'base', 'opt2'];
+    const tfsToTest = ['chart', '1', '2', '3', '5', '15', '30'];
+    const results = [];
+
+    for(const opt of optionsToTest){
+      for(const tf of tfsToTest){
+        const ents = entreesMM(opt, tf);
+        if(ents.length < 5) continue;
+        const sors = sortiesMM('tout');
+        const utilisee = new Set();
+        const trades = [];
+        for(const en of ents){
+          let ex = null;
+          for(const s2 of sors){
+            if(s2.i <= en.i) continue;
+            if(utilisee.has(s2.i)) continue;
+            if((s2.type === 'SORTIE_ACHAT' ? 1 : -1) !== en.dir) continue;
+            ex = s2;
+            break;
+          }
+          if(!ex) continue;
+          utilisee.add(ex.i);
+          const pe = +en.price;
+          const ps = +(ex.price || (d[ex.i] ? d[ex.i].c : pe));
+          const dir = en.dir;
+          const varPct = ((ps - pe) / pe) * dir;
+          const brut = 100 * varPct * 200;
+          const frais = 100 * 200 * 0.0004;
+          const net = brut - frais;
+          trades.push({ net: net });
+        }
+        if(trades.length >= 5){
+          const pnl = trades.reduce((a,t) => a + t.net, 0);
+          const g = trades.filter(t => t.net > 0);
+          const wr = (g.length / trades.length) * 100;
+          const sg = g.reduce((a,t) => a + t.net, 0);
+          const sp = Math.abs(trades.filter(t => t.net <= 0).reduce((a,t) => a + t.net, 0));
+          const pf = sp > 0 ? (sg / sp) : (sg > 0 ? 99 : 0);
+          results.push({
+            opt: opt,
+            tf: tf,
+            n: trades.length,
+            wr: wr,
+            pf: pf,
+            pnl: pnl
+          });
+        }
+      }
+    }
+
+    results.sort((a,b) => b.pnl - a.pnl);
+
+    let h = '<div style="margin-bottom:10px;font-weight:800;color:#10B981">Top Configurations MM :</div>' +
+      '<div style="max-height:260px;overflow:auto;border:1px solid #1E293B;border-radius:8px">' +
+      '<table style="width:100%;border-collapse:collapse;font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;text-align:left">' +
+      '<tr style="background:#0B1322;color:#94A3B8"><th style="padding:6px">Option</th><th style="padding:6px">UT</th><th style="padding:6px">Trades</th><th style="padding:6px">WR %</th><th style="padding:6px">PF</th><th style="padding:6px">PnL ($)</th><th style="padding:6px">Action</th></tr>';
+
+    results.slice(0, 15).forEach(function(r){
+      h += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">' +
+        '<td style="padding:5px 6px;color:#10B981;font-weight:700">' + r.opt + '</td>' +
+        '<td style="padding:5px 6px;color:#00E5FF">' + r.tf + '</td>' +
+        '<td style="padding:5px 6px">' + r.n + '</td>' +
+        '<td style="padding:5px 6px;color:' + (r.wr>=50?'#10B981':'#FF5252') + '">' + r.wr.toFixed(1) + '%</td>' +
+        '<td style="padding:5px 6px">' + r.pf.toFixed(2) + '</td>' +
+        '<td style="padding:5px 6px;font-weight:800;color:' + (r.pnl>=0?'#10B981':'#FF5252') + '">' + (r.pnl>=0?'+':'') + r.pnl.toFixed(2) + ' $</td>' +
+        '<td style="padding:5px 6px"><button onclick="window.choisirOptBTMM(\'' + r.opt + '\', \'' + r.tf + '\')" style="background:rgba(16,185,129,.2);border:1px solid #10B981;color:#10B981;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Choisir</button></td></tr>';
+    });
+    h += '</table></div>';
+    if(box) box.innerHTML = h;
+  }
+
+window.__runBtInterneMM = async function(){
+    const box = document.getElementById('btm-res');
+    const info = document.getElementById('btm-charge');
+    const T0 = Date.now();
+    const jour = function(txt){
+      if(info) info.innerHTML = '<span style="color:#7DD3FC">' + txt + '</span>';
+    };
+    jour('démarrage · ' + (state.data || []).length + ' bougies en mémoire');
+
+    const jours = +((document.getElementById('btm-jours') || {}).value || 7);
+    const besoin = Math.min(30000, Math.ceil(jours * 24 * 60 / state.tf));
+    if((state.data || []).length < besoin * 0.95){
+      if(box) box.innerHTML = '<div style="color:#00E5FF;padding:10px">Chargement de l\'historique…</div>';
+      await window.chargerHistorique(jours);
+    }
+
+    const d = state.data || [];
+    if(!d.length){ if(box) box.innerHTML = '<div style="color:#F59E0B">Aucune donnée chargée.</div>'; return; }
+    if(info) info.innerHTML = d.length + ' bougies en mémoire · ' +
+      (d.length * state.tf / 1440).toFixed(1) + ' jours' +
+      (d.length < besoin * 0.95 ? ' <span style="color:#F59E0B">— moins que demandé</span>' : ' <span style="color:#10B981">— période complète</span>');
+
+    const optFiltre = (document.getElementById('btm-opt') || {}).value || 'toutes';
+    const mmTfVal   = (document.getElementById('btm-mmtf') || {}).value || 'chart';
+    const mSor      = (document.getElementById('btm-sor') || {}).value || 'tout';
+    const lev       = +((document.getElementById('btm-lev') || {}).value) || 200;
+    const margeIn   = +((document.getElementById('btm-marge') || {}).value) || 0.02;
+    const unite     = (document.getElementById('btm-unite') || {}).value || 'BASE';
+    const fraisP    = (+((document.getElementById('btm-frais') || {}).value) || 0.02) / 100;
+    const capital   = +((document.getElementById('btm-capital') || {}).value) || 0;
+    const mMode     = ((document.getElementById('btm-mmode') || {}).value) || 'croise';
+    const mPct      = Math.max(1, Math.min(100, +((document.getElementById('btm-mpct') || {}).value) || 50)) / 100;
+    const mBonus    = Math.max(0, Math.min(100, +((document.getElementById('btm-mbonus') || {}).value) || 0)) / 100;
+    let dernierGain = 0;
+    let sommeLev = 0, nLev = 0;
+    let capCourant = capital;
+    let nonFinances = 0;
+    const sens      = (document.getElementById('btm-sens') || {}).value || 'normal';
+    const dirF      = (document.getElementById('btm-dir') || {}).value || 'tout';
+    const tpVal     = +((document.getElementById('btm-tp') || {}).value) || 0;
+    const slVal     = +((document.getElementById('btm-sl') || {}).value) || 0;
+    const rangS     = ((document.getElementById('btm-rang') || {}).value) || '1';
+    const exitOpp   = (mSor === 'oppose' ? 'toujours' : 'non');
+
+    const rendAvant = window.__btNoRender;
+    window.__btNoRender = true;
+    jour('calcul des entrées MM…');
+    const ents = entreesMM(optFiltre, mmTfVal);
+    jour(ents.length + ' entrées MM · calcul des sorties…');
+    
+    let sors = [];
+    if(mSor === 'oppose'){
+      sors = [];
+    } else {
+      sors = sortiesMM(mSor, mmTfVal);
+    }
+    jour(ents.length + ' entrées · ' + sors.length + ' sorties · appariement…');
+
+    const utilisee = new Set();
+    const trades = [];
+    const sansSortie = [];
+
+    for(const en of ents){
+      const dirFerme = en.dir;
+      let ex = null;
+      const cands = [];
+      for(const s2 of sors){
+        if(s2.i <= en.i) continue;
+        if(utilisee.has(s2.i)) continue;
+        const dS = (s2.type === 'SORTIE_ACHAT') ? 1 : -1;
+        if(dS !== dirFerme) continue;
+        cands.push(s2);
+        if(cands.length >= 3) break;
+      }
+      ex = cands[Math.min(+rangS, cands.length) - 1] || null;
+
+      let nextOpp = null;
+      if(exitOpp !== 'non' || mSor === 'oppose'){
+        for(const en2 of ents){
+          if(en2.i > en.i && en2.dir !== en.dir){
+            nextOpp = en2;
+            break;
+          }
+        }
+      }
+
+      let isOppExit = false;
+      if((exitOpp === 'toujours' || mSor === 'oppose') && nextOpp && (!ex || nextOpp.i < ex.i)){
+        ex = { i: nextOpp.i, price: nextOpp.price, isOpp: true, num: nextOpp.num, div: false };
+        isOppExit = true;
+      } else if(exitOpp === 'sans_sortie' && !ex && nextOpp){
+        ex = { i: nextOpp.i, price: nextOpp.price, isOpp: true, num: nextOpp.num, div: false };
+        isOppExit = true;
+      }
+
+      if(!ex){ sansSortie.push(en); continue; }
+      if(!isOppExit) utilisee.add(ex.i);
+
+      let dir = en.dir;
+      if(sens === 'inverse') dir = -dir;
+
+      if(dirF === 'long'  && dir !== 1)  continue;
+      if(dirF === 'short' && dir !== -1) continue;
+
+      const pe = +en.price;
+      let ps = +(ex.price || (d[ex.i] ? d[ex.i].c : pe));
+      let iS = ex.i;
+      let motif = isOppExit ? ('Signal opposé MM' + (ex.num != null ? ' #' + ex.num : '')) : (ex.isMM ? (ex.label || ('Sortie MM ' + (ex.optKey || '').toUpperCase())) : (ex.div ? 'Divergence' : 'Seuil + pente'));
+      if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
+
+      let marge, notionnel;
+      if(unite === 'BASE'){
+        notionnel = margeIn * pe;
+        marge = notionnel / lev;
+      } else {
+        marge = margeIn;
+        notionnel = marge * lev;
+      }
+
+      if(mMode === 'isole' && capital > 0){
+        marge = capCourant * mPct + Math.max(0, dernierGain) * mBonus;
+        if(marge > capCourant) marge = capCourant;
+        if(marge > 0){ sommeLev += (notionnel / marge); nLev++; }
+      }
+
+      if(capital > 0 && marge > capCourant){ nonFinances++; continue; }
+      if(marge <= 0){ nonFinances++; continue; }
+
+      const adosse = (capital > 0 && mMode === 'croise') ? Math.max(0, capCourant) : marge;
+      const seuilLiq = (0.95 * adosse) / notionnel;
+      const pLiq = (dir === 1) ? pe * (1 - seuilLiq) : pe * (1 + seuilLiq);
+      let iLiq = -1;
+      let excursion = 0;
+      for(let k = en.i + 1; k <= ex.i; k++){
+        const b = d[k]; if(!b) continue;
+        const pire = (dir === 1) ? (pe - b.l) : (b.h - pe);
+        if(pire > 0){
+          const perte = notionnel * (pire / pe);
+          if(perte > excursion) excursion = perte;
+        }
+        if(iLiq < 0 && ((dir === 1) ? (b.l <= pLiq) : (b.h >= pLiq))) iLiq = k;
+      }
+
+      if(tpVal > 0){
+        const cible = (dir === 1) ? (pe + tpVal) : (pe - tpVal);
+        for(let k = en.i + 1; k <= ex.i; k++){
+          const b = d[k]; if(!b) continue;
+          const touche = (dir === 1) ? (b.h >= cible) : (b.l <= cible);
+          if(touche){ ps = cible; iS = k; motif = 'TP +' + tpVal + ' $'; break; }
+        }
+      }
+
+      if(slVal > 0){
+        const stopP = (dir === 1) ? (pe - slVal) : (pe + slVal);
+        for(let k = en.i + 1; k <= Math.min(iS, ex.i); k++){
+          const b = d[k]; if(!b) continue;
+          const toucheSL = (dir === 1) ? (b.l <= stopP) : (b.h >= stopP);
+          if(toucheSL){ ps = stopP; iS = k; motif = 'SL -' + slVal + ' $'; break; }
+        }
+      }
+
+      let liquide = false;
+      if(iLiq >= 0 && iLiq <= iS){
+        liquide = true;
+        ps = pLiq;
+        iS = iLiq;
+        motif = '💀 Liquidation';
+      }
+
+      const variation = (ps - pe) / pe;
+      const brut = notionnel * variation * dir;
+      const frais = notionnel * fraisP * 2;
+      let net = brut - frais;
+      const plancher = (capital > 0 && mMode === 'croise') ? Math.max(0, capCourant) : marge;
+      if(-net > plancher) net = -plancher;
+
+      if(capital > 0){
+        capCourant += net;
+        if(capCourant <= 0) capCourant = 0;
+      }
+      dernierGain = net > 0 ? net : 0;
+
+      trades.push({
+        num: en.num,
+        dir: dir,
+        optKey: en.optKey,
+        label: en.label,
+        pe: pe,
+        ps: ps,
+        iE: en.i,
+        iS: iS,
+        tE: en.t || (d[en.i] ? d[en.i].t : 0),
+        tS: d[iS] ? d[iS].t : (en.t || 0),
+        duree: (iS - en.i) * state.tf,
+        frais: frais,
+        brut: brut,
+        net: net,
+        variation: variation,
+        ddDollar: excursion,
+        ddPct: (excursion / (notionnel || 1)) * 100,
+        motif: motif,
+        liquide: liquide,
+        solde: (capital > 0) ? capCourant : null
+      });
+    }
+
+    const n = trades.length;
+    if(!n){
+      if(box) box.innerHTML = '<div style="color:#F59E0B;padding:12px;background:rgba(245,158,11,.08);border-radius:8px">' +
+        '<b>Aucun trade apparié</b> sur la période.<br><span style="font-size:11px;color:#94A3B8">' +
+        ents.length + ' entrées MM détectées mais aucune sortie correspondante n\'a pu être appariée.</span></div>';
+      window.__btNoRender = rendAvant || false;
+      return;
+    }
+
+    const gagne = trades.filter(t => t.net > 0);
+    const perd  = trades.filter(t => t.net <= 0);
+    const wr    = (gagne.length / n) * 100;
+    const pnl   = trades.reduce((a,t) => a + t.net, 0);
+    const sg    = gagne.reduce((a,t) => a + t.net, 0);
+    const sp    = Math.abs(perd.reduce((a,t) => a + t.net, 0));
+    const pf    = sp > 0 ? (sg / sp) : (sg > 0 ? Infinity : 0);
+
+    let dd = 0, creux = 0;
+    let soldeCourant = capital > 0 ? capital : 0;
+    let pic = soldeCourant;
+    for(const t of trades){
+      if(capital > 0){
+        soldeCourant = t.solde != null ? t.solde : (soldeCourant + t.net);
+        if(soldeCourant > pic) pic = soldeCourant;
+        const repli = pic - soldeCourant;
+        if(repli > dd) dd = repli;
+      } else {
+        creux += t.net;
+        if(creux < -dd) dd = -creux;
+      }
+    }
+
+    const tiers = Math.floor(n / 3);
+    const t1 = trades.slice(0, tiers);
+    const t2 = trades.slice(tiers, tiers * 2);
+    const t3 = trades.slice(tiers * 2);
+    const p1 = t1.reduce((a,t) => a + t.net, 0);
+    const p2 = t2.reduce((a,t) => a + t.net, 0);
+    const p3 = t3.reduce((a,t) => a + t.net, 0);
+    const stable = (p1 > 0 && p2 > 0 && p3 > 0);
+    const conforme = (n >= 30 && pf >= 1 && pnl > 0 && stable);
+
+    const optNoms = {
+      toutes: 'Toutes les options',
+      base: 'Base MM 21',
+      opt1: '💎 Option 1 KK',
+      opt2: '⚡ Option 2 iMACD',
+      opt3: '🛡️ Option 3 Breakout',
+      opt4: '🎯 Option 4 Lissage'
+    };
+
+    window.__btMMDernier = {
+      trades: trades,
+      conforme: conforme,
+      wr: wr,
+      pf: pf,
+      pnl: pnl,
+      dd: dd,
+      n: n,
+      optName: optNoms[optFiltre] || optFiltre,
+      resume: n + ' trades · WR ' + wr.toFixed(0) + '% · PF ' + (isFinite(pf)?pf.toFixed(2):'∞') + ' · PnL ' + (pnl>=0?'+':'') + pnl.toFixed(2) + ' $'
+    };
+
+    const c = val => val >= 0 ? '#10B981' : '#FF5252';
+    const notMoy = trades.reduce((a,t) => a + (unite === 'BASE' ? (margeIn * t.pe) : (margeIn * lev)), 0) / n;
+    const margeMoy = unite === 'BASE' ? (notMoy / lev) : margeIn;
+
+    let h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin-bottom:12px">' +
+      '<div style="background:rgba(15,23,42,.8);border:1px solid #1E293B;border-radius:8px;padding:9px;text-align:center">' +
+        '<div style="font-size:10px;color:#94A3B8;text-transform:uppercase">PnL Net Total</div>' +
+        '<div style="font-size:16px;font-weight:900;color:' + c(pnl) + '">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' $</div>' +
+        (capital > 0 ? '<div style="font-size:10px;color:#CBD5E1">' + (pnl >= 0 ? '+' : '') + ((pnl / capital) * 100).toFixed(1) + ' %</div>' : '') +
+      '</div>' +
+      '<div style="background:rgba(15,23,42,.8);border:1px solid #1E293B;border-radius:8px;padding:9px;text-align:center">' +
+        '<div style="font-size:10px;color:#94A3B8;text-transform:uppercase">Taux de Réussite</div>' +
+        '<div style="font-size:16px;font-weight:900;color:' + (wr >= 50 ? '#10B981' : '#FF5252') + '">' + wr.toFixed(1) + ' %</div>' +
+        '<div style="font-size:10px;color:#CBD5E1">' + gagne.length + ' V / ' + perd.length + ' D</div>' +
+      '</div>' +
+      '<div style="background:rgba(15,23,42,.8);border:1px solid #1E293B;border-radius:8px;padding:9px;text-align:center">' +
+        '<div style="font-size:10px;color:#94A3B8;text-transform:uppercase">Profit Factor</div>' +
+        '<div style="font-size:16px;font-weight:900;color:' + (pf >= 1.2 ? '#10B981' : (pf >= 1 ? '#F59E0B' : '#FF5252')) + '">' + (isFinite(pf) ? pf.toFixed(2) : '∞') + '</div>' +
+        '<div style="font-size:10px;color:#CBD5E1">Gains ' + sg.toFixed(0) + ' $ / Pertes ' + sp.toFixed(0) + ' $</div>' +
+      '</div>' +
+      '<div style="background:rgba(15,23,42,.8);border:1px solid #1E293B;border-radius:8px;padding:9px;text-align:center">' +
+        '<div style="font-size:10px;color:#94A3B8;text-transform:uppercase">Max Drawdown</div>' +
+        '<div style="font-size:16px;font-weight:900;color:#FF5252">−' + dd.toFixed(2) + ' $</div>' +
+        (capital > 0 ? '<div style="font-size:10px;color:#CBD5E1">−' + ((dd / capital) * 100).toFixed(1) + ' %</div>' : '') +
+      '</div>' +
+      '<div style="background:rgba(15,23,42,.8);border:1px solid #1E293B;border-radius:8px;padding:9px;text-align:center">' +
+        '<div style="font-size:10px;color:#94A3B8;text-transform:uppercase">Solde Final</div>' +
+        '<div style="font-size:16px;font-weight:900;color:#38BDF8">' + (capital > 0 ? capCourant.toFixed(2) + ' $' : (capital + pnl).toFixed(2) + ' $') + '</div>' +
+        '<div style="font-size:10px;color:#CBD5E1">Init : ' + capital + ' $</div>' +
+      '</div>' +
+      '<div style="background:rgba(15,23,42,.8);border:1px solid #1E293B;border-radius:8px;padding:9px;text-align:center">' +
+        '<div style="font-size:10px;color:#94A3B8;text-transform:uppercase">Trades</div>' +
+        '<div style="font-size:16px;font-weight:900;color:#E2E8F0">' + n + '</div>' +
+        '<div style="font-size:10px;color:#CBD5E1">' + sansSortie.length + ' sans sortie</div>' +
+      '</div>' +
+      '</div>';
+
+    h += '<div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;justify-content:space-between;background:rgba(15,23,42,.6);border:1px solid #334155;border-radius:8px;padding:8px 12px">' +
+      '<div style="font-size:11.5px;color:#CBD5E1"><b>Option :</b> <span style="color:#10B981;font-weight:bold">' + (optNoms[optFiltre]||optFiltre) + '</span> · <b>Stabilité 3 Tiers :</b> ' +
+      '<span style="color:' + c(p1) + '">T1: ' + (p1>=0?'+':'') + p1.toFixed(1) + ' $</span> | ' +
+      '<span style="color:' + c(p2) + '">T2: ' + (p2>=0?'+':'') + p2.toFixed(1) + ' $</span> | ' +
+      '<span style="color:' + c(p3) + '">T3: ' + (p3>=0?'+':'') + p3.toFixed(1) + ' $</span> ' +
+      (stable ? ' <b style="color:#10B981">✓ Stable</b>' : ' <b style="color:#F59E0B">⚠ Inégal</b>') + '</div>' +
+      '<div style="display:flex;gap:6px">' +
+      '<button onclick="window.tracerBTMM()" style="background:rgba(16,185,129,.2);border:1px solid #10B981;color:#10B981;border-radius:6px;padding:5px 12px;font-weight:800;font-size:11px;cursor:pointer">📈 Tracer sur le graphique</button>' +
+      '<button onclick="window.effacerPastillesBacktest()" style="background:rgba(239,68,68,.15);border:1px solid #EF4444;color:#FCA5A5;border-radius:6px;padding:5px 10px;font-weight:700;font-size:11px;cursor:pointer">🧹 Effacer</button>' +
+      '</div></div>';
+
+    h += '<div style="max-height:280px;overflow:auto;border:1px solid #1E293B;border-radius:8px;background:rgba(10,17,31,.9)">' +
+      '<table style="width:100%;border-collapse:collapse;font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;text-align:left">' +
+      '<tr style="background:#0B1322;color:#94A3B8;position:sticky;top:0;border-bottom:1px solid #1E293B">' +
+      '<th style="padding:6px 8px">#</th><th style="padding:6px 8px">Option</th><th style="padding:6px 8px">Sens</th><th style="padding:6px 8px">Entrée</th><th style="padding:6px 8px">Sortie</th><th style="padding:6px 8px">Motif</th><th style="padding:6px 8px">Durée</th><th style="padding:6px 8px">Frais</th><th style="padding:6px 8px">Max DD</th><th style="padding:6px 8px">Net $</th><th style="padding:6px 8px">Solde</th><th style="padding:6px 8px">Statut</th></tr>';
+
+    trades.forEach(function(t, idx){
+      const soldeAff = t.solde != null ? t.solde.toFixed(2) + ' $' : (capital + t.net).toFixed(2) + ' $';
+      h += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);background:' + (idx%2===0?'transparent':'rgba(255,255,255,0.015)') + '">' +
+        '<td style="padding:4px 8px;color:#00E5FF;font-weight:700">#' + t.num + '</td>' +
+        '<td style="padding:4px 8px;color:#A78BFA;font-size:10px">' + (t.optKey || 'base') + '</td>' +
+        '<td style="padding:4px 8px;color:' + (t.dir === 1 ? '#10B981' : '#FF5252') + ';font-weight:800">' + (t.dir === 1 ? 'LONG' : 'SHORT') + '</td>' +
+        '<td style="padding:4px 8px"><span style="color:#000;background:#E2E8F0;font-weight:800;padding:1px 4px;border-radius:3px">' + t.pe.toFixed(2) + ' $</span></td>' +
+        '<td style="padding:4px 8px"><span style="color:#000;background:#E2E8F0;font-weight:800;padding:1px 4px;border-radius:3px">' + t.ps.toFixed(2) + ' $</span></td>' +
+        '<td style="padding:4px 8px;color:#CBD5E1;font-weight:600">' + t.motif + '</td>' +
+        '<td style="padding:4px 8px;color:#94A3B8">' + t.duree + ' min</td>' +
+        '<td style="padding:4px 8px;color:#FCA5A5">−' + t.frais.toFixed(2) + ' $</td>' +
+        '<td style="padding:4px 8px;color:' + (t.ddDollar>0?'#FF5252':'#10B981') + '">' + (t.ddDollar>0?'−' + t.ddDollar.toFixed(2) + ' $':'0.00 $') + '</td>' +
+        '<td style="padding:4px 8px;font-weight:900;color:' + c(t.net) + '">' + (t.net >= 0 ? '+' : '') + t.net.toFixed(2) + ' $</td>' +
+        '<td style="padding:4px 8px;color:#38BDF8;font-weight:700">' + soldeAff + '</td>' +
+        '<td style="padding:4px 8px;text-align:center">' + (t.liquide ? '💀' : '✓') + '</td></tr>';
+    });
+    h += '</table></div>';
+
+    if(sansSortie.length){
+      h += '<details style="margin-top:8px"><summary style="cursor:pointer;color:#F59E0B;font-size:11px;font-weight:700">' +
+        sansSortie.length + ' entrées sans sortie appariée</summary>' +
+        '<div style="max-height:120px;overflow:auto;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#94A3B8;margin-top:4px">';
+      sansSortie.forEach(function(en){
+        h += '<div>#' + en.num + ' ' + (en.dir === 1 ? 'LONG' : 'SHORT') + ' à ' + (+en.price).toFixed(2) + ' $ — ' + (en.trigger || '') + '</div>';
+      });
+      h += '</div></details>';
+    }
+
+    jour('terminé · ' + trades.length + ' trades appariés MM');
+    if(box) box.innerHTML = h;
+
+    window.__btNoRender = rendAvant || false;
+    state.cache = {};
+    return true;
+  }
+
+window.chargerHistoriqueBTMM = function(){
+    const el = document.getElementById('btm-jours');
+    const j = el ? +el.value : 7;
+    if(typeof window.chargerHistorique === 'function') window.chargerHistorique(j, true);
+  }
+
+window.majModeMargeBTMM = function(){
+    const el = document.getElementById('btm-mmode');
+    const isIsole = el && el.value === 'isole';
+    const l1 = document.getElementById('btm-lbl-mpct');
+    const l2 = document.getElementById('btm-lbl-mbonus');
+    if(l1) l1.style.display = isIsole ? 'inline-block' : 'none';
+    if(l2) l2.style.display = isIsole ? 'inline-block' : 'none';
+  }
+
+window.resetBtMMConfig = function(){
+    if(state.indicators && state.indicators.strat_mm){
+      state.indicators.strat_mm = {
+        on: true,
+        tf: 'chart',
+        lineType: 'kk_primary',
+        confluenceFilter: 'all',
+        showBase: true,
+        showOpt1: true,
+        showOpt2: true,
+        showOpt3: true,
+        showOpt4: true,
+        emaPeriod: 21,
+        oscPeriod: 50,
+        upperThreshold: 75,
+        lowerThreshold: -75,
+        cBuy: '#00E676',
+        cSell: '#FF3366'
+      };
+    }
+    const setV = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+    setV('btm-opt', 'toutes');
+    setV('btm-mmtf', 'chart');
+    setV('btm-sor', 'tout');
+    setV('btm-sens', 'normal');
+    setV('btm-dir', 'tout');
+    setV('btm-marge', '0.02');
+    setV('btm-unite', 'BASE');
+    setV('btm-lev', '200');
+    setV('btm-capital', '100');
+    setV('btm-mmode', 'croise');
+    setV('btm-mpct', '50');
+    setV('btm-mbonus', '20');
+    setV('btm-tp', '0');
+    setV('btm-sl', '0');
+    setV('btm-frais', '0.02');
+    setV('btm-jours', '7');
+    window.majModeMargeBTMM();
+    if(typeof toast === 'function') toast("↺ Réglages d'origine rétablis pour BT MM", '#10B981');
+    if(typeof window.runBtMM === 'function') window.runBtMM();
+  }
+
+window.choisirOptBTMM = function(opt, tf){
+    const o = document.getElementById('btm-opt');
+    const t = document.getElementById('btm-mmtf');
+    if(o) o.value = opt;
+    if(t) t.value = tf;
+    if(typeof window.runBtMM === 'function') window.runBtMM();
+  }
+
+window.tracerBTMM = function(){
+    const r = window.__btMMDernier;
+    if(!r || !Array.isArray(r.trades) || !r.trades.length){
+      if(typeof toast === 'function') toast("Lancez d'abord le backtest MM pour obtenir des trades.", '#F59E0B');
+      return;
+    }
+    const isTraced = (window.__mmTrace === true);
+    if(isTraced){
+      window.__mmTrace = false;
+      window.effacerPastillesBacktest();
+      const btn = document.getElementById('btm-tracer-btn');
+      if(btn){
+        btn.textContent = '📈 Tracer sur le graphique';
+        btn.style.background = 'rgba(16,185,129,.14)';
+        btn.style.color = '#10B981';
+      }
+    } else {
+      window.__mmTrace = true;
+      if(typeof state === 'object' && state) state.showBacktestSignals = true;
+      const formattedTrades = r.trades.map(t => ({
+        entryIdx: t.iE,
+        entryT: t.tE,
+        entryP: t.pe,
+        exitIdx: t.iS,
+        exitT: t.tS,
+        exitP: t.ps,
+        dir: t.dir === 1 ? 'ACHAT' : 'VENTE',
+        pnlDollar: t.net,
+        netReturnPct: t.variation * 100 * t.dir,
+        reason: t.motif,
+        price: t.pe
+      }));
+      updateActiveBacktestSignals(formattedTrades, 'BT MM (' + (r.optName || 'MM') + ')');
+      const btn = document.getElementById('btm-tracer-btn');
+      if(btn){
+        btn.textContent = '✓ Tracé sur le graphique — cliquer pour effacer';
+        btn.style.background = 'rgba(16,185,129,.35)';
+        btn.style.color = '#FFFFFF';
+      }
+      if(typeof toast === 'function') toast('📈 ' + r.trades.length + ' trades MM tracés sur le graphique !', '#10B981');
+    }
+  }
+
+window.fermerBTMM = function(){
+    const m = document.getElementById('btm-back');
+    if(m) m.style.display = 'none';
+  }
+
 /**
  * Taille de contrat dynamique MEXC Futures
  */
@@ -27324,7 +29188,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1608-0420';
+  window.__LUMEN_BUILD = 'B-1608-2050';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
