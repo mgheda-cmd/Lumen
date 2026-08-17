@@ -1098,9 +1098,12 @@ footer{
 
       <!-- Section 3 : Backtest & Trading -->
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;border-top:1px solid var(--line);padding-top:8px">
-        <span>⚡ Trading & Backtest</span>
+        <span>⚡ Trading & Analyses</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        <button class="btn" id="btn-header-toggle-mmsbo" onclick="toggleMmsBoHud()" title="Afficher ou masquer la matrice multi-unités de temps MMS & BO" style="font-size:11.5px;padding:6px 10px;display:flex;align-items:center;gap:8px;border-color:#38BDF8;color:#38BDF8;font-weight:700;background:rgba(56,189,248,0.12)">
+          <span>📊</span> Matrice MMS & BO
+        </button>
         <button class="btn" id="btn-backtest" title="Backtest de stratégie" style="font-size:11.5px;padding:6px 10px;display:flex;align-items:center;gap:8px;border-color:rgba(122,162,255,0.4);font-weight:600">
           <span>🧪</span> Backtest de stratégie
         </button>
@@ -2556,7 +2559,7 @@ footer{
     <div id="paper-hist"></div>
   </div>
 </div>
-<div id="mms-bo-hud" class="mms-bo-table-wrap">
+<div id="mms-bo-hud" class="mms-bo-table-wrap hidden">
     <div class="mms-bo-header" onclick="toggleMmsBoCollapse(event)">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:12px">📊</span>
@@ -25935,7 +25938,7 @@ window.fermerBTMM = function(){
    ================================================================ */
 
 
-let mmsBoHudVisible = true;
+let mmsBoHudVisible = false;
 let mmsBoHudCollapsed = false;
 
 const DASHBOARD_TFS = [
@@ -30119,7 +30122,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1115';
+  window.__LUMEN_BUILD = 'B-1708-1120';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
