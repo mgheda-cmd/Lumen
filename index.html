@@ -5114,11 +5114,13 @@ try{
     // 4. Redemander le fichier à l'origine pour invalider le cache HTTP
     try{ await fetch(base + '?bust=' + Date.now(), { cache:'reload' }); }catch(e){}
 
-    alert('🔄 ' + verdict);
+    if(typeof toast === 'function') toast('🔄 Purge terminée · Rechargement immédiat...', '#00E5FF');
 
-    const u = new URL(base);
-    u.searchParams.set('force', Date.now());
-    window.location.replace(u.toString());
+    setTimeout(() => {
+      const u = new URL(base);
+      u.searchParams.set('force', Date.now());
+      window.location.replace(u.toString());
+    }, 300);
   });
 }catch(e){}
 
@@ -30603,7 +30605,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1690';
+  window.__LUMEN_BUILD = 'B-1708-1700';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
