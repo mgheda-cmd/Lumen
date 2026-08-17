@@ -197,12 +197,20 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 .btn-ind{display:flex;align-items:center;gap:7px;font-weight:600}
 .btn-ind .fx{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-style:italic}
 .ind-menu{
-  position:fixed; top:calc(100% + 8px); left:6px; z-index:50;
+  position:fixed; top:calc(100% + 8px); left:6px; z-index:99999;
   width:min(280px,74vw); background:var(--panel-2); border:1px solid var(--line);
-  border-radius:var(--radius); box-shadow:0 16px 40px rgba(0,0,0,.5);
+  border-radius:var(--radius); box-shadow:0 16px 40px rgba(0,0,0,.7);
   padding:8px; display:none; max-height:70vh; overflow:auto;
 }
-.ind-menu.open{display:block}
+.ind-menu.open{display:block; z-index:99999 !important}
+#tools-menu.open{
+  position: fixed !important;
+  z-index: 99999 !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.95) !important;
+  background: var(--panel, #0A111F) !important;
+  border: 1.5px solid #00E5FF !important;
+  border-radius: 12px !important;
+}
 #notif-menu.open, #sync-menu.open {
   position: fixed !important;
   top: 50% !important;
@@ -11529,12 +11537,25 @@ if(btnToolsMenu && toolsMenuEl){
       if(typeof symMenu!=='undefined') symMenu.classList.remove('open');
       const sm=document.getElementById('sync-menu'); if(sm) sm.classList.remove('open');
       const nm=document.getElementById('notif-menu'); if(nm) nm.classList.remove('open');
+      
       const r=btnToolsMenu.getBoundingClientRect();
       toolsMenuEl.style.position='fixed';
-      toolsMenuEl.style.top=(r.bottom+6)+'px';
-      toolsMenuEl.style.right=Math.max(6, window.innerWidth - r.right)+'px';
-      toolsMenuEl.style.left='auto';
-      toolsMenuEl.style.maxHeight=(window.innerHeight-r.bottom-16)+'px';
+      toolsMenuEl.style.zIndex='99999';
+      if(window.innerWidth <= 768){
+        toolsMenuEl.style.top=(r.bottom+6)+'px';
+        toolsMenuEl.style.left='8px';
+        toolsMenuEl.style.right='8px';
+        toolsMenuEl.style.width='auto';
+        toolsMenuEl.style.maxWidth='380px';
+        toolsMenuEl.style.margin='0 auto';
+        toolsMenuEl.style.maxHeight=(window.innerHeight-r.bottom-16)+'px';
+      } else {
+        toolsMenuEl.style.top=(r.bottom+6)+'px';
+        toolsMenuEl.style.left=Math.max(8, Math.min(r.left, window.innerWidth - 340))+'px';
+        toolsMenuEl.style.right='auto';
+        toolsMenuEl.style.width='330px';
+        toolsMenuEl.style.maxHeight=(window.innerHeight-r.bottom-16)+'px';
+      }
     }
   });
 }
@@ -30269,7 +30290,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1520';
+  window.__LUMEN_BUILD = 'B-1708-1530';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
