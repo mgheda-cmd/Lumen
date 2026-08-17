@@ -30153,7 +30153,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1460';
+  window.__LUMEN_BUILD = 'B-1708-1470';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30919,9 +30919,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const r = window.__btDernier;
     if(!r){ alert("Lancez d'abord un backtest."); return; }
     if(!r.conforme){
-      const txt = 'Cette configuration ne remplit pas les critères de validation :\n\n· ' +
-        (r.manques || []).join('\n· ') +
-        '\n\nLes réglages seront quand même reportés dans le module MEXC, mais aucun ordre ne sera envoyé.\n\nContinuer ?';
+      const txt = "Cette configuration ne remplit pas les critères de validation :\n\n· " + ((r.manques && r.manques.length) ? r.manques.join("\n· ") : "critères non renseignés") + "\n\nLes réglages seront quand même reportés dans le module MEXC.\nAucun ordre ne sera envoyé.\n\nContinuer ?";
       if(!confirm(txt)) return;
     }
     const back = document.getElementById('bta-back');
@@ -31604,17 +31602,7 @@ window.envoyerVersMexc = function(){
   if(!r){ alert("Lancez d'abord un backtest."); return; }
 
   if(!r.conforme){
-    const txt = 'Cette configuration ne remplit pas les critères de validation :
-
-· ' +
-      ((r.manques && r.manques.length) ? r.manques.join('
-· ') : 'critères non renseignés') +
-      '
-
-Les réglages seront quand même reportés dans le module MEXC.
-Aucun ordre ne sera envoyé.
-
-Continuer ?';
+    const txt = "Cette configuration ne remplit pas les critères de validation :\n\n· " + ((r.manques && r.manques.length) ? r.manques.join("\n· ") : "critères non renseignés") + "\n\nLes réglages seront quand même reportés dans le module MEXC.\nAucun ordre ne sera envoyé.\n\nContinuer ?";
     if(!confirm(txt)) return;
   }
 
