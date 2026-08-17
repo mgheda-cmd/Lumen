@@ -2102,19 +2102,33 @@ footer{
         </div>
       </div>
 
+      <!-- Section Push Mobile Direct (iPhone & Android ntfy) -->
+      <div style="background:var(--panel-2,#0F172A);border:1.5px solid #00E5FF;border-radius:8px;padding:9px 10px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:11.5px;font-weight:800;color:#00E5FF">📱 Push Téléphone Direct (iPhone & Android)</span>
+          <span style="font-size:9.5px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(0,229,255,0.15);color:#00E5FF">Zéro Config</span>
+        </div>
+        <div style="font-size:10.5px;color:#94A3B8;margin-bottom:6px;line-height:1.3">
+          Reçois des bannières Push instantanées sur ton téléphone (écran verrouillé) avec son fort et bouton 1-clic pour ouvrir MEXC !
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:6px">
+          <input id="notif-ntfy-topic" type="text" value="lumen_mm_alerts" placeholder="Canal Push (ex: lumen_mm_alerts)"
+            style="flex:1;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+          <a id="notif-ntfy-link" href="https://ntfy.sh/lumen_mm_alerts" target="_blank" rel="noopener" class="btn" style="font-size:10.5px;padding:5px 8px;border-color:#00E5FF;color:#00E5FF;font-weight:700;background:rgba(0,229,255,0.12);text-decoration:none;display:inline-flex;align-items:center;gap:4px">📲 S'abonner</a>
+        </div>
+        <button class="btn" id="btn-test-push-mobile" style="width:100%;font-size:10.5px;padding:5px;border-color:#00E5FF;color:#00E5FF;font-weight:700;background:rgba(0,229,255,0.08)">🔔 Tester le Push Téléphone</button>
+      </div>
+
       <!-- Section Browser Push -->
       <div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:11.5px;font-weight:700;color:#E2E8F0">📲 Push Navigateur (iPhone & PWA)</span>
+          <span style="font-size:11.5px;font-weight:700;color:#E2E8F0">🖥️ Notifications Navigateur (Mac & Chrome)</span>
           <span id="notif-perm-badge" style="font-size:9.5px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(255,255,255,0.1);color:#94A3B8">Inconnu</span>
         </div>
         <div style="font-size:10.5px;color:#94A3B8;margin-bottom:6px;line-height:1.3">
-          Affiche une bannière d'alerte directement sur votre téléphone lorsque le navigateur est ouvert ou en arrière-plan.
+          Affiche une bannière d'alerte directement sur votre écran Mac / Chrome.
         </div>
-        <button class="btn" id="btn-req-notif-perm" style="width:100%;font-size:11px;padding:5px;border-color:#00E5FF;color:#00E5FF;font-weight:700">🔔 Autoriser les Notifications Push</button>
-        <div style="font-size:10px;color:#38BDF8;margin-top:5px;line-height:1.3;background:rgba(56,189,248,0.08);padding:4px 6px;border-radius:5px">
-          🍏 <b>Astuce iPhone :</b> Sur Safari, appuyez sur le bouton <b>Partager</b> (carré avec flèche) ➔ <b>« Sur l'écran d'accueil »</b> pour recevoir les pushs avec son et badge comme une vraie application !
-        </div>
+        <button class="btn" id="btn-req-notif-perm" style="width:100%;font-size:11px;padding:5px;border-color:#00E5FF;color:#00E5FF;font-weight:700">🔔 Autoriser & Tester sur Mac</button>
       </div>
 
       <!-- Section Telegram Mobile -->
@@ -12670,24 +12684,23 @@ if(notifBtn && notifMenuEl){
     });
   });
 
-  document.getElementById('btn-test-webhook')?.addEventListener('click', ()=>{
+  document.getElementById('btn-test-push-mobile')?.addEventListener('click', ()=>{
     savePhoneNotifUI();
-    const url = document.getElementById('notif-webhook-url')?.value.trim() ?? '';
-    if(!url){
-      toast('Veuillez saisir l\'URL du Webhook', '#F45B7D');
-      return;
-    }
-    const statusMsg = document.getElementById('notif-status-msg');
-    if(statusMsg) statusMsg.textContent = 'Envoi du test Webhook...';
-    sendWebhookNotification({ title: 'Test Webhook Lumen Charts', body: 'Test d\'alerte webhook mobile' }).then(ok => {
+    const topic = document.getElementById('notif-ntfy-topic')?.value.trim() || 'lumen_mm_alerts';
+    toast('Envoi du Push sur votre téléphone...', '#00E5FF');
+    sendNtfyPushNotification('🟢 Test Push Lumen Charts', 'Le Push Téléphone fonctionne à la perfection sur votre écran verrouillé !', { dir: 1, type: 'ACHAT' }).then(ok => {
       if(ok){
-        if(statusMsg) statusMsg.textContent = '✅ Webhook envoyé !';
-        toast('Test Webhook réussi !', '#00E5FF');
+        toast('✅ Notification Push envoyée sur votre téléphone !', '#10B981');
       } else {
-        if(statusMsg) statusMsg.textContent = '❌ Échec Webhook';
-        toast('Erreur d\'envoi Webhook', '#F45B7D');
+        toast('Notification Push transmise à https://ntfy.sh/' + topic, '#00E5FF');
       }
     });
+  });
+
+  document.getElementById('btn-req-notif-perm')?.addEventListener('click', ()=>{
+    if (typeof window.testerNotificationNavigateur === 'function') {
+      window.testerNotificationNavigateur();
+    }
   });
 }
 
@@ -15869,6 +15882,7 @@ function getPhoneNotifConfig(){
     telegramChatId: '',
     waPhone: '',
     waApiKey: '',
+    ntfyTopic: 'lumen_mm_alerts',
     webhookUrl: '',
     sound: true,
     vibrate: true
@@ -16081,6 +16095,28 @@ function sendTelegramDemoExitNotification(data) {
   }
 }
 
+function sendNtfyPushNotification(title, body, sig) {
+  const cfg = getPhoneNotifConfig();
+  const topic = (cfg.ntfyTopic || 'lumen_mm_alerts').trim().replace(/[^a-zA-Z0-9_\-]/g, '');
+  if (!topic) return Promise.resolve(false);
+  const url = `https://ntfy.sh/${topic}`;
+  const symbolClean = (state.symbol || 'BTCUSDT').replace('USDT', '').toUpperCase();
+  const isBuy = sig && (sig.dir === 1 || (sig.type && sig.type.includes('ACHAT')));
+  const mexcUrl = `https://futures.mexc.com/exchange/${symbolClean}_USDT`;
+
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Title': title,
+      'Priority': 'urgent',
+      'Tags': isBuy ? 'chart_increasing,green_circle' : 'chart_decreasing,red_circle',
+      'Click': mexcUrl,
+      'Actions': `view, 🚀 Ouvrir MEXC (${symbolClean}), ${mexcUrl}; view, 📊 Lumen Charts, https://mgheda-cmd.github.io/Lumen/`
+    },
+    body: body
+  }).then(r => r.ok).catch(() => false);
+}
+
 function sendWebhookNotification(payload){
   const cfg = getPhoneNotifConfig();
   if(!cfg.webhookUrl) return Promise.resolve(false);
@@ -16131,6 +16167,9 @@ function triggerMobileNotification(title, body, sig){
       try { Notification.requestPermission(); } catch(e){}
     }
   }
+
+  // 2. Notification Push Téléphone Direct (iPhone & Android)
+  sendNtfyPushNotification(title, body, sig);
 
   const symbolClean = (state.symbol || 'BTCUSDT').replace('USDT', '').toUpperCase();
   const mexcPair = `${symbolClean}_USDT`;
@@ -30967,7 +31006,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1790';
+  window.__LUMEN_BUILD = 'B-1708-1800';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
