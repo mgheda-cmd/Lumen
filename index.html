@@ -715,14 +715,18 @@ footer{
         <span class="dot" style="background:#22D3EE;box-shadow:0 0 6px #22D3EE;flex:none"></span>
         <span class="nm">kk bis <span class="sub">seuils adaptatifs · confirmation · délai de garde</span></span>
         <span class="srtf mtf on" data-ind2="kk_bis" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="kk_bis" data-tf="1">1m</span>
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="2">2m</span>
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="3">3m</span>
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="5">5m</span>
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="20">20m</span>
         <span class="srtf mtf" data-ind2="kk_bis" data-tf="30">30m</span>
+        <span class="srtf mtf" data-ind2="kk_bis" data-tf="60">1H</span>
         <span class="sub" style="opacity:.7;margin-left:8px;font-size:9px">2ᵉ ligne</span>
         <span class="srtf" data-kkbis2="off" title="Aucune seconde ligne">—</span>
+        <span class="srtf" data-kkbis2="1" title="Seconde ligne en 1m">1m</span>
+        <span class="srtf" data-kkbis2="2" title="Seconde ligne en 2m">2m</span>
         <span class="srtf" data-kkbis2="3" title="Seconde ligne en 3m">3m</span>
         <span class="srtf" data-kkbis2="5" title="Seconde ligne en 5m">5m</span>
         <span class="srtf" data-kkbis2="15" title="Seconde ligne en 15m">15m</span>
@@ -735,14 +739,18 @@ footer{
         <span class="dot" style="background:#F59E0B;box-shadow:0 0 6px #F59E0B;flex:none"></span>
         <span class="nm">kk bis 2 <span class="sub">seuils fixes 75 / −75 · sans adaptation à la volatilité</span></span>
         <span class="srtf mtf on" data-ind2="kk_bis2" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="kk_bis2" data-tf="1">1m</span>
         <span class="srtf mtf" data-ind2="kk_bis2" data-tf="2">2m</span>
         <span class="srtf mtf" data-ind2="kk_bis2" data-tf="3">3m</span>
         <span class="srtf mtf" data-ind2="kk_bis2" data-tf="5">5m</span>
         <span class="srtf mtf" data-ind2="kk_bis2" data-tf="15">15m</span>
         <span class="srtf mtf" data-ind2="kk_bis2" data-tf="20">20m</span>
         <span class="srtf mtf" data-ind2="kk_bis2" data-tf="30">30m</span>
+        <span class="srtf mtf" data-ind2="kk_bis2" data-tf="60">1H</span>
         <span class="sub" style="opacity:.7;margin-left:8px;font-size:9px">2ᵉ ligne</span>
         <span class="srtf" data-kkbis2b="off" title="Aucune seconde ligne">—</span>
+        <span class="srtf" data-kkbis2b="1" title="Seconde ligne en 1m">1m</span>
+        <span class="srtf" data-kkbis2b="2" title="Seconde ligne en 2m">2m</span>
         <span class="srtf" data-kkbis2b="3" title="Seconde ligne en 3m">3m</span>
         <span class="srtf" data-kkbis2b="5" title="Seconde ligne en 5m">5m</span>
         <span class="srtf" data-kkbis2b="15" title="Seconde ligne en 15m">15m</span>
@@ -29815,7 +29823,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-0540';
+  window.__LUMEN_BUILD = 'B-1708-0625';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
