@@ -30148,7 +30148,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1440';
+  window.__LUMEN_BUILD = 'B-1708-1450';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -31580,8 +31580,11 @@ window.envoyerVersDemo = function(){
     if(caret) caret.textContent = '▾';
   }
 
+  if(typeof window.syncPaperConfigFromUI === 'function') window.syncPaperConfigFromUI();
+  if(typeof window.updatePaperIsolatedMarginUI === 'function') window.updatePaperIsolatedMarginUI();
   if(typeof renderPaperStratCard === 'function') renderPaperStratCard();
   if(typeof updatePaperUI === 'function') updatePaperUI();
+  if(typeof updatePaper === 'function') updatePaper();
   if(typeof toast === 'function') toast('🚀 Stratégie ' + labelStrat + ' appliquée avec succès sur votre Compte Démo !', '#00E676');
 };
 
@@ -31593,12 +31596,20 @@ window.envoyerVersDemo = function(){
    ================================================================ */
 window.envoyerVersMexc = function(){
   const r = window.__btDernier;
-  if(!r){ alert('Lancez d\'abord un backtest.'); return; }
+  if(!r){ alert("Lancez d'abord un backtest."); return; }
 
   if(!r.conforme){
-    const txt = 'Cette configuration ne remplit pas les critères de validation :\n\n· ' +
-      ((r.manques && r.manques.length) ? r.manques.join('\n· ') : 'critères non renseignés') +
-      '\n\nLes réglages seront quand même reportés dans le module MEXC.\nAucun ordre ne sera envoyé.\n\nContinuer ?';
+    const txt = 'Cette configuration ne remplit pas les critères de validation :
+
+· ' +
+      ((r.manques && r.manques.length) ? r.manques.join('
+· ') : 'critères non renseignés') +
+      '
+
+Les réglages seront quand même reportés dans le module MEXC.
+Aucun ordre ne sera envoyé.
+
+Continuer ?';
     if(!confirm(txt)) return;
   }
 
