@@ -2448,23 +2448,65 @@ footer{
   </div>
   <div id="paper-panel">
     <div id="paper-strat-card" style="margin-top:2px;margin-bottom:10px"></div>
-    <div class="paper-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <!-- Selector Unit Mode -->
-      <div style="display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel-2,#0F172A)">
-        <button class="btn" id="paper-unit-coin" style="padding:4px 8px;font-size:11px;font-weight:700">BTC (Quantité)</button>
-        <button class="btn" id="paper-unit-usdt" style="padding:4px 8px;font-size:11px;font-weight:700">USDT (Montant)</button>
-      </div>
+    
+    <!-- Grille complète des paramètres de trading Démo (identique au Backtest) -->
+    <div class="paper-row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-bottom:10px;background:rgba(15,23,42,0.85);border:1px solid #1E293B;border-radius:10px;padding:10px 12px">
+      
+      <!-- 1. Entrées -->
+      <label style="font-size:11px;color:#94A3B8">Entrées<br>
+        <select id="paper-ent" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
+          <option value="mm_base" selected>🟢 Stratégie MM — Base</option>
+          <option value="mm_opt2">⚡ Stratégie MM — Option 2 (iMACD)</option>
+          <option value="zz">Z.Z. classiques</option>
+          <option value="nouveau">Nouvelles conditions</option>
+          <option value="sansRosc">Sans Range Oscillator</option>
+        </select>
+      </label>
 
-      <!-- Input quantity/amount -->
-      <div style="display:flex;align-items:center;gap:4px">
-        <input id="paper-amt" type="number" value="1" min="0" step="any" aria-label="Quantité ou Montant" style="width:100px;padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text)">
-        <span id="paper-unit-label" style="font-size:11px;font-weight:700;color:#00E5FF">BTC</span>
-      </div>
+      <!-- 2. Sens -->
+      <label style="font-size:11px;color:#94A3B8">Sens<br>
+        <select id="paper-sens" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
+          <option value="normal" selected>Tel quel</option>
+          <option value="inverse">Inversé</option>
+        </select>
+      </label>
 
-      <!-- Levier option -->
-      <div style="display:flex;align-items:center;gap:4px;font-size:11px">
-        <span style="color:var(--muted)">Levier:</span>
-        <select id="paper-lev" style="background:var(--panel);border:1px solid #00E5FF;border-radius:4px;color:#00E5FF;padding:4px 6px;font-size:11px;font-weight:bold">
+      <!-- 3. Direction -->
+      <label style="font-size:11px;color:#94A3B8">Direction<br>
+        <select id="paper-dir" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
+          <option value="tout" selected>Longs et shorts</option>
+          <option value="long">Longs seuls</option>
+          <option value="short">Shorts seuls</option>
+        </select>
+      </label>
+
+      <!-- 4. Sorties -->
+      <label style="font-size:11px;color:#94A3B8">Sorties<br>
+        <select id="paper-sor" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
+          <option value="mm_sig_opp" selected>🔄 Signal opposé MM</option>
+          <option value="mm_opp">🏔️ Sommet / Creux opposé MM</option>
+          <option value="tout">kk bis — toutes</option>
+          <option value="div">kk bis — divergences seules</option>
+          <option value="seuil">kk bis — seuil + pente seul</option>
+        </select>
+      </label>
+
+      <!-- 5. Montant -->
+      <label style="font-size:11px;color:#94A3B8">Montant<br>
+        <input id="paper-amt" type="number" value="0.02" step="any" onchange="window.syncPaperConfigFromUI()" style="width:78px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #334155;border-radius:6px;color:#E2E8F0">
+      </label>
+
+      <!-- 6. Unité -->
+      <label style="font-size:11px;color:#94A3B8">Unité<br>
+        <select id="paper-unite" onchange="window.setPaperUniteFromSelect(this.value)" style="background:#0B1220;border:1px solid #334155;color:#00E5FF;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
+          <option value="BASE" selected>BTC (taille)</option>
+          <option value="USDT">USDT (marge)</option>
+        </select>
+      </label>
+
+      <!-- 7. Levier -->
+      <label style="font-size:11px;color:#94A3B8">Levier<br>
+        <select id="paper-lev" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #00E5FF;border-radius:6px;color:#00E5FF;padding:5px 7px;font-size:11px;font-weight:bold">
           <option value="1">1x (Spot)</option>
           <option value="2">2x</option>
           <option value="5">5x</option>
@@ -2476,33 +2518,47 @@ footer{
           <option value="150">150x</option>
           <option value="200" selected>200x 🔥</option>
         </select>
-      </div>
+      </label>
 
-      <!-- Mode Rerentrée -->
-      <div style="display:flex;align-items:center;gap:4px;font-size:11px">
-        <span style="color:var(--muted)">Mode:</span>
-        <select id="paper-mode" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--text);padding:4px 6px;font-size:11px;font-weight:bold" title="Rerentrer dans le même trade ou ouvrir des positions séparées">
-          <option value="merge" selected>🔄 Rerentrer / Cumuler (Prix Moyen)</option>
-          <option value="separate">📄 Positions Séparées</option>
+      <!-- 8. Capital ($) -->
+      <label style="font-size:11px;color:#94A3B8">Capital ($)<br>
+        <input id="paper-capital" type="number" value="100" step="any" onchange="window.setPaperCapital(this.value)" style="width:78px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #334155;border-radius:6px;color:#E2E8F0">
+      </label>
+
+      <!-- 9. Mode Marge -->
+      <label style="font-size:11px;color:#94A3B8">Mode marge<br>
+        <select id="paper-mmode" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
+          <option value="croise" selected>Croisée</option>
+          <option value="isole">Isolée</option>
         </select>
-      </div>
+      </label>
 
-      <!-- Stop Loss & Take Profit -->
-      <div style="display:flex;align-items:center;gap:4px;font-size:11px">
-        <span style="color:#FF5252;font-weight:700">🛑 SL:</span>
-        <input id="paper-sl" type="number" step="any" placeholder="Prix SL ($)" aria-label="Stop Loss" style="width:90px;padding:4px 6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:var(--panel);border:1px solid rgba(255,82,82,0.4);border-radius:4px;color:#FF5252" title="Prix du Stop Loss (ex: 64000)">
-      </div>
+      <!-- 10. TP ($) -->
+      <label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix ou 0 pour désactiver">TP ($)<br>
+        <input id="paper-tp" type="number" step="any" value="0" placeholder="0" onchange="window.syncPaperConfigFromUI()" style="width:72px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid rgba(0,230,118,0.4);border-radius:6px;color:#00E676">
+      </label>
 
-      <div style="display:flex;align-items:center;gap:4px;font-size:11px">
-        <span style="color:#00E676;font-weight:700">🎯 TP:</span>
-        <input id="paper-tp" type="number" step="any" placeholder="Prix TP ($)" aria-label="Take Profit" style="width:90px;padding:4px 6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:var(--panel);border:1px solid rgba(0,230,118,0.4);border-radius:4px;color:#00E676" title="Prix du Take Profit (ex: 72000)">
-      </div>
+      <!-- 11. Frais % -->
+      <label style="font-size:11px;color:#94A3B8" title="Taux taker (ex: 0.02%)">Frais %<br>
+        <input id="paper-fee" type="number" step="0.001" value="0.02" onchange="window.syncPaperConfigFromUI()" style="width:70px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #334155;border-radius:6px;color:#E2E8F0">
+      </label>
 
-      <!-- Buttons ACHAT / VENTE / AUTO-TRADE -->
-      <button class="btn-buy" id="paper-buy" style="padding:6px 12px;font-weight:800;font-size:12px">🟢 ACHAT (LONG)</button>
-      <button class="btn-sell" id="paper-sell" style="padding:6px 12px;font-weight:800;font-size:12px">🔴 VENTE (SHORT)</button>
-      <button class="btn" id="paper-auto-trade" style="padding:6px 12px;font-weight:800;font-size:12px;background:var(--panel,#0A111F);border:1px solid var(--line,#1E293B);color:var(--muted,#94A3B8);transition:all 0.2s ease" title="Exécuter automatiquement un trade lors de l'apparition d'une pastille ACHAT DIRECT ou VENTE DIRECTE">🤖 Auto-Trade Direct : OFF</button>
-      <button class="btn" id="paper-reset" style="margin-left:auto;font-size:11px;padding:4px 8px">Réinitialiser 100$</button>
+      <!-- Boutons d'action -->
+      <div style="display:flex;gap:6px;align-items:center;margin-left:auto;flex-wrap:wrap">
+        <button class="btn-buy" id="paper-buy" style="padding:6px 12px;font-weight:800;font-size:12px">🟢 ACHAT</button>
+        <button class="btn-sell" id="paper-sell" style="padding:6px 12px;font-weight:800;font-size:12px">🔴 VENTE</button>
+        <button class="btn" id="paper-auto-trade" style="padding:6px 12px;font-weight:800;font-size:12px;background:var(--panel,#0A111F);border:1px solid var(--line,#1E293B);color:var(--muted,#94A3B8);transition:all 0.2s ease" title="Exécuter automatiquement un trade lors de l'apparition des signaux configurés">🤖 Auto-Trade : OFF</button>
+        <button class="btn" id="paper-reset" style="margin-left:auto;font-size:11px;padding:5px 8px" title="Remettre le compte démo à 100$">↺ Réinit 100$</button>
+      </div>
+    </div>
+
+    <!-- Hidden elements for backward compatibility -->
+    <div style="display:none">
+      <button id="paper-unit-coin"></button>
+      <button id="paper-unit-usdt"></button>
+      <span id="paper-unit-label">BTC</span>
+      <select id="paper-mode"><option value="merge" selected></option></select>
+      <input id="paper-sl" type="number">
     </div>
 
     <!-- Presets & Live Calculation Preview -->
@@ -12667,6 +12723,22 @@ function updatePaperDemoStrategyUI(){
     }
   }
 
+  // Synchroniser les champs éditables avec la stratégie active
+  if(activeObj){
+    const setVal = (id, v) => { const el = document.getElementById(id); if(el && v != null) el.value = v; };
+    if(activeObj.mEnt) setVal('paper-ent', activeObj.mEnt);
+    if(activeObj.mSens) setVal('paper-sens', activeObj.mSens);
+    if(activeObj.dir) setVal('paper-dir', activeObj.dir);
+    if(activeObj.mSor) setVal('paper-sor', activeObj.mSor);
+    if(activeObj.marge != null) setVal('paper-amt', activeObj.marge);
+    if(activeObj.unite) setVal('paper-unite', (activeObj.unite === 'BASE' || activeObj.unite === 'BTC') ? 'BASE' : 'USDT');
+    if(activeObj.lev != null) setVal('paper-lev', String(activeObj.lev));
+    if(activeObj.capital != null) setVal('paper-capital', activeObj.capital);
+    if(activeObj.mmode) setVal('paper-mmode', activeObj.mmode);
+    if(activeObj.tp != null) setVal('paper-tp', activeObj.tp);
+    if(activeObj.feePct != null) setVal('paper-fee', activeObj.feePct);
+  }
+
   if (cardEl) {
     if (isAuto && activeObj) {
       const modeName = activeObj.modeLabel || activeObj.mode;
@@ -13266,6 +13338,60 @@ document.getElementById('paper-unit-usdt')?.addEventListener('click',()=>{
   if(inp) inp.value='1000';
   refreshUnitUI(); saveConfig();
 });
+
+window.setPaperUniteFromSelect = function(val){
+  paperUnit = (val === 'USDT') ? 'usdt' : 'coin';
+  const lbl = document.getElementById('paper-unit-label');
+  if(lbl) lbl.textContent = (paperUnit === 'usdt') ? 'USDT' : baseAsset(state.symbol);
+  if(typeof window.syncPaperConfigFromUI === 'function') window.syncPaperConfigFromUI();
+  if(typeof saveConfig === 'function') saveConfig();
+  if(typeof updatePaper === 'function') updatePaper();
+};
+
+window.setPaperCapital = function(val){
+  const cap = parseFloat(val) || 100;
+  if(typeof paper === 'object' && paper){
+    paper.cash = cap;
+    if(typeof saveConfig === 'function') saveConfig();
+    if(typeof updatePaper === 'function') updatePaper();
+  }
+  if(typeof window.syncPaperConfigFromUI === 'function') window.syncPaperConfigFromUI();
+};
+
+window.syncPaperConfigFromUI = function(){
+  const ent = document.getElementById('paper-ent')?.value || 'mm_base';
+  const sens = document.getElementById('paper-sens')?.value || 'normal';
+  const dir = document.getElementById('paper-dir')?.value || 'tout';
+  const sor = document.getElementById('paper-sor')?.value || 'mm_sig_opp';
+  const amt = +(document.getElementById('paper-amt')?.value || 0.02);
+  const lev = +(document.getElementById('paper-lev')?.value || 200);
+  const cap = +(document.getElementById('paper-capital')?.value || 100);
+  const mmode = document.getElementById('paper-mmode')?.value || 'croise';
+  const tp = +(document.getElementById('paper-tp')?.value || 0);
+  const fee = +(document.getElementById('paper-fee')?.value || 0.02);
+
+  const entNom = (ent === 'mm_base') ? 'MM Base' : (ent === 'mm_opt2') ? 'MM Opt2 (iMACD)' : (ent === 'zz') ? 'Z.Z. classique' : (ent === 'nouveau') ? 'Nouvelles cond.' : 'Sans ROSC';
+  const sorNom = (sor === 'mm_sig_opp') ? 'Signal opposé MM' : (sor === 'mm_opp') ? 'Sommet/Creux MM' : (sor === 'div') ? 'Divergences kk bis' : (sor === 'seuil') ? 'Seuil kk bis' : 'Toutes kk bis';
+
+  window.activeDemoStrategy = Object.assign(window.activeDemoStrategy || {}, {
+    mEnt: ent,
+    mSens: sens,
+    dir: dir,
+    mSor: sor,
+    modeLabel: entNom + ' × ' + sorNom,
+    marge: amt,
+    unite: (paperUnit === 'usdt') ? 'USDT' : 'BASE',
+    lev: lev,
+    capital: cap,
+    mmode: mmode,
+    tp: tp,
+    feePct: fee,
+    timestamp: Date.now()
+  });
+  window.paperFeePct = fee / 100;
+  try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); }catch(e){}
+  if(typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
+};
 
 document.getElementById('paper-amt')?.addEventListener('input', refreshUnitUI);
 document.getElementById('paper-lev')?.addEventListener('change', refreshUnitUI);
@@ -30122,7 +30248,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1350';
+  window.__LUMEN_BUILD = 'B-1708-1400';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -31472,19 +31598,33 @@ window.envoyerVersDemo = function(){
   const back = document.getElementById('bta-back');
   if(back) back.style.display = 'none';
 
-  // 2. Mettre à jour les champs du panneau Démo (Paper Trading)
-  const unitCoinBtn = document.getElementById('paper-unit-coin');
-  const unitUsdtBtn = document.getElementById('paper-unit-usdt');
-  const amtInput = document.getElementById('paper-amt');
-  const levSel = document.getElementById('paper-lev');
-  const tpInput = document.getElementById('paper-tp');
+  // 2. Mettre à jour toutes les cases du panneau Démo (Paper Trading)
+  const elEnt = document.getElementById('paper-ent');
+  const elSens = document.getElementById('paper-sens');
+  const elDir = document.getElementById('paper-dir');
+  const elSor = document.getElementById('paper-sor');
+  const elAmt = document.getElementById('paper-amt');
+  const elUnite = document.getElementById('paper-unite');
+  const elLev = document.getElementById('paper-lev');
+  const elCap = document.getElementById('paper-capital');
+  const elMmode = document.getElementById('paper-mmode');
+  const elTp = document.getElementById('paper-tp');
+  const elFee = document.getElementById('paper-fee');
 
-  if(r.unite === 'BASE' && unitCoinBtn){ unitCoinBtn.click(); }
-  else if(r.unite === 'USDT' && unitUsdtBtn){ unitUsdtBtn.click(); }
+  if(elEnt && r.mEnt) elEnt.value = r.mEnt;
+  if(elSens && r.sens) elSens.value = r.sens;
+  if(elDir && r.dirF) elDir.value = r.dirF;
+  if(elSor && r.mSor) elSor.value = r.mSor;
+  if(elAmt && r.marge != null) elAmt.value = r.marge;
+  if(elUnite) elUnite.value = (r.unite === 'BASE') ? 'BASE' : 'USDT';
+  if(elLev && r.lev != null) elLev.value = String(r.lev);
+  if(elCap) elCap.value = (r.capital && r.capital > 0) ? r.capital : 100;
+  if(elMmode) elMmode.value = (document.getElementById('bta-mmode')?.value) || 'croise';
+  if(elTp) elTp.value = r.tp || 0;
+  if(elFee) elFee.value = document.getElementById('bta-frais')?.value || 0.02;
 
-  if(amtInput && r.marge != null){ amtInput.value = r.marge; }
-  if(levSel && r.lev != null){ levSel.value = r.lev; }
-  if(tpInput && r.tp != null && r.tp > 0){ tpInput.value = r.tp; }
+  // Régler l'unité globale
+  paperUnit = (r.unite === 'USDT') ? 'usdt' : 'coin';
 
   // Ajuster le capital / solde Démo
   if(typeof paper === 'object' && paper){
@@ -31496,14 +31636,16 @@ window.envoyerVersDemo = function(){
   window.activeDemoStrategy = {
     type: 'bt_apparie',
     mEnt: r.mEnt,
+    mSens: r.sens || 'normal',
+    dir: r.dirF,
     mSor: r.mSor,
     modeLabel: labelStrat,
-    dir: r.dirF,
-    lev: r.lev,
     marge: r.marge,
     unite: r.unite,
+    lev: r.lev,
+    capital: (r.capital && r.capital > 0) ? r.capital : 100,
+    mmode: elMmode ? elMmode.value : 'croise',
     tp: r.tp || 0,
-    capital: r.capital || 100,
     feePct: (+document.getElementById('bta-frais')?.value || 0.02),
     winRate: r.wr,
     netPnl: r.pnl,
