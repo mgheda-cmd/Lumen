@@ -366,7 +366,7 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
 }
 #chips-toggle{
   position:absolute; top:5px; left:6px; z-index:12; cursor:pointer;
-  background:var(--chip-bg); backdrop-filter:blur(4px); border:1px solid var(--line);
+  background:var(--chip-bg);  border:1px solid var(--line);
   color:var(--muted); border-radius:4px; width:20px; height:18px; font-size:11px;
   line-height:1; padding:0; display:none;
 }
@@ -375,13 +375,13 @@ body.chips-collapsed #chips-toggle{ transform:none; }
 #chips-toggle.showing{ display:block; }
 .legend-ohlc{
   font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted);
-  background:var(--chip-bg); backdrop-filter:blur(4px);
+  background:var(--chip-bg); 
   padding:1px 5px; border-radius:4px; width:max-content; line-height:1.35;
 }
 .legend-ohlc b{color:var(--text);font-weight:600}
 .chip{
   display:flex; align-items:center; gap:4px; width:max-content;
-  background:var(--chip-bg); backdrop-filter:blur(4px);
+  background:var(--chip-bg); 
   border:1px solid var(--line); border-radius:4px; padding:0 5px;
   font-size:9.5px; font-family:'IBM Plex Mono',monospace; pointer-events:auto;
   line-height:1.6; white-space:nowrap; cursor:pointer; transition:background .15s, border-color .15s;
@@ -489,7 +489,7 @@ footer{
   <button class="btn" id="full-chart-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
   </button>
-  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-1030</span>
+  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2250</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:3px">⇩ FORCER</button>
 
@@ -1320,7 +1320,7 @@ footer{
 </div>
 
 <!-- MODAL TABLEAU COMPARATIF DES RÉSULTATS DU BACKTEST -->
-<div id="bt-table-modal" style="display:none;position:fixed;inset:0;background:rgba(6,10,20,0.88);z-index:10001;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(4px)">
+<div id="bt-table-modal" style="display:none;position:fixed;inset:0;background:rgba(6,10,20,0.88);z-index:10001;align-items:center;justify-content:center;padding:14px;">
   <div style="background:var(--panel,#0A111F);border:2px solid #3B82F6;border-radius:16px;max-width:960px;width:100%;max-height:92vh;overflow:auto;padding:20px;box-shadow:0 16px 50px rgba(59,130,246,0.3)">
     
     <!-- Modal Header -->
@@ -1688,7 +1688,7 @@ footer{
 </div>
 
 <!-- MODAL LANCEMENT EN DIRECT SUR EXCHANGE EN ARGENT RÉEL -->
-<div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(4,8,18,0.92);z-index:10000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)">
+<div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(4,8,18,0.92);z-index:10000;align-items:center;justify-content:center;padding:16px;">
   <div style="background:#0B132B;border:2px solid #00E5FF;border-radius:18px;max-width:1300px;width:95vw;max-height:92vh;overflow:auto;padding:24px;color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(0,229,255,0.3)">
     
     <!-- Modal Header -->
@@ -2308,7 +2308,7 @@ footer{
   <div id="chart-trade-hud" style="display:none"></div>
   <button id="chips-toggle" title="Masquer / afficher la liste des indicateurs">▾</button>
   <div id="chips"></div>
-  <button id="btn-float-latest-candles" onclick="scrollToLatestCandles()" title="Aller aux bougies les plus récentes (temps réel)" style="position:absolute;bottom:30px;right:75px;z-index:25;background:rgba(15,23,42,0.92);border:1px solid #00E5FF;color:#00E5FF;border-radius:20px;padding:6px 14px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.6);backdrop-filter:blur(6px);transition:all 0.2s">⏭️ Dernières bougies</button>
+  <button id="btn-float-latest-candles" onclick="scrollToLatestCandles()" title="Aller aux bougies les plus récentes (temps réel)" style="position:absolute;bottom:30px;right:75px;z-index:25;background:rgba(15,23,42,0.92);border:1px solid #00E5FF;color:#00E5FF;border-radius:20px;padding:6px 14px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.6);transition:all 0.2s">⏭️ Dernières bougies</button>
   <canvas id="chart"></canvas>
 </div>
 
@@ -6786,7 +6786,7 @@ try{
   let longTimer=null, longFired=false;
   const start=()=>{ longFired=false; longTimer=setTimeout(()=>{longFired=true;clearAllWant();},650); };
   const end=(ev)=>{ clearTimeout(longTimer); if(!longFired){ if(ev&&ev.cancelable)ev.preventDefault(); undoLastWant(); } };
-  cb2.addEventListener('touchstart',e=>{e.stopPropagation();start();},{passive:true});
+  cb2.addEventListener('touchstart',e=>{e.stopPropagation();start();},{passive:false});
   cb2.addEventListener('touchend',e=>{e.stopPropagation();end(e);});
   cb2.addEventListener('mousedown',e=>{e.stopPropagation();start();});
   cb2.addEventListener('mouseup',e=>{e.stopPropagation();end(e);});
@@ -11811,7 +11811,7 @@ canvas.addEventListener('touchstart',e=>{
       mid:(a.x+b.x)/2, count:state.view.count, start:state.view.start,
       lo:state.yScale.lo, hi:state.yScale.hi};
   }
-},{passive:true});
+},{passive:false});
 canvas.addEventListener('touchmove',e=>{
   if(touch&&e.touches.length===1){
     const {x,y}=tpos(e.touches[0]);
@@ -11862,6 +11862,7 @@ canvas.addEventListener('touchmove',e=>{
       }
     }
     scheduleRender();
+    if(e.cancelable) e.preventDefault();
   }else if(pinch&&e.touches.length===2){
     const a=tpos(e.touches[0]), b=tpos(e.touches[1]);
     const ndx=Math.abs(a.x-b.x)||1, ndy=Math.abs(a.y-b.y)||1;
@@ -11879,14 +11880,15 @@ canvas.addEventListener('touchmove',e=>{
       state.yScale.lo=c-r; state.yScale.hi=c+r;
     }
     scheduleRender();
+    if(e.cancelable) e.preventDefault();
   }
-},{passive:true});
+},{passive:false});
 canvas.addEventListener('touchend',()=>{
   if(touch&&touch.mode&&touch.mode.startsWith('resize:'))saveConfig();
   clearTimeout(lpTimer); lpTimer=null;
   if(touch&&touch.mode==='xhair'&&!state.xhairMode){ state.mouse=null; scheduleRender(); }
   touch=null;pinch=null;
-},{passive:true});
+},{passive:false});
 
 /* ---------- Menu indicateurs & Menu Outils ---------- */
 const btnInd=document.getElementById('btn-ind'), menu=document.getElementById('ind-menu');
@@ -17135,7 +17137,7 @@ zoomCanvas.addEventListener('touchstart',e=>{
       mid:(a.x+b.x)/2,count:zoomState.view.count,start:zoomState.view.start,
       lo:zoomState.yScale.lo,hi:zoomState.yScale.hi};
   }
-},{passive:true});
+},{passive:false});
 zoomCanvas.addEventListener('touchmove',e=>{
   const w=zoomCanvas.getBoundingClientRect().width-zAxisW();
   if(zoomState.touch&&e.touches.length===1){
@@ -17169,7 +17171,7 @@ zoomCanvas.addEventListener('touchmove',e=>{
     }
   }
   renderZoom();
-},{passive:true});
+},{passive:false});
 zoomCanvas.addEventListener('touchend',()=>{ zoomState.touch=null; zoomState.pinch=null; });
 
 // boutons +/- et réinitialiser
@@ -24590,7 +24592,7 @@ window.triggerInsistentMexcTradeAlert = function(details) {
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'mexc-insistent-modal';
-    modal.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);backdrop-filter:blur(10px);z-index:999999;align-items:center;justify-content:center;padding:20px';
+    modal.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);z-index:999999;align-items:center;justify-content:center;padding:20px';
     modal.innerHTML = `
       <div style="background:#0F172A;border:3px solid #EF4444;box-shadow:0 0 50px rgba(239,68,68,0.7);border-radius:16px;max-width:520px;width:100%;padding:24px;text-align:center;color:#FFFFFF;position:relative">
         <div style="font-size:48px;margin-bottom:12px;animation:pulse 0.8s infinite">🚨</div>
@@ -30932,7 +30934,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1950';
+  window.__LUMEN_BUILD = 'B-1708-2250';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
