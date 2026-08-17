@@ -492,7 +492,7 @@ footer{
   <button class="btn" id="collapse-panes-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
   </button>
-  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2317</span>
+  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2512</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:3px">⇩ FORCER</button>
 
@@ -930,6 +930,11 @@ footer{
         <span class="dot" style="background:var(--faint)"></span>
         <span class="name">Volume <span class="desc">Histogramme</span></span>
         <span class="state">off</span>
+      </div>
+      <div class="ind-item" data-ind="vol_delta">
+        <span class="dot" style="background:#00E5FF"></span>
+        <span class="name">Delta <span class="desc">Volume Footprint</span></span>
+        <span class="state">on</span>
       </div>
       <div class="ind-item" data-ind="rsi">
         <span class="dot" style="background:var(--ema)"></span>
@@ -3197,6 +3202,17 @@ const TwoIndicator = (function (root, factory) {
 
 /* ---------- Calcul des indicateurs ---------- */
 const calc = {
+  vol_delta(bars) {
+    if (!bars || !bars.length) return [];
+    let cvd = 0;
+    return bars.map(b => {
+      const tbv = b.tbv || 0;
+      const tsv = Math.max(0, b.v - tbv);
+      const delta = tbv - tsv;
+      cvd += delta;
+      return { delta, cvd };
+    });
+  },
   twoIndicator(bars, opt) {
     if (!bars || !bars.length) return { net: [], signal: [], ssWma: [] };
     opt = opt || {};
@@ -4743,6 +4759,7 @@ const state = {
   symbol:'BTCUSDT', tf:60, type:'candles', market:'perp',
   data:[], view:{start:0,count:150},
   indicators:{
+    vol_delta:{on:true},
     sma:{on:false,period:20},
     ema:{on:true,period:50},
     ema2:{on:true,period:200},
@@ -5206,7 +5223,7 @@ function applyTickPrice(px){
 }
 function applyKline(k){
   const d=state.data; if(!d.length)return;
-  const bar={t:k.t,o:k.o,h:k.h,l:k.l,c:k.c,v:k.v};
+  const bar={t:k.t,o:k.o,h:k.h,l:k.l,c:k.c,v:k.v,tbv:k.tbv};
   const last=d[d.length-1];
   if(bar.t===last.t) d[d.length-1]=bar;
   else if(bar.t>last.t){d.push(bar);d.shift();}
@@ -5275,7 +5292,7 @@ function startStream(g){
         const raw=JSON.parse(ev.data);
         const m=raw.data||raw;
         if(m.k){
-          applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v});
+          applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v,tbv:+m.k.V});
           lastTick=Date.now();
         } else if(m.e==='aggTrade'||m.e==='trade'||m.p!=null){
           const px=+m.p;
@@ -5315,7 +5332,7 @@ async function ensureSR(){
     try{
       const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[tf]}&limit=500`);
       if(srStore.sym!==state.symbol)return;
-      const dd=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+      const dd=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
       srStore.data[tf]={levels:calc.sr(dd),loading:false};
       render();
     }catch(e){
@@ -5337,7 +5354,7 @@ async function loadMoreHistory(){
     const rows=await fetchJSON(
       `/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000&endTime=${first-1}`);
     if(g!==gen||!Array.isArray(rows)){histBusy=false;return;}
-    const old=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}))
+    const old=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}))
                   .filter(b=>b.t<first);
     if(!old.length){histDone=true;histBusy=false;return;}
     state.data=old.concat(state.data);
@@ -5419,7 +5436,7 @@ async function loadData(){
     }
     if(g!==gen)return;
     if(!Array.isArray(rows))throw new Error('format');
-    state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+    state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
     state.view={start:state.data.length-150,count:150};
     restoreView();
     updateHeader(); render();
@@ -5438,7 +5455,7 @@ async function loadData(){
         const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${N_BARS}`);
         if(g!==gen)return;
         if(Array.isArray(rows)){
-          state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+          state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
           state.view={start:state.data.length-150,count:150};
           restoreView(); updateHeader(); render(); startStream(g); ensureSR();
           return;
@@ -5658,6 +5675,7 @@ function getInd(key){
   const ck = key + '_' + state.tf + '_' + indFingerprint(ind);
   if(!state.cache[ck]){
     const d = state.data;
+    if(key==='vol_delta') state.cache[ck]=calc.vol_delta(d);
     if(key==='sma') state.cache[ck]=calc.sma(d,ind.period);
     if(key==='ema') state.cache[ck]=calc.ema(d,ind.period);
     if(key==='bb')  state.cache[ck]=calc.bb(d,ind.period);
@@ -6580,6 +6598,7 @@ function computePanes(){
     state.lastPanes=[p];
     return [p];
   }
+  if(vis('vol_delta')) subs.push('vol_delta');
   if(vis('rsi')) subs.push('rsi');
   if(vis('rsi2')) subs.push('rsi2');
   if(vis('macd')) subs.push('macd');
@@ -6983,7 +7002,7 @@ function render(){
     ctx.beginPath();ctx.rect(0,p.y,W,p.h);ctx.clip();
     if(p.key==='price') drawPrice(p,s,e,cw,mainBadgeStack);
     else {
-      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:(p,s,e,cw)=>drawKKBisSub(p,s,e,cw,'kk_bis'),
+      const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,vol_delta:drawVolDelta,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:(p,s,e,cw)=>drawKKBisSub(p,s,e,cw,'kk_bis'),
         kk_bis2:(p,s,e,cw)=>drawKKBisSub(p,s,e,cw,'kk_bis2'),
         sqz_mom:drawSqzMom};
       let members=(p.members||[p.key]).slice();
@@ -9701,6 +9720,31 @@ function drawRSI(p,s,e,cw,K){
   const i=hoverIndex()??state.data.length-1;
   subLabel(p,'RSI '+state.indicators[K].period+indSubTfLabel(K), arr[i]!=null?arr[i].toFixed(1):'—', CR);
 }
+function drawVolDelta(p,s,e,cw){
+  const v=getInd('vol_delta');
+  let mx=0, mn=0;
+  for(let i=s;i<e;i++){
+    if(v[i]){
+      mx=Math.max(mx,v[i].cvd||0,v[i].delta||0);
+      mn=Math.min(mn,v[i].cvd||0,v[i].delta||0);
+    }
+  }
+  mx=Math.max(Math.abs(mx), Math.abs(mn)) || 1;
+  const yOf=subYOf(p,'vol_delta',-mx,mx,false);
+  const y0line=yOf(0);
+  ctx.strokeStyle='rgba(74,88,120,.5)';ctx.beginPath();ctx.moveTo(0,y0line+.5);ctx.lineTo(W-AXIS_W,y0line+.5);ctx.stroke();
+  const bw=Math.max(1,cw*0.7);
+  for(let i=s;i<e;i++){
+    if(!v[i])continue;
+    const x=xOf(i), y=yOf(v[i].delta);
+    ctx.fillStyle=hexA(v[i].delta>=0?'#4ADE80':'#F87171',.55);
+    ctx.fillRect(x-bw/2,Math.min(y,y0line),bw,Math.abs(y-y0line)||1);
+  }
+  const cvdArr = v.map(q=>q?q.cvd:null);
+  plotLine(cvdArr,s,e,yOf,'#00E5FF',1.5);
+  const i=hoverIndex()??state.data.length-1;
+  subLabel(p,'Volume Delta', v[i]?'Delta: '+fmtCompact(v[i].delta)+' | CVD: '+fmtCompact(v[i].cvd):'—', '#00E5FF');
+}
 function drawMACD(p,s,e,cw){
   const m=getInd('macd');
   let mx=0;for(let i=s;i<e;i++){for(const v of [m.line[i],m.sig[i],m.hist[i]]) if(v!=null)mx=Math.max(mx,Math.abs(v));}
@@ -11162,6 +11206,7 @@ function drawCrosshair(panes,s,e){
 /* ---------- Chips + légende OHLC ---------- */
 const chips=document.getElementById('chips');
 const IND_META={
+  vol_delta: { label: () => 'Volume Delta (CVD)', color: '#00E5FF', type: 'sub' },
   sma:{label:p=>'SMA '+p,color:'var(--sma)'},
   ema:{label:p=>'EMA '+p,color:'var(--ema)'},
   bb:{label:p=>'BB '+p+' ±2σ',color:'var(--bb)'},
@@ -18177,7 +18222,7 @@ async function fetchBigHistory(days = 7){
       rows=await fetchJSON(`/api/v3/klines?symbol=${cleanSym}&interval=1m&limit=${per}&endTime=${endTime}`);
     }catch(e){break;}
     if(!Array.isArray(rows)||!rows.length)break;
-    const mapped=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+    const mapped=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
     out.unshift(...mapped);
     endTime=mapped[0].t-1;
     if(rows.length<per)break;
@@ -30953,7 +30998,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2317';
+  window.__LUMEN_BUILD = 'B-1708-2512';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
