@@ -16113,14 +16113,19 @@ function triggerMobileNotification(title, body, sig){
   const firstLine = body ? body.split('\n')[0] : '';
   toast(`🔔 [${nowStr}] ${title} : ${firstLine}`, '#00E5FF');
 
-  // 1. Notification Ordinateur (Mac / Chrome)
+  // 1. Notification Navigateur Prioritaire (Mac / Chrome)
   if('Notification' in window) {
     if(Notification.permission === 'granted') {
       try {
-        new Notification(`${title} [${nowStr}]`, {
+        const notif = new Notification(title, {
           body: `${nowStr} - ${body}`,
-          vibrate: [200, 100, 200]
+          requireInteraction: true,
+          silent: false
         });
+        notif.onclick = function() {
+          window.focus();
+          try { this.close(); } catch(e){}
+        };
       } catch(e){}
     } else if(Notification.permission === 'default') {
       try { Notification.requestPermission(); } catch(e){}
@@ -16302,7 +16307,7 @@ function checkAllAlerts(){
   const allSignals = [];
   const d = state.data;
 
-  // 2. Signaux Stratégie MM (Base, Option 2, Sommets, Creux)
+  // 2. Signaux Stratégie MM Exclusivement (Base, Option 2, Sommets, Creux)
   try {
     const baseMM = (state.indicators && state.indicators.strat_mm) || {};
     const mmData = computeMMSignals(d, baseMM);
@@ -16355,64 +16360,40 @@ function checkAllAlerts(){
     }
   } catch(e){}
 
-  // 3. Signaux Stratégie Z. Z. (Pastilles Achat / Vente Directe / Sorties)
-  try {
-    const indZZ = Object.assign({}, (state.indicators && state.indicators.strat_zz) || {});
-    const zzSigs = computeZZSignals(d, indZZ, !!indZZ.strictMode, !!indZZ.strictEmaHa) || [];
-    zzSigs.forEach(s => {
-      allSignals.push({
-        i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
-        t: s.t,
-        price: s.price,
-        dir: s.dir,
-        type: s.isExit ? 'SORTIE' : (s.dir === 1 ? 'ACHAT' : 'VENTE'),
-        tag: s.isExit ? (s.reason || 'Sortie Z.Z.') : (s.dir === 1 ? 'PASTILLE ACHAT' : 'PASTILLE VENTE'),
-        source: 'strat_zz',
-        sourceName: 'Stratégie Z. Z.'
-      });
-    });
-  } catch(e){}
-
-  // 4. Signaux Confluence Triple
-  try {
-    if (typeof computeTripleConfluence === 'function') {
-      const tripSigs = computeTripleConfluence(d, state.indicators?.signal_triple || {}) || [];
-      tripSigs.forEach(s => {
-        allSignals.push({
-          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
-          t: s.t,
-          price: s.price,
-          dir: s.dir,
-          type: s.dir === 1 ? 'ACHAT' : 'VENTE',
-          tag: 'TRIPLE CONFLUENCE',
-          source: 'strat_triple',
-          sourceName: 'Confluence Triple'
-        });
-      });
-    }
-  } catch(e){}
-
-  // 5. Signaux Confluence Standard
-  try {
-    const stdSigs = computeSignals(d, state.indicators?.signal || {}) || [];
-    stdSigs.forEach(s => {
-      allSignals.push({
-        i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
-        t: s.t,
-        price: s.price,
-        dir: s.dir,
-        type: s.dir === 1 ? 'ACHAT' : 'VENTE',
-        tag: 'CONFLUENCE',
-        source: 'strat_confluence',
-        sourceName: 'Confluence Standard'
-      });
-    });
-  } catch(e){}
-
   if(allSignals.length > 0){
     alertNewPhoneSignals(allSignals, state.data);
   }
 }
+
+window.testerNotificationNavigateur = function() {
+  if (!('Notification' in window)) {
+    toast('❌ Les notifications ne sont pas supportées par ce navigateur.', '#FF5252');
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    try { beep(); } catch(e){}
+    try {
+      const notif = new Notification('🟢 Test Réussi — Lumen Charts (Mac)', {
+        body: 'Vos notifications navigateur Chrome / Mac fonctionnent parfaitement !',
+        requireInteraction: true
+      });
+      notif.onclick = function() { window.focus(); try { this.close(); }catch(e){} };
+      toast('🔔 Notification envoyée avec succès sur votre écran Mac !', '#10B981');
+    } catch(e) {
+      toast('Erreur notification: ' + e.message, '#FF5252');
+    }
+  } else if (Notification.permission === 'denied') {
+    toast('❌ Notifications bloquées dans Chrome. Cliquez sur le cadenas à gauche de l\'URL pour Autoriser.', '#FF5252');
+  } else {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        window.testerNotificationNavigateur();
+      } else {
+        toast('⚠️ Autorisation refusée pour les notifications.', '#F59E0B');
+      }
+    });
+  }
+};
 
 
 /* ---------- Signaux de confluence (façon flèches d'achat/vente) ---------- */
@@ -30986,7 +30967,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1780';
+  window.__LUMEN_BUILD = 'B-1708-1790';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
