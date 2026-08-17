@@ -492,7 +492,7 @@ footer{
   <button class="btn" id="collapse-panes-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
   </button>
-  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2255</span>
+  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2317</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:3px">⇩ FORCER</button>
 
@@ -11832,13 +11832,13 @@ canvas.addEventListener('touchstart',e=>{
       mid:(a.x+b.x)/2, count:state.view.count, start:state.view.start,
       lo:state.yScale.lo, hi:state.yScale.hi};
   }
-},{passive:false});
+},{passive:true});
 canvas.addEventListener('touchmove',e=>{
   if(touch&&e.touches.length===1){
     const {x,y}=tpos(e.touches[0]);
     // mouvement franc avant l'appui long -> c'est un déplacement, on annule le minuteur
     if(lpTimer&&(Math.abs(x-touch.sx)>10||Math.abs(y-touch.sy)>10)){clearTimeout(lpTimer);lpTimer=null;}
-    if(touch.mode==='xhair'){ state.mouse={x,y}; scheduleRender(); if(e.cancelable)e.preventDefault(); return; }
+    if(touch.mode==='xhair'){ state.mouse={x,y}; scheduleRender(); return; }
     if(touch.mode.startsWith('resize:')){
       const key=touch.mode.slice(7);
       state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,touch.paneH-(y-touch.y)));
@@ -11883,7 +11883,6 @@ canvas.addEventListener('touchmove',e=>{
       }
     }
     scheduleRender();
-    if(e.cancelable) e.preventDefault();
   }else if(pinch&&e.touches.length===2){
     const a=tpos(e.touches[0]), b=tpos(e.touches[1]);
     const ndx=Math.abs(a.x-b.x)||1, ndy=Math.abs(a.y-b.y)||1;
@@ -11901,15 +11900,14 @@ canvas.addEventListener('touchmove',e=>{
       state.yScale.lo=c-r; state.yScale.hi=c+r;
     }
     scheduleRender();
-    if(e.cancelable) e.preventDefault();
   }
-},{passive:false});
+},{passive:true});
 canvas.addEventListener('touchend',()=>{
   if(touch&&touch.mode&&touch.mode.startsWith('resize:'))saveConfig();
   clearTimeout(lpTimer); lpTimer=null;
   if(touch&&touch.mode==='xhair'&&!state.xhairMode){ state.mouse=null; scheduleRender(); }
   touch=null;pinch=null;
-},{passive:false});
+},{passive:true});
 
 /* ---------- Menu indicateurs & Menu Outils ---------- */
 const btnInd=document.getElementById('btn-ind'), menu=document.getElementById('ind-menu');
@@ -30955,7 +30953,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2255';
+  window.__LUMEN_BUILD = 'B-1708-2317';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
