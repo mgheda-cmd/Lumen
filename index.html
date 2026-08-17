@@ -15912,12 +15912,9 @@ function sendWhatsAppNotification(text, source){
 
 function sendTelegramNotification(text, source, options){
   const cfg = getPhoneNotifConfig();
-  const provenance = source || 'strat_mm';
-  if(cfg.mexcOnly !== false && provenance !== 'mexc' && provenance !== 'strat_mm' && provenance !== 'test'){
-    return Promise.resolve({ ok: false, description: 'Filtré : notifications limitées à la Stratégie MM' });
+  if(!cfg.telegramToken || !cfg.telegramChatId) {
+    return Promise.resolve({ ok: false, description: 'Token ou Chat ID manquant' });
   }
-
-  if(!cfg.telegramToken || !cfg.telegramChatId) return Promise.resolve({ ok: false, description: 'Token ou Chat ID manquant' });
   const url = `https://api.telegram.org/bot${cfg.telegramToken.trim()}/sendMessage`;
 
   const payload = {
@@ -16272,9 +16269,6 @@ function alertNewPhoneSignals(sigs, d){
     if(isExit && !cfg.exitAlerts) continue;
 
     const sigIdx = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
-    // Ignorer la bougie EN COURS (non clôturée)
-    if(lastCandleIdx >= 0 && sigIdx === lastCandleIdx) continue;
-
     const sigTime = sig.t || (sigIdx != null && d[sigIdx] ? d[sigIdx].t : 0);
     if(sigTime && (now - sigTime > maxAge)) continue;
 
@@ -30907,7 +30901,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1910';
+  window.__LUMEN_BUILD = 'B-1708-1920';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
