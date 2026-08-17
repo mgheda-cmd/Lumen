@@ -19221,7 +19221,7 @@ function computeZZ2Signals(d, ind, strictMode, strictEmaHa){
   ind = ind || {};
   const isStrict = (strictMode !== undefined) ? !!strictMode : !!(ind.strictMode);
   const isStrictEmaHa = (strictEmaHa !== undefined) ? !!strictEmaHa : !!(ind.strictEmaHa);
-  const invertSignal = (ind && ind.invertSignal !== undefined) ? !!ind.invertSignal : (state && state.indicators && state.indicators.strat_zz && state.indicators.strat_zz.invertSignal !== undefined ? !!state.indicators.strat_zz.invertSignal : true);
+  const invertSignal = (ind && ind.invertSignal !== undefined) ? !!ind.invertSignal : (state && state.indicators && state.indicators.strat_zz2 && state.indicators.strat_zz2.invertSignal !== undefined ? !!state.indicators.strat_zz2.invertSignal : true);
   /* cloudTrigger : le signal se déclenche sur le croisement du Nuage EMA
      (calculé sur les bougies de base, jamais décalé), les trois autres
      conditions servant d'autorisation. Supprime l'attente de clôture HTF. */
@@ -29733,7 +29733,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-0215';
+  window.__LUMEN_BUILD = 'B-1708-0330';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
