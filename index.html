@@ -16149,20 +16149,29 @@ function triggerMobileNotification(title, body, sig){
   const firstLine = body ? body.split('\n')[0] : '';
   toast(`🔔 [${nowStr}] ${title} : ${firstLine}`, '#00E5FF');
 
-  // 1. Notification Navigateur Prioritaire (Mac / Chrome)
+  // 1. Notification Navigateur Prioritaire (Mac / Chrome & Raccourci iPhone PWA)
   if('Notification' in window) {
     if(Notification.permission === 'granted') {
-      try {
-        const notif = new Notification(title, {
-          body: `${nowStr} - ${body}`,
-          requireInteraction: true,
-          silent: false
+      if('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(title, {
+            body: `${nowStr} - ${body}`,
+            tag: 'lumen-mm-' + Date.now(),
+            requireInteraction: true,
+            silent: false
+          });
+        }).catch(() => {
+          try {
+            const notif = new Notification(title, { body: `${nowStr} - ${body}`, requireInteraction: true, silent: false });
+            notif.onclick = function() { window.focus(); try { this.close(); } catch(e){} };
+          } catch(e){}
         });
-        notif.onclick = function() {
-          window.focus();
-          try { this.close(); } catch(e){}
-        };
-      } catch(e){}
+      } else {
+        try {
+          const notif = new Notification(title, { body: `${nowStr} - ${body}`, requireInteraction: true, silent: false });
+          notif.onclick = function() { window.focus(); try { this.close(); } catch(e){} };
+        } catch(e){}
+      }
     } else if(Notification.permission === 'default') {
       try { Notification.requestPermission(); } catch(e){}
     }
@@ -31006,7 +31015,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1800';
+  // Enregistrement du Service Worker PWA (iPhone Raccourci Écran d'accueil & Android)
+  if ('serviceWorker' in navigator) {
+    try {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    } catch(e){}
+  }
+
+  window.__LUMEN_BUILD = 'B-1708-1810';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
