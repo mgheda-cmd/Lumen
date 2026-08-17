@@ -4828,22 +4828,15 @@ function mergeConfig(c){
       &&(x.side==='long'||x.side==='short')&&/^[A-Z0-9]{5,20}$/.test(x.sym||'')):[];
     paper.history=Array.isArray(c.paper.history)?c.paper.history.slice(0,50):[];
 
-    // Restauration automatique du trade VENTE écourté par le bug de simulation à 74k
-    if (paper.positions.length === 0 && paper.history.length > 0) {
-      const badH = paper.history.find(h => h && h.exit > 70000 && h.entry < 66000);
-      if (badH) {
-        paper.positions.push({
-          sym: badH.sym || 'BTCUSDT',
-          side: badH.side || 'short',
-          entry: badH.entry || 63498.80,
-          qty: badH.qty || 0.02,
-          notional: badH.notional || (0.02 * (badH.entry || 63498.80)),
-          margin: badH.margin || 6.35,
-          lev: badH.lev || 200,
-          t: badH.t0 || (Date.now() - 3600000)
-        });
-        paper.cash = Math.max(100, (paper.cash || 93.40) + (badH.margin || 6.35));
-        paper.history = paper.history.filter(h => h !== badH);
+    // Nettoyage et restauration du solde suite aux micro-boucles
+    if (paper && paper.history) {
+      const nowTs = Date.now();
+      const loopTrades = paper.history.filter(h => h && Math.abs((h.t1 || nowTs) - (h.t0 || nowTs)) < 5000);
+      if (loopTrades.length > 2) {
+        let totalLoss = 0;
+        loopTrades.forEach(h => { totalLoss += (h.pnl || 0); });
+        paper.history = paper.history.filter(h => !loopTrades.includes(h));
+        paper.cash = Math.max(100, (paper.cash || 100) - totalLoss);
       }
     }
   }
@@ -14144,6 +14137,10 @@ function checkAutoTrade(inputSignals){
       }
     } catch(e){}
 
+    // Anti-boucle : Cooldown minimum de 5 secondes entre deux actions de trading
+    window.__lastAutoTradeActionTime = window.__lastAutoTradeActionTime || 0;
+    if (Date.now() - window.__lastAutoTradeActionTime < 5000) return;
+
     if (!sigT) return; // STRICTEMENT AUCUNE PASTILLE SUR LA DERNIÈRE BOUGIE -> NE RIEN DÉCLENCHER !
 
     // Récupération du filtre de direction si le bot réel est configuré
@@ -14162,8 +14159,14 @@ function checkAutoTrade(inputSignals){
       buySignal = false;
     }
 
-    // Une pastille opposée ferme la position en cours
-    if(existingPos && !exitTriggered){
+    // Un trade ne peut JAMAIS être fermé par un signal survenu sur la même bougie ou avant son ouverture
+    const posEntryTime = (existingPos && (existingPos.t || existingPos.openedAt)) || 0;
+    if (existingPos && sigT <= posEntryTime) {
+      exitTriggered = false;
+    }
+
+    // Une pastille opposée ferme la position en cours (uniquement si survenue après l'entrée)
+    if(existingPos && !exitTriggered && sigT > posEntryTime){
       if(existingPos.side === 'long' && sellSignal){ exitTriggered = true; exitReason = 'Pastille Vente MM (Retournement)'; }
       if(existingPos.side === 'short' && buySignal){ exitTriggered = true; exitReason = 'Pastille Achat MM (Retournement)'; }
     }
@@ -14172,8 +14175,9 @@ function checkAutoTrade(inputSignals){
 
     if (existingPos) {
     if (exitTriggered) {
-      const sigId = `${state.symbol}|${state.tf}|${sigT}|exit|${exitReason}`;
-      if (autoTradeLastExecutedSigId !== sigId) {
+      const sigId = `${state.symbol}|${state.tf}|${sigT}|exit|${existingPos.side}|${exitReason}`;
+      if (!autoTradeSeenSet.has(sigId)) {
+        window.__lastAutoTradeActionTime = Date.now();
         autoTradeLastExecutedSigId = sigId;
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
@@ -14230,7 +14234,8 @@ function checkAutoTrade(inputSignals){
 
     if (buySignal) {
       const sigId = `${state.symbol}|${state.tf}|${sigT}|buy`;
-      if (autoTradeLastExecutedSigId !== sigId) {
+      if (!autoTradeSeenSet.has(sigId)) {
+        window.__lastAutoTradeActionTime = Date.now();
         autoTradeLastExecutedSigId = sigId;
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
@@ -14285,7 +14290,8 @@ function checkAutoTrade(inputSignals){
       }
     } else if (sellSignal) {
       const sigId = `${state.symbol}|${state.tf}|${sigT}|sell`;
-      if (autoTradeLastExecutedSigId !== sigId) {
+      if (!autoTradeSeenSet.has(sigId)) {
+        window.__lastAutoTradeActionTime = Date.now();
         autoTradeLastExecutedSigId = sigId;
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
@@ -30970,7 +30976,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1820';
+  window.__LUMEN_BUILD = 'B-1708-1830';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
