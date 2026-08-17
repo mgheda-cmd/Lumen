@@ -2127,31 +2127,34 @@ footer{
       <!-- Section WhatsApp Mobile -->
       <div style="background:var(--panel-2,#0F172A);border:1.5px solid #25D366;border-radius:8px;padding:9px 10px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:11.5px;font-weight:800;color:#25D366">💬 WhatsApp (Push iPhone & Android)</span>
-          <span style="font-size:9.5px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(37,211,102,0.18);color:#25D366">CallMeBot API</span>
+          <span style="font-size:11.5px;font-weight:800;color:#25D366">💬 WhatsApp (Passerelle Bot)</span>
+          <select id="notif-wa-provider" style="font-size:9.5px;padding:2px 6px;border-radius:4px;background:#0F172A;border:1px solid #25D366;color:#25D366;font-weight:700">
+            <option value="callmebot">CallMeBot (3 Serveurs)</option>
+            <option value="textmebot">TextMeBot (textmebot.com)</option>
+          </select>
         </div>
         <div style="font-size:10.5px;color:#94A3B8;margin-bottom:6px;line-height:1.3">
-          Reçois toutes les alertes de pastilles (Entrées, Sorties, Démo) directement sur ton WhatsApp !
+          Reçois toutes les alertes de pastilles (Entrées, Sorties, Démo) sur ton WhatsApp !
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px">
-          <div style="display:flex;gap:4px">
+          <div id="wa-callmebot-links" style="display:flex;gap:4px">
             <a href="https://wa.me/34694234184?text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener" class="btn" style="flex:1;text-align:center;text-decoration:none;font-size:10px;padding:6px 4px;border-color:#25D366;color:#25D366;font-weight:700;background:rgba(37,211,102,0.14)">
-              🟢 Serveur 1 (+34 694)
+              🟢 CallMeBot 1
             </a>
             <a href="https://wa.me/34644263377?text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener" class="btn" style="flex:1;text-align:center;text-decoration:none;font-size:10px;padding:6px 4px;border-color:#25D366;color:#25D366;font-weight:700;background:rgba(37,211,102,0.14)">
-              🟢 Serveur 2 (+34 644)
+              🟢 CallMeBot 2
             </a>
-            <a href="https://wa.me/34621331709?text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener" class="btn" style="flex:1;text-align:center;text-decoration:none;font-size:10px;padding:6px 4px;border-color:#25D366;color:#25D366;font-weight:700;background:rgba(37,211,102,0.14)">
-              🟢 Serveur 3 (+34 621)
+            <a href="https://textmebot.com" target="_blank" rel="noopener" class="btn" style="flex:1;text-align:center;text-decoration:none;font-size:10px;padding:6px 4px;border-color:#38BDF8;color:#38BDF8;font-weight:700;background:rgba(56,189,248,0.14)">
+              🌐 TextMeBot.com
             </a>
           </div>
           <div style="font-size:9.5px;color:#94A3B8;line-height:1.3;background:rgba(15,23,42,0.6);padding:4px 6px;border-radius:4px">
-            💡 Cliquez sur un des 3 serveurs pour envoyer : <code>I allow callmebot to send me messages</code> et recevoir votre clé API.
+            💡 Pour <b>TextMeBot</b> : Allez sur <a href="https://textmebot.com" target="_blank" style="color:#38BDF8">textmebot.com</a> ➔ "Request APIKey" pour obtenir une clé par email.
           </div>
           <div style="display:flex;gap:4px;margin-top:2px">
             <input id="notif-wa-phone" type="tel" placeholder="Votre Numéro (+33... ou +216...)"
               style="flex:1;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
-            <input id="notif-wa-apikey" type="text" placeholder="Clé API reçue sur WhatsApp"
+            <input id="notif-wa-apikey" type="text" placeholder="Clé API reçue"
               style="flex:1;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
           </div>
         </div>
@@ -12147,6 +12150,7 @@ function loadPhoneNotifUI(){
   if(document.getElementById('notif-type-mm-pivots')) document.getElementById('notif-type-mm-pivots').checked = cfg.mmPivotsAlerts !== false;
   if(document.getElementById('notif-tg-token')) document.getElementById('notif-tg-token').value = cfg.telegramToken || '';
   if(document.getElementById('notif-tg-chatid')) document.getElementById('notif-tg-chatid').value = cfg.telegramChatId || '';
+  if(document.getElementById('notif-wa-provider')) document.getElementById('notif-wa-provider').value = cfg.waProvider || 'callmebot';
   if(document.getElementById('notif-wa-phone')) document.getElementById('notif-wa-phone').value = cfg.waPhone || '';
   if(document.getElementById('notif-wa-apikey')) document.getElementById('notif-wa-apikey').value = cfg.waApiKey || '';
   if(document.getElementById('notif-webhook-url')) document.getElementById('notif-webhook-url').value = cfg.webhookUrl || '';
@@ -12165,6 +12169,7 @@ function savePhoneNotifUI(){
     mmPivotsAlerts: document.getElementById('notif-type-mm-pivots')?.checked ?? true,
     telegramToken: document.getElementById('notif-tg-token')?.value.trim() ?? '',
     telegramChatId: document.getElementById('notif-tg-chatid')?.value.trim() ?? '',
+    waProvider: document.getElementById('notif-wa-provider')?.value ?? 'callmebot',
     waPhone: document.getElementById('notif-wa-phone')?.value.trim() ?? '',
     waApiKey: document.getElementById('notif-wa-apikey')?.value.trim() ?? '',
     webhookUrl: document.getElementById('notif-webhook-url')?.value.trim() ?? '',
@@ -15504,7 +15509,15 @@ function sendWhatsAppNotification(text, source){
     .replace(/<i>(.*?)<\/i>/gi, '_$1_')
     .replace(/<code>(.*?)<\/code>/gi, '`$1`')
     .replace(/<[^>]*>/g, '');
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(plain)}&apikey=${encodeURIComponent(cfg.waApiKey.trim())}`;
+
+  const provider = cfg.waProvider || 'callmebot';
+  let url = '';
+  if(provider === 'textmebot'){
+    url = `https://api.textmebot.com/send.php?recipient=${encodeURIComponent(phone)}&apikey=${encodeURIComponent(cfg.waApiKey.trim())}&text=${encodeURIComponent(plain)}`;
+  } else {
+    url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(plain)}&apikey=${encodeURIComponent(cfg.waApiKey.trim())}`;
+  }
+
   return fetch(url, { mode: 'no-cors' })
     .then(() => ({ ok: true }))
     .catch(err => ({ ok: false, description: err.message || 'Erreur WhatsApp' }));
@@ -30320,7 +30333,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1550';
+  window.__LUMEN_BUILD = 'B-1708-1560';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
