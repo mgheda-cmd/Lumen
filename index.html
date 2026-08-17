@@ -30,6 +30,119 @@
   --grid:rgba(224,227,235,.8); --chip-bg:rgba(255,255,255,.92);
 }
 *{margin:0;padding:0;box-sizing:border-box}
+#mms-bo-hud.collapsed {
+  width: auto;
+  min-width: 240px;
+}
+#mms-bo-hud.collapsed .mms-bo-body {
+  display: none !important;
+}
+#mms-bo-hud.hidden {
+  display: none !important;
+}
+.mms-bo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+  border-top-left-radius: 9px;
+  border-top-right-radius: 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  gap: 8px;
+}
+.mms-bo-body {
+  padding: 6px 8px 8px;
+  overflow-x: auto;
+  max-height: 70vh;
+  scrollbar-width: thin;
+}
+.mms-bo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.mms-bo-table th {
+  padding: 5px 4px;
+  text-align: center;
+  color: #94A3B8;
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.6);
+  white-space: nowrap;
+}
+.mms-bo-table td {
+  padding: 4px 4px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
+  font-size: 10px;
+  vertical-align: middle;
+}
+.mms-bo-table tr.current-tf {
+  background: rgba(0, 229, 255, 0.15) !important;
+  box-shadow: inset 3px 0 0 #00E5FF;
+}
+.mms-bo-table tr.tf-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.mms-bo-table tr.tf-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.mms-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 9px;
+  line-height: 1.2;
+}
+.mms-badge-bull {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.mms-badge-bear {
+  background: rgba(239, 68, 68, 0.2);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.mms-badge-neutral {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94A3B8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+.mms-badge-ob {
+  background: rgba(245, 158, 11, 0.2);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.mms-bo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 3px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  color: #94A3B8;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+#mms-bo-hud {
+    width: calc(100% - 16px);
+    right: 8px;
+    top: 8px;
+  }
+
 html,body{height:100%}
 *{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent}
   input,textarea{-webkit-user-select:text; user-select:text}
@@ -2323,6 +2436,40 @@ footer{
     <div id="paper-hist"></div>
   </div>
 </div>
+<div id="mms-bo-hud" class="mms-bo-table-wrap">
+    <div class="mms-bo-header" onclick="toggleMmsBoCollapse(event)">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px">📊</span>
+        <span style="font-weight:800;font-size:11.5px;letter-spacing:0.3px;color:#38BDF8">MATRICE MMS & BO</span>
+        <span id="mms-bo-sym-badge" style="font-size:9.5px;background:rgba(56,189,248,0.2);color:#38BDF8;padding:1px 5px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-weight:700">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button id="mms-bo-btn-min" onclick="minimizeMmsBoHud(event)" title="Réduire / Déplier" style="background:none;border:none;color:#94A3B8;cursor:pointer;font-size:12px;padding:2px 5px;line-height:1;border-radius:3px">− </button>
+        <button onclick="closeMmsBoHud(event)" title="Fermer le tableau" style="background:none;border:none;color:#94A3B8;cursor:pointer;font-size:11px;padding:2px 5px;line-height:1;border-radius:3px">✕</button>
+      </div>
+    </div>
+    <div class="mms-bo-body" id="mms-bo-body-content">
+      <table class="mms-bo-table">
+        <thead>
+          <tr>
+            <th>UT</th>
+            <th>MMS (Structure)</th>
+            <th>BO (BreakOut/BOS)</th>
+            <th>OB (Order Block)</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody id="mms-bo-tbody">
+          <tr><td colspan="5" style="text-align:center;padding:10px;color:#94A3B8">Calcul des structures multi-TF en cours...</td></tr>
+        </tbody>
+      </table>
+      <div class="mms-bo-footer" id="mms-bo-footer">
+        <span id="mms-bo-consensus">Chargement des données...</span>
+        <span style="font-size:9px;color:#64748B">Cliquez sur une UT pour changer de graphique</span>
+      </div>
+    </div>
+  </div>
+
 
 <footer>
   <span>Molette : zoom</span>
@@ -7257,6 +7404,9 @@ function render(){
     ctx.restore();
   }
 
+  if(typeof updateMmsBoTable === 'function' && typeof mmsBoHudVisible !== 'undefined' && mmsBoHudVisible){
+    try{ updateMmsBoTable(); }catch(e){}
+  }
   updateChips();
   updatePaper();
   saveView();
@@ -25471,6 +25621,383 @@ window.fermerBTMM = function(){
     if(m) m.style.display = 'none';
   }
 
+
+/* ============ TABLEAU DE BORD MULTI-UNITÉS DE TEMPS ============
+   Repris du dépôt Google- du 17 août. Pour chaque unité de temps :
+   la structure et la pente de la ligne MM, les cassures de structure,
+   les blocs d'ordres, et une confluence globale.
+
+   Panneau flottant, repliable, chaque ligne bascule le graphique sur
+   son unité. Il ne fait que lire : aucun calcul d'indicateur n'est
+   modifié, rien de ce que nous avons corrigé n'est touché.
+   ================================================================ */
+
+
+let mmsBoHudVisible = true;
+let mmsBoHudCollapsed = false;
+
+const DASHBOARD_TFS = [
+  { key: 1, label: '1m', name: '1m' },
+  { key: 3, label: '3m', name: '3m' },
+  { key: 5, label: '5m', name: '5m' },
+  { key: 15, label: '15m', name: '15m' },
+  { key: 30, label: '30m', name: '30m' },
+  { key: 60, label: '1H', name: '1h' },
+  { key: 240, label: '4H', name: '4h' },
+  { key: 1440, label: '1J', name: '1d' }
+];
+
+function computeMmsBoForTf(tf) {
+  tf = +tf;
+  let bars = null;
+  if (tf === state.tf) {
+    bars = state.data;
+  } else {
+    bars = (typeof getMTFBars === 'function') ? getMTFBars(tf) : (mtfStore && mtfStore.data ? mtfStore.data[tf] : null);
+    if ((!bars || !bars.length) && state.data && state.data.length && state.tf < tf) {
+      bars = aggregateData(state.data, tf);
+    }
+  }
+
+  if (!bars || bars.length < 5) {
+    if (tf !== state.tf && typeof ensureMTF === 'function') ensureMTF(tf);
+    return null;
+  }
+
+  const N = bars.length;
+  const lastBar = bars[N - 1];
+  const curPrice = lastBar.c;
+
+  // 1. MMS (Structure MM, Shift, Pente)
+  let mmsTrend = 'NEUTRAL';
+  let mmsBadgeClass = 'mms-badge-neutral';
+  let mmsLabel = '⚪ Neutre';
+  let mmsDetail = '—';
+
+  try {
+    const mmRes = computeMMSignals(bars, state.indicators.strat_mm);
+    if (mmRes && mmRes.line && mmRes.line.length >= 2) {
+      const vCurr = mmRes.line[N - 1] ?? mmRes.line[mmRes.line.length - 1];
+      const vPrev = mmRes.line[N - 2] ?? mmRes.line[mmRes.line.length - 2];
+      const dirCurr = (mmRes.dir && mmRes.dir.length) ? (mmRes.dir[N - 1] ?? mmRes.dir[mmRes.dir.length - 1]) : null;
+
+      const isUp = (dirCurr === 1) || (vCurr != null && vPrev != null && vCurr >= vPrev);
+      const isDn = (dirCurr === -1) || (vCurr != null && vPrev != null && vCurr < vPrev);
+
+      if (isUp) {
+        mmsTrend = 'BULL';
+        mmsBadgeClass = 'mms-badge-bull';
+        mmsLabel = '🟢 Pente +';
+      } else if (isDn) {
+        mmsTrend = 'BEAR';
+        mmsBadgeClass = 'mms-badge-bear';
+        mmsLabel = '🔴 Pente −';
+      }
+
+      if (mmRes.signals && mmRes.signals.length) {
+        const lastSig = mmRes.signals[mmRes.signals.length - 1];
+        const age = N - 1 - (lastSig.i ?? (lastSig.t ? idxOfTime(lastSig.t) : 0));
+        if (age >= 0 && age <= 12) {
+          mmsDetail = lastSig.isBuy ? `🟢 Achat (${age}b)` : `🔴 Vente (${age}b)`;
+        }
+      }
+      if (mmsDetail === '—' && mmRes.creuxList && mmRes.creuxList.length) {
+        const lastCr = mmRes.creuxList[mmRes.creuxList.length - 1];
+        const ageCr = N - 1 - (lastCr.i ?? 0);
+        if (ageCr >= 0 && ageCr <= 10) mmsDetail = `🟢 Creux (${ageCr}b)`;
+      }
+      if (mmsDetail === '—' && mmRes.sommetsList && mmRes.sommetsList.length) {
+        const lastSm = mmRes.sommetsList[mmRes.sommetsList.length - 1];
+        const ageSm = N - 1 - (lastSm.i ?? 0);
+        if (ageSm >= 0 && ageSm <= 10) mmsDetail = `🔴 Sommet (${ageSm}b)`;
+      }
+    }
+  } catch (e) {}
+
+  // 2. BO (BreakOut / BOS Structure)
+  let boTrend = 'NEUTRAL';
+  let boBadgeClass = 'mms-badge-neutral';
+  let boLabel = '—';
+  let boDetail = '—';
+
+  try {
+    const tfName = TF_MAP[tf] || (tf + 'm');
+    const bosList = calc.bosOne(bars, tfName, tf);
+    if (bosList && bosList.length) {
+      const lastBos = bosList[bosList.length - 1];
+      const isUp = !!lastBos.up;
+      boTrend = isUp ? 'BULL' : 'BEAR';
+      boBadgeClass = isUp ? 'mms-badge-bull' : 'mms-badge-bear';
+      const kind = lastBos.kind || (lastBos.mss ? 'MSS' : 'BOS');
+      boLabel = isUp ? `🟢 ${kind} ▲` : `🔴 ${kind} ▼`;
+      if (lastBos.lvl && curPrice) {
+        const diffPct = ((curPrice - lastBos.lvl) / curPrice) * 100;
+        boDetail = `${lastBos.lvl > 100 ? lastBos.lvl.toFixed(1) : lastBos.lvl.toFixed(4)} (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%)`;
+      }
+    }
+  } catch (e) {}
+
+  // 3. OB (Order Blocks)
+  let obLabel = '—';
+  let obBadgeClass = 'mms-badge-neutral';
+  let obType = 'NONE';
+  try {
+    const tfName = TF_MAP[tf] || (tf + 'm');
+    const obList = calc.obOne(bars, tfName, tf);
+    if (obList && obList.length) {
+      let nearestOb = null;
+      let minDist = Infinity;
+      for (const ob of obList) {
+        const mid = (ob.top + ob.bot) / 2;
+        const d = Math.abs(curPrice - mid);
+        if (d < minDist) {
+          minDist = d;
+          nearestOb = ob;
+        }
+      }
+      if (nearestOb) {
+        const inZone = curPrice >= nearestOb.bot && curPrice <= nearestOb.top;
+        obType = nearestOb.type;
+        if (inZone) {
+          obBadgeClass = 'mms-badge-ob';
+          obLabel = obType === 'bull' ? '⚡ Dans OB Bull' : '⚡ Dans OB Bear';
+        } else {
+          obBadgeClass = obType === 'bull' ? 'mms-badge-bull' : 'mms-badge-bear';
+          const lvl = obType === 'bull' ? nearestOb.top : nearestOb.bot;
+          obLabel = obType === 'bull' ? `📦 Bull (${lvl > 100 ? lvl.toFixed(1) : lvl.toFixed(4)})` : `📦 Bear (${lvl > 100 ? lvl.toFixed(1) : lvl.toFixed(4)})`;
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 4. Confluence & Signal Global
+  let confBadgeClass = 'mms-badge-neutral';
+  let confText = '⚪ NEUTRE';
+  let score = 0;
+  if (mmsTrend === 'BULL') score++;
+  if (mmsTrend === 'BEAR') score--;
+  if (boTrend === 'BULL') score++;
+  if (boTrend === 'BEAR') score--;
+  if (obType === 'bull') score += 0.5;
+  if (obType === 'bear') score -= 0.5;
+
+  if (score >= 1.5) {
+    confBadgeClass = 'mms-badge-bull';
+    confText = '🟢 ACHAT';
+  } else if (score <= -1.5) {
+    confBadgeClass = 'mms-badge-bear';
+    confText = '🔴 VENTE';
+  } else if (score > 0) {
+    confBadgeClass = 'mms-badge-bull';
+    confText = '🟢 HAUSSE';
+  } else if (score < 0) {
+    confBadgeClass = 'mms-badge-bear';
+    confText = '🔴 BAISSE';
+  }
+
+  return {
+    tf,
+    tfName: TF_MAP[tf] || (tf + 'm'),
+    curPrice,
+    mmsTrend,
+    mmsBadgeClass,
+    mmsLabel,
+    mmsDetail,
+    boTrend,
+    boBadgeClass,
+    boLabel,
+    boDetail,
+    obLabel,
+    obBadgeClass,
+    obType,
+    confBadgeClass,
+    confText,
+    score
+  };
+}
+
+function updateMmsBoTable() {
+  if (!mmsBoHudVisible) return;
+  const tbody = document.getElementById('mms-bo-tbody');
+  if (!tbody) return;
+
+  const symBadge = document.getElementById('mms-bo-sym-badge');
+  if (symBadge && state.symbol) {
+    const lastP = (state.data && state.data.length) ? state.data[state.data.length - 1].c : 0;
+    symBadge.textContent = `${state.symbol} · ${lastP ? fmt(lastP) : ''}`;
+  }
+
+  let bullCount = 0;
+  let bearCount = 0;
+  let neutralCount = 0;
+
+  let rowsHtml = '';
+  DASHBOARD_TFS.forEach(item => {
+    const tf = item.key;
+    const isCurrent = (state.tf === tf);
+    const data = computeMmsBoForTf(tf);
+
+    if (!data) {
+      rowsHtml += `
+        <tr class="tf-row ${isCurrent ? 'current-tf' : ''}" onclick="switchTimeFrameFromHud(${tf})" title="Cliquez pour afficher cette UT">
+          <td style="font-weight:800;color:${isCurrent ? '#00E5FF' : '#E2E8F0'}">${item.label} ${isCurrent ? '📍' : ''}</td>
+          <td colspan="4" style="color:#64748B;font-style:italic;font-size:9.5px">Chargement des données...</td>
+        </tr>
+      `;
+      neutralCount++;
+      return;
+    }
+
+    if (data.score > 0) bullCount++;
+    else if (data.score < 0) bearCount++;
+    else neutralCount++;
+
+    rowsHtml += `
+      <tr class="tf-row ${isCurrent ? 'current-tf' : ''}" onclick="switchTimeFrameFromHud(${tf})" title="Cliquer pour basculer sur l'UT ${item.label}">
+        <td style="font-weight:800;color:${isCurrent ? '#00E5FF' : '#E2E8F0'}">
+          ${item.label} ${isCurrent ? '📍' : ''}
+        </td>
+        <td>
+          <span class="mms-badge ${data.mmsBadgeClass}">${data.mmsLabel}</span>
+          ${data.mmsDetail !== '—' ? `<div style="font-size:8.5px;color:#94A3B8;margin-top:1px">${data.mmsDetail}</div>` : ''}
+        </td>
+        <td>
+          <span class="mms-badge ${data.boBadgeClass}">${data.boLabel}</span>
+          ${data.boDetail !== '—' ? `<div style="font-size:8.5px;color:#94A3B8;margin-top:1px">${data.boDetail}</div>` : ''}
+        </td>
+        <td>
+          <span class="mms-badge ${data.obBadgeClass}">${data.obLabel}</span>
+        </td>
+        <td>
+          <span class="mms-badge ${data.confBadgeClass}">${data.confText}</span>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = rowsHtml;
+
+  const consensusEl = document.getElementById('mms-bo-consensus');
+  if (consensusEl) {
+    let consensusText = '';
+    if (bullCount >= 5) consensusText = `🔥 <b>Forte Confluence Achat</b> (${bullCount}🟢 / ${bearCount}🔴)`;
+    else if (bearCount >= 5) consensusText = `⚡ <b>Forte Confluence Vente</b> (${bearCount}🔴 / ${bullCount}🟢)`;
+    else if (bullCount > bearCount) consensusText = `📈 <b>Tendance Achat</b> (${bullCount}🟢 / ${bearCount}🔴 / ${neutralCount}⚪)`;
+    else if (bearCount > bullCount) consensusText = `📉 <b>Tendance Vente</b> (${bearCount}🔴 / ${bullCount}🟢 / ${neutralCount}⚪)`;
+    else consensusText = `⚖️ <b>Marché Neutre / Équilibré</b> (${bullCount}🟢 / ${bearCount}🔴 / ${neutralCount}⚪)`;
+    consensusEl.innerHTML = consensusText;
+  }
+}
+
+function toggleMmsBoHud() {
+  mmsBoHudVisible = !mmsBoHudVisible;
+  try { localStorage.setItem('lumenMmsBoVis', mmsBoHudVisible ? '1' : '0'); } catch (e) {}
+  applyMmsBoHudState();
+  if (mmsBoHudVisible) updateMmsBoTable();
+}
+
+function closeMmsBoHud(e) {
+  if (e) e.stopPropagation();
+  mmsBoHudVisible = false;
+  try { localStorage.setItem('lumenMmsBoVis', '0'); } catch (e) {}
+  applyMmsBoHudState();
+}
+
+function minimizeMmsBoHud(e) {
+  if (e) e.stopPropagation();
+  mmsBoHudCollapsed = !mmsBoHudCollapsed;
+  try { localStorage.setItem('lumenMmsBoCol', mmsBoHudCollapsed ? '1' : '0'); } catch (e) {}
+  applyMmsBoHudState();
+}
+
+function toggleMmsBoCollapse(e) {
+  if (e && e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button'))) return;
+  mmsBoHudCollapsed = !mmsBoHudCollapsed;
+  try { localStorage.setItem('lumenMmsBoCol', mmsBoHudCollapsed ? '1' : '0'); } catch (e) {}
+  applyMmsBoHudState();
+}
+
+function applyMmsBoHudState() {
+  const hud = document.getElementById('mms-bo-hud');
+  const btn = document.getElementById('btn-header-toggle-mmsbo');
+  if (hud) {
+    hud.classList.toggle('hidden', !mmsBoHudVisible);
+    hud.classList.toggle('collapsed', !!mmsBoHudCollapsed);
+  }
+  if (btn) {
+    btn.textContent = mmsBoHudVisible ? '📊 MMS & BO: ON' : '📊 MMS & BO: OFF';
+    btn.style.background = mmsBoHudVisible ? 'rgba(56,189,248,0.22)' : 'rgba(255,255,255,0.08)';
+    btn.style.borderColor = mmsBoHudVisible ? '#38BDF8' : '#94A3B8';
+    btn.style.color = mmsBoHudVisible ? '#38BDF8' : '#94A3B8';
+  }
+  const minBtn = document.getElementById('mms-bo-btn-min');
+  if (minBtn) {
+    minBtn.textContent = mmsBoHudCollapsed ? '▲' : '−';
+    minBtn.title = mmsBoHudCollapsed ? 'Déplier le tableau' : 'Réduire le tableau';
+  }
+}
+
+function switchTimeFrameFromHud(tf) {
+  tf = +tf;
+  if (state.tf === tf) return;
+  state.tf = tf;
+  document.querySelectorAll('.tf-group button').forEach(b => {
+    b.classList.toggle('active', +b.dataset.tf === tf);
+  });
+  saveConfig();
+  loadData();
+}
+
+function setStudioStatus(txt, ok) {
+  if (!studioStatusMsg) return;
+  studioStatusMsg.textContent = txt;
+  studioStatusMsg.style.color = ok === false ? '#EF4444' : (ok === true ? '#10B981' : '#94A3B8');
+}
+
+function togglePriceLine() {
+  const mm = state.indicators && state.indicators.strat_mm;
+  const two = state.indicators && state.indicators.two_ind;
+  const mmLineOn = !mm || mm.showLineOnPrice !== false;
+  const twoLineOn = !two || two.showSSWMA !== false;
+  const currentlyOn = (mm && mm.on ? mmLineOn : false) || (two && two.on ? twoLineOn : false) || (mmLineOn || twoLineOn);
+  const nextState = !currentlyOn;
+
+  if (state.indicators.strat_mm) {
+    state.indicators.strat_mm.showLineOnPrice = nextState;
+  }
+  if (state.indicators.two_ind) {
+    state.indicators.two_ind.showSSWMA = nextState;
+  }
+  saveConfig();
+  updatePriceLineToggleButtons();
+  render();
+}
+
+function updatePriceLineToggleButtons() {
+  const mm = state.indicators && state.indicators.strat_mm;
+  const two = state.indicators && state.indicators.two_ind;
+  const mmLineOn = !mm || mm.showLineOnPrice !== false;
+  const twoLineOn = !two || two.showSSWMA !== false;
+  const isLineVisible = (mm && mm.on && mmLineOn) || (two && two.on && twoLineOn) || (mmLineOn && twoLineOn);
+
+  const btnHeader = document.getElementById('btn-header-toggle-line');
+  if (btnHeader) {
+    btnHeader.textContent = isLineVisible ? '📈 Ligne: ON' : '📈 Ligne: OFF';
+    btnHeader.style.background = isLineVisible ? 'rgba(16,185,129,0.18)' : 'rgba(255,255,255,0.08)';
+    btnHeader.style.borderColor = isLineVisible ? '#10B981' : '#94A3B8';
+    btnHeader.style.color = isLineVisible ? '#10B981' : '#94A3B8';
+  }
+
+  const btnMM = document.getElementById('btn-mm-line-toggle');
+  if (btnMM) {
+    btnMM.classList.toggle('on', mmLineOn);
+  }
+  const btnTwo = document.getElementById('btn-twoind-line-toggle');
+  if (btnTwo) {
+    btnTwo.classList.toggle('on', twoLineOn);
+  }
+}
+
 /**
  * Taille de contrat dynamique MEXC Futures
  */
@@ -29195,7 +29722,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1608-2245';
+  window.__LUMEN_BUILD = 'B-1708-0130';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
