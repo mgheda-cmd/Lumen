@@ -2106,6 +2106,10 @@ footer{
             <span style="font-weight:700;color:#00E5FF">⚡ Signaux MM Option 2 - iMACD (Achat & Vente)</span>
           </label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="notif-type-mm-oppose" checked>
+            <span style="font-weight:700;color:#F43F5E">🔄 Sorties MM (Apparition Pastille sens opposé)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
             <input type="checkbox" id="notif-type-mm-pivots" checked>
             <span style="font-weight:700;color:#FCD34D">🏔️ Sorties MM (Sommets ≥ +75 & Creux ≤ -75)</span>
           </label>
@@ -12065,6 +12069,7 @@ function loadPhoneNotifUI(){
   if(document.getElementById('notif-master-enable')) document.getElementById('notif-master-enable').checked = cfg.enabled !== false;
   if(document.getElementById('notif-type-mm-base')) document.getElementById('notif-type-mm-base').checked = cfg.mmBaseAlerts !== false;
   if(document.getElementById('notif-type-mm-opt2')) document.getElementById('notif-type-mm-opt2').checked = cfg.mmOpt2Alerts !== false;
+  if(document.getElementById('notif-type-mm-oppose')) document.getElementById('notif-type-mm-oppose').checked = cfg.mmOpposeAlerts !== false;
   if(document.getElementById('notif-type-mm-pivots')) document.getElementById('notif-type-mm-pivots').checked = cfg.mmPivotsAlerts !== false;
   if(document.getElementById('notif-tg-token')) document.getElementById('notif-tg-token').value = cfg.telegramToken || '';
   if(document.getElementById('notif-tg-chatid')) document.getElementById('notif-tg-chatid').value = cfg.telegramChatId || '';
@@ -12080,6 +12085,7 @@ function savePhoneNotifUI(){
     enabled: document.getElementById('notif-master-enable')?.checked ?? true,
     mmBaseAlerts: document.getElementById('notif-type-mm-base')?.checked ?? true,
     mmOpt2Alerts: document.getElementById('notif-type-mm-opt2')?.checked ?? true,
+    mmOpposeAlerts: document.getElementById('notif-type-mm-oppose')?.checked ?? true,
     mmPivotsAlerts: document.getElementById('notif-type-mm-pivots')?.checked ?? true,
     telegramToken: document.getElementById('notif-tg-token')?.value.trim() ?? '',
     telegramChatId: document.getElementById('notif-tg-chatid')?.value.trim() ?? '',
@@ -12134,7 +12140,7 @@ if(notifBtn && notifMenuEl){
     if(token) verifyTelegramBotToken(token);
   });
 
-  const inputs = ['notif-master-enable', 'notif-type-direct', 'notif-type-full', 'notif-type-ob', 'notif-type-exit', 'notif-tg-token', 'notif-tg-chatid', 'notif-webhook-url', 'notif-sound', 'notif-vibrate'];
+  const inputs = ['notif-master-enable', 'notif-type-mm-base', 'notif-type-mm-opt2', 'notif-type-mm-oppose', 'notif-type-mm-pivots', 'notif-tg-token', 'notif-tg-chatid', 'notif-webhook-url', 'notif-sound', 'notif-vibrate'];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.addEventListener('change', savePhoneNotifUI);
@@ -15367,6 +15373,7 @@ function getPhoneNotifConfig(){
     enabled: true,
     mmBaseAlerts: true,
     mmOpt2Alerts: true,
+    mmOpposeAlerts: true,
     mmPivotsAlerts: true,
     mexcOnly: false,
     telegramToken: '',
@@ -15642,6 +15649,11 @@ function alertNewPhoneSignals(sigs, d){
       const ico = isSommet ? '🏔️' : '🌊';
       title = `${ico} SORTIE MM : ${sig.tag} (${symbolClean})`;
       body = `${isSommet ? 'Sommet extrême atteint (Sortie Achat/Résistance)' : 'Creux extrême atteint (Sortie Vente/Support)'} sur #${symbolClean}/USDT à ${price}`;
+    } else if(sig.type === 'SORTIE_OPPOSE') {
+      const isAchatOppose = (sig.dir === 1);
+      const ico = '🔄';
+      title = `${ico} SORTIE MM : ${isAchatOppose ? 'Pastille Verte (Sortie Vente)' : 'Pastille Rouge (Sortie Achat)'} (${symbolClean})`;
+      body = `${isAchatOppose ? 'Pastille Achat opposée apparue -> Clôture / Sortie Vente recommandée' : 'Pastille Vente opposée apparue -> Clôture / Sortie Achat recommandée'} sur #${symbolClean}/USDT à ${price} (${srcName})`;
     }
 
     if(title) {
@@ -15684,9 +15696,24 @@ function checkAllAlerts(){
         source: 'strat_mm',
         sourceName: isOpt2 ? 'Stratégie MM · Option 2 (iMACD)' : 'Stratégie MM · Base'
       });
+
+      // 2. Signal de Sortie MM sur apparition de pastille opposée
+      if(phoneCfg.mmOpposeAlerts !== false){
+        allSignals.push({
+          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
+          t: s.t,
+          price: s.price,
+          dir: s.dir,
+          type: 'SORTIE_OPPOSE',
+          tag: s.dir === 1 ? 'PASTILLE VERTE (SORTIE VENTE)' : 'PASTILLE ROUGE (SORTIE ACHAT)',
+          originDir: s.dir === 1 ? -1 : 1,
+          source: 'strat_mm_oppose',
+          sourceName: isOpt2 ? 'Stratégie MM · Option 2' : 'Stratégie MM · Base'
+        });
+      }
     });
 
-    // 2. Sommets et Creux MM (Sorties & Niveaux extrêmes)
+    // 3. Sommets et Creux MM (Sorties & Niveaux extrêmes)
     if(phoneCfg.mmPivotsAlerts !== false){
       (mmData.sommetsList || []).forEach(s => {
         allSignals.push({
@@ -30153,7 +30180,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1470';
+  window.__LUMEN_BUILD = 'B-1708-1480';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
