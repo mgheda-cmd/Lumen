@@ -1704,6 +1704,8 @@ footer{
           </div>
         </div>
       </div>
+      <button class="btn" onclick="closeLiveExchangeModal()" style="padding:4px 10px;font-size:15px;background:rgba(255,255,255,0.08);border:1px solid var(--line);border-radius:8px">✕</button>
+    </div>
     <!-- Bouton Master Switch Actionner Web Auto-Trader (Frais 0.02%) -->
     <div style="background:rgba(15,23,42,0.9);border:1.5px solid #38BDF8;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
@@ -30489,7 +30491,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1610';
+  window.__LUMEN_BUILD = 'B-1708-1630';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
