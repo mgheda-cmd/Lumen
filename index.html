@@ -7835,11 +7835,17 @@ function drawPrice(p,s,e,cw,sharedXStack){
   if(vis('lrc')){const L=getInd('lrc');
     if(L && isFinite(L.a) && isFinite(L.b)){
       const dev2 = L.dev2 ?? (L.dev * 2);
-      const startP = L.a;
-      const endP = L.a + L.b * (L.len - 1);
-      if (isFinite(startP) && isFinite(endP)) {
-        lo=Math.min(lo, Math.min(startP, endP) - dev2);
-        hi=Math.max(hi, Math.max(startP, endP) + dev2);
+      const isMtf = !!(L.mtf && L.mtf !== state.tf);
+      if (!isMtf && L.s0 != null) {
+        const i1 = Math.max(s, L.s0), i2 = Math.min(e - 1, d.length - 1);
+        if (i2 >= i1) {
+          const v1 = L.a + L.b * (i1 - L.s0);
+          const v2 = L.a + L.b * (i2 - L.s0);
+          if (isFinite(v1) && isFinite(v2)) {
+            lo = Math.min(lo, Math.min(v1, v2) - dev2);
+            hi = Math.max(hi, Math.max(v1, v2) + dev2);
+          }
+        }
       }
     }
   }
