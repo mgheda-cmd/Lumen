@@ -2075,26 +2075,27 @@ footer{
         <button class="btn" id="btn-test-telegram" style="width:100%;font-size:10.5px;padding:5px;border-color:#38BDF8;color:#38BDF8;font-weight:700">📩 Tester la notification Telegram</button>
       </div>
 
-      <!-- Types de signaux -->
-      <div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px">
-        <div style="font-size:11px;font-weight:700;color:#E2E8F0;margin-bottom:6px">🎯 Signaux à notifier sur le téléphone</div>
-        <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:#CBD5E1">
+      <!-- Types de signaux MM -->
+      <div style="background:var(--panel-2,#0F172A);border:1px solid #38BDF8;border-radius:8px;padding:9px 11px;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:800;color:#38BDF8;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <span>📊 Alertes exclusives Stratégie MM</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:#CBD5E1">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="notif-type-direct" checked>
-            <span>⚡ Signaux DIRECTS (Achat / Vente)</span>
+            <input type="checkbox" id="notif-type-mm-base" checked>
+            <span style="font-weight:700;color:#10B981">🟢 Signaux MM Base (Achat & Vente)</span>
           </label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="notif-type-full" checked>
-            <span>🎯 Signaux CONFLUENCE (Achat / Vente)</span>
+            <input type="checkbox" id="notif-type-mm-opt2" checked>
+            <span style="font-weight:700;color:#00E5FF">⚡ Signaux MM Option 2 - iMACD (Achat & Vente)</span>
           </label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="notif-type-ob" checked>
-            <span>📦 Order Blocks (dès TF 5 min : 5m, 15m, 1h, 4h, 1d)</span>
+            <input type="checkbox" id="notif-type-mm-pivots" checked>
+            <span style="font-weight:700;color:#FCD34D">🏔️ Sorties MM (Sommets ≥ +75 & Creux ≤ -75)</span>
           </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="notif-type-exit">
-            <span>🏁 Signaux de SORTIE (PnL)</span>
-          </label>
+        </div>
+        <div style="font-size:10px;color:#94A3B8;margin-top:6px;line-height:1.3;border-top:1px solid rgba(255,255,255,0.06);padding-top:5px">
+          💡 Toutes les alertes secondaires non-MM (confluences génériques, order blocks, anciens indicateurs) sont définitivement coupées.
         </div>
       </div>
 
@@ -12037,10 +12038,9 @@ function verifyTelegramBotToken(tokenOverride){
 function loadPhoneNotifUI(){
   const cfg = getPhoneNotifConfig();
   if(document.getElementById('notif-master-enable')) document.getElementById('notif-master-enable').checked = cfg.enabled !== false;
-  if(document.getElementById('notif-type-direct')) document.getElementById('notif-type-direct').checked = cfg.directAlerts !== false;
-  if(document.getElementById('notif-type-full')) document.getElementById('notif-type-full').checked = cfg.fullAlerts !== false;
-  if(document.getElementById('notif-type-ob')) document.getElementById('notif-type-ob').checked = cfg.obAlerts !== false;
-  if(document.getElementById('notif-type-exit')) document.getElementById('notif-type-exit').checked = cfg.exitAlerts === true;
+  if(document.getElementById('notif-type-mm-base')) document.getElementById('notif-type-mm-base').checked = cfg.mmBaseAlerts !== false;
+  if(document.getElementById('notif-type-mm-opt2')) document.getElementById('notif-type-mm-opt2').checked = cfg.mmOpt2Alerts !== false;
+  if(document.getElementById('notif-type-mm-pivots')) document.getElementById('notif-type-mm-pivots').checked = cfg.mmPivotsAlerts !== false;
   if(document.getElementById('notif-tg-token')) document.getElementById('notif-tg-token').value = cfg.telegramToken || '';
   if(document.getElementById('notif-tg-chatid')) document.getElementById('notif-tg-chatid').value = cfg.telegramChatId || '';
   if(document.getElementById('notif-webhook-url')) document.getElementById('notif-webhook-url').value = cfg.webhookUrl || '';
@@ -12053,15 +12053,15 @@ function loadPhoneNotifUI(){
 function savePhoneNotifUI(){
   const cfg = {
     enabled: document.getElementById('notif-master-enable')?.checked ?? true,
-    directAlerts: document.getElementById('notif-type-direct')?.checked ?? true,
-    fullAlerts: document.getElementById('notif-type-full')?.checked ?? true,
-    obAlerts: document.getElementById('notif-type-ob')?.checked ?? true,
-    exitAlerts: document.getElementById('notif-type-exit')?.checked ?? false,
+    mmBaseAlerts: document.getElementById('notif-type-mm-base')?.checked ?? true,
+    mmOpt2Alerts: document.getElementById('notif-type-mm-opt2')?.checked ?? true,
+    mmPivotsAlerts: document.getElementById('notif-type-mm-pivots')?.checked ?? true,
     telegramToken: document.getElementById('notif-tg-token')?.value.trim() ?? '',
     telegramChatId: document.getElementById('notif-tg-chatid')?.value.trim() ?? '',
     webhookUrl: document.getElementById('notif-webhook-url')?.value.trim() ?? '',
     sound: document.getElementById('notif-sound')?.checked ?? true,
-    vibrate: document.getElementById('notif-vibrate')?.checked ?? true
+    vibrate: document.getElementById('notif-vibrate')?.checked ?? true,
+    mexcOnly: false
   };
   savePhoneNotifConfig(cfg);
 }
@@ -15358,14 +15358,10 @@ const SIGNAL_ALERT_KEY = 'lumen-signal-seen-v1';
 function getPhoneNotifConfig(){
   const def = {
     enabled: true,
-    directAlerts: true,
-    fullAlerts: true,
-    obAlerts: true,
-    exitAlerts: false,
-    /* Ne laisser passer que les notifications du module MEXC : veille des
-       signaux, ordres réels, surveillance du bot. Le compte démo et les
-       alertes de zones sont muets. Mettre à false pour tout recevoir. */
-    mexcOnly: true,
+    mmBaseAlerts: true,
+    mmOpt2Alerts: true,
+    mmPivotsAlerts: true,
+    mexcOnly: false,
     telegramToken: '',
     telegramChatId: '',
     webhookUrl: '',
@@ -15387,15 +15383,9 @@ function savePhoneNotifConfig(cfg){
 
 function sendTelegramNotification(text, source){
   const cfg = getPhoneNotifConfig();
-
-  /* Filtre de provenance. Le compte démo, les alertes de zones et les
-     notifications générales partagent le même canal Telegram que le module
-     MEXC, ce qui noyait les signaux utiles. Quand mexcOnly est actif, seuls
-     les messages marqués 'mexc' partent : veille des signaux, ordres réels
-     et surveillance du bot. Le test de connexion passe toujours. */
-  const provenance = source || 'autre';
-  if(cfg.mexcOnly !== false && provenance !== 'mexc' && provenance !== 'test'){
-    return Promise.resolve({ ok: false, description: 'Filtré : notifications limitées au module MEXC' });
+  const provenance = source || 'strat_mm';
+  if(cfg.mexcOnly !== false && provenance !== 'mexc' && provenance !== 'strat_mm' && provenance !== 'test'){
+    return Promise.resolve({ ok: false, description: 'Filtré : notifications limitées à la Stratégie MM' });
   }
 
   if(!cfg.telegramToken || !cfg.telegramChatId) return Promise.resolve({ ok: false, description: 'Token ou Chat ID manquant' });
@@ -15632,19 +15622,19 @@ function alertNewPhoneSignals(sigs, d){
     const price = sig.price ? sig.price.toFixed(sig.price >= 1000 ? 1 : 2) + ' $' : '';
     let title = '';
     let body = '';
-    const srcName = sig.sourceName || (sig.tag === 'DIRECT' ? 'Signal Direct' : 'Signal Confluence');
+    const srcName = sig.sourceName || 'Stratégie MM';
 
     if(sig.type === 'ACHAT') {
-      title = `🟢 ACHAT : ${srcName} (${symbolClean})`;
-      body = `Opportunité ACHAT sur #${symbolClean}/USDT à ${price}`;
+      title = `🟢 ACHAT : ${sig.tag} (${symbolClean})`;
+      body = `Opportunité ACHAT MM sur #${symbolClean}/USDT à ${price} (${srcName})`;
     } else if(sig.type === 'VENTE') {
-      title = `🔴 VENTE : ${srcName} (${symbolClean})`;
-      body = `Opportunité VENTE sur #${symbolClean}/USDT à ${price}`;
+      title = `🔴 VENTE : ${sig.tag} (${symbolClean})`;
+      body = `Opportunité VENTE MM sur #${symbolClean}/USDT à ${price} (${srcName})`;
     } else if(sig.type === 'SORTIE') {
-      const sens = sig.originDir === 1 ? 'ACHAT' : 'VENTE';
-      const pnlStr = sig.netPnl != null ? ` (PnL: ${sig.netPnl >= 0 ? '+' : ''}${sig.netPnl.toFixed(1)}$)` : '';
-      title = `🏁 SORTIE DE POSITION (${sens}) (${symbolClean})`;
-      body = `Clôture position sur #${symbolClean}/USDT à ${price}${pnlStr}`;
+      const isSommet = sig.tag === 'SOMMET MM';
+      const ico = isSommet ? '🏔️' : '🌊';
+      title = `${ico} SORTIE MM : ${sig.tag} (${symbolClean})`;
+      body = `${isSommet ? 'Sommet extrême atteint (Sortie Achat/Résistance)' : 'Creux extrême atteint (Sortie Vente/Support)'} sur #${symbolClean}/USDT à ${price}`;
     }
 
     if(title) {
@@ -15665,140 +15655,56 @@ function checkAllAlerts(){
   if(!phoneCfg.enabled) return;
 
   const allSignals = [];
+  const d = state.data;
+  const baseMM = (state.indicators && state.indicators.strat_mm) || {};
+  let mmData;
+  try { mmData = computeMMSignals(d, baseMM); }catch(e){ mmData = null; }
 
-  // 1. Signal EMA 9 / HA 5m
-  if(visB('signal_ema_ha')){
-    const sigs = getInd('signal_ema_ha');
-    if(Array.isArray(sigs)){
-      sigs.forEach(s => allSignals.push({ ...s, source: 'signal_ema_ha', sourceName: 'EMA 9 / HA 5m' }));
-    }
-  }
+  if(mmData){
+    // 1. Signaux d'entrée Stratégie MM (Base & Option 2)
+    (mmData.signals || []).forEach(s => {
+      const isOpt2 = (s.optKey === 'opt2');
+      if(isOpt2 && phoneCfg.mmOpt2Alerts === false) return;
+      if(!isOpt2 && phoneCfg.mmBaseAlerts === false) return;
 
-  // 2. Signaux Confluence
-  if(visB('signal')){
-    const sigs = getInd('signal');
-    if(Array.isArray(sigs)){
-      sigs.forEach(s => {
-        allSignals.push({
-          i: s.i,
-          t: s.t,
-          price: s.price,
-          dir: s.dir,
-          type: s.type || (s.dir === 1 ? 'ACHAT' : 'VENTE'),
-          tag: 'FULL',
-          source: 'signal',
-          sourceName: 'Confluence Multi-Indicateurs'
-        });
+      allSignals.push({
+        i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
+        t: s.t,
+        price: s.price,
+        dir: s.dir,
+        type: s.dir === 1 ? 'ACHAT' : 'VENTE',
+        tag: isOpt2 ? 'MM Option 2 (iMACD)' : 'MM Base',
+        source: 'strat_mm',
+        sourceName: isOpt2 ? 'Stratégie MM · Option 2 (iMACD)' : 'Stratégie MM · Base'
       });
-    }
-  }
+    });
 
-  // 3. Confluence Inversée
-  if(visB('signal_inv')){
-    const sigs = getInd('signal_inv');
-    if(Array.isArray(sigs)){
-      sigs.forEach(s => {
-        allSignals.push({
-          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
-          t: s.t,
-          price: s.entryPrice ?? s.price,
-          dir: s.dir,
-          type: s.type || (s.dir === 1 ? 'ACHAT' : 'VENTE'),
-          tag: 'DIRECT',
-          source: 'signal_inv',
-          sourceName: 'Confluence Inversée'
-        });
-        if(s.exitI != null || s.exitT != null){
-          allSignals.push({
-            i: (s.exitT != null ? idxOfTime(s.exitT) : null) ?? s.exitI,
-            t: s.exitT,
-            price: s.exitPrice,
-            dir: -s.dir,
-            type: 'SORTIE',
-            tag: 'SORTIE',
-            originDir: s.dir,
-            netPnl: s.netPnl,
-            source: 'signal_inv_exit',
-            sourceName: 'Sortie Confluence Inversée'
-          });
-        }
-      });
-    }
-  }
-
-  // 4. Détecteur d'Épuisement
-  if(visB('exhaustion')){
-    const events = getInd('exhaustion');
-    if(Array.isArray(events)){
-      events.forEach(ev => {
-        const isBullExhaust = ev.dir === -1 || ev.type === 'bull_exhaust';
-        allSignals.push({
-          i: (ev.t != null ? idxOfTime(ev.t) : null) ?? ev.i,
-          t: ev.t,
-          price: ev.price,
-          dir: isBullExhaust ? -1 : 1,
-          type: isBullExhaust ? 'VENTE' : 'ACHAT',
-          tag: 'DIRECT',
-          source: 'exhaustion',
-          sourceName: `Épuisement ${ev.tfName || ''}`.trim()
-        });
-      });
-    }
-  }
-
-  // 5. Détecteur d'Épuisement Pro (Smart Flow)
-  if(visB('exhaustion_pro')){
-    const events = getInd('exhaustion_pro');
-    if(Array.isArray(events)){
-      events.forEach(ev => {
-        const isBullExhaust = ev.dir === -1 || ev.type === 'bull_exhaust_pro';
-        allSignals.push({
-          i: (ev.t != null ? idxOfTime(ev.t) : null) ?? ev.i,
-          t: ev.t,
-          price: ev.price,
-          dir: isBullExhaust ? -1 : 1,
-          type: isBullExhaust ? 'VENTE' : 'ACHAT',
-          tag: 'DIRECT',
-          source: 'exhaustion_pro',
-          sourceName: `Épuisement Pro ${ev.tfName || ''}`.trim()
-        });
-      });
-    }
-  }
-
-  // 6. Signal Sortie KK (KK + Épuisement)
-  if(visB('signal_exit_kk')){
-    const exitSigs = getInd('signal_exit_kk');
-    if(Array.isArray(exitSigs)){
-      exitSigs.forEach(s => {
+    // 2. Sommets et Creux MM (Sorties & Niveaux extrêmes)
+    if(phoneCfg.mmPivotsAlerts !== false){
+      (mmData.sommetsList || []).forEach(s => {
         allSignals.push({
           i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
           t: s.t,
           price: s.price,
-          dir: s.dir,
-          type: s.type === 'SORTIE_VENTE' ? 'SORTIE VENTE' : 'SORTIE ACHAT',
-          tag: s.label,
-          source: 'signal_exit_kk',
-          sourceName: 'Signal Sortie KK'
+          dir: -1,
+          type: 'SORTIE',
+          tag: 'SOMMET MM',
+          originDir: 1,
+          source: 'strat_mm_sommet',
+          sourceName: 'Stratégie MM · Sommet Extrême (Sortie Achat)'
         });
       });
-    }
-  }
-
-  // 7. Signal Sortie Order Block (Pastille Violette)
-  if(visB('signal_exit_ob')){
-    const obExits = getInd('signal_exit_ob');
-    if(Array.isArray(obExits)){
-      obExits.forEach(s => {
+      (mmData.creuxList || []).forEach(c => {
         allSignals.push({
-          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
-          t: s.t,
-          price: s.price,
-          dir: s.dir,
-          type: s.type === 'SORTIE_VENTE_OB' ? 'SORTIE VENTE (OB)' : 'SORTIE ACHAT (OB)',
-          tag: s.label,
-          source: 'signal_exit_ob',
-          sourceName: 'Sortie Order Block'
+          i: (c.t != null ? idxOfTime(c.t) : null) ?? c.i,
+          t: c.t,
+          price: c.price,
+          dir: 1,
+          type: 'SORTIE',
+          tag: 'CREUX MM',
+          originDir: -1,
+          source: 'strat_mm_creux',
+          sourceName: 'Stratégie MM · Creux Extrême (Sortie Vente)'
         });
       });
     }
@@ -15806,14 +15712,6 @@ function checkAllAlerts(){
 
   if(allSignals.length > 0){
     alertNewPhoneSignals(allSignals, state.data);
-  }
-
-  // 6. Order Blocks
-  if(vis('ob') || phoneCfg.obAlerts !== false){
-    const zones = getInd('ob');
-    if(Array.isArray(zones) && zones.length > 0){
-      alertNewOB(zones);
-    }
   }
 }
 
@@ -30248,7 +30146,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1400';
+  window.__LUMEN_BUILD = 'B-1708-1410';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
