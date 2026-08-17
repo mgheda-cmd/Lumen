@@ -347,7 +347,7 @@ footer{
       </div>
 <div class="ind-item" data-ind="signal_triple" id="item-signal_triple" style="background:linear-gradient(135deg,rgba(0,230,118,0.12),rgba(6,182,212,0.08));border:1.5px solid #00E676;border-radius:8px;padding:9px 10px;margin-top:10px;margin-bottom:6px">
         <span class="dot" style="background:#00E676;box-shadow:0 0 7px #00E676;flex:none"></span>
-        <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Confluence Triple<br><span class="desc" style="color:#A7F3D0;font-size:11px">EMA 9 / HA 5m, nuage EMA et range oscillateur 3m alignés. L'entrée part sur la dernière condition qui rejoint les deux autres.</span></span>
+        <span class="name" style="font-weight:800;color:var(--text);font-size:12.5px">Confluence Triple<br><span class="desc" style="color:#A7F3D0;font-size:11px">EMA 9 / HA 5m, nuage EMA et range oscillateur 3m alignés. L'entrée part sur la dernière condition qui rejoint les deux autres.</span></span>
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;width:100%">
           <span class="srtf" data-tripleflag="useAdxFilter" title="Aucune entrée quand le bandeau ADX est rose">🌸 ADX</span>
           <span class="srtf" data-tripleflag="useCloudSep" title="Aucune entrée quand le nuage est trop ouvert (mouvement déjà avancé)">☁️ Nuage trop ouvert</span>
@@ -364,7 +364,7 @@ footer{
           <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
             <span class="dot" style="background:#FBBF24;box-shadow:0 0 8px #FBBF24;flex:none;width:10px;height:10px"></span>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span style="font-weight:800;color:#FFFFFF;font-size:13px;letter-spacing:0.2px">Indicateur Z. Z.</span>
+              <span style="font-weight:800;color:var(--text);font-size:13px;letter-spacing:0.2px">Indicateur Z. Z.</span>
               <span style="background:linear-gradient(135deg,#FBBF24,#10B981);color:#0F172A;font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:800;white-space:nowrap">⚡ STRATÉGIE CONFLUENCE</span>
             </div>
           </div>
@@ -377,15 +377,15 @@ footer{
           <button id="btn-toggle-zz-entries" onclick="toggleZZEntries()" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles d'Entrée Achat et Vente">⚡ Entrées: ON</button>
           <button id="btn-toggle-zz-exits" onclick="toggleZZExits()" style="background:rgba(236,72,153,0.25);border:1px solid #EC4899;color:#EC4899;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles de Sortie Achat et Vente">🎯 Sorties: ON</button>
           <button id="btn-toggle-zz-invert" onclick="toggleZZInvert()" style="background:rgba(251,191,36,0.3);border:1px solid #FBBF24;color:#FBBF24;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Inverser les signaux Achat/Vente (Pastilles Jaunes d'Or)">🟡 Inversé: ON</button>
-          <button id="btn-bt-strat-zz" onclick="openZZBacktestModal()" style="background:linear-gradient(135deg,#10B981,#059669);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(16,185,129,0.3);margin-left:auto" title="Lancer le Backtest Pastilles & Sortie Déplacement de Prix (200, 300, 400, 500 pts)">🚀 Backtest</button>
-          <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
+          <button id="btn-bt-strat-zz" onclick="openZZBacktestModal()" style="background:linear-gradient(135deg,#10B981,#059669);color:var(--text);border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(16,185,129,0.3);margin-left:auto" title="Lancer le Backtest Pastilles & Sortie Déplacement de Prix (200, 300, 400, 500 pts)">🚀 Backtest</button>
+          <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:var(--text);border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
         </div>
       </div>
       <div class="ind-item on" data-ind="strat_mm" id="item-strat_mm" style="background:linear-gradient(135deg,rgba(0,230,118,0.16),rgba(6,182,212,0.10));border:1.5px solid #00E676;border-radius:8px;padding:9px 10px;margin-top:8px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,230,118,0.20)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px">
           <div style="display:flex;align-items:center;gap:6px">
             <span class="dot" style="background:#00E676;box-shadow:0 0 7px #00E676;flex:none"></span>
-            <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Stratégie MM <span style="background:#00E676;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">✨ NEW</span><br><span class="desc" style="color:#A7F3D0;font-size:10.5px">Pastilles Entrée au Creux + Ligne Verte</span></span>
+            <span class="name" style="font-weight:800;color:var(--text);font-size:12.5px">Stratégie MM <span style="background:#00E676;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">✨ NEW</span><br><span class="desc" style="color:#A7F3D0;font-size:10.5px">Pastilles Entrée au Creux + Ligne Verte</span></span>
           </div>
           <span class="state">on</span>
         </div>
@@ -411,7 +411,7 @@ footer{
           <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
             <span class="dot" style="background:#38BDF8;box-shadow:0 0 8px #38BDF8;flex:none;width:10px;height:10px"></span>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span style="font-weight:800;color:#FFFFFF;font-size:13px;letter-spacing:0.2px">Indicateur Z. Z.</span>
+              <span style="font-weight:800;color:var(--text);font-size:13px;letter-spacing:0.2px">Indicateur Z. Z.</span>
               <span style="background:linear-gradient(135deg,#38BDF8,#10B981);color:#0F172A;font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:800;white-space:nowrap">⚡ STRATÉGIE CONFLUENCE</span>
             </div>
           </div>
@@ -424,8 +424,8 @@ footer{
           <button id="btn-toggle-zz2-entries" onclick="toggleZ.Z. 2Entries()" style="background:rgba(16,185,129,0.25);border:1px solid #10B981;color:#10B981;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles d'Entrée Achat et Vente">⚡ Entrées: ON</button>
           <button id="btn-toggle-zz2-exits" onclick="toggleZZ2Exits()" style="background:rgba(236,72,153,0.25);border:1px solid #EC4899;color:#EC4899;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Afficher / Masquer les pastilles de Sortie Achat et Vente">🎯 Sorties: ON</button>
           <button id="btn-toggle-zz2-invert" onclick="toggleZZ2Invert()" style="background:rgba(56,189,248,0.3);border:1px solid #38BDF8;color:#38BDF8;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s" title="Inverser les signaux Achat/Vente (Pastilles Jaunes d'Or)">🟡 Inversé: ON</button>
-          <button id="btn-bt-strat-zz" onclick="openZZBacktestModal()" style="background:linear-gradient(135deg,#10B981,#059669);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(16,185,129,0.3);margin-left:auto" title="Lancer le Backtest Pastilles & Sortie Déplacement de Prix (200, 300, 400, 500 pts)">🚀 Backtest</button>
-          <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#FFFFFF;border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
+          <button id="btn-bt-strat-zz" onclick="openZZBacktestModal()" style="background:linear-gradient(135deg,#10B981,#059669);color:var(--text);border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(16,185,129,0.3);margin-left:auto" title="Lancer le Backtest Pastilles & Sortie Déplacement de Prix (200, 300, 400, 500 pts)">🚀 Backtest</button>
+          <button id="btn-bt-tableau" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:var(--text);border:none;border-radius:6px;padding:4px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)" title="Voir le Tableau Récapitulatif Bilan (5 Variantes & Hebdo)">📊 Tableau</button>
         </div>
       </div>
       <div id="new-ind-banner" style="background:linear-gradient(135deg, rgba(236,72,153,0.22), rgba(99,102,241,0.22));border:1px solid #EC4899;border-radius:8px;padding:8px 10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
@@ -433,7 +433,7 @@ footer{
           <div style="font-size:11px;font-weight:700;color:#FBCFE8">✨ NOUVEAUX DÉTECTEURS DE RANGE</div>
           <div style="font-size:11px;color:#FCE7F3">Détecteur ① (Choppiness) & Détecteur ② (Squeeze/ADX) (Tout en bas)</div>
         </div>
-        <span style="font-size:11px;background:#EC4899;color:#fff;padding:3px 8px;border-radius:4px;font-weight:600">Voir au bas ↓</span>
+        <span style="font-size:11px;background:#EC4899;color:#FFFFFF;padding:3px 8px;border-radius:4px;font-weight:600">Voir au bas ↓</span>
       </div>
       <h4>Superposés au prix</h4>
       <div class="ind-item" data-ind="sma">
@@ -517,7 +517,7 @@ footer{
           <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
             <span class="dot" style="background:#00E5FF;box-shadow:0 0 7px #00E5FF;flex:none;width:10px;height:10px"></span>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span style="font-weight:800;color:#FFFFFF;font-size:13px">Stratégie EMA 9 / HA 5m</span>
+              <span style="font-weight:800;color:var(--text);font-size:13px">Stratégie EMA 9 / HA 5m</span>
               <span style="background:#00E5FF;color:#0F172A;font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:800;white-space:nowrap">🎯 STRATÉGIE (ACHAT)</span>
             </div>
           </div>
@@ -533,7 +533,7 @@ footer{
       </div>
       <div class="ind-item on" data-ind="exhaustion" id="item-exhaustion" style="background:var(--panel-2,#0F172A);border:1.5px solid #F59E0B;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(245,158,11,0.15)">
         <span class="dot" style="background:#F59E0B;box-shadow:0 0 6px #F59E0B;flex:none"></span>
-        <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12px">Détecteur d'Essoufflement <span style="background:#F59E0B;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🪫 PASTILLES (MTF)</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Épuisement Tendance (Mèches, Décélération, Divergence RSI)</span></span>
+        <span class="name" style="font-weight:700;color:var(--text);font-size:12px">Détecteur d'Essoufflement <span style="background:#F59E0B;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🪫 PASTILLES (MTF)</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Épuisement Tendance (Mèches, Décélération, Divergence RSI)</span></span>
         <span class="srtf" data-tf="1">1m</span>
         <span class="srtf" data-tf="3">3m</span>
         <span class="srtf on" data-tf="5">5m</span>
@@ -545,7 +545,7 @@ footer{
       </div>
       <div class="ind-item on" data-ind="exhaustion_pro" id="item-exhaustion_pro" style="background:var(--panel-2,#0F172A);border:1.5px solid #A855F7;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(168,85,247,0.2)">
         <span class="dot" style="background:#A855F7;box-shadow:0 0 6px #A855F7;flex:none"></span>
-        <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12px">Épuisement Pro <span style="background:#A855F7;color:#FFFFFF;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">⚡ SMART FLOW (MTF)</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Multi-Facteurs VSA, Climax Volume, Pinbar Rejet, Stoch/RSI Extreme &amp; Squeeze</span></span>
+        <span class="name" style="font-weight:700;color:var(--text);font-size:12px">Épuisement Pro <span style="background:#A855F7;color:#FFFFFF;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">⚡ SMART FLOW (MTF)</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Multi-Facteurs VSA, Climax Volume, Pinbar Rejet, Stoch/RSI Extreme &amp; Squeeze</span></span>
         <span class="srtf" data-tf="1">1m</span>
         <span class="srtf" data-tf="3">3m</span>
         <span class="srtf on" data-tf="5">5m</span>
@@ -557,7 +557,7 @@ footer{
       </div>
       <div class="ind-item on" data-ind="two_ind" id="item-two_ind" style="background:var(--panel-2,#0F172A);border:1.5px solid #FFCC00;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(255,204,0,0.15)">
         <span class="dot" style="background:#FFCC00;box-shadow:0 0 6px #FFCC00;flex:none"></span>
-        <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12px">kk <span style="background:#FFCC00;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">✨ NEW</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Oscillateur PhiSmoother (-100..+100) + Ligne SS_WMA (LazyLine) sur le prix</span></span>
+        <span class="name" style="font-weight:700;color:var(--text);font-size:12px">kk <span style="background:#FFCC00;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">✨ NEW</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Oscillateur PhiSmoother (-100..+100) + Ligne SS_WMA (LazyLine) sur le prix</span></span>
         <span class="srtf mtf on" data-ind2="two_ind" data-tf="chart">UT</span>
         <span class="srtf mtf" data-ind2="two_ind" data-tf="3">3m</span>
         <span class="srtf mtf" data-ind2="two_ind" data-tf="5">5m</span>
@@ -571,7 +571,7 @@ footer{
       </div>
       <div class="ind-item on" data-ind="signal_exit_kk" id="item-signal_exit_kk" style="background:var(--panel-2,#0F172A);border:1.5px solid #FFD700;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(255,215,0,0.18)">
         <span class="dot" style="background:#FFD700;box-shadow:0 0 6px #FFD700;flex:none"></span>
-        <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12px">Signal Sortie KK <span style="background:#FFD700;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🎯 KK + ÉPUISEMENT</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Pastilles Sortie (Sortie Short/Vente: KK croise pointillés bas ↑ | Sortie Long/Achat: KK croise pointillés haut ↓)</span></span>
+        <span class="name" style="font-weight:700;color:var(--text);font-size:12px">Signal Sortie KK <span style="background:#FFD700;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🎯 KK + ÉPUISEMENT</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Pastilles Sortie (Sortie Short/Vente: KK croise pointillés bas ↑ | Sortie Long/Achat: KK croise pointillés haut ↓)</span></span>
         <span class="srtf on" data-tf="chart">UT</span>
         <span class="srtf" data-tf="3">3m</span>
         <span class="srtf" data-tf="5">5m</span>
@@ -624,7 +624,7 @@ footer{
       </div>
       <div class="ind-item on" data-ind="signal_exit_ob" id="item-signal_exit_ob" style="background:var(--panel-2,#0F172A);border:1.5px solid #C084FC;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(192,132,252,0.25)">
         <span class="dot" style="background:#C084FC;box-shadow:0 0 6px #C084FC;flex:none"></span>
-        <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12px">Sortie Order Block <span style="background:#C084FC;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🎯 PASTILLE VIOLETTE ($100)</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Pastille violette de sortie dès que le prix touche ou s'approche d'un Order Block à $100 près</span></span>
+        <span class="name" style="font-weight:700;color:var(--text);font-size:12px">Sortie Order Block <span style="background:#C084FC;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🎯 PASTILLE VIOLETTE ($100)</span><br><span class="desc" style="color:#94A3B8;font-size:11px">Pastille violette de sortie dès que le prix touche ou s'approche d'un Order Block à $100 près</span></span>
         <span class="state">on</span>
       </div>
       <div class="ind-item" data-ind="sha">
@@ -836,7 +836,7 @@ footer{
       <div class="ind-item on" data-ind="sqz_mom" id="item-sqz_mom" style="background:rgba(0,230,118,0.12);border:1.5px solid #00E676;border-radius:10px;padding:10px 12px;margin-top:4px;margin-bottom:8px;box-shadow:0 3px 10px rgba(0,230,118,0.2);display:flex;flex-direction:column;align-items:stretch;gap:8px">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="dot" style="background:#00E676;box-shadow:0 0 7px #00E676;flex:none"></span>
-          <span class="name" style="font-weight:700;color:#FFFFFF;font-size:12.5px">Squeeze Momentum <span style="background:#00E676;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">LAZYBEAR DUAL-TF</span><br><span class="desc" style="color:#A7F3D0;font-size:11px">Volatilité BB/KC &amp; Régression Linéaire MTF (2 UT simultanées)</span></span>
+          <span class="name" style="font-weight:700;color:var(--text);font-size:12.5px">Squeeze Momentum <span style="background:#00E676;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">LAZYBEAR DUAL-TF</span><br><span class="desc" style="color:#A7F3D0;font-size:11px">Volatilité BB/KC &amp; Régression Linéaire MTF (2 UT simultanées)</span></span>
           <span class="state">on</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -851,7 +851,7 @@ footer{
       </div>
       <div class="ind-item on" data-ind="rangeDet" id="item-rangeDet" style="background:rgba(99,102,241,0.18);border:1px solid #6366F1;margin-top:4px;margin-bottom:6px">
         <span class="dot" style="background:#6366F1"></span>
-        <span class="name" style="font-weight:700;color:#A5B4FC">Détecteur de Range ① <span style="background:#6366F1;color:#ffffff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:bold">CHOPPINESS</span><br><span class="desc" style="color:#C7D2FE">Zones de consolidation & Index Choppiness</span></span>
+        <span class="name" style="font-weight:700;color:#A5B4FC">Détecteur de Range ① <span style="background:#6366F1;color:#FFFFFF;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:bold">CHOPPINESS</span><br><span class="desc" style="color:#C7D2FE">Zones de consolidation & Index Choppiness</span></span>
         <input type="number" min="5" max="100" value="14" aria-label="Période Détecteur de Range">
         <span class="srtf mtf on" data-ind2="rangeDet" data-tf="chart">UT</span>
         <span class="srtf mtf" data-ind2="rangeDet" data-tf="15">15m</span>
@@ -862,7 +862,7 @@ footer{
       </div>
       <div class="ind-item on" data-ind="rangeDet2" id="item-rangeDet2" style="background:rgba(236,72,153,0.18);border:1px solid #EC4899;margin-top:4px;margin-bottom:8px">
         <span class="dot" style="background:#EC4899"></span>
-        <span class="name" style="font-weight:700;color:#FBCFE8">Détecteur de Range ② <span style="background:#EC4899;color:#ffffff;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:bold">SQUEEZE & ADX</span><br><span class="desc" style="color:#FCE7F3">Consolidation de volatilité & ADX faible</span></span>
+        <span class="name" style="font-weight:700;color:#FBCFE8">Détecteur de Range ② <span style="background:#EC4899;color:#FFFFFF;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:bold">SQUEEZE & ADX</span><br><span class="desc" style="color:#FCE7F3">Consolidation de volatilité & ADX faible</span></span>
         <input type="number" min="5" max="100" value="14" aria-label="Période Détecteur de Range 2">
         <span class="srtf mtf on" data-ind2="rangeDet2" data-tf="chart">UT</span>
         <span class="srtf mtf" data-ind2="rangeDet2" data-tf="15">15m</span>
@@ -875,7 +875,7 @@ footer{
 <h4 style="color:#FBBF24;margin-top:14px;border-top:1px solid var(--line);padding-top:8px">🏆 Stratégie complète</h4>
       <div class="ind-item" data-ind="strat_master" id="item-strat_master" style="background:linear-gradient(135deg,rgba(251,191,36,0.14),rgba(249,115,22,0.10));border:1.5px solid #FBBF24;border-radius:8px;padding:9px 10px;margin-top:4px;margin-bottom:10px;box-shadow:0 2px 10px rgba(251,191,36,0.20)">
         <span class="dot" style="background:#FBBF24;box-shadow:0 0 7px #FBBF24;flex:none"></span>
-        <span class="name" style="font-weight:800;color:#FFFFFF;font-size:12.5px">Stratégie Confluence Totale <span style="background:#FBBF24;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🏆 AUTONOME</span><br><span class="desc" style="color:#FDE68A;font-size:11px">Agrège toutes les pastilles : EMA/HA, oscillateur KK, épuisements simples et Pro, Order Blocks, range et ATR. Entrées scorées, sorties multiples, stop suiveur.</span></span>
+        <span class="name" style="font-weight:800;color:var(--text);font-size:12.5px">Stratégie Confluence Totale <span style="background:#FBBF24;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">🏆 AUTONOME</span><br><span class="desc" style="color:#FDE68A;font-size:11px">Agrège toutes les pastilles : EMA/HA, oscillateur KK, épuisements simples et Pro, Order Blocks, range et ATR. Entrées scorées, sorties multiples, stop suiveur.</span></span>
         <div style="display:flex;align-items:center;gap:5px;flex:none;margin-left:auto">
           <button id="btn-bt-strat-master" data-bt-strat="strat_master" style="background:linear-gradient(135deg,#FBBF24,#F97316);color:#0F172A;border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 0 8px rgba(251,191,36,0.35)" title="Lancer le backtest de cette stratégie">🚀 Backtest</button>
           <span class="state">off</span>
@@ -1008,16 +1008,16 @@ footer{
           <input type="checkbox" id="bt-zz-strict-emaha" onchange="runZZBacktest(true)"> 📐 Condition EMA/HA stricte
         </label>
       </div>
-      <button id="bt-zz-compare" type="button" onclick="compareZZStrict()" style="background:linear-gradient(135deg,#6366F1,#4F46E5);color:#FFFFFF;border:none;border-radius:6px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,0.4)">
+      <button id="bt-zz-compare" type="button" onclick="compareZZStrict()" style="background:linear-gradient(135deg,#6366F1,#4F46E5);color:var(--text);border:none;border-radius:6px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,0.4)">
         ⚖️ Comparer strict / actuel
       </button>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-      <button id="bt-zz-run" onclick="runZZBacktest(false)" style="flex:1;min-width:200px;background:linear-gradient(135deg,#10B981,#059669);color:#FFFFFF;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3)">
+      <button id="bt-zz-run" onclick="runZZBacktest(false)" style="flex:1;min-width:200px;background:linear-gradient(135deg,#10B981,#059669);color:var(--text);border:none;border-radius:8px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3)">
         ▶ Lancer la Comparaison (200, 300, 400, 500 pts & Pastille Inverse)
       </button>
-      <button id="bt-zz-show-table" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#2563EB);color:#FFFFFF;border:none;border-radius:8px;padding:10px 16px;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.3);display:inline-flex;align-items:center;gap:6px" title="Voir le Tableau Récapitulatif Bilan dans une fenêtre dédiée">
+      <button id="bt-zz-show-table" onclick="openZZBacktestTableModal()" style="background:linear-gradient(135deg,#3B82F6,#2563EB);color:var(--text);border:none;border-radius:8px;padding:10px 16px;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.3);display:inline-flex;align-items:center;gap:6px" title="Voir le Tableau Récapitulatif Bilan dans une fenêtre dédiée">
         📊 Voir Tableau Bilan
       </button>
     </div>
@@ -1034,7 +1034,7 @@ footer{
     <!-- Modal Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid rgba(59,130,246,0.3);padding-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#FFF;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;box-shadow:0 0 14px rgba(59,130,246,0.5)">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;box-shadow:0 0 14px rgba(59,130,246,0.5)">
           📊
         </div>
         <div>
@@ -1397,7 +1397,7 @@ footer{
 
 <!-- MODAL LANCEMENT EN DIRECT SUR EXCHANGE EN ARGENT RÉEL -->
 <div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(4,8,18,0.92);z-index:10000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)">
-  <div style="background:#0B132B;border:2px solid #00E5FF;border-radius:18px;max-width:1300px;width:95vw;max-height:92vh;overflow:auto;padding:24px;color:#F8FAFC;box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(0,229,255,0.3)">
+  <div style="background:#0B132B;border:2px solid #00E5FF;border-radius:18px;max-width:1300px;width:95vw;max-height:92vh;overflow:auto;padding:24px;color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(0,229,255,0.3)">
     
     <!-- Modal Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid rgba(0,229,255,0.25);padding-bottom:12px">
@@ -1424,12 +1424,12 @@ footer{
           <span style="font-size:18px">🔴</span>
           <div>
             <div style="font-weight:900;color:#34D399;font-size:13.5px">AUTO-TRADER EN DIRECT ACTIF SUR <span id="live-active-ex-name" style="color:#FACC15">MEXC</span></div>
-            <div id="live-active-ex-details" style="font-size:11.5px;color:#F8FAFC;margin-top:4px;font-family:'IBM Plex Mono',monospace;line-height:1.5"></div>
+            <div id="live-active-ex-details" style="font-size:11.5px;color:var(--text);margin-top:4px;font-family:'IBM Plex Mono',monospace;line-height:1.5"></div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <div id="modal-top-push-container" style="display:flex;align-items:center;gap:6px"></div>
-          <button onclick="stopLiveExchangeTrading()" style="background:#DC2626;color:#FFF;border:none;border-radius:6px;padding:7px 14px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(220,38,38,0.5)">
+          <button onclick="stopLiveExchangeTrading()" style="background:#DC2626;color:#FFFFFF;border:none;border-radius:6px;padding:7px 14px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(220,38,38,0.5)">
             🛑 Stopper le Bot Auto
           </button>
         </div>
@@ -1469,7 +1469,7 @@ footer{
         <div style="background:rgba(15,23,42,0.8);border:1px solid #10B981;border-radius:10px;padding:12px">
           <div style="font-size:11px;color:#94A3B8;font-weight:700">MEXC FUTURES (Contrats)</div>
           <div id="mexc-stat-futures-avail" style="font-size:20px;font-weight:900;color:#10B981;margin-top:4px">-- USDT</div>
-          <div style="font-size:10.5px;color:#CBD5E1;margin-top:2px">Equity Total: <b id="mexc-stat-futures-equity" style="color:#FFF">--</b></div>
+          <div style="font-size:10.5px;color:#CBD5E1;margin-top:2px">Equity Total: <b id="mexc-stat-futures-equity" style="color:var(--text)">--</b></div>
         </div>
 
         <div style="background:rgba(15,23,42,0.8);border:1px solid #38BDF8;border-radius:10px;padding:12px">
@@ -1537,7 +1537,7 @@ footer{
 
         <!-- Order Type -->
         <label style="font-size:11px;color:#CBD5E1;font-weight:bold">3. Type d'Ordre
-          <select id="mexc-trade-type" onchange="toggleMexcLimitPriceInput()" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:#FFF;padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
+          <select id="mexc-trade-type" onchange="toggleMexcLimitPriceInput()" style="width:100%;background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px;margin-top:4px;font-weight:bold;font-size:12px">
             <option value="5" selected>⚡ Au Marché (Market Instantané)</option>
             <option value="1">🎯 Limite (Prix Spécifique)</option>
           </select>
@@ -1584,7 +1584,7 @@ footer{
       </div>
 
       <!-- Execution Submit Button -->
-      <button onclick="submitMexcManualTrade()" style="width:100%;background:linear-gradient(135deg,#10B981,#059669);color:#FFF;border:none;border-radius:10px;padding:12px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 4px 18px rgba(16,185,129,0.4);transition:all 0.2s ease">
+      <button onclick="submitMexcManualTrade()" style="width:100%;background:linear-gradient(135deg,#10B981,#059669);color:var(--text);border:none;border-radius:10px;padding:12px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 4px 18px rgba(16,185,129,0.4);transition:all 0.2s ease">
         🚀 ENVOYER L'ORDRE RÉEL SUR MEXC FUTURES
       </button>
 
@@ -1596,7 +1596,7 @@ footer{
     <div id="mexc-tab-bot" class="mexc-tab-content" style="display:none">
       <div style="background:rgba(250,204,21,0.12);border:1.5px solid #FACC15;border-radius:12px;padding:14px 18px;margin-bottom:16px">
         <div style="font-weight:900;font-size:13.5px;color:#FACC15;margin-bottom:4px;display:flex;align-items:center;gap:8px">🤖 ROBOT D'EXÉCUTION AUTOMATIQUE EN TEMPS RÉEL</div>
-        <div style="font-size:12px;color:#F8FAFC;line-height:1.5">Le robot écoute les signaux en direct sur le graphique et exécute automatiquement les ordres sur MEXC selon vos paramètres ci-dessous.</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.5">Le robot écoute les signaux en direct sur le graphique et exécute automatiquement les ordres sur MEXC selon vos paramètres ci-dessous.</div>
       </div>
 
       <!-- DYNAMIC CAPITAL ADJUSTMENT -->
@@ -1925,7 +1925,7 @@ footer{
       <span style="font-size:16px;animation:pulse 1.5s infinite">🔴</span>
       <div>
         <div style="font-weight:900;color:#34D399;font-size:13px;letter-spacing:0.3px">AUTO-TRADER EN DIRECT (ARGENT RÉEL) ACTIF SUR <span id="main-top-live-ex-name" style="color:#FACC15">MEXC</span></div>
-        <div id="main-top-live-ex-details" style="font-size:11.5px;color:#F8FAFC;margin-top:3px;font-family:'IBM Plex Mono',monospace;line-height:1.5"></div>
+        <div id="main-top-live-ex-details" style="font-size:11.5px;color:var(--text);margin-top:3px;font-family:'IBM Plex Mono',monospace;line-height:1.5"></div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -2083,7 +2083,7 @@ footer{
       </div>
 
       <div id="gmail-login-section" style="text-align:center;padding:16px 0">
-        <button id="btn-gmail-login" class="btn" style="background:#4285F4;color:#FFF;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 8px rgba(66,133,244,0.3)">
+        <button id="btn-gmail-login" class="btn" style="background:#4285F4;color:#FFFFFF;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 8px rgba(66,133,244,0.3)">
           <svg width="18" height="18" viewBox="0 0 48 48" style="display:block"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           <span>Connexion avec Google</span>
         </button>
@@ -2106,7 +2106,7 @@ footer{
           <div style="font-weight:700;font-size:13px;color:#EA4335;margin-bottom:6px" id="preview-email-subject">Sujet de l'indicateur</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="preview-email-meta">De: ... | Date: ...</div>
           <pre id="preview-email-content" style="background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;max-height:160px;overflow:auto;white-space:pre-wrap;color:#E2E8F0;margin-bottom:10px"></pre>
-          <button id="btn-integrate-indicator" class="btn" style="width:100%;background:linear-gradient(135deg,#EA4335,#D93025);color:#FFF;border:none;padding:8px;font-weight:800;font-size:12px;border-radius:6px;cursor:pointer">
+          <button id="btn-integrate-indicator" class="btn" style="width:100%;background:linear-gradient(135deg,#EA4335,#D93025);color:var(--text);border:none;padding:8px;font-weight:800;font-size:12px;border-radius:6px;cursor:pointer">
             ✨ Intégrer cet indicateur sur mon Support
           </button>
         </div>
@@ -29188,7 +29188,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1608-2050';
+  window.__LUMEN_BUILD = 'B-1608-2145';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
