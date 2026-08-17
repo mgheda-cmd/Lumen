@@ -1721,7 +1721,10 @@ footer{
           Exécute automatiquement sur votre page Web MEXC sans clés API au tarif manuel (0.02%).
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <a href="javascript:(function(){const s=document.createElement('script');s.src='https://mgheda-cmd.github.io/Lumen/extension-mexc/content.js?_='+Date.now();document.head.appendChild(s);})();" class="btn" style="text-decoration:none;font-size:11px;padding:7px 11px;border-color:#10B981;color:#10B981;font-weight:800;background:rgba(16,185,129,0.12)" title="Glissez ce bouton dans vos favoris, puis cliquez dessus sur votre page MEXC pour afficher le badge vert">
+          ⭐ Favori 1-Clic MEXC (Sans Extension)
+        </a>
         <a href="https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js" target="_blank" rel="noopener" class="btn" style="text-decoration:none;font-size:10.5px;padding:6px 10px;border-color:#38BDF8;color:#38BDF8;font-weight:700">
           📥 Script Tampermonkey
         </a>
@@ -30563,7 +30566,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1640';
+  window.__LUMEN_BUILD = 'B-1708-1650';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

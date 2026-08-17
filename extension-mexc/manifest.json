@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Lumen MEXC Web Auto-Trader",
+  "version": "1.2.0",
+  "description": "Exécute automatiquement les signaux de Lumen Charts sur l'interface Web MEXC aux frais réduits de 0.02%",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://futures.mexc.com/*",
+    "https://*.mexc.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://futures.mexc.com/*",
+        "https://*.mexc.com/futures*",
+        "https://*.mexc.com/*/futures*",
+        "https://*.mexc.com/exchange*",
+        "https://*.mexc.com/*/exchange*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_title": "Lumen MEXC Web Auto-Trader"
+  }
+}
