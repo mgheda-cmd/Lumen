@@ -2534,6 +2534,16 @@ footer{
         </select>
       </label>
 
+      <!-- 9 bis. Marge % Cap (Isolée) -->
+      <label id="paper-lbl-mpct" style="font-size:11px;color:#94A3B8;display:none" title="Isolée seulement : part du capital engagée en marge (ex: 50%)">Marge % cap.<br>
+        <input id="paper-mpct" type="number" value="50" step="1" min="1" max="100" onchange="window.syncPaperConfigFromUI()" style="width:72px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #38BDF8;border-radius:6px;color:#38BDF8">
+      </label>
+
+      <!-- 9 ter. Bonus % Gain (Isolée) -->
+      <label id="paper-lbl-mbonus" style="font-size:11px;color:#94A3B8;display:none" title="Isolée seulement : part du gain du trade précédent ajoutée à la marge du suivant (ex: 20%)">Bonus % gain<br>
+        <input id="paper-mbonus" type="number" value="20" step="1" min="0" max="100" onchange="window.syncPaperConfigFromUI()" style="width:72px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #FFD700;border-radius:6px;color:#FFD700">
+      </label>
+
       <!-- 10. TP ($) -->
       <label style="font-size:11px;color:#94A3B8" title="Objectif en dollars sur le prix ou 0 pour désactiver">TP ($)<br>
         <input id="paper-tp" type="number" step="any" value="0" placeholder="0" onchange="window.syncPaperConfigFromUI()" style="width:72px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid rgba(0,230,118,0.4);border-radius:6px;color:#00E676">
@@ -2552,6 +2562,9 @@ footer{
         <button class="btn" id="paper-reset" style="margin-left:auto;font-size:11px;padding:5px 8px" title="Remettre le compte démo à 100$">↺ Réinit 100$</button>
       </div>
     </div>
+
+    <!-- Badge calcul dynamique de Marge Isolée & Bonus Gain -->
+    <div id="paper-isole-preview-badge" style="display:none;background:rgba(56,189,248,0.08);border:1px dashed #38BDF8;border-radius:8px;padding:7px 12px;margin-bottom:10px;font-size:11.5px;color:#E2E8F0"></div>
 
     <!-- Hidden elements for backward compatibility -->
     <div style="display:none">
@@ -12560,6 +12573,7 @@ window.updateChartTradeHud = function() {
   if (topBar) {
     topBar.style.display = 'block';
     topBar.style.borderBottom = `2px solid ${mainBorder}`;
+    const marginInfoStr = (p.mmode === 'isole') ? ` · Marge: $${fmtUsd(p.margin)}${p.bonusApplied ? ' (Bonus: +$' + fmtUsd(p.bonusApplied) + ')' : ''}` : '';
     topBar.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:11px">
         <!-- Badge Sens, Levier & Symbole -->
@@ -12568,6 +12582,7 @@ window.updateChartTradeHud = function() {
             ${sideLabel} ${p.lev ? p.lev + 'x' : '1x'}
           </span>
           <span style="color:#FFFFFF;font-weight:800;font-size:12px">${p.sym}</span>
+          <span style="color:#38BDF8;font-size:10.5px">${marginInfoStr}</span>
         </div>
 
         <!-- Données clés : Entrée, Actuel & PnL -->
@@ -12824,12 +12839,13 @@ function refreshUnitUI(){
 function openTrade(side, targetPosIdx, customVal, customLev){
   const amtEl=document.getElementById('paper-amt');
   const val = (customVal != null && customVal > 0) ? customVal : parseFloat(amtEl?.value||'0');
-  if(!(val>0)) return paperFlash('Quantité invalide');
   const px=livePrice(state.symbol);
   if(!px) return paperFlash('Prix indisponible');
 
   const lev = (customLev != null && customLev > 0) ? customLev : parseInt(document.getElementById('paper-lev')?.value||'1',10);
   const mode=document.getElementById('paper-mode')?.value||'merge';
+  const mmode=document.getElementById('paper-mmode')?.value||'croise';
+  const isIsole = (mmode === 'isole');
   const coinSym=baseAsset(state.symbol);
 
   const slInp = parseFloat(document.getElementById('paper-sl')?.value || '0');
@@ -12839,12 +12855,24 @@ function openTrade(side, targetPosIdx, customVal, customLev){
 
   let qty=0, notional=0, margin=0;
   const feeRate = getPaperFeeRate();
+  let bonusApplied = 0;
 
-  if(paperUnit==='coin' && (customVal == null || customVal <= 0)){
+  if (isIsole) {
+    const mpct = Math.max(1, Math.min(100, +(document.getElementById('paper-mpct')?.value || 50))) / 100;
+    const mbonus = Math.max(0, Math.min(100, +(document.getElementById('paper-mbonus')?.value || 20))) / 100;
+    const lastWin = (paper.lastWinPnl && paper.lastWinPnl > 0) ? paper.lastWinPnl : 0;
+    bonusApplied = lastWin * mbonus;
+    margin = (paper.cash * mpct) + bonusApplied;
+    if (margin > paper.cash) margin = paper.cash;
+    notional = margin * lev;
+    qty = px > 0 ? notional / px : 0;
+  } else if(paperUnit==='coin' && (customVal == null || customVal <= 0)){
+    if(!(val>0)) return paperFlash('Quantité invalide');
     qty = val;
     notional = qty * px;
     margin = notional / lev;
   } else {
+    if(!(val>0)) return paperFlash('Quantité invalide');
     // Mode USDT ou Auto-Trade (val = Marge/Capital engagé, ex: 100 $ ou 200 $)
     margin = val;
     if (margin * (1 + lev * feeRate) > paper.cash && paper.cash > 0) {
@@ -12883,6 +12911,8 @@ function openTrade(side, targetPosIdx, customVal, customLev){
     p.notional = (p.notional || 0) + notional;
     p.lev = Math.max(p.lev || 1, lev);
     p.entries = (p.entries || 1) + 1;
+    p.mmode = mmode;
+    p.bonusApplied = (p.bonusApplied || 0) + bonusApplied;
     if (sl) p.sl = sl;
     if (tp) p.tp = tp;
 
@@ -12895,7 +12925,8 @@ function openTrade(side, targetPosIdx, customVal, customLev){
   } else {
     // NOUVELLE POSITION
     const newPos = {
-      sym: state.symbol, side, qty, entry: px, margin, lev, notional, entries: 1, sl, tp, t: Date.now()
+      sym: state.symbol, side, qty, entry: px, margin, lev, notional, entries: 1, sl, tp, t: Date.now(),
+      mmode, bonusApplied
     };
     paper.positions.push(newPos);
 
@@ -12920,10 +12951,17 @@ function closePos(i){
   const fee=p.qty*px*getPaperFeeRate();
   const netPnl = pnl - fee;
   paper.cash+=p.margin+netPnl;
+
+  if (netPnl > 0) {
+    paper.lastWinPnl = netPnl;
+  } else {
+    paper.lastWinPnl = 0;
+  }
+
   paper.history.unshift({
     sym:p.sym, side:p.side, entry:p.entry, exit:px, pnl:netPnl, qty:p.qty,
     notional: p.notional || (p.qty * p.entry), margin: p.margin || (p.qty * p.entry / (p.lev || 1)), lev: p.lev || 1,
-    t:Date.now(), t0:p.t, capitalAfter:paper.cash
+    t:Date.now(), t0:p.t, capitalAfter:paper.cash, mmode: p.mmode, bonusApplied: p.bonusApplied
   });
   paper.history=paper.history.slice(0,50);
   paper.positions.splice(i,1);
@@ -13253,6 +13291,47 @@ window.setPaperCapital = function(val){
   if(typeof window.syncPaperConfigFromUI === 'function') window.syncPaperConfigFromUI();
 };
 
+window.updatePaperIsolatedMarginUI = function() {
+  const mmode = document.getElementById('paper-mmode')?.value || 'croise';
+  const isIsole = (mmode === 'isole');
+  const lblMpct = document.getElementById('paper-lbl-mpct');
+  const lblMbonus = document.getElementById('paper-lbl-mbonus');
+  const previewBox = document.getElementById('paper-isole-preview-badge');
+
+  if(lblMpct) lblMpct.style.display = isIsole ? 'inline-block' : 'none';
+  if(lblMbonus) lblMbonus.style.display = isIsole ? 'inline-block' : 'none';
+
+  if(previewBox){
+    if(!isIsole){
+      previewBox.style.display = 'none';
+      return;
+    }
+    previewBox.style.display = 'block';
+    const capCourant = (typeof paper === 'object' && paper.cash != null) ? paper.cash : 100;
+    const mpctVal = Math.max(1, Math.min(100, +(document.getElementById('paper-mpct')?.value || 50)));
+    const mbonusVal = Math.max(0, Math.min(100, +(document.getElementById('paper-mbonus')?.value || 20)));
+    const lastWin = (typeof paper === 'object' && paper.lastWinPnl && paper.lastWinPnl > 0) ? paper.lastWinPnl : 0;
+
+    const baseMargin = capCourant * (mpctVal / 100);
+    const bonusMargin = lastWin * (mbonusVal / 100);
+    const totalAlloc = Math.min(capCourant, baseMargin + bonusMargin);
+
+    previewBox.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <span>🛡️ <b>Marge Isolée Allouée :</b> <span style="color:#00E676;font-size:13px;font-weight:900">$${typeof fmtUsd === 'function' ? fmtUsd(totalAlloc) : totalAlloc.toFixed(2)}</span></span>
+          <span style="color:#94A3B8;margin-left:6px">
+            [Base : <strong style="color:#FFF">$${typeof fmtUsd === 'function' ? fmtUsd(baseMargin) : baseMargin.toFixed(2)}</strong> (${mpctVal}% de $${typeof fmtUsd === 'function' ? fmtUsd(capCourant) : capCourant.toFixed(2)}) + Bonus Gain : <strong style="color:#FFD700">+$${typeof fmtUsd === 'function' ? fmtUsd(bonusMargin) : bonusMargin.toFixed(2)}</strong> (${mbonusVal}% du gain précédent $${typeof fmtUsd === 'function' ? fmtUsd(lastWin) : lastWin.toFixed(2)})]
+          </span>
+        </div>
+        <div style="font-size:10px;color:#38BDF8;font-weight:700">
+          💡 En cas de trade gagnant, ${mbonusVal}% du gain sera automatiquement réinvesti en bonus sur la marge suivante.
+        </div>
+      </div>
+    `;
+  }
+};
+
 window.syncPaperConfigFromUI = function(){
   const ent = document.getElementById('paper-ent')?.value || 'mm_base';
   const sens = document.getElementById('paper-sens')?.value || 'normal';
@@ -13262,6 +13341,8 @@ window.syncPaperConfigFromUI = function(){
   const lev = +(document.getElementById('paper-lev')?.value || 200);
   const cap = +(document.getElementById('paper-capital')?.value || 100);
   const mmode = document.getElementById('paper-mmode')?.value || 'croise';
+  const mpct = +(document.getElementById('paper-mpct')?.value || 50);
+  const mbonus = +(document.getElementById('paper-mbonus')?.value || 20);
   const tp = +(document.getElementById('paper-tp')?.value || 0);
   const fee = +(document.getElementById('paper-fee')?.value || 0.02);
 
@@ -13279,12 +13360,15 @@ window.syncPaperConfigFromUI = function(){
     lev: lev,
     capital: cap,
     mmode: mmode,
+    mpct: mpct,
+    mbonus: mbonus,
     tp: tp,
     feePct: fee,
     timestamp: Date.now()
   });
   window.paperFeePct = fee / 100;
   try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); }catch(e){}
+  if(typeof window.updatePaperIsolatedMarginUI === 'function') window.updatePaperIsolatedMarginUI();
   if(typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
 };
 
@@ -30041,7 +30125,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1420';
+  window.__LUMEN_BUILD = 'B-1708-1430';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -31401,6 +31485,8 @@ window.envoyerVersDemo = function(){
   const elLev = document.getElementById('paper-lev');
   const elCap = document.getElementById('paper-capital');
   const elMmode = document.getElementById('paper-mmode');
+  const elMpct = document.getElementById('paper-mpct');
+  const elMbonus = document.getElementById('paper-mbonus');
   const elTp = document.getElementById('paper-tp');
   const elFee = document.getElementById('paper-fee');
 
@@ -31413,6 +31499,8 @@ window.envoyerVersDemo = function(){
   if(elLev && r.lev != null) elLev.value = String(r.lev);
   if(elCap) elCap.value = (r.capital && r.capital > 0) ? r.capital : 100;
   if(elMmode) elMmode.value = (document.getElementById('bta-mmode')?.value) || 'croise';
+  if(elMpct && document.getElementById('bta-mpct')) elMpct.value = document.getElementById('bta-mpct').value;
+  if(elMbonus && document.getElementById('bta-mbonus')) elMbonus.value = document.getElementById('bta-mbonus').value;
   if(elTp) elTp.value = r.tp || 0;
   if(elFee) elFee.value = document.getElementById('bta-frais')?.value || 0.02;
 
@@ -31438,6 +31526,8 @@ window.envoyerVersDemo = function(){
     lev: r.lev,
     capital: (r.capital && r.capital > 0) ? r.capital : 100,
     mmode: elMmode ? elMmode.value : 'croise',
+    mpct: elMpct ? (+elMpct.value || 50) : 50,
+    mbonus: elMbonus ? (+elMbonus.value || 20) : 20,
     tp: r.tp || 0,
     feePct: (+document.getElementById('bta-frais')?.value || 0.02),
     winRate: r.wr,
