@@ -15570,10 +15570,16 @@ function sendTelegramDemoEntryNotification(p, isReentry) {
     const tLiqPx = (p.lev && p.lev > 1) ? (p.side === 'long' ? p.entry * (1 - 0.95 / p.lev) : p.entry * (1 + 0.95 / p.lev)) : null;
     const liqMsgStr = tLiqPx ? (typeof fmt === 'function' ? `$${fmt(tLiqPx, tLiqPx >= 100 ? 2 : 4)}` : `$${tLiqPx}`) : 'Sans (1x)';
 
+    const nowD = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const nowStr = `${pad(nowD.getHours())}:${pad(nowD.getMinutes())}:${pad(nowD.getSeconds())}`;
+    const dateStr = `${pad(nowD.getDate())}/${pad(nowD.getMonth()+1)}/${nowD.getFullYear()}`;
+
     const title = isReentry ? `${icon} <b>RERENTRÉE DÉMO (CUMUL DCA)</b>` : `${icon} <b>ENTRÉE TRADE DÉMO</b>`;
 
     const msg = `${title}
 ──────────────────────────
+⏰ <b>Horodatage en direct :</b> <code>${nowStr}</code> (${dateStr})
 <b>Paire :</b> #${escapeHtml(coin)}/USDT
 <b>Type :</b> ${sideStr}
 <b>Stratégie :</b> ${escapeHtml(stratName)}
@@ -15662,20 +15668,37 @@ function triggerMobileNotification(title, body, sig){
   if(cfg.vibrate && navigator.vibrate) {
     try { navigator.vibrate([200, 100, 200, 100, 300]); } catch(e){}
   }
+
+  const nowD = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const nowStr = `${pad(nowD.getHours())}:${pad(nowD.getMinutes())}:${pad(nowD.getSeconds())}`;
+  const dateStr = `${pad(nowD.getDate())}/${pad(nowD.getMonth()+1)}/${nowD.getFullYear()}`;
+
+  let candleTimeStr = '';
+  if(sig && (sig.time || sig.t)){
+    const cd = new Date(sig.time || sig.t);
+    candleTimeStr = `\n🕯️ <b>Bougie pastille :</b> <code>${pad(cd.getHours())}:${pad(cd.getMinutes())}</code> (TF ${state.tf}m)`;
+  }
+
   const firstLine = body ? body.split('\n')[0] : '';
-  toast(`🔔 ${title} : ${firstLine}`, '#00E5FF');
+  toast(`🔔 [${nowStr}] ${title} : ${firstLine}`, '#00E5FF');
 
   if('Notification' in window && Notification.permission === 'granted') {
     try {
-      new Notification(title, {
-        body: body,
+      new Notification(`${title} [${nowStr}]`, {
+        body: `${nowStr} - ${body}`,
         vibrate: [200, 100, 200]
       });
     } catch(e){}
   }
 
   const symbolClean = (state.symbol || '').replace('USDT', '');
-  const tgMsg = `<b>🔔 ${escapeHtml(title)}</b>\n${escapeHtml(body)}\n<i>Paire: #${escapeHtml(symbolClean)}/USDT (${state.tf}m)</i>`;
+  const tgMsg = `<b>🔔 ${escapeHtml(title)}</b>
+${escapeHtml(body)}
+──────────────────────────
+⏰ <b>Déclenchement direct :</b> <code>${nowStr}</code> (${dateStr})${candleTimeStr}
+📊 <b>Paire :</b> #${escapeHtml(symbolClean)}/USDT (${state.tf}m)`;
+
   sendTelegramNotification(tgMsg);
   if(typeof sendWhatsAppNotification === 'function') sendWhatsAppNotification(tgMsg);
 
@@ -15685,6 +15708,7 @@ function triggerMobileNotification(title, body, sig){
     symbol: state.symbol,
     timeframe: state.tf,
     signal: sig || null,
+    triggeredAt: nowStr,
     timestamp: Date.now()
   });
 }
@@ -30296,7 +30320,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1540';
+  window.__LUMEN_BUILD = 'B-1708-1550';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
