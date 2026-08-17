@@ -30122,7 +30122,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1120';
+  window.__LUMEN_BUILD = 'B-1708-1125';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30639,7 +30639,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += carte('Trades', trades.length);
     h += carte('Réussite', wr.toFixed(1) + ' %', wr >= 50 ? '#10B981' : '#F59E0B');
     h += carte('Profit factor', isFinite(pf) ? pf.toFixed(2) : '∞', pf >= 1 ? '#10B981' : '#FF5252');
-    h += '<button onclick="window.basculerMarquesBT()" style="background:rgba(56,189,248,.14);border:1px solid #38BDF8;color:#7DD3FC;border-radius:7px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;margin-bottom:9px">\u{1F4CD} Tracer les trades sur le graphique</button>';
     h += carte('Liquidations', nbLiq === 0 ? '0' : ('\u{1F480} ' + nbLiq), nbLiq === 0 ? '#10B981' : '#FF5252');
     if(nbLiq){
       const rangs = trades.map(function(t, k){ return t.liquide ? (k + 1) : null; }).filter(Boolean);
@@ -30698,6 +30697,15 @@ function updateActiveBacktestSignals(tradesList, stratName) {
                  (x.n >= 3 && x.pf >= 1) ? '#10B981' : '#FF5252');
     });
     h += '</div>';
+
+    // Bannière d'action directe : Compte Démo / Compte MEXC / Tracer sur le graphique
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding:9px 12px;background:rgba(15,23,42,0.85);border:1px solid #334155;border-radius:10px">' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+      '<button onclick="window.envoyerVersDemo()" title="Transférer et exécuter automatiquement cette stratégie sur le Compte Démo (Paper Trading)" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#0F172A;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(0,230,118,0.35);display:inline-flex;align-items:center;gap:6px">🚀 Envoyer vers Compte Démo</button>' +
+      '<button onclick="window.envoyerVersMexc()" title="Transférer les réglages vers le module MEXC Trading en Réel" style="background:rgba(0,229,255,0.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px">🟢 Compte MEXC Réel</button>' +
+      '</div>' +
+      '<button onclick="window.basculerMarquesBT()" style="background:rgba(56,189,248,.16);border:1px solid #38BDF8;color:#7DD3FC;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer">📍 Tracer sur le graphique</button>' +
+      '</div>';
 
     if(nbLiq){
       h += '<div style="margin:0 0 8px;padding:8px 11px;border:1px solid #FF5252;border-radius:8px;' +
@@ -31154,6 +31162,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="30">1 mois</option></select></label>' +
       '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value, true)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
+      '<button onclick="window.envoyerVersDemo()" title="Transférer et exécuter automatiquement cette stratégie sur le Compte Démo" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#0F172A;border:none;border-radius:8px;padding:8px 15px;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(0,230,118,0.35)">🚀 Compte Démo</button>' +
       '<button onclick="window.balayerMM()" title="Compare toutes les combinaisons MM (Base vs Option 2 et chaque type de sortie)" style="background:rgba(0,230,118,.16);border:1.5px solid #00E676;color:#00E676;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔎 Balayer MM</button>' +
       '<button onclick="window.balayerKK()" title="Teste toutes les combinaisons d\'unites de temps de kk bis et classe les resultats" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔎 Balayer kk bis</button>' +
       '<button onclick="window.balayerKKFusion(\'union\')" title="Meme balayage, mais la seconde unite de temps produit elle aussi des sorties, fusionnees avec les premieres. Les 21 combinaisons deviennent reellement distinctes. Attention : cela modifie aussi les pastilles kk bis affichees." style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔗 Balayer fusionné</button>' +
@@ -31365,6 +31374,84 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   };
 
 })();
+
+/* ================================================================
+   ENVOI D'UNE CONFIGURATION DU BACKTEST VERS LE COMPTE DÉMO
+   ================================================================ */
+window.envoyerVersDemo = function(){
+  const r = window.__btDernier;
+  if(!r){
+    if(typeof toast === 'function') toast('Lancez d\'abord un backtest ou un balayage.', '#F59E0B');
+    else alert('Lancez d\'abord un backtest ou un balayage.');
+    return;
+  }
+
+  const entNom = (r.mEnt === 'mm_base') ? 'MM Base' : (r.mEnt === 'mm_opt2') ? 'MM Option 2 (iMACD)' : 'Signal Z.Z.';
+  const sorNom = (r.mSor === 'mm_opp') ? 'Sommet/Creux MM' : (r.mSor === 'div') ? 'Divergences kk bis' : (r.mSor === 'seuil') ? 'Seuil kk bis' : 'Toutes kk bis';
+  const labelStrat = entNom + ' × ' + sorNom;
+
+  // 1. Fermer la fenêtre de backtest
+  const back = document.getElementById('bta-back');
+  if(back) back.style.display = 'none';
+
+  // 2. Mettre à jour les champs du panneau Démo (Paper Trading)
+  const unitCoinBtn = document.getElementById('paper-unit-coin');
+  const unitUsdtBtn = document.getElementById('paper-unit-usdt');
+  const amtInput = document.getElementById('paper-amt');
+  const levSel = document.getElementById('paper-lev');
+  const tpInput = document.getElementById('paper-tp');
+
+  if(r.unite === 'BASE' && unitCoinBtn){ unitCoinBtn.click(); }
+  else if(r.unite === 'USDT' && unitUsdtBtn){ unitUsdtBtn.click(); }
+
+  if(amtInput && r.marge != null){ amtInput.value = r.marge; }
+  if(levSel && r.lev != null){ levSel.value = r.lev; }
+  if(tpInput && r.tp != null && r.tp > 0){ tpInput.value = r.tp; }
+
+  // 3. Configurer la stratégie active du compte Démo
+  window.activeDemoStrategy = {
+    type: 'bt_apparie',
+    mEnt: r.mEnt,
+    mSor: r.mSor,
+    modeLabel: labelStrat,
+    dir: r.dirF,
+    lev: r.lev,
+    marge: r.marge,
+    unite: r.unite,
+    tp: r.tp || 0,
+    capital: r.capital || 100,
+    feePct: (+document.getElementById('bta-frais')?.value || 0.02),
+    winRate: r.wr,
+    netPnl: r.pnl,
+    profitFactor: r.pf,
+    active: true,
+    activatedAt: Date.now(),
+    timestamp: Date.now()
+  };
+  try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
+
+  // 4. Activer l'Auto-Trade Démo
+  window.paperAutoTrade = true;
+  const autoTradeBtn = document.getElementById('paper-auto-trade');
+  if(autoTradeBtn){
+    autoTradeBtn.textContent = '🤖 Auto-Trade : ACTIF (' + labelStrat + ')';
+    autoTradeBtn.style.background = 'rgba(0, 230, 118, 0.25)';
+    autoTradeBtn.style.borderColor = '#00E676';
+    autoTradeBtn.style.color = '#00E676';
+  }
+
+  // 5. Déplier le panneau Compte Démo
+  const paperPanel = document.getElementById('paper-panel');
+  if(paperPanel && !paperPanel.classList.contains('open')){
+    paperPanel.classList.add('open');
+    const caret = document.getElementById('paper-caret');
+    if(caret) caret.textContent = '▾';
+  }
+
+  if(typeof renderPaperStratCard === 'function') renderPaperStratCard();
+  if(typeof updatePaperUI === 'function') updatePaperUI();
+  if(typeof toast === 'function') toast('🚀 Stratégie ' + labelStrat + ' appliquée avec succès sur votre Compte Démo !', '#00E676');
+};
 
 /* ================================================================
    ENVOI D'UNE CONFIGURATION VALIDÉE VERS LE MODULE MEXC
