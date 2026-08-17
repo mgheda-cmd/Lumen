@@ -15821,11 +15821,13 @@ ${escapeHtml(body)}
       const budgetVal = Number(liveBotConfig.tradeBudget || document.getElementById('live-ex-trade-budget')?.value || 10);
       const unitVal = liveBotConfig.tradeUnit || document.getElementById('live-ex-trade-unit')?.value || 'USDT';
       const levVal = Number(liveBotConfig.lev || document.getElementById('live-ex-lev')?.value || 200);
+      const dirVal = liveBotConfig.tradeDir || document.getElementById('live-ex-dir')?.value || 'both';
 
       const webSignal = {
         type: 'LUMEN_TRADE_SIGNAL',
         symbol: mexcPair,
         side: isBuy ? 'BUY' : 'SELL',
+        tradeDir: dirVal,
         price: sig?.price,
         budget: budgetVal,
         unit: unitVal,
@@ -30601,7 +30603,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1680';
+  window.__LUMEN_BUILD = 'B-1708-1690';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

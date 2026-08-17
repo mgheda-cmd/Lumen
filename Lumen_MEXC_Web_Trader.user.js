@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (Frais Réduits 0.02%)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      1.7.0
-// @description  Exécution ultra-rapide avec bouton natif REVERSE MEXC (Retournement atomique 0.05s) et gestion complète des signaux Lumen (Frais 0.02%)
+// @version      1.8.0
+// @description  Gestion intelligente des sens de trade (Deux sens avec REVERSE natif, ou Achat seul / Vente seule sans interférence) (0.02% de frais)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
 // @match        *://futures.mexc.com/*
@@ -14,7 +14,7 @@
 (function() {
     'use strict';
 
-    console.log('>>> [Lumen Web Trader] Script v1.7.0 actif (Mode REVERSE NATIF Ultra-Rapide)');
+    console.log('>>> [Lumen Web Trader] Script v1.8.0 actif (Support Multi-Stratégies & Filtre Sens de Trade)');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -119,7 +119,7 @@
         return false;
     }
 
-    // --- ENTRÉE & RETOURNEMENT NATIF REVERSE ---
+    // --- ENTRÉE / RETOURNEMENT SELON CONFIGURATION DU SENS ---
     async function executeMarketOrder(signal) {
         if (signal.action === 'CLOSE' || signal.side === 'CLOSE_LONG' || signal.side === 'CLOSE_SHORT') {
             return executeCloseOrder(signal);
@@ -128,9 +128,21 @@
         try {
             console.log('[Lumen Web Trader] Signal d\'action reçu:', signal);
             const isBuy = signal.side === 'BUY' || signal.side === 'LONG';
+            const tradeDir = (signal.tradeDir || 'both').toLowerCase();
             const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
 
-            // VÉRIFICATION D'UNE POSITION EXISTANTE : UTILISATION DU BOUTON REVERSE NATIF MEXC
+            // 1. FILTRAGE STRICT DU SENS DU TRADE (Achat Seul / Vente Seule / Deux Sens)
+            if (tradeDir === 'long' && !isBuy) {
+                console.log('[Lumen Web Trader] Signal VENTE ignoré (Mode Achat / Long Seul activé dans Lumen)');
+                notifyHud('🚫 Signal Vente ignoré (Mode Achat Seul)', '#94A3B8');
+                return;
+            }
+            if (tradeDir === 'short' && isBuy) {
+                console.log('[Lumen Web Trader] Signal ACHAT ignoré (Mode Vente / Short Seul activé dans Lumen)');
+                notifyHud('🚫 Signal Achat ignoré (Mode Vente Seule)', '#94A3B8');
+                return;
+            }
+
             const allBtns = Array.from(document.querySelectorAll('button, a, span, div'));
             const nativeReverseBtn = allBtns.find(el => {
                 const txt = (el.textContent || '').trim().toLowerCase();
@@ -142,15 +154,16 @@
                 return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair';
             });
 
-            // CAS 1 : RETOURNEMENT INSTANTANÉ VIA LE BOUTON "REVERSE" DE MEXC (1 seul clic atomique en 0.05s)
-            if (hasActivePosition && nativeReverseBtn) {
-                console.log('[Lumen Web Trader] Déclenchement du bouton natif REVERSE MEXC !');
-                notifyHud(`⚡ REVERSE NATIF MEXC : Inversion instantanée...`, '#F59E0B');
+            // 2. UTILISATION DU BOUTON "REVERSE" UNIQUEMENT EN MODE DEUX SENS (both)
+            const isBothDirs = (tradeDir === 'both');
+
+            if (isBothDirs && hasActivePosition && nativeReverseBtn) {
+                console.log('[Lumen Web Trader] Déclenchement du bouton natif REVERSE MEXC (Mode Deux Sens) !');
+                notifyHud(`⚡ REVERSE NATIF MEXC (Deux Sens) : Inversion...`, '#F59E0B');
 
                 nativeReverseBtn.click();
                 await new Promise(r => setTimeout(r, 120));
 
-                // Confirmation du modal Reverse si affiché
                 const confirmBtn = Array.from(document.querySelectorAll('button')).find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
                     return txt === 'confirm' || txt === 'confirmer' || txt === 'ok' || txt === 'reverse';
@@ -158,21 +171,20 @@
                 if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
 
                 notifyHud(`⚡ REVERSE RÉUSSI EN 1 CLIC : Inversion immédiate à 0.02% !`, isBuy ? '#10B981' : '#EF4444');
-                console.log('[Lumen Web Trader] Position retournée avec succès via le bouton natif Reverse');
                 return;
             }
 
-            // CAS 2 : SI UNE POSITION EXISTE MAIS PAS DE BOUTON REVERSE VISIBLE ➔ Flash Close puis Open
-            if (hasActivePosition) {
+            // 3. EN MODE UNIDIRECTIONNEL (Long Seul / Short Seul) : PAS de Reverse brutal, fermeture propre si demandée
+            if (isBothDirs && hasActivePosition) {
                 notifyHud(`🔄 RETOURNEMENT : Flash Close + Nouvel Ordre...`, '#F59E0B');
                 await executeCloseOrder({ reason: 'Inversion de signal' });
                 await new Promise(r => setTimeout(r, 300));
             }
 
-            // CAS 3 : NOUVELLE ENTRÉE CLASSIQUE
+            // 4. OUVERTURE NORMALE
             notifyHud(`🚀 Ouverture : ${signal.side} ${signal.symbol} (${budgetStr})`, isBuy ? '#10B981' : '#EF4444');
 
-            // 1. Onglet Open
+            // Onglet Open
             const openTab = Array.from(document.querySelectorAll('button, div[role="tab"], span')).find(el => {
                 const txt = (el.textContent || '').trim();
                 return txt === 'Open' || txt === 'Ouvrir' || txt === '开仓';
@@ -180,7 +192,7 @@
             if (openTab) openTab.click();
             await new Promise(r => setTimeout(r, 100));
 
-            // 2. Onglet Market
+            // Onglet Market
             const marketBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, div')).find(el => {
                 const txt = (el.textContent || '').trim();
                 return txt === 'Market' || txt === 'Marché' || txt === '市价';
@@ -188,7 +200,7 @@
             if (marketBtn) marketBtn.click();
             await new Promise(r => setTimeout(r, 120));
 
-            // 3. Montant automatique
+            // Montant automatique
             if (signal.budget && signal.budget > 0) {
                 const inputs = Array.from(document.querySelectorAll('input'));
                 const qtyInput = inputs.find(inp => {
@@ -205,7 +217,7 @@
             }
             await new Promise(r => setTimeout(r, 120));
 
-            // 4. Bouton Ouvrir Long / Short
+            // Bouton Ouvrir Long / Short
             const actionButtons = Array.from(document.querySelectorAll('button'));
             const targetBtn = actionButtons.find(b => {
                 const txt = (b.textContent || '').trim().toLowerCase();

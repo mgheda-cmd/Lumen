@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    console.log('[Lumen Extension] Extension MEXC Auto-Trader v1.7.0 active (Mode REVERSE NATIF)...');
+    console.log('[Lumen Extension] Extension MEXC Auto-Trader v1.8.0 active (Support Multi-Stratégies & Filtre Sens)...');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -113,7 +113,20 @@
         try {
             console.log('[Lumen Extension] Signal d\'action reçu:', signal);
             const isBuy = signal.side === 'BUY' || signal.side === 'LONG';
+            const tradeDir = (signal.tradeDir || 'both').toLowerCase();
             const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
+
+            // 1. FILTRAGE STRICT DU SENS DU TRADE (Achat Seul / Vente Seule / Deux Sens)
+            if (tradeDir === 'long' && !isBuy) {
+                console.log('[Lumen Extension] Signal VENTE ignoré (Mode Achat / Long Seul activé dans Lumen)');
+                notifyHud('🚫 Signal Vente ignoré (Mode Achat Seul)', '#94A3B8');
+                return;
+            }
+            if (tradeDir === 'short' && isBuy) {
+                console.log('[Lumen Extension] Signal ACHAT ignoré (Mode Vente / Short Seul activé dans Lumen)');
+                notifyHud('🚫 Signal Achat ignoré (Mode Vente Seule)', '#94A3B8');
+                return;
+            }
 
             const allBtns = Array.from(document.querySelectorAll('button, a, span, div'));
             const nativeReverseBtn = allBtns.find(el => {
@@ -126,9 +139,12 @@
                 return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair';
             });
 
-            if (hasActivePosition && nativeReverseBtn) {
-                console.log('[Lumen Extension] Déclenchement du bouton natif REVERSE MEXC !');
-                notifyHud(`⚡ REVERSE NATIF MEXC : Inversion instantanée...`, '#F59E0B');
+            // 2. UTILISATION DU BOUTON "REVERSE" UNIQUEMENT EN MODE DEUX SENS (both)
+            const isBothDirs = (tradeDir === 'both');
+
+            if (isBothDirs && hasActivePosition && nativeReverseBtn) {
+                console.log('[Lumen Extension] Déclenchement du bouton natif REVERSE MEXC (Mode Deux Sens) !');
+                notifyHud(`⚡ REVERSE NATIF MEXC (Deux Sens) : Inversion...`, '#F59E0B');
 
                 nativeReverseBtn.click();
                 await new Promise(r => setTimeout(r, 120));
@@ -143,12 +159,14 @@
                 return;
             }
 
-            if (hasActivePosition) {
+            // 3. EN MODE UNIDIRECTIONNEL : PAS de Reverse brutal
+            if (isBothDirs && hasActivePosition) {
                 notifyHud(`🔄 RETOURNEMENT : Flash Close + Nouvel Ordre...`, '#F59E0B');
                 await executeCloseOrder({ reason: 'Inversion de signal' });
                 await new Promise(r => setTimeout(r, 300));
             }
 
+            // 4. OUVERTURE NORMALE
             notifyHud(`🚀 Ouverture : ${signal.side} ${signal.symbol} (${budgetStr})`, isBuy ? '#10B981' : '#EF4444');
 
             const openTab = Array.from(document.querySelectorAll('button, div[role="tab"], span')).find(el => {
