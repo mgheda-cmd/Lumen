@@ -2120,6 +2120,8 @@ footer{
     <div id="cfg-body"></div>
     <div id="cfg-foot">
       <button class="btn" id="cfg-reset">Réinitialiser</button>
+      <button class="btn" id="cfg-save" title="Enregistrer les réglages actuels de cet indicateur sous un nom">💾 Enregistrer</button>
+      <button class="btn" id="cfg-load" title="Recharger des réglages enregistrés">📂 Charger</button>
       <button class="btn" id="cfg-ok" style="margin-left:auto;border-color:var(--accent);color:var(--accent)">Terminé</button>
     </div>
   </div>
@@ -14768,6 +14770,97 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
     dx = 0; dy = 0; apply();
     try{ localStorage.removeItem('lumen_cfg_pos'); }catch(e){}
   });
+})();
+
+/* ============ RÉGLAGES ENREGISTRÉS PAR INDICATEUR ============
+   Chaque indicateur peut avoir plusieurs jeux de réglages nommés, gardés
+   dans le navigateur. Utile pour comparer deux configurations sans les
+   ressaisir, ou pour retrouver celle d'une autre installation : les
+   réglages sont cloisonnés par origine, donc github.io et ai.studio n'en
+   partagent aucun.
+
+   L'état d'activation n'est pas enregistré : recharger un jeu ne doit pas
+   allumer ou éteindre l'indicateur à votre place. */
+
+function lumenReglagesEnregistres(){
+  try{ return JSON.parse(localStorage.getItem('lumen_presets_ind') || '{}') || {}; }
+  catch(e){ return {}; }
+}
+function lumenEcrireReglages(o){
+  try{ localStorage.setItem('lumen_presets_ind', JSON.stringify(o)); }catch(e){}
+}
+
+window.enregistrerReglagesInd = function(){
+  if(!cfgInd) return;
+  const cour = state.indicators[cfgInd];
+  if(!cour) return;
+  const defaut = new Date().toLocaleString('fr-FR',
+    {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const nom = prompt('Nom de ce jeu de réglages pour ' + cfgInd + ' :', defaut);
+  if(!nom) return;
+
+  const copie = Object.assign({}, cour);
+  delete copie.on;
+  const tout = lumenReglagesEnregistres();
+  if(!tout[cfgInd]) tout[cfgInd] = {};
+  tout[cfgInd][nom] = {
+    quand: Date.now(),
+    reglages: copie,
+    style: state.style[cfgInd] ? Object.assign({}, state.style[cfgInd]) : null
+  };
+  lumenEcrireReglages(tout);
+  if(typeof toast === 'function')
+    toast('Réglages « ' + nom + ' » enregistrés pour ' + cfgInd, '#10B981');
+};
+
+window.chargerReglagesInd = function(){
+  if(!cfgInd) return;
+  const tout = lumenReglagesEnregistres();
+  const jeux = tout[cfgInd] || {};
+  const noms = Object.keys(jeux);
+  if(!noms.length){
+    if(typeof toast === 'function')
+      toast('Aucun réglage enregistré pour ' + cfgInd, '#FF9F1C');
+    return;
+  }
+  const liste = noms.map(function(n, i){
+    const q = new Date(jeux[n].quand).toLocaleString('fr-FR',
+      {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return (i + 1) + '. ' + n + '  (' + q + ')';
+  }).join('\n');
+  const rep = prompt('Réglages enregistrés pour ' + cfgInd + ' :\n\n' + liste +
+    '\n\nNuméro à charger, ou « s » suivi du numéro pour supprimer :', '1');
+  if(!rep) return;
+
+  const sup = /^s/i.test(rep.trim());
+  const num = parseInt(rep.replace(/^s/i, '').trim(), 10);
+  const nom = noms[num - 1];
+  if(!nom){ if(typeof toast === 'function') toast('Numéro inconnu', '#FF5252'); return; }
+
+  if(sup){
+    delete tout[cfgInd][nom];
+    lumenEcrireReglages(tout);
+    if(typeof toast === 'function') toast('« ' + nom + ' » supprimé', '#94A3B8');
+    return;
+  }
+
+  const j = jeux[nom];
+  const garderOn = state.indicators[cfgInd] ? state.indicators[cfgInd].on : true;
+  state.indicators[cfgInd] = Object.assign({}, j.reglages, { on: garderOn });
+  if(j.style) state.style[cfgInd] = Object.assign({}, j.style);
+  state.cache = {};
+  if(typeof saveConfig === 'function') saveConfig();
+  if(typeof openCfg === 'function') openCfg(cfgInd);
+  if(typeof syncMenu === 'function') syncMenu();
+  if(typeof render === 'function') render();
+  if(typeof toast === 'function') toast('Réglages « ' + nom + ' » chargés', '#38BDF8');
+};
+
+(function(){
+  const bs = document.getElementById('cfg-save');
+  const bl = document.getElementById('cfg-load');
+  if(bs) bs.addEventListener('click', function(e){ e.stopPropagation(); window.enregistrerReglagesInd(); });
+  if(bl) bl.addEventListener('click', function(e){ e.stopPropagation(); window.chargerReglagesInd(); });
 })();
 
 document.getElementById('cfg-reset').addEventListener('click',()=>{
@@ -29876,7 +29969,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-0805';
+  window.__LUMEN_BUILD = 'B-1708-0910';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
