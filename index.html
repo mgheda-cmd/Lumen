@@ -15717,6 +15717,27 @@ function sendTelegramDemoExitNotification(data) {
 💼 <b>Nouveau Solde Démo :</b> <code>$${typeof fmtUsd === 'function' ? fmtUsd(data.capitalAfter ?? paper.cash) : (data.capitalAfter ?? paper.cash)}</code>`;
 
     sendTelegramNotification(msg);
+
+    // Émission automatique de FERMETURE vers MEXC Web Trader (Flash Close)
+    if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
+      try {
+        const mexcPair = ((data.sym || state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
+        const webSignal = {
+          type: 'LUMEN_TRADE_SIGNAL',
+          action: 'CLOSE',
+          symbol: mexcPair,
+          side: data.side === 'long' ? 'CLOSE_LONG' : 'CLOSE_SHORT',
+          reason: data.reason || 'Sortie Stratégie',
+          timestamp: Date.now()
+        };
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('lumen_mexc_channel');
+          bc.postMessage(webSignal);
+        }
+        localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
+        toast(`⚡ Web Auto-Trader : Ordre de CLÔTURE ${mexcPair} transmis à MEXC (0.02%)`, '#EC4899');
+      } catch(err){}
+    }
   } catch(e) {
     console.warn('[Telegram Demo Exit Notif Error]', e);
   }
@@ -30580,7 +30601,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1660';
+  window.__LUMEN_BUILD = 'B-1708-1670';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

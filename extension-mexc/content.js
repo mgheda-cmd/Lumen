@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    console.log('[Lumen Extension] Extension MEXC Auto-Trader v1.4.0 active...');
+    console.log('[Lumen Extension] Extension MEXC Auto-Trader v1.5.0 active (Entrées & Sorties)...');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -47,25 +47,97 @@
         element.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    async function executeMarketOrder(signal) {
+    async function executeCloseOrder(signal) {
         try {
-            console.log('[Lumen Extension] Signal complet reçu:', signal);
+            console.log('[Lumen Extension] Signal de FERMETURE reçu:', signal);
+            notifyHud(`Clôture : ${signal.side || 'Position'} ${signal.symbol}`, '#EC4899');
+
+            const allElements = Array.from(document.querySelectorAll('button, a, span, div'));
+            const flashCloseBtn = allElements.find(el => {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair' || txt === 'fermer au marché' || txt === 'fermer tout';
+            });
+
+            if (flashCloseBtn) {
+                flashCloseBtn.click();
+                await new Promise(r => setTimeout(r, 200));
+
+                const confirmBtns = Array.from(document.querySelectorAll('button'));
+                const confirmBtn = confirmBtns.find(b => {
+                    const txt = (b.textContent || '').trim().toLowerCase();
+                    return txt === 'confirm' || txt === 'confirmer' || txt === 'ok';
+                });
+                if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
+
+                notifyHud(`✅ Position ${signal.symbol} clôturée au marché (Flash Close) !`, '#EC4899');
+                return;
+            }
+
+            const tabs = Array.from(document.querySelectorAll('button, div[role="tab"], span'));
+            const closeTab = tabs.find(el => {
+                const txt = (el.textContent || '').trim();
+                return txt === 'Close' || txt === 'Fermer' || txt === '平仓';
+            });
+
+            if (closeTab) {
+                closeTab.click();
+                await new Promise(r => setTimeout(r, 150));
+
+                const marketBtn = Array.from(document.querySelectorAll('button, div, span')).find(el => {
+                    const txt = (el.textContent || '').trim();
+                    return txt === 'Market' || txt === 'Marché';
+                });
+                if (marketBtn) marketBtn.click();
+
+                await new Promise(r => setTimeout(r, 150));
+
+                const isLongClose = (signal.side === 'CLOSE_LONG' || signal.side === 'SELL');
+                const closeActionBtn = Array.from(document.querySelectorAll('button')).find(b => {
+                    const txt = (b.textContent || '').trim().toLowerCase();
+                    if (isLongClose) return txt.includes('close long') || txt.includes('fermer long') || txt.includes('fermer achat');
+                    return txt.includes('close short') || txt.includes('fermer short') || txt.includes('fermer vente');
+                });
+
+                if (closeActionBtn && !closeActionBtn.disabled) {
+                    closeActionBtn.click();
+                    notifyHud(`✅ Trade ${signal.symbol} clôturé avec succès !`, '#EC4899');
+                    return;
+                }
+            }
+
+            notifyHud(`⚠️ Impossible de localiser le bouton de fermeture`, '#F59E0B');
+        } catch (e) {
+            console.error('[Lumen Extension] Erreur fermeture:', e);
+            notifyHud('❌ Erreur fermeture trade', '#EF4444');
+        }
+    }
+
+    async function executeMarketOrder(signal) {
+        if (signal.action === 'CLOSE' || signal.side === 'CLOSE_LONG' || signal.side === 'CLOSE_SHORT') {
+            return executeCloseOrder(signal);
+        }
+
+        try {
+            console.log('[Lumen Extension] Signal d\'ENTRÉE reçu:', signal);
             const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
             notifyHud(`Signal : ${signal.side} ${signal.symbol} (${budgetStr})`, signal.side === 'BUY' ? '#10B981' : '#EF4444');
 
-            // 1. Sélectionner l'onglet 'Market' (Marché)
-            const tabs = Array.from(document.querySelectorAll('button, div[role="tab"], span, div'));
-            const marketBtn = tabs.find(el => {
+            const openTab = Array.from(document.querySelectorAll('button, div[role="tab"], span')).find(el => {
+                const txt = (el.textContent || '').trim();
+                return txt === 'Open' || txt === 'Ouvrir' || txt === '开仓';
+            });
+            if (openTab) openTab.click();
+
+            await new Promise(r => setTimeout(r, 100));
+
+            const marketBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, div')).find(el => {
                 const txt = (el.textContent || '').trim();
                 return txt === 'Market' || txt === 'Marché' || txt === '市价';
             });
-            if (marketBtn) {
-                marketBtn.click();
-            }
+            if (marketBtn) marketBtn.click();
 
             await new Promise(r => setTimeout(r, 150));
 
-            // 2. Remplir le montant / quantité si transmis depuis Lumen
             if (signal.budget && signal.budget > 0) {
                 const inputs = Array.from(document.querySelectorAll('input'));
                 const qtyInput = inputs.find(inp => {
@@ -78,13 +150,11 @@
                 if (qtyInput) {
                     qtyInput.focus();
                     setNativeValue(qtyInput, String(signal.budget));
-                    console.log('[Lumen Extension] Montant renseigné automatiquement:', signal.budget);
                 }
             }
 
             await new Promise(r => setTimeout(r, 150));
 
-            // 3. Cliquer sur le bouton Ouvrir Long / Ouvrir Short
             const isBuy = signal.side === 'BUY' || signal.side === 'LONG';
             const actionButtons = Array.from(document.querySelectorAll('button'));
             
