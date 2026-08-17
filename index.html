@@ -4839,6 +4839,18 @@ function mergeConfig(c){
         paper.cash = Math.max(100, (paper.cash || 100) - totalLoss);
       }
     }
+
+    // Auto-correction de position résiduelle en BTC à 0.02 BTC
+    if (paper && Array.isArray(paper.positions)) {
+      paper.positions.forEach(p => {
+        if (p && p.sym && p.sym.includes('BTC') && p.qty > 0.1) {
+          const correctQty = 0.02;
+          p.qty = correctQty;
+          p.notional = p.entry * correctQty;
+          p.margin = (p.notional / (p.lev || 200));
+        }
+      });
+    }
   }
   if(c.style&&typeof c.style==='object'){
     state.style={};
@@ -13343,9 +13355,7 @@ function openTrade(side, targetPosIdx, customVal, customLev){
   const sl = (slInp > 0 && isFinite(slInp)) ? slInp : null;
   const tp = (tpInp > 0 && isFinite(tpInp)) ? tpInp : null;
 
-  let qty=0, notional=0, margin=0;
-  const feeRate = getPaperFeeRate();
-  let bonusApplied = 0;
+  const isCoinUnit = (paperUnit === 'coin' || document.getElementById('paper-unite')?.value === 'BASE' || window.activeDemoStrategy?.unite === 'BASE' || window.activeDemoStrategy?.unite === 'BTC' || (val > 0 && val <= 1 && (state.symbol || '').includes('BTC')));
 
   if (isIsole) {
     const capRef = (+(document.getElementById('paper-capital')?.value || 100));
@@ -13363,14 +13373,14 @@ function openTrade(side, targetPosIdx, customVal, customLev){
     }
     notional = margin * lev;
     qty = px > 0 ? notional / px : 0;
-  } else if(paperUnit==='coin' && (customVal == null || customVal <= 0)){
+  } else if(isCoinUnit){
     if(!(val>0)) return paperFlash('Quantité invalide');
-    qty = val;
+    qty = val; // Exactement la taille en BTC (ex: 0.02 BTC)
     notional = qty * px;
     margin = notional / lev;
   } else {
     if(!(val>0)) return paperFlash('Quantité invalide');
-    // Mode USDT ou Auto-Trade (val = Marge/Capital engagé, ex: 100 $ ou 200 $)
+    // Mode USDT (val = Marge en USDT, ex: 100 $)
     margin = val;
     if (margin * (1 + lev * feeRate) > paper.cash && paper.cash > 0) {
       margin = paper.cash / (1 + lev * feeRate);
@@ -30901,7 +30911,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1920';
+  window.__LUMEN_BUILD = 'B-1708-1930';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
