@@ -2624,14 +2624,14 @@ footer{
 
       <!-- 5. Montant -->
       <label style="font-size:11px;color:#94A3B8">Montant<br>
-        <input id="paper-amt" type="number" value="0.02" step="any" onchange="window.syncPaperConfigFromUI()" style="width:78px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #334155;border-radius:6px;color:#E2E8F0">
+        <input id="paper-amt" type="number" value="100" step="any" onchange="window.syncPaperConfigFromUI()" style="width:78px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #334155;border-radius:6px;color:#E2E8F0">
       </label>
 
       <!-- 6. Unité -->
       <label style="font-size:11px;color:#94A3B8">Unité<br>
         <select id="paper-unite" onchange="window.setPaperUniteFromSelect(this.value)" style="background:#0B1220;border:1px solid #334155;color:#00E5FF;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
-          <option value="BASE" selected>BTC (taille)</option>
-          <option value="USDT">USDT (marge)</option>
+          <option value="USDT" selected>USDT (marge)</option>
+          <option value="BASE">BTC (taille)</option>
         </select>
       </label>
 
@@ -13089,13 +13089,26 @@ function updatePaperDemoStrategyUI(){
 
   // Synchroniser les champs éditables avec la stratégie active
   if(activeObj){
-    const setVal = (id, v) => { const el = document.getElementById(id); if(el && v != null) el.value = v; };
+    const setVal = (id, v) => {
+      const el = document.getElementById(id);
+      if(el && v != null && el.value !== String(v) && document.activeElement !== el) {
+        el.value = v;
+      }
+    };
     if(activeObj.mEnt) setVal('paper-ent', activeObj.mEnt);
     if(activeObj.mSens) setVal('paper-sens', activeObj.mSens);
     if(activeObj.dir) setVal('paper-dir', activeObj.dir);
     if(activeObj.mSor) setVal('paper-sor', activeObj.mSor);
-    if(activeObj.marge != null) setVal('paper-amt', activeObj.marge);
-    if(activeObj.unite) setVal('paper-unite', (activeObj.unite === 'BASE' || activeObj.unite === 'BTC') ? 'BASE' : 'USDT');
+
+    const isUsdt = (activeObj.unite === 'USDT' || paperUnit === 'usdt');
+    if (isUsdt) {
+      const amtVal = (activeObj.marge != null && activeObj.marge >= 1) ? activeObj.marge : (activeObj.capital || 100);
+      setVal('paper-amt', amtVal);
+      setVal('paper-unite', 'USDT');
+    } else if(activeObj.marge != null) {
+      setVal('paper-amt', activeObj.marge);
+      if(activeObj.unite) setVal('paper-unite', (activeObj.unite === 'BASE' || activeObj.unite === 'BTC') ? 'BASE' : 'USDT');
+    }
     if(activeObj.lev != null) setVal('paper-lev', String(activeObj.lev));
     if(activeObj.capital != null) setVal('paper-capital', activeObj.capital);
     if(activeObj.mmode) setVal('paper-mmode', activeObj.mmode);
@@ -14070,7 +14083,7 @@ function checkAutoTrade(inputSignals){
     const reqCap = strat.capital || 100;
     const reqLev = strat.lev || 200;
     const amtEl = document.getElementById('paper-amt');
-    if(amtEl){
+    if(amtEl && (!amtEl.value || amtEl.value === '0' || amtEl.value === '0.02')){
       amtEl.value = String(reqCap);
     }
     const levEl = document.getElementById('paper-lev');
@@ -14080,16 +14093,7 @@ function checkAutoTrade(inputSignals){
     if(strat.feePct != null){
       window.paperFeePct = strat.feePct / 100;
     }
-    // Forcer l'unité USDT pour l'Auto-Trade
     paperUnit = 'usdt';
-    const btnUsdt = document.getElementById('paper-unit-usdt');
-    const btnCoin = document.getElementById('paper-unit-coin');
-    if (btnUsdt && btnCoin) {
-      btnUsdt.style.background = '#00E5FF';
-      btnUsdt.style.color = '#0F172A';
-      btnCoin.style.background = 'transparent';
-      btnCoin.style.color = 'var(--text)';
-    }
   }
 
   const eMode = strat?.mode || state.indicators?.signal_ema_ha?.exitMode || 'macd';
@@ -30976,7 +30980,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1830';
+  window.__LUMEN_BUILD = 'B-1708-1840';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
