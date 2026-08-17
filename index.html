@@ -4813,6 +4813,25 @@ function mergeConfig(c){
       x&&typeof x.entry==='number'&&typeof x.qty==='number'&&typeof x.margin==='number'
       &&(x.side==='long'||x.side==='short')&&/^[A-Z0-9]{5,20}$/.test(x.sym||'')):[];
     paper.history=Array.isArray(c.paper.history)?c.paper.history.slice(0,50):[];
+
+    // Restauration automatique du trade VENTE écourté par le bug de simulation à 74k
+    if (paper.positions.length === 0 && paper.history.length > 0) {
+      const badH = paper.history.find(h => h && h.exit > 70000 && h.entry < 66000);
+      if (badH) {
+        paper.positions.push({
+          sym: badH.sym || 'BTCUSDT',
+          side: badH.side || 'short',
+          entry: badH.entry || 63498.80,
+          qty: badH.qty || 0.02,
+          notional: badH.notional || (0.02 * (badH.entry || 63498.80)),
+          margin: badH.margin || 6.35,
+          lev: badH.lev || 200,
+          t: badH.t0 || (Date.now() - 3600000)
+        });
+        paper.cash = Math.max(100, (paper.cash || 93.40) + (badH.margin || 6.35));
+        paper.history = paper.history.filter(h => h !== badH);
+      }
+    }
   }
   if(c.style&&typeof c.style==='object'){
     state.style={};
@@ -13716,6 +13735,25 @@ document.getElementById('paper-presets')?.addEventListener('click', (e)=>{
     if(inp){ inp.value=btn.dataset.val; refreshUnitUI(); }
   }
 });
+
+window.restaurerTradeVente = function() {
+  paper.positions = [{
+    sym: 'BTCUSDT',
+    side: 'short',
+    entry: 63498.80,
+    qty: 0.02,
+    notional: 1269.82,
+    margin: 6.35,
+    lev: 200,
+    t: Date.now() - 3600000
+  }];
+  paper.cash = 100;
+  paper.history = paper.history.filter(h => !(h.exit > 70000 && h.entry < 66000));
+  saveConfig();
+  if (typeof updatePaper === 'function') updatePaper();
+  if (typeof updateChartTradeHud === 'function') updateChartTradeHud();
+  toast('✅ Trade VENTE BTC ($63 498.80) restauré avec succès ! PnL en profit direct.', '#10B981');
+};
 
 /* ---------- Auto-Trade sur Pastilles Directes (Achat Direct / Vente Directe) ---------- */
 let paperAutoTrade = false;
@@ -30752,7 +30790,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1730';
+  window.__LUMEN_BUILD = 'B-1708-1740';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
