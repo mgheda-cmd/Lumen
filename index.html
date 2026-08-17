@@ -26905,102 +26905,141 @@ window.drawMarquesBT = function(s, e, yOf){
   if(!bt || !Array.isArray(bt.liste)) return;
   const d = state.data; if(!d || !d.length) return;
 
-  /* Pastilles du backtest, au format de celles de Z.Z. : une bulle à
-     plusieurs lignes reliée à la bougie par un trait. Elles s'ajoutent aux
-     pastilles d'origine, elles ne les remplacent pas.
+  const fmtP = function(p){
+    if(p == null || !isFinite(p)) return '—';
+    if(p >= 1000) return Number(p).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+    if(p >= 1) return Number(p).toFixed(2);
+    return Number(p).toFixed(4);
+  };
 
-     À l'entrée : le numéro, qui est celui de la pastille Z.Z. correspondante,
-     et le prix retenu par le moteur.
-     À la sortie : le prix, le PnL net et ce qui a déclenché la fermeture. */
+  const drawSleekBadge = function(x, ancreY, sens, col, num, titre, subLignes){
+    ctx.save();
+    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+    let maxW = ctx.measureText(titre).width + 28;
+    ctx.font = '8.5px "IBM Plex Mono",monospace';
+    for(const l of subLignes){
+      maxW = Math.max(maxW, ctx.measureText(l).width + 16);
+    }
+    const bw = Math.max(90, maxW);
+    const bh = 14 + subLignes.length * 11 + 4;
 
-  const bulle = function(x, ancreY, sens, couleur, titre, lignes){
-    ctx.font = 'bold 10px "IBM Plex Mono",monospace';
-    let larg = ctx.measureText(titre).width;
-    ctx.font = '9px "IBM Plex Mono",monospace';
-    for(const l of lignes) larg = Math.max(larg, ctx.measureText(l).width);
-    const bw = larg + 16;
-    const bh = 16 + lignes.length * 11 + 5;
-
-    let by = sens === 1 ? (ancreY + 16) : (ancreY - bh - 16);
+    let by = sens === 1 ? (ancreY + 12) : (ancreY - bh - 12);
     if(typeof placeBadge === 'function') by = placeBadge(x - bw/2, bw, by, bh, sens);
-    const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, x - bw/2));
+    const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw/2));
 
-    // trait de rappel vers la bougie
-    ctx.strokeStyle = couleur; ctx.lineWidth = 1.2; ctx.setLineDash([3,2]);
+    // Trait de rappel pointillé discret
+    ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([2, 2]);
     ctx.beginPath(); ctx.moveTo(x, ancreY);
     ctx.lineTo(x, sens === 1 ? by : by + bh); ctx.stroke();
     ctx.setLineDash([]);
 
-    // point d'ancrage sur la bougie
-    ctx.beginPath(); ctx.arc(x, ancreY, 3.5, 0, Math.PI*2);
-    ctx.fillStyle = couleur; ctx.fill();
+    // Point d'ancrage sur la mèche
+    ctx.beginPath(); ctx.arc(x, ancreY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = col; ctx.fill();
 
-    // corps de la bulle
-    ctx.fillStyle = 'rgba(11,19,43,0.94)';
-    ctx.strokeStyle = couleur; ctx.lineWidth = 1.6;
-    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 7); ctx.fill(); ctx.stroke(); }
-    else { ctx.fillRect(bx, by, bw, bh); ctx.strokeRect(bx, by, bw, bh); }
+    // Fond glassmorphism avec bordure colorée
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.strokeStyle = col; ctx.lineWidth = 1.4;
+    if(ctx.roundRect){
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill(); ctx.stroke();
+    } else {
+      ctx.fillRect(bx, by, bw, bh); ctx.strokeRect(bx, by, bw, bh);
+    }
 
+    // Pastille de numéro #N à gauche
+    const numBadgeW = 22;
+    ctx.fillStyle = col;
+    if(ctx.roundRect){
+      ctx.beginPath(); ctx.roundRect(bx + 3, by + 3, numBadgeW, 12, 3); ctx.fill();
+    } else {
+      ctx.fillRect(bx + 3, by + 3, numBadgeW, 12);
+    }
+    ctx.fillStyle = '#0F172A';
+    ctx.font = 'bold 8.5px "IBM Plex Mono",monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = couleur;
-    ctx.font = 'bold 10px "IBM Plex Mono",monospace';
-    ctx.fillText(titre, bx + bw/2, by + 10);
-    ctx.font = '9px "IBM Plex Mono",monospace';
+    ctx.fillText('#' + num, bx + 3 + numBadgeW/2, by + 9);
+
+    // Titre
+    ctx.fillStyle = col;
+    ctx.font = 'bold 9px "IBM Plex Mono",monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(titre, bx + numBadgeW + 7, by + 9);
+
+    // Sous-lignes informatives
+    ctx.font = '8.5px "IBM Plex Mono",monospace';
     ctx.fillStyle = '#CBD5E1';
-    lignes.forEach(function(l, k){ ctx.fillText(l, bx + bw/2, by + 22 + k*11); });
-    return { by: by, bh: bh, bx: bx, bw: bw };
+    subLignes.forEach(function(txt, idx){
+      ctx.fillText(txt, bx + 6, by + 20 + idx * 11);
+    });
+
+    ctx.restore();
   };
 
   ctx.save();
-  for(const t of bt.liste){
+  bt.liste.forEach(function(t, k){
     const iE = t.iE, iS = t.iS;
-    if(iE == null || iS == null) continue;
-    if(iS < s - 2 || iE > e + 2) continue;
+    if(iE == null || iS == null) return;
+    if(iS < s - 3 || iE > e + 3) return;
     const bE = d[iE], bS = d[iS];
-    if(!bE || !bS) continue;
+    if(!bE || !bS) return;
 
+    const num = t.tradeNum != null ? t.tradeNum : (t.num != null ? t.num : (k + 1));
     const xE = xOf(iE), xS = xOf(iS);
     const long = t.dir === 1;
     const gagne = t.net >= 0;
     const colE = long ? '#10B981' : '#FF5252';
     const colS = t.liquide ? '#FF3B3B' : (gagne ? '#10B981' : '#FF5252');
 
-    // ancres : sous la mèche basse pour un long, au-dessus de la haute sinon
-    const ancreE = long ? yOf(bE.l) + 5 : yOf(bE.h) - 5;
-    const ancreS = long ? yOf(bS.h) - 5 : yOf(bS.l) + 5;
+    // Ancres mèches
+    const ancreE = long ? yOf(bE.l) + 4 : yOf(bE.h) - 4;
+    const ancreS = long ? yOf(bS.h) - 4 : yOf(bS.l) + 4;
 
-    /* Trait plein noir reliant l'entrée à la sortie, avec le PnL net écrit
-       au milieu. Le montant reste aussi sur la pastille de sortie : l'un se
-       lit d'un coup d'oeil sur le graphique, l'autre dans le détail. */
     const yE2 = yOf(t.pe), yS2 = yOf(t.ps);
-    ctx.strokeStyle = '#0B0F1A'; ctx.globalAlpha = 1; ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(xE, yE2); ctx.lineTo(xS, yS2); ctx.stroke();
 
-    const txtPnl = (t.net >= 0 ? '+' : '') + Number(t.net).toFixed(2) + ' $';
-    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
-    const wp = ctx.measureText(txtPnl).width + 10;
+    // Vecteur reliant entrée et sortie avec lueur
+    ctx.save();
+    ctx.strokeStyle = colS;
+    ctx.globalAlpha = 0.6;
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(xE, yE2);
+    ctx.lineTo(xS, yS2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Capsule flottante PnL au milieu du vecteur
     const xm = (xE + xS) / 2, ym = (yE2 + yS2) / 2;
-    ctx.fillStyle = '#0B0F1A';
-    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(xm - wp/2, ym - 8, wp, 15, 4); ctx.fill(); }
-    else ctx.fillRect(xm - wp/2, ym - 8, wp, 15);
-    ctx.strokeStyle = colS; ctx.lineWidth = 1;
-    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(xm - wp/2, ym - 8, wp, 15, 4); ctx.stroke(); }
-    else ctx.strokeRect(xm - wp/2, ym - 8, wp, 15);
+    const txtPnl = '#' + num + ' · ' + (t.net >= 0 ? '+' : '') + Number(t.net).toFixed(2) + ' $';
+    ctx.font = 'bold 8.5px "IBM Plex Mono",monospace';
+    const wp = ctx.measureText(txtPnl).width + 10;
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = '#0F172A';
+    ctx.strokeStyle = colS;
+    ctx.lineWidth = 1;
+    if(ctx.roundRect){
+      ctx.beginPath(); ctx.roundRect(xm - wp/2, ym - 7, wp, 14, 4); ctx.fill(); ctx.stroke();
+    } else {
+      ctx.fillRect(xm - wp/2, ym - 7, wp, 14); ctx.strokeRect(xm - wp/2, ym - 7, wp, 14);
+    }
     ctx.fillStyle = colS;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(txtPnl, xm, ym);
+    ctx.restore();
 
-    bulle(xE, ancreE, long ? 1 : -1, colE,
-      'BT ' + (long ? '\u25b2 ACHAT' : '\u25bc VENTE') + ' #' + (t.num || '?'),
-      ['entree ' + Number(t.pe).toFixed(2) + ' $']);
+    // Pastille Entrée avec numéro #N
+    drawSleekBadge(xE, ancreE, long ? 1 : -1, colE, num,
+      long ? 'ACHAT' : 'VENTE',
+      ['In : ' + fmtP(t.pe) + ' $']);
 
-    bulle(xS, ancreS, long ? -1 : 1, colS,
-      'BT SORTIE ' + (t.net >= 0 ? '+' : '') + Number(t.net).toFixed(2) + ' $',
-      ['sortie ' + Number(t.ps).toFixed(2) + ' $',
-       String(t.motif || 'sortie kk bis'),
-       (t.duree != null ? t.duree + ' min' : '')].filter(Boolean));
-  }
+    // Pastille Sortie avec le MÊME numéro #N
+    const pnlSigne = (t.net >= 0 ? '+' : '') + Number(t.net).toFixed(2) + ' $';
+    const subSor = ['Out : ' + fmtP(t.ps) + ' $ · ' + pnlSigne];
+    if(t.motif) subSor.push(String(t.motif) + (t.duree != null ? ' (' + t.duree + 'm)' : ''));
+    drawSleekBadge(xS, ancreS, long ? -1 : 1, colS, num,
+      t.liquide ? 'LIQUIDÉ' : 'SORTIE',
+      subSor);
+  });
   ctx.restore();
 };
 
@@ -30080,7 +30119,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1100';
+  window.__LUMEN_BUILD = 'B-1708-1110';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30504,7 +30543,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       }
 
       trades.push({
-        num: en.num, dir: dir, iE: en.i, iS: iS, liquide: liquide, excursion: excursion,
+        tradeNum: trades.length + 1,
+        num: en.num != null ? en.num : (trades.length + 1),
+        dir: dir, iE: en.i, iS: iS, liquide: liquide, excursion: excursion,
         capApres: capital > 0 ? capCourant : null,
         pe: pe, ps: ps, brut: brut, frais: frais, net: net, marge: marge, notionnel: notionnel,
         motif: motif,
