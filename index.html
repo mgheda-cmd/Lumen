@@ -12744,7 +12744,8 @@ function updatePaper(){
           ${entriesTag}${partialsTag}
         </div>
         <div style="font-size:10.5px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span>Prix Moyen: <strong style="color:var(--text)">$${fmt(p.entry, p.entry >= 100 ? 2 : 4)}</strong></span>
+          <span>📍 Entrée : <strong style="color:var(--text)">$${fmt(p.entry, p.entry >= 100 ? 2 : 4)}</strong></span>
+          <span style="color:#00E5FF;font-weight:700">⚡ En Direct : <b>$${px ? fmt(px, px >= 100 ? 2 : 4) : '—'}</b></span>
           ${liqTag}
           <span style="color:${p.sl?'#FF5252':'var(--muted)'};font-size:10px">
             🛑 SL: ${p.sl ? '$' + fmt(p.sl, p.sl >= 100 ? 2 : 4) : '—'}
@@ -30746,7 +30747,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1710';
+  window.__LUMEN_BUILD = 'B-1708-1720';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
