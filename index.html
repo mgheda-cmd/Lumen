@@ -16047,7 +16047,7 @@ function sendTelegramDemoExitNotification(data) {
 <b>Paire :</b> #${escapeHtml(coin)}/USDT (${sideStr})
 <b>Stratégie :</b> ${escapeHtml(stratName)}
 <b>Motif :</b> ${reasonStr}
-─────────────────���────────
+──────────────────────────
 <b>Prix d'entrée :</b> <code>${entryPxStr}</code>
 <b>Prix de sortie :</b> <code>${exitPxStr}</code>
 ──────────────────────────
@@ -16113,13 +16113,18 @@ function triggerMobileNotification(title, body, sig){
   const firstLine = body ? body.split('\n')[0] : '';
   toast(`🔔 [${nowStr}] ${title} : ${firstLine}`, '#00E5FF');
 
-  if('Notification' in window && Notification.permission === 'granted') {
-    try {
-      new Notification(`${title} [${nowStr}]`, {
-        body: `${nowStr} - ${body}`,
-        vibrate: [200, 100, 200]
-      });
-    } catch(e){}
+  // 1. Notification Ordinateur (Mac / Chrome)
+  if('Notification' in window) {
+    if(Notification.permission === 'granted') {
+      try {
+        new Notification(`${title} [${nowStr}]`, {
+          body: `${nowStr} - ${body}`,
+          vibrate: [200, 100, 200]
+        });
+      } catch(e){}
+    } else if(Notification.permission === 'default') {
+      try { Notification.requestPermission(); } catch(e){}
+    }
   }
 
   const symbolClean = (state.symbol || 'BTCUSDT').replace('USDT', '').toUpperCase();
@@ -16261,19 +16266,19 @@ function alertNewPhoneSignals(sigs, d){
 
     if(sig.type === 'ACHAT') {
       title = `🟢 ACHAT : ${sig.tag} (${symbolClean})`;
-      body = `Opportunité ACHAT MM sur #${symbolClean}/USDT à ${price} (${srcName})`;
+      body = `Opportunité ACHAT sur #${symbolClean}/USDT à ${price} (${srcName})`;
     } else if(sig.type === 'VENTE') {
       title = `🔴 VENTE : ${sig.tag} (${symbolClean})`;
-      body = `Opportunité VENTE MM sur #${symbolClean}/USDT à ${price} (${srcName})`;
+      body = `Opportunité VENTE sur #${symbolClean}/USDT à ${price} (${srcName})`;
     } else if(sig.type === 'SORTIE') {
       const isSommet = sig.tag === 'SOMMET MM';
       const ico = isSommet ? '🏔️' : '🌊';
-      title = `${ico} SORTIE MM : ${sig.tag} (${symbolClean})`;
+      title = `${ico} SORTIE : ${sig.tag} (${symbolClean})`;
       body = `${isSommet ? 'Sommet extrême atteint (Sortie Achat/Résistance)' : 'Creux extrême atteint (Sortie Vente/Support)'} sur #${symbolClean}/USDT à ${price}`;
     } else if(sig.type === 'SORTIE_OPPOSE') {
       const isAchatOppose = (sig.dir === 1);
       const ico = '🔄';
-      title = `${ico} SORTIE MM : ${isAchatOppose ? 'Pastille Verte (Sortie Vente)' : 'Pastille Rouge (Sortie Achat)'} (${symbolClean})`;
+      title = `${ico} SORTIE : ${isAchatOppose ? 'Pastille Verte (Sortie Vente)' : 'Pastille Rouge (Sortie Achat)'} (${symbolClean})`;
       body = `${isAchatOppose ? 'Pastille Achat opposée apparue -> Clôture / Sortie Vente recommandée' : 'Pastille Vente opposée apparue -> Clôture / Sortie Achat recommandée'} sur #${symbolClean}/USDT à ${price} (${srcName})`;
     }
 
@@ -16286,7 +16291,7 @@ function alertNewPhoneSignals(sigs, d){
 function checkAllAlerts(){
   if(!state.data || !state.data.length) return;
 
-  // Exécution de l'Auto-Trade si actif (indépendant de la config des notifs téléphones)
+  // 1. Exécution de l'Auto-Trade si actif (indépendant des notifs)
   if(paperAutoTrade){
     checkAutoTrade();
   }
@@ -16296,79 +16301,119 @@ function checkAllAlerts(){
 
   const allSignals = [];
   const d = state.data;
-  const baseMM = (state.indicators && state.indicators.strat_mm) || {};
-  let mmData;
-  try { mmData = computeMMSignals(d, baseMM); }catch(e){ mmData = null; }
 
-  if(mmData){
-    // 1. Signaux d'entrée Stratégie MM (Base & Option 2)
-    (mmData.signals || []).forEach(s => {
-      const isOpt2 = (s.optKey === 'opt2');
-      if(isOpt2 && phoneCfg.mmOpt2Alerts === false) return;
-      if(!isOpt2 && phoneCfg.mmBaseAlerts === false) return;
+  // 2. Signaux Stratégie MM (Base, Option 2, Sommets, Creux)
+  try {
+    const baseMM = (state.indicators && state.indicators.strat_mm) || {};
+    const mmData = computeMMSignals(d, baseMM);
+    if(mmData){
+      (mmData.signals || []).forEach(s => {
+        const isOpt2 = (s.optKey === 'opt2');
+        if(isOpt2 && phoneCfg.mmOpt2Alerts === false) return;
+        if(!isOpt2 && phoneCfg.mmBaseAlerts === false) return;
 
+        allSignals.push({
+          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
+          t: s.t,
+          price: s.price,
+          dir: s.dir,
+          type: s.dir === 1 ? 'ACHAT' : 'VENTE',
+          tag: isOpt2 ? 'MM Option 2' : 'MM Base',
+          source: 'strat_mm',
+          sourceName: isOpt2 ? 'Stratégie MM · Option 2' : 'Stratégie MM · Base'
+        });
+      });
+
+      if(phoneCfg.mmPivotsAlerts !== false){
+        (mmData.sommetsList || []).forEach(s => {
+          allSignals.push({
+            i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
+            t: s.t,
+            price: s.price,
+            dir: -1,
+            type: 'SORTIE',
+            tag: 'SOMMET MM',
+            originDir: 1,
+            source: 'strat_mm_sommet',
+            sourceName: 'Stratégie MM · Sommet Extrême (Sortie Achat)'
+          });
+        });
+        (mmData.creuxList || []).forEach(c => {
+          allSignals.push({
+            i: (c.t != null ? idxOfTime(c.t) : null) ?? c.i,
+            t: c.t,
+            price: c.price,
+            dir: 1,
+            type: 'SORTIE',
+            tag: 'CREUX MM',
+            originDir: -1,
+            source: 'strat_mm_creux',
+            sourceName: 'Stratégie MM · Creux Extrême (Sortie Vente)'
+          });
+        });
+      }
+    }
+  } catch(e){}
+
+  // 3. Signaux Stratégie Z. Z. (Pastilles Achat / Vente Directe / Sorties)
+  try {
+    const indZZ = Object.assign({}, (state.indicators && state.indicators.strat_zz) || {});
+    const zzSigs = computeZZSignals(d, indZZ, !!indZZ.strictMode, !!indZZ.strictEmaHa) || [];
+    zzSigs.forEach(s => {
+      allSignals.push({
+        i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
+        t: s.t,
+        price: s.price,
+        dir: s.dir,
+        type: s.isExit ? 'SORTIE' : (s.dir === 1 ? 'ACHAT' : 'VENTE'),
+        tag: s.isExit ? (s.reason || 'Sortie Z.Z.') : (s.dir === 1 ? 'PASTILLE ACHAT' : 'PASTILLE VENTE'),
+        source: 'strat_zz',
+        sourceName: 'Stratégie Z. Z.'
+      });
+    });
+  } catch(e){}
+
+  // 4. Signaux Confluence Triple
+  try {
+    if (typeof computeTripleConfluence === 'function') {
+      const tripSigs = computeTripleConfluence(d, state.indicators?.signal_triple || {}) || [];
+      tripSigs.forEach(s => {
+        allSignals.push({
+          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
+          t: s.t,
+          price: s.price,
+          dir: s.dir,
+          type: s.dir === 1 ? 'ACHAT' : 'VENTE',
+          tag: 'TRIPLE CONFLUENCE',
+          source: 'strat_triple',
+          sourceName: 'Confluence Triple'
+        });
+      });
+    }
+  } catch(e){}
+
+  // 5. Signaux Confluence Standard
+  try {
+    const stdSigs = computeSignals(d, state.indicators?.signal || {}) || [];
+    stdSigs.forEach(s => {
       allSignals.push({
         i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
         t: s.t,
         price: s.price,
         dir: s.dir,
         type: s.dir === 1 ? 'ACHAT' : 'VENTE',
-        tag: isOpt2 ? 'MM Option 2 (iMACD)' : 'MM Base',
-        source: 'strat_mm',
-        sourceName: isOpt2 ? 'Stratégie MM · Option 2 (iMACD)' : 'Stratégie MM · Base'
+        tag: 'CONFLUENCE',
+        source: 'strat_confluence',
+        sourceName: 'Confluence Standard'
       });
-
-      // 2. Signal de Sortie MM sur apparition de pastille opposée
-      if(phoneCfg.mmOpposeAlerts !== false){
-        allSignals.push({
-          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
-          t: s.t,
-          price: s.price,
-          dir: s.dir,
-          type: 'SORTIE_OPPOSE',
-          tag: s.dir === 1 ? 'PASTILLE VERTE (SORTIE VENTE)' : 'PASTILLE ROUGE (SORTIE ACHAT)',
-          originDir: s.dir === 1 ? -1 : 1,
-          source: 'strat_mm_oppose',
-          sourceName: isOpt2 ? 'Stratégie MM · Option 2' : 'Stratégie MM · Base'
-        });
-      }
     });
-
-    // 3. Sommets et Creux MM (Sorties & Niveaux extrêmes)
-    if(phoneCfg.mmPivotsAlerts !== false){
-      (mmData.sommetsList || []).forEach(s => {
-        allSignals.push({
-          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
-          t: s.t,
-          price: s.price,
-          dir: -1,
-          type: 'SORTIE',
-          tag: 'SOMMET MM',
-          originDir: 1,
-          source: 'strat_mm_sommet',
-          sourceName: 'Stratégie MM · Sommet Extrême (Sortie Achat)'
-        });
-      });
-      (mmData.creuxList || []).forEach(c => {
-        allSignals.push({
-          i: (c.t != null ? idxOfTime(c.t) : null) ?? c.i,
-          t: c.t,
-          price: c.price,
-          dir: 1,
-          type: 'SORTIE',
-          tag: 'CREUX MM',
-          originDir: -1,
-          source: 'strat_mm_creux',
-          sourceName: 'Stratégie MM · Creux Extrême (Sortie Vente)'
-        });
-      });
-    }
-  }
+  } catch(e){}
 
   if(allSignals.length > 0){
     alertNewPhoneSignals(allSignals, state.data);
   }
 }
+
 
 /* ---------- Signaux de confluence (façon flèches d'achat/vente) ---------- */
 function computeSignals(d,ind){
@@ -30941,7 +30986,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1770';
+  window.__LUMEN_BUILD = 'B-1708-1780';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
