@@ -201,6 +201,22 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   padding:8px; display:none; max-height:70vh; overflow:auto;
 }
 .ind-menu.open{display:block}
+#notif-menu.open, #sync-menu.open {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: min(440px, 94vw) !important;
+  max-height: 88vh !important;
+  overflow-y: auto !important;
+  z-index: 99999 !important;
+  display: block !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.92) !important;
+  border-radius: 14px !important;
+  background: var(--panel, #0A111F) !important;
+}
 .ind-menu h4{
   font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--faint);
   padding:8px 10px 4px;
@@ -2015,7 +2031,7 @@ footer{
 
   <!-- Popups notifications et synchronisation -->
   <div class="ind-wrap" style="position:static">
-    <div class="ind-menu" id="notif-menu" style="width:340px;right:0;left:auto;padding:12px">
+    <div class="ind-menu" id="notif-menu" style="width:min(440px,94vw);padding:14px;border:1.5px solid #00E5FF">
       <div style="padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-weight:700;font-size:13px;color:#00E5FF">🔔 Notifications Mobile</span>
         <div style="display:flex;align-items:center;gap:10px">
@@ -2123,7 +2139,7 @@ footer{
   </div>
 
   <div class="ind-wrap" style="position:static">
-    <div class="ind-menu" id="sync-menu" style="width:320px;right:0;left:auto">
+    <div class="ind-menu" id="sync-menu" style="width:min(400px,92vw);padding:14px;border:1.5px solid #A78BFA">
       <h4>Synchronisation iPhone ↔ iPad</h4>
       <div style="padding:2px 10px 8px;font-size:12px;color:var(--muted);line-height:1.5">
         Colle un jeton GitHub (accès « Contents » en écriture au dépôt Lumen).
@@ -11926,19 +11942,15 @@ function syncPush(){
   clearTimeout(syncTimer);
   syncTimer=setTimeout(()=>syncPushNow(false),1500);
 }
-syncBtn.addEventListener('click',()=>{
+syncBtn.addEventListener('click',(e)=>{
+  e?.stopPropagation?.();
   const open=syncMenuEl.classList.toggle('open');
   if(open){
-    menu.classList.remove('open');symMenu.classList.remove('open');
-    // positionnement robuste : sous le bouton, ancré au bord droit, dans l'écran
-    const r=syncBtn.getBoundingClientRect();
-    syncMenuEl.style.position='fixed';
-    syncMenuEl.style.top=(r.bottom+6)+'px';
-    syncMenuEl.style.right='8px';
-    syncMenuEl.style.left='auto';
-    syncMenuEl.style.maxHeight=(window.innerHeight-r.bottom-16)+'px';
-    syncMenuEl.style.overflowY='auto';
-    syncMenuEl.style.zIndex='120';
+    if(typeof menu!=='undefined'&&menu) menu.classList.remove('open');
+    if(typeof symMenu!=='undefined'&&symMenu) symMenu.classList.remove('open');
+    if(typeof notifMenuEl!=='undefined'&&notifMenuEl) notifMenuEl.classList.remove('open');
+    const toolsMenu = document.getElementById('tools-menu');
+    if(toolsMenu) toolsMenu.classList.remove('open');
     document.getElementById('sync-token').value=syncToken;
     setSyncStatus(syncToken?'Synchro active':'Synchro désactivée');
   }
@@ -12084,18 +12096,11 @@ if(notifBtn && notifMenuEl){
     e.stopPropagation();
     const open = notifMenuEl.classList.toggle('open');
     if(open){
-      if(menu) menu.classList.remove('open');
-      if(typeof symMenu!=='undefined') symMenu.classList.remove('open');
-      if(syncMenuEl) syncMenuEl.classList.remove('open');
-
-      const r = notifBtn.getBoundingClientRect();
-      notifMenuEl.style.position = 'fixed';
-      notifMenuEl.style.top = (r.bottom + 6) + 'px';
-      notifMenuEl.style.right = '8px';
-      notifMenuEl.style.left = 'auto';
-      notifMenuEl.style.maxHeight = (window.innerHeight - r.bottom - 16) + 'px';
-      notifMenuEl.style.overflowY = 'auto';
-      notifMenuEl.style.zIndex = '120';
+      if(typeof menu!=='undefined'&&menu) menu.classList.remove('open');
+      if(typeof symMenu!=='undefined'&&symMenu) symMenu.classList.remove('open');
+      if(typeof syncMenuEl!=='undefined'&&syncMenuEl) syncMenuEl.classList.remove('open');
+      const toolsMenu = document.getElementById('tools-menu');
+      if(toolsMenu) toolsMenu.classList.remove('open');
       loadPhoneNotifUI();
     }
   });
@@ -30148,7 +30153,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1450';
+  window.__LUMEN_BUILD = 'B-1708-1460';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
