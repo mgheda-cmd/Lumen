@@ -15791,11 +15791,25 @@ ${escapeHtml(body)}
   // Émission vers le Web Auto-Trader (UNIQUEMENT SI LE BOUTON EST ACTIONNÉ)
   if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
     try {
+      let liveBotConfig = {};
+      try {
+        const raw = localStorage.getItem('lumen_live_exchange_bot');
+        if (raw) liveBotConfig = JSON.parse(raw);
+      } catch(e){}
+
+      const budgetVal = Number(liveBotConfig.tradeBudget || document.getElementById('live-ex-trade-budget')?.value || 10);
+      const unitVal = liveBotConfig.tradeUnit || document.getElementById('live-ex-trade-unit')?.value || 'USDT';
+      const levVal = Number(liveBotConfig.lev || document.getElementById('live-ex-lev')?.value || 200);
+
       const webSignal = {
         type: 'LUMEN_TRADE_SIGNAL',
         symbol: mexcPair,
         side: isBuy ? 'BUY' : 'SELL',
         price: sig?.price,
+        budget: budgetVal,
+        unit: unitVal,
+        leverage: levVal,
+        sl: liveBotConfig.sl || 0,
         timeframe: state.tf,
         timestamp: Date.now()
       };
@@ -15804,7 +15818,7 @@ ${escapeHtml(body)}
         bc.postMessage(webSignal);
       }
       localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
-      toast(`⚡ Web Auto-Trader : Signal ${webSignal.side} transmis à MEXC (0.02%)`, '#10B981');
+      toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${budgetVal} ${unitVal} @ ${levVal}x) transmis à MEXC (0.02%)`, '#10B981');
     } catch(e){}
   }
 
@@ -30566,7 +30580,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1650';
+  window.__LUMEN_BUILD = 'B-1708-1660';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

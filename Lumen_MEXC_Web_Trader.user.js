@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (Frais Réduits 0.02%)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      1.3.0
-// @description  Exécute automatiquement les signaux de Lumen Charts sur l'interface Web officielle de MEXC Futures (Tarif Manuel 0.02% sans passer par les clés API)
+// @version      1.4.0
+// @description  Exécute automatiquement les ordres de Lumen Charts sur MEXC Futures avec montant, levier et prix envoyés depuis Lumen (Tarif 0.02%)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
 // @match        *://futures.mexc.com/*
@@ -14,7 +14,7 @@
 (function() {
     'use strict';
 
-    console.log('>>> [Lumen Web Trader] Script injecté avec succès sur MEXC !');
+    console.log('>>> [Lumen Web Trader] Script v1.4.0 actif (Transmission intégrale des montants)');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -25,7 +25,7 @@
 
         const hud = document.createElement('div');
         hud.id = 'lumen-web-hud';
-        hud.style.cssText = 'position:fixed;top:65px;right:20px;z-index:99999999;background:#0F172A;border:2.5px solid #10B981;border-radius:10px;padding:10px 16px;color:#FFFFFF;font-family:sans-serif;font-size:12px;font-weight:bold;box-shadow:0 0 25px rgba(16,185,129,0.7);display:flex;align-items:center;gap:10px;pointer-events:none;';
+        hud.style.cssText = 'position:fixed;top:65px;right:20px;z-index:99999999;background:rgba(15,23,42,0.96);border:2.5px solid #10B981;border-radius:10px;padding:10px 16px;color:#FFFFFF;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:bold;box-shadow:0 0 25px rgba(16,185,129,0.7);display:flex;align-items:center;gap:10px;pointer-events:none;';
         hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen Connecté</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.02% FRAIS</span>';
         document.body.appendChild(hud);
     }
@@ -45,17 +45,60 @@
         }, 5000);
     }
 
+    // Helper pour renseigner les champs React / Vue de MEXC
+    function setNativeValue(element, value) {
+        const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
+        const prototype = Object.getPrototypeOf(element);
+        const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+        if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
+            prototypeValueSetter.call(element, value);
+        } else if (valueSetter) {
+            valueSetter.call(element, value);
+        } else {
+            element.value = value;
+        }
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
     async function executeMarketOrder(signal) {
         try {
-            console.log('[Lumen Web Trader] Signal reçu:', signal);
-            notifyHud(`Signal : ${signal.side} ${signal.symbol}`, signal.side === 'BUY' ? '#10B981' : '#EF4444');
+            console.log('[Lumen Web Trader] Signal complet reçu:', signal);
+            const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
+            notifyHud(`Signal : ${signal.side} ${signal.symbol} (${budgetStr})`, signal.side === 'BUY' ? '#10B981' : '#EF4444');
 
-            const buttons = Array.from(document.querySelectorAll('button, div[role="tab"], span, div'));
-            const marketBtn = buttons.find(el => el.textContent && (el.textContent.trim() === 'Market' || el.textContent.trim() === 'Marché' || el.textContent.trim() === '市价'));
-            if (marketBtn) marketBtn.click();
+            // 1. Sélectionner l'onglet 'Market' (Marché)
+            const tabs = Array.from(document.querySelectorAll('button, div[role="tab"], span, div'));
+            const marketBtn = tabs.find(el => {
+                const txt = (el.textContent || '').trim();
+                return txt === 'Market' || txt === 'Marché' || txt === '市价';
+            });
+            if (marketBtn) {
+                marketBtn.click();
+            }
 
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 150));
 
+            // 2. Remplir le montant / quantité si transmis depuis Lumen
+            if (signal.budget && signal.budget > 0) {
+                const inputs = Array.from(document.querySelectorAll('input'));
+                const qtyInput = inputs.find(inp => {
+                    const ph = (inp.placeholder || '').toLowerCase();
+                    const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
+                    const name = (inp.name || '').toLowerCase();
+                    return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || aria.includes('amount') || name.includes('amount') || name.includes('vol');
+                }) || inputs[0];
+
+                if (qtyInput) {
+                    qtyInput.focus();
+                    setNativeValue(qtyInput, String(signal.budget));
+                    console.log('[Lumen Web Trader] Montant renseigné automatiquement:', signal.budget);
+                }
+            }
+
+            await new Promise(r => setTimeout(r, 150));
+
+            // 3. Cliquer sur le bouton Ouvrir Long / Ouvrir Short
             const isBuy = signal.side === 'BUY' || signal.side === 'LONG';
             const actionButtons = Array.from(document.querySelectorAll('button'));
             
@@ -70,13 +113,14 @@
 
             if (targetBtn && !targetBtn.disabled) {
                 targetBtn.click();
-                notifyHud(`✅ Ordre ${signal.side} validé (0.02%) !`, isBuy ? '#10B981' : '#EF4444');
+                notifyHud(`✅ Ordre ${signal.side} (${budgetStr}) validé à 0.02% !`, isBuy ? '#10B981' : '#EF4444');
+                console.log('[Lumen Web Trader] Ordre validé avec succès sur MEXC !');
             } else {
-                notifyHud('⚠️ Bouton non trouvé sur MEXC', '#F59E0B');
+                notifyHud('⚠️ Bouton d\'action non trouvé sur MEXC', '#F59E0B');
             }
         } catch (e) {
             console.error('[Lumen Web Trader] Erreur:', e);
-            notifyHud('❌ Erreur ordre', '#EF4444');
+            notifyHud('❌ Erreur exécution', '#EF4444');
         }
     }
 
