@@ -30080,7 +30080,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1055';
+  window.__LUMEN_BUILD = 'B-1708-1100';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -31074,10 +31074,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="chrono">Première sortie qui suit</option>' +
         '<option value="numero">Même numéro strictement</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Sorties<br><select id="bta-sor" style="' + sel + '">' +
-        '<option value="mm_opp" selected>🔄 Stratégie MM — Sommet / Creux opposé</option>' +
-        '<option value="tout">kk bis — toutes</option>' +
+        '<option value="tout" selected>kk bis — toutes</option>' +
         '<option value="div">kk bis — divergences seules</option>' +
-        '<option value="seuil">kk bis — seuil + pente seul</option></select></label>' +
+        '<option value="seuil">kk bis — seuil + pente seul</option>' +
+        '<option value="mm_opp">🔄 Stratégie MM — Sommet / Creux opposé</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Une entrée en sens opposé ferme-t-elle la position en cours ? Dès qu\'elle arrive : la première des deux, sortie kk bis ou signal opposé, ferme le trade, donc une seule position à la fois. Seulement si aucune sortie kk bis : le signal opposé ne sert que de secours, ce qui laisse des positions se chevaucher.">Sortie entrée opposée<br><select id="bta-opp" style="' + sel + '">' +
         '<option value="toujours" selected>Dès qu\'elle arrive — la 1re des deux ferme</option>' +
         '<option value="sans_sortie">Seulement si aucune sortie kk bis</option>' +
@@ -31422,9 +31422,10 @@ window.envoyerVersMexc = function(){
   window.balayerKKFusion = function(mode){ return window.balayerKK(mode || 'union'); };
 
   window.balayerKK = async function(fusion){
-    /* fusion vaut 'off' pour le balayage d'origine, ou 'union' / 'accord'
-       pour faire produire des sorties à la seconde unité de temps. */
-    fusion = fusion || 'off';
+    /* Par défaut, fusion vaut 'union' pour que chaque paire d'unités de temps
+       (ex. 1m × 3m, 1m × 5m) produise des sorties distinctes et donne des
+       résultats réellement différents sur les 21 lignes. */
+    fusion = fusion || 'union';
     const box = document.getElementById('bta-res');
     const info = document.getElementById('bta-charge');
     if(!state.indicators || !state.indicators.kk_bis){
@@ -31438,6 +31439,13 @@ window.envoyerVersMexc = function(){
     const avF = state.indicators.kk_bis.fusionTf2;
     window.__balayageFusion = fusion;
 
+    // Si le sélecteur de sortie était réglé sur 'mm_opp', on bascule sur kk bis 'tout' pendant le balayage kk bis
+    const selSor = document.getElementById('bta-sor');
+    const avSor = selSor ? selSor.value : 'tout';
+    if(selSor && selSor.value === 'mm_opp'){
+      selSor.value = 'tout';
+    }
+
     const combis = [];
     for(const a of UTS){
       for(const b of UTS){
@@ -31450,7 +31458,7 @@ window.envoyerVersMexc = function(){
     const res = [];
     for(let k = 0; k < combis.length; k++){
       const [a, b] = combis[k];
-      if(info) info.innerHTML = '<span style="color:#7DD3FC">Balayage ' + (k+1) + ' / ' +
+      if(info) info.innerHTML = '<span style="color:#7DD3FC">Balayage kk bis ' + (k+1) + ' / ' +
         combis.length + ' · ' + a + 'm × ' + b + 'm…</span>';
       state.indicators.kk_bis.tf = a;
       state.indicators.kk_bis.tf2 = b;
@@ -31477,6 +31485,7 @@ window.envoyerVersMexc = function(){
     state.indicators.kk_bis.tf = av1;
     state.indicators.kk_bis.tf2 = av2;
     state.indicators.kk_bis.fusionTf2 = avF;
+    if(selSor) selSor.value = avSor;
     state.cache = {};
 
     /* Note sur 10, pondérée selon ce qui compte vraiment pour tenir une
