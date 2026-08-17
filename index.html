@@ -2046,13 +2046,16 @@ footer{
       <!-- Section Browser Push -->
       <div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:11.5px;font-weight:700;color:#E2E8F0">📲 Push Navigateur (Mobile & PWA)</span>
+          <span style="font-size:11.5px;font-weight:700;color:#E2E8F0">📲 Push Navigateur (iPhone & PWA)</span>
           <span id="notif-perm-badge" style="font-size:9.5px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(255,255,255,0.1);color:#94A3B8">Inconnu</span>
         </div>
         <div style="font-size:10.5px;color:#94A3B8;margin-bottom:6px;line-height:1.3">
           Affiche une bannière d'alerte directement sur votre téléphone lorsque le navigateur est ouvert ou en arrière-plan.
         </div>
         <button class="btn" id="btn-req-notif-perm" style="width:100%;font-size:11px;padding:5px;border-color:#00E5FF;color:#00E5FF;font-weight:700">🔔 Autoriser les Notifications Push</button>
+        <div style="font-size:10px;color:#38BDF8;margin-top:5px;line-height:1.3;background:rgba(56,189,248,0.08);padding:4px 6px;border-radius:5px">
+          🍏 <b>Astuce iPhone :</b> Sur Safari, appuyez sur le bouton <b>Partager</b> (carré avec flèche) ➔ <b>« Sur l'écran d'accueil »</b> pour recevoir les pushs avec son et badge comme une vraie application !
+        </div>
       </div>
 
       <!-- Section Telegram Mobile -->
@@ -2089,6 +2092,29 @@ footer{
           </div>
         </div>
         <button class="btn" id="btn-test-telegram" style="width:100%;font-size:10.5px;padding:5px;border-color:#38BDF8;color:#38BDF8;font-weight:700">📩 Tester la notification Telegram</button>
+      </div>
+
+      <!-- Section WhatsApp Mobile -->
+      <div style="background:var(--panel-2,#0F172A);border:1.5px solid #25D366;border-radius:8px;padding:9px 10px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:11.5px;font-weight:800;color:#25D366">💬 WhatsApp (Push iPhone & Android)</span>
+          <span style="font-size:9.5px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(37,211,102,0.18);color:#25D366">CallMeBot API</span>
+        </div>
+        <div style="font-size:10.5px;color:#94A3B8;margin-bottom:6px;line-height:1.3">
+          Reçois toutes les alertes de pastilles (Entrées, Sorties, Démo) directement sur ton WhatsApp !
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px">
+          <a href="https://api.whatsapp.com/send?phone=34941019999&text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener" class="btn" style="display:block;text-align:center;text-decoration:none;font-size:10.5px;padding:6px;border-color:#25D366;color:#25D366;font-weight:700;width:100%;box-sizing:border-box;background:rgba(37,211,102,0.12)">
+            🟢 1. Activer sur WhatsApp (Envoyer le message d'autorisation)
+          </a>
+          <div style="display:flex;gap:4px">
+            <input id="notif-wa-phone" type="tel" placeholder="Numéro Tel (+33... ou +216...)"
+              style="flex:1;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+            <input id="notif-wa-apikey" type="text" placeholder="Clé API reçue"
+              style="flex:1;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+          </div>
+        </div>
+        <button class="btn" id="btn-test-whatsapp" style="width:100%;font-size:10.5px;padding:5px;border-color:#25D366;color:#25D366;font-weight:700;background:rgba(37,211,102,0.08)">📲 Tester la notification WhatsApp</button>
       </div>
 
       <!-- Types de signaux MM -->
@@ -12073,6 +12099,8 @@ function loadPhoneNotifUI(){
   if(document.getElementById('notif-type-mm-pivots')) document.getElementById('notif-type-mm-pivots').checked = cfg.mmPivotsAlerts !== false;
   if(document.getElementById('notif-tg-token')) document.getElementById('notif-tg-token').value = cfg.telegramToken || '';
   if(document.getElementById('notif-tg-chatid')) document.getElementById('notif-tg-chatid').value = cfg.telegramChatId || '';
+  if(document.getElementById('notif-wa-phone')) document.getElementById('notif-wa-phone').value = cfg.waPhone || '';
+  if(document.getElementById('notif-wa-apikey')) document.getElementById('notif-wa-apikey').value = cfg.waApiKey || '';
   if(document.getElementById('notif-webhook-url')) document.getElementById('notif-webhook-url').value = cfg.webhookUrl || '';
   if(document.getElementById('notif-sound')) document.getElementById('notif-sound').checked = cfg.sound !== false;
   if(document.getElementById('notif-vibrate')) document.getElementById('notif-vibrate').checked = cfg.vibrate !== false;
@@ -12089,6 +12117,8 @@ function savePhoneNotifUI(){
     mmPivotsAlerts: document.getElementById('notif-type-mm-pivots')?.checked ?? true,
     telegramToken: document.getElementById('notif-tg-token')?.value.trim() ?? '',
     telegramChatId: document.getElementById('notif-tg-chatid')?.value.trim() ?? '',
+    waPhone: document.getElementById('notif-wa-phone')?.value.trim() ?? '',
+    waApiKey: document.getElementById('notif-wa-apikey')?.value.trim() ?? '',
     webhookUrl: document.getElementById('notif-webhook-url')?.value.trim() ?? '',
     sound: document.getElementById('notif-sound')?.checked ?? true,
     vibrate: document.getElementById('notif-vibrate')?.checked ?? true,
@@ -12140,10 +12170,29 @@ if(notifBtn && notifMenuEl){
     if(token) verifyTelegramBotToken(token);
   });
 
-  const inputs = ['notif-master-enable', 'notif-type-mm-base', 'notif-type-mm-opt2', 'notif-type-mm-oppose', 'notif-type-mm-pivots', 'notif-tg-token', 'notif-tg-chatid', 'notif-webhook-url', 'notif-sound', 'notif-vibrate'];
+  const inputs = ['notif-master-enable', 'notif-type-mm-base', 'notif-type-mm-opt2', 'notif-type-mm-oppose', 'notif-type-mm-pivots', 'notif-tg-token', 'notif-tg-chatid', 'notif-wa-phone', 'notif-wa-apikey', 'notif-webhook-url', 'notif-sound', 'notif-vibrate'];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.addEventListener('change', savePhoneNotifUI);
+  });
+
+  document.getElementById('btn-test-whatsapp')?.addEventListener('click', ()=>{
+    savePhoneNotifUI();
+    const phone = document.getElementById('notif-wa-phone')?.value.trim();
+    const key = document.getElementById('notif-wa-apikey')?.value.trim();
+    const statusMsg = document.getElementById('notif-status-msg');
+    if(!phone || !key){
+      toast('Indiquez votre numéro et clé API WhatsApp', '#F45B7D');
+      if(statusMsg) statusMsg.textContent = '❌ Numéro ou clé API WhatsApp manquant';
+      return;
+    }
+    if(statusMsg) statusMsg.textContent = '⚡ Envoi du message test WhatsApp...';
+    sendWhatsAppNotification('🔔 *Test Lumen Charts*\nVos alertes de pastilles WhatsApp fonctionnent à merveille sur votre iPhone !').then(() => {
+      if(statusMsg) statusMsg.textContent = '✅ Message test WhatsApp envoyé avec succès !';
+      toast('Message test WhatsApp envoyé !', '#25D366');
+    }).catch(() => {
+      if(statusMsg) statusMsg.textContent = '❌ Erreur d\'envoi WhatsApp';
+    });
   });
 
   document.getElementById('btn-req-notif-perm')?.addEventListener('click', ()=>{
@@ -15378,6 +15427,8 @@ function getPhoneNotifConfig(){
     mexcOnly: false,
     telegramToken: '',
     telegramChatId: '',
+    waPhone: '',
+    waApiKey: '',
     webhookUrl: '',
     sound: true,
     vibrate: true
@@ -15393,6 +15444,22 @@ function savePhoneNotifConfig(cfg){
   try {
     localStorage.setItem('lumen-phone-notifs', JSON.stringify(cfg));
   } catch(e){}
+}
+
+function sendWhatsAppNotification(text, source){
+  const cfg = getPhoneNotifConfig();
+  if(!cfg.waPhone || !cfg.waApiKey) return Promise.resolve({ ok: false, description: 'WhatsApp non configuré' });
+  let phone = cfg.waPhone.trim().replace(/[\s\-\.\(\)]/g, '');
+  if(!phone.startsWith('+')) phone = '+' + phone;
+  const plain = text
+    .replace(/<b>(.*?)<\/b>/gi, '*$1*')
+    .replace(/<i>(.*?)<\/i>/gi, '_$1_')
+    .replace(/<code>(.*?)<\/code>/gi, '`$1`')
+    .replace(/<[^>]*>/g, '');
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(plain)}&apikey=${encodeURIComponent(cfg.waApiKey.trim())}`;
+  return fetch(url, { mode: 'no-cors' })
+    .then(() => ({ ok: true }))
+    .catch(err => ({ ok: false, description: err.message || 'Erreur WhatsApp' }));
 }
 
 function sendTelegramNotification(text, source){
@@ -15562,6 +15629,7 @@ function triggerMobileNotification(title, body, sig){
   const symbolClean = (state.symbol || '').replace('USDT', '');
   const tgMsg = `<b>🔔 ${escapeHtml(title)}</b>\n${escapeHtml(body)}\n<i>Paire: #${escapeHtml(symbolClean)}/USDT (${state.tf}m)</i>`;
   sendTelegramNotification(tgMsg);
+  if(typeof sendWhatsAppNotification === 'function') sendWhatsAppNotification(tgMsg);
 
   sendWebhookNotification({
     title,
@@ -30180,7 +30248,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1480';
+  window.__LUMEN_BUILD = 'B-1708-1490';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
