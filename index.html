@@ -30122,7 +30122,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1125';
+  window.__LUMEN_BUILD = 'B-1708-1240';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30216,17 +30216,40 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       let mmData;
       try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
       const exits = [];
+
+      /* Un sommet ou un creux n'est PAS connu à la bougie où il se forme :
+         le code suit le maximum tant que le score reste au-delà du seuil, et
+         ne referme l'épisode qu'au retour sous le seuil. Mesuré sur 276
+         pivots : 4,1 bougies de retard en moyenne, jusqu'à 24, et jamais
+         zéro. Sortir à la bougie du pivot revient donc à sortir au plus haut
+         exact avec une information que le marché n'avait pas encore donnée.
+
+         On décale la sortie à la bougie où le seuil est refranchi, moment où
+         le pivot devient réellement identifiable. */
+      const netMM = mmData.net || [];
+      const sH = (state.indicators.kk_bis2 && state.indicators.kk_bis2.upper != null)
+                 ? +state.indicators.kk_bis2.upper : 75;
+      const sB = (state.indicators.kk_bis2 && state.indicators.kk_bis2.lower != null)
+                 ? +state.indicators.kk_bis2.lower : -75;
+      const confirme = function(iPivot, haut){
+        let j = iPivot;
+        while(j < netMM.length && netMM[j] != null &&
+              (haut ? netMM[j] >= sH : netMM[j] <= sB)) j++;
+        return (j < d.length) ? j : null;   // pivot encore en cours : pas de sortie
+      };
       // Sommets MM (ferment les achats / Longs) -> type: 'SORTIE_ACHAT'
       (mmData.sommetsList || []).forEach(function(s, k){
-        const i = (s.t != null && typeof idxOfTime === 'function') ? idxOfTime(s.t) : s.i;
+        const iPiv = (s.t != null && typeof idxOfTime === 'function') ? idxOfTime(s.t) : s.i;
+        const i = (iPiv != null) ? confirme(iPiv, true) : null;
         if(i != null && d[i]) {
           exits.push({
             i: i,
             type: 'SORTIE_ACHAT',
             dir: 1,
             isExit: true,
-            price: d[i].c || s.price,
-            t: s.t,
+            price: d[i].c,
+            t: d[i].t,
+            iPivot: iPiv,
             div: false,
             label: 'Sommet MM (Sortie Achat)',
             num: k + 1
@@ -30235,15 +30258,17 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       });
       // Creux MM (ferment les ventes / Shorts) -> type: 'SORTIE_VENTE'
       (mmData.creuxList || []).forEach(function(c, k){
-        const i = (c.t != null && typeof idxOfTime === 'function') ? idxOfTime(c.t) : c.i;
+        const iPiv = (c.t != null && typeof idxOfTime === 'function') ? idxOfTime(c.t) : c.i;
+        const i = (iPiv != null) ? confirme(iPiv, false) : null;
         if(i != null && d[i]) {
           exits.push({
             i: i,
             type: 'SORTIE_VENTE',
             dir: -1,
             isExit: true,
-            price: d[i].c || c.price,
-            t: c.t,
+            price: d[i].c,
+            t: d[i].t,
+            iPivot: iPiv,
             div: false,
             label: 'Creux MM (Sortie Vente)',
             num: k + 1
