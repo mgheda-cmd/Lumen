@@ -30119,7 +30119,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1110';
+  window.__LUMEN_BUILD = 'B-1708-1115';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30542,6 +30542,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         if(capCourant <= 0){ capCourant = 0; ruine = true; }
       }
 
+      const motifEnt = en.trigger || (mEnt === 'mm_base' ? 'MM Base' : mEnt === 'mm_opt2' ? 'MM Option 2 (iMACD)' : 'Signal Z.Z.');
       trades.push({
         tradeNum: trades.length + 1,
         num: en.num != null ? en.num : (trades.length + 1),
@@ -30549,8 +30550,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         capApres: capital > 0 ? capCourant : null,
         pe: pe, ps: ps, brut: brut, frais: frais, net: net, marge: marge, notionnel: notionnel,
         motif: motif,
+        motifEntree: motifEnt,
         duree: Math.round((d[iS].t - d[en.i].t) / 60000),
-        trigger: en.trigger || ''
+        trigger: motifEnt
       });
     }
 
@@ -30705,8 +30707,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     h += '<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
       '<table style="width:100%;border-collapse:collapse;font-size:10.5px;font-family:\'IBM Plex Mono\',monospace">' +
       '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
-      '<th style="padding:5px">N°</th><th style="padding:5px">#</th><th style="padding:5px">Sens</th><th style="padding:5px">Entrée</th>' +
-      '<th style="padding:5px">Sortie</th><th style="padding:5px">Motif</th><th style="padding:5px">Durée</th>' +
+      '<th style="padding:5px">N°</th><th style="padding:5px">#</th><th style="padding:5px">Sens</th>' +
+      '<th style="padding:5px;color:#7DD3FC">Motif Entrée</th>' +
+      '<th style="padding:5px">Entrée</th>' +
+      '<th style="padding:5px">Sortie</th><th style="padding:5px">Motif Sortie</th><th style="padding:5px">Durée</th>' +
       '<th style="padding:5px">Frais</th><th style="padding:5px;color:#FF5252">DD Trade</th><th style="padding:5px">Net</th><th style="padding:5px;color:#00E5FF">Solde</th>' +
       '<th style="padding:5px;color:#FF5252" title="Trade emporte par la liquidation avant sa sortie">Liq.</th></tr>';
     trades.forEach(function(t, k){
@@ -30715,6 +30719,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<td style="padding:4px 5px;color:#94A3B8;font-weight:700">' + (k + 1) + '</td>' +
         '<td style="padding:4px 5px;color:#00E5FF;font-weight:700">#' + t.num + '</td>' +
         '<td style="padding:4px 5px;color:' + (t.dir === 1 ? '#10B981' : '#FF5252') + ';font-weight:700">' + (t.dir === 1 ? 'ACHAT' : 'VENTE') + '</td>' +
+        '<td style="padding:4px 5px;color:#7DD3FC;font-weight:700">' + (t.motifEntree || t.trigger || 'Signal') + '</td>' +
         '<td style="padding:4px 5px"><span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + t.pe.toFixed(2) + ' $</span></td>' +
         '<td style="padding:4px 5px"><span style="color:#000000;background:#E2E8F0;font-weight:900;padding:2px 5px;border-radius:4px;display:inline-block">' + t.ps.toFixed(2) + ' $</span></td>' +
         '<td style="padding:4px 5px;color:#E2E8F0;font-weight:700">' + t.motif + '</td>' +
