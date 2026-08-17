@@ -30122,7 +30122,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1340';
+  window.__LUMEN_BUILD = 'B-1708-1345';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30237,6 +30237,32 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
   function sorties(filtre){
     const d = state.data || [];
+
+    // Sortie sur Apparition d'un signal opposé MM (Achat MM ferme Vente, Vente MM ferme Achat)
+    if(filtre === 'mm_sig_opp'){
+      const baseMM = (state.indicators && state.indicators.strat_mm) || {};
+      let mmData;
+      try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
+      const exits = [];
+      (mmData.signals || []).forEach(function(sg, k){
+        const i = (sg.t != null && typeof idxOfTime === 'function') ? idxOfTime(sg.t) : sg.i;
+        if(i != null && d[i]) {
+          exits.push({
+            i: i,
+            type: (sg.dir === -1) ? 'SORTIE_ACHAT' : 'SORTIE_VENTE',
+            dir: (sg.dir === -1) ? 1 : -1,
+            isExit: true,
+            price: sg.price || d[i].c,
+            t: sg.t,
+            div: false,
+            label: (sg.dir === -1 ? 'Signal Vente MM (Sortie Achat)' : 'Signal Achat MM (Sortie Vente)'),
+            num: k + 1
+          });
+        }
+      });
+      return exits.filter(x => x.i != null).sort((a,b) => a.i - b.i);
+    }
+
     if(filtre === 'mm_opp'){
       const baseMM = (state.indicators && state.indicators.strat_mm) || {};
       let mmData;
@@ -31182,10 +31208,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="chrono">Première sortie qui suit</option>' +
         '<option value="numero">Même numéro strictement</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Sorties<br><select id="bta-sor" style="' + sel + '">' +
-        '<option value="tout" selected>kk bis — toutes</option>' +
+        '<option value="mm_sig_opp" selected>🔄 Stratégie MM — Signal opposé</option>' +
+        '<option value="mm_opp">🏔️ Stratégie MM — Sommet / Creux opposé</option>' +
+        '<option value="tout">kk bis — toutes</option>' +
         '<option value="div">kk bis — divergences seules</option>' +
-        '<option value="seuil">kk bis — seuil + pente seul</option>' +
-        '<option value="mm_opp">🔄 Stratégie MM — Sommet / Creux opposé</option></select></label>' +
+        '<option value="seuil">kk bis — seuil + pente seul</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Une entrée en sens opposé ferme-t-elle la position en cours ? Dès qu\'elle arrive : la première des deux, sortie kk bis ou signal opposé, ferme le trade, donc une seule position à la fois. Seulement si aucune sortie kk bis : le signal opposé ne sert que de secours, ce qui laisse des positions se chevaucher.">Sortie entrée opposée<br><select id="bta-opp" style="' + sel + '">' +
         '<option value="toujours" selected>Dès qu\'elle arrive — la 1re des deux ferme</option>' +
         '<option value="sans_sortie">Seulement si aucune sortie kk bis</option>' +
@@ -31438,7 +31465,7 @@ window.envoyerVersDemo = function(){
   }
 
   const entNom = (r.mEnt === 'mm_base') ? 'MM Base' : (r.mEnt === 'mm_opt2') ? 'MM Option 2 (iMACD)' : 'Signal Z.Z.';
-  const sorNom = (r.mSor === 'mm_opp') ? 'Sommet/Creux MM' : (r.mSor === 'div') ? 'Divergences kk bis' : (r.mSor === 'seuil') ? 'Seuil kk bis' : 'Toutes kk bis';
+  const sorNom = (r.mSor === 'mm_sig_opp') ? 'Signal opposé MM' : (r.mSor === 'mm_opp') ? 'Sommet/Creux MM' : (r.mSor === 'div') ? 'Divergences kk bis' : (r.mSor === 'seuil') ? 'Seuil kk bis' : 'Toutes kk bis';
   const labelStrat = entNom + ' × ' + sorNom;
 
   // 1. Fermer la fenêtre de backtest
@@ -31626,10 +31653,10 @@ window.envoyerVersMexc = function(){
     const avF = state.indicators.kk_bis.fusionTf2;
     window.__balayageFusion = fusion;
 
-    // Si le sélecteur de sortie était réglé sur 'mm_opp', on bascule sur kk bis 'tout' pendant le balayage kk bis
+    // Si le sélecteur de sortie était réglé sur MM, on bascule sur kk bis 'tout' pendant le balayage kk bis
     const selSor = document.getElementById('bta-sor');
     const avSor = selSor ? selSor.value : 'tout';
-    if(selSor && selSor.value === 'mm_opp'){
+    if(selSor && (selSor.value === 'mm_opp' || selSor.value === 'mm_sig_opp')){
       selSor.value = 'tout';
     }
 
@@ -31871,14 +31898,16 @@ window.envoyerVersMexc = function(){
     const avSor = selSor ? selSor.value : 'mm_opp';
 
     const mmConfigs = [
-      { ent: 'mm_base', sor: 'mm_opp', entNom: 'MM Base', sorNom: 'Sommet/Creux MM' },
-      { ent: 'mm_base', sor: 'tout',   entNom: 'MM Base', sorNom: 'KK bis (Toutes)' },
-      { ent: 'mm_base', sor: 'div',    entNom: 'MM Base', sorNom: 'KK bis (Divergences)' },
-      { ent: 'mm_base', sor: 'seuil',  entNom: 'MM Base', sorNom: 'KK bis (Seuil)' },
-      { ent: 'mm_opt2', sor: 'mm_opp', entNom: 'MM Option 2 (iMACD)', sorNom: 'Sommet/Creux MM' },
-      { ent: 'mm_opt2', sor: 'tout',   entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Toutes)' },
-      { ent: 'mm_opt2', sor: 'div',    entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Divergences)' },
-      { ent: 'mm_opt2', sor: 'seuil',  entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Seuil)' }
+      { ent: 'mm_base', sor: 'mm_sig_opp', entNom: 'MM Base', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_base', sor: 'mm_opp',     entNom: 'MM Base', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_base', sor: 'tout',       entNom: 'MM Base', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_base', sor: 'div',        entNom: 'MM Base', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_base', sor: 'seuil',      entNom: 'MM Base', sorNom: 'KK bis (Seuil)' },
+      { ent: 'mm_opt2', sor: 'mm_sig_opp', entNom: 'MM Option 2 (iMACD)', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_opt2', sor: 'mm_opp',     entNom: 'MM Option 2 (iMACD)', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_opt2', sor: 'tout',       entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_opt2', sor: 'div',        entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_opt2', sor: 'seuil',      entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Seuil)' }
     ];
 
     const res = [];
