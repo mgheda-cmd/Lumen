@@ -1023,7 +1023,9 @@ footer{
     </div>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-1015</span>
+  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-1030</span>
+  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
+  <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:3px">⇩ FORCER</button>
 
   <button class="btn" id="full-chart-btn" title="Plein graphique / Pleine page : escamoter tous les indicateurs du bas" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">⛶</span> <span class="btn-full-txt">Pleine page</span>
@@ -1035,7 +1037,7 @@ footer{
     </button>
     <div class="ind-menu" id="tools-menu" style="width:320px;right:0;left:auto;padding:10px;max-height:82vh;overflow-y:auto;z-index:90">
       
-      <!-- Section 0 : Mises à jour & Statut système -->
+      <!-- Section 0 : Statut système & Outils avancés -->
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
         <div style="display:flex;align-items:center;gap:6px">
           <span class="pulse" style="width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);display:inline-block"></span>
@@ -1045,12 +1047,7 @@ footer{
         <span id="status" class="mono" title="Appuyer pour reconnecter" style="font-size:9.5px;letter-spacing:.06em;color:#7E8CA8;cursor:pointer">CHARGEMENT…</span>
       </div>
       <div id="tools-updates-box" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-        <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="flex:1 1 calc(50% - 6px);min-width:110px;font-size:11px;padding:6px 8px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:4px;justify-content:center">
-          <span>⟳</span> MAJ
-        </button>
-        <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge. À utiliser quand ⟳ MAJ ne suffit pas." style="flex:1 1 calc(50% - 6px);min-width:110px;font-size:11px;padding:6px 8px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:4px;justify-content:center">
-          <span>⇩</span> FORCER
-        </button>
+        <div id="tools-dyn-anchor" style="display:none"></div>
       </div>
       
       <!-- Section 1 : Graphique & Direct -->
@@ -28122,7 +28119,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
   /* Bouton dans l'en-tête */
   try{
-    const anchor = document.getElementById('force-btn');
+    const anchor = document.getElementById('tools-dyn-anchor') || document.getElementById('force-btn');
     if(anchor && !document.getElementById('btbis-btn')){
       const b = document.createElement('button');
       b.id = 'btbis-btn';
@@ -30083,7 +30080,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1015';
+  window.__LUMEN_BUILD = 'B-1708-1030';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
