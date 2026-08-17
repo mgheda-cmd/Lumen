@@ -13,20 +13,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0A111F; --panel:#0F1829; --panel-2:#131F35; --line:#1D2A42;
-  --text:#E7EDF8; --muted:#7E8CA8; --faint:#4A5878;
-  --up:#25D0A4; --down:#F45B7D; --accent:#7AA2FF;
+  --bg:#131722; --panel:#131722; --panel-2:#1E222D; --line:#2A2E39;
+  --text:#D1D4DC; --muted:#787B86; --faint:#505668;
+  --up:#089981; --down:#F23645; --accent:#2962FF;
   --sma:#F2C14E; --ema:#B48BFF; --bb:#6AA9FF; --vwap:#FF9D66;
-  --grid:rgba(41,54,74,.55); --chip-bg:rgba(10,17,31,.7);
+  --grid:rgba(42,46,57,.55); --chip-bg:rgba(19,23,34,.85);
   --radius:10px;
 }
 :root[data-theme="light"]{
-  /* Palette mesurée directement sur TradingView en thème clair (pixels du
-     canevas + styles calculés du chrome) : fond, chandeliers, bleu d'accent
-     et texte sont ses vraies valeurs, pas une estimation. */
-  --bg:#FFFFFF; --panel:#FFFFFF; --panel-2:#FFFFFF; --line:#E0E3EB;
-  --text:#0F0F0F; --muted:#787B86; --faint:#B2B5BE;
-  --up:#089981; --down:#F23345; --accent:#2196F3;
+  --bg:#FFFFFF; --panel:#FFFFFF; --panel-2:#F0F3FA; --line:#E0E3EB;
+  --text:#131722; --muted:#787B86; --faint:#B2B5BE;
+  --up:#089981; --down:#F23645; --accent:#2962FF;
   --grid:rgba(224,227,235,.8); --chip-bg:rgba(255,255,255,.92);
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -7866,14 +7863,45 @@ function drawPrice(p,s,e,cw,sharedXStack){
     ctx.strokeRect(Math.max(x0,0)+.5,Math.min(y1,y2)+.5,xr-Math.max(x0,0),Math.abs(y2-y1));
   }
 
-  // grille + axe des prix
-  ctx.font='11px "IBM Plex Mono",monospace';
-  const step=niceStep(hi-lo, p.h/55);
-  for(let v=Math.ceil(lo/step)*step; v<hi; v+=step){
-    const y=yOf(v);
-    ctx.strokeStyle=css('--grid');ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();
-    ctx.fillStyle=css('--muted');ctx.fillText(fmt(v), W-AXIS_W+8, y+4);
+  // Grille horizontale & Axe des prix TradingView Pro
+  ctx.font = '11px "IBM Plex Mono", monospace';
+  const step = niceStep(hi - lo, p.h / 45);
+  for(let v = Math.ceil(lo / step) * step; v < hi; v += step){
+    const y = Math.floor(yOf(v)) + 0.5;
+    ctx.strokeStyle = css('--grid') || 'rgba(42, 46, 57, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W - AXIS_W, y);
+    ctx.stroke();
+
+    ctx.strokeStyle = css('--line') || '#2A2E39';
+    ctx.beginPath();
+    ctx.moveTo(W - AXIS_W, y);
+    ctx.lineTo(W - AXIS_W + 4, y);
+    ctx.stroke();
+
+    ctx.fillStyle = css('--muted') || '#787B86';
+    ctx.fillText(fmt(v), W - AXIS_W + 8, y + 3.5);
   }
+
+  // Séparateur vertical d'axe de prix (TradingView vertical scale separator)
+  ctx.strokeStyle = css('--line') || '#2A2E39';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W - AXIS_W + 0.5, p.y);
+  ctx.lineTo(W - AXIS_W + 0.5, p.y + p.h);
+  ctx.stroke();
+
+  // Bouton "Auto" TradingView en bas à droite de l'axe des prix
+  const isAuto = (state.yScale && state.yScale.auto !== false);
+  const autoY = p.y + p.h - 17;
+  ctx.fillStyle = isAuto ? 'rgba(41, 98, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)';
+  roundRect(W - AXIS_W + 6, autoY, 32, 13, 3);
+  ctx.fill();
+  ctx.fillStyle = isAuto ? '#2962FF' : '#787B86';
+  ctx.font = 'bold 9px system-ui, sans-serif';
+  ctx.fillText('AUTO', W - AXIS_W + 10, autoY + 9.5);
 
   // volume (bas du panneau prix)
   if(vis('volume')){
@@ -7978,18 +8006,34 @@ function drawPrice(p,s,e,cw,sharedXStack){
   }
 
   if(state.type==='candles'){
-    const bw=Math.max(1,cw*0.62);
+    const bw = Math.max(1, Math.floor(cw * 0.72));
+    const halfBw = Math.floor(bw / 2);
     const asdColor=(vis('almasd')&&S('almasd','colorBars'))?getInd('almasd').dir:null;
     const acU=S('almasd','cUp'), acD=S('almasd','cDown');
     for(let i=s;i<e;i++){
-      const b=d[i],x=xOf(i);
-      let c=b.c>=b.o?up:dn;
-      if(asdColor&&asdColor[i]!=null)c=asdColor[i]===1?acU:acD; // couleur selon la tendance ST
-      ctx.strokeStyle=c;ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(x,yOf(b.h));ctx.lineTo(x,yOf(b.l));ctx.stroke();
-      ctx.fillStyle=c;
-      const yo=yOf(b.o),yc=yOf(b.c);
-      ctx.fillRect(x-bw/2, Math.min(yo,yc), bw, Math.max(1,Math.abs(yc-yo)));
+      const b=d[i];
+      const cx = Math.floor(xOf(i)) + 0.5; // pixel-perfect alignment for sharp wicks
+      let isBull = b.c >= b.o;
+      let c = isBull ? up : dn;
+      if(asdColor&&asdColor[i]!=null) c = asdColor[i]===1 ? acU : acD;
+
+      const yo = yOf(b.o), yc = yOf(b.c);
+      const yh = yOf(b.h), yl = yOf(b.l);
+      const topY = Math.min(yo, yc);
+      const botY = Math.max(yo, yc);
+      const bodyH = Math.max(1, botY - topY);
+
+      // TradingView Mèche (Wick)
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx, yh);
+      ctx.lineTo(cx, yl);
+      ctx.stroke();
+
+      // TradingView Corps de bougie (Body)
+      ctx.fillStyle = c;
+      ctx.fillRect(cx - halfBw, topY, bw, bodyH);
     }
   } else {
     const closes=d.map(b=>b.c);
@@ -8241,24 +8285,44 @@ function drawPrice(p,s,e,cw,sharedXStack){
     }
   }
 
-  // ligne du dernier prix
+  // Ligne et badge du dernier prix TradingView Pro
   const last=d[d.length-1];
   if(last && last.c != null){
     const y=yOf(last.c);
     if(y>p.y&&y<p.y+p.h){
-      const c=last.c>=last.o?up:dn;
-      ctx.strokeStyle=c;ctx.setLineDash([4,4]);
-      ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle=c;ctx.fillRect(W-AXIS_W,y-9,AXIS_W,18);
-      ctx.fillStyle='#0A111F';ctx.font='600 11px "IBM Plex Mono",monospace';
-      ctx.fillText(fmt(last.c),W-AXIS_W+8,y+4);
+      const isBull = last.c >= last.o;
+      const c = isBull ? up : dn;
+
+      // Ligne horizontale pointillée TradingView
+      ctx.strokeStyle=c;
+      ctx.lineWidth=1;
+      ctx.setLineDash([3,3]);
+      ctx.beginPath();
+      ctx.moveTo(0, Math.floor(y) + 0.5);
+      ctx.lineTo(W-AXIS_W, Math.floor(y) + 0.5);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Badge du prix actuel sur l'axe
+      ctx.fillStyle=c;
+      roundRect(W-AXIS_W+2, y-9, AXIS_W-4, 18, 3);
+      ctx.fill();
+      ctx.fillStyle='#FFFFFF';
+      ctx.font='bold 11px "IBM Plex Mono", monospace';
+      ctx.fillText(fmt(last.c), W-AXIS_W+7, y+3.5);
+
+      // Compte à rebours de clôture de bougie sous le prix
       if(cdText&&cdText!=='—'){
-        ctx.fillStyle='rgba(19,31,53,.95)';
-        ctx.fillRect(W-AXIS_W,y+10,AXIS_W,15);
-        ctx.strokeStyle=c;ctx.lineWidth=1;
-        ctx.strokeRect(W-AXIS_W+.5,y+10.5,AXIS_W-1,14);
-        ctx.fillStyle=c;ctx.font='10px "IBM Plex Mono",monospace';
-        ctx.fillText(cdText,W-AXIS_W+8,y+21);
+        ctx.fillStyle='#131722';
+        roundRect(W-AXIS_W+2, y+11, AXIS_W-4, 15, 3);
+        ctx.fill();
+        ctx.strokeStyle=c;
+        ctx.lineWidth=1;
+        roundRect(W-AXIS_W+2.5, y+11.5, AXIS_W-5, 14, 3);
+        ctx.stroke();
+        ctx.fillStyle=c;
+        ctx.font='bold 10px "IBM Plex Mono", monospace';
+        ctx.fillText(cdText, W-AXIS_W+7, y+22);
       }
     }
   }
@@ -10778,23 +10842,69 @@ function updateLatestCandlesBtnVisibility() {
   }
 }
 
-/* ----- axe temps ----- */
+/* ----- Axe des horaires (Time Axis) TradingView Pro ----- */
 function drawTimeAxis(s,e){
-  ctx.fillStyle=css('--panel');
-  ctx.fillRect(0,H-AXIS_H,W,AXIS_H);
-  ctx.strokeStyle=css('--line');ctx.beginPath();ctx.moveTo(0,H-AXIS_H+.5);ctx.lineTo(W,H-AXIS_H+.5);ctx.stroke();
-  ctx.font='11px "IBM Plex Mono",monospace';ctx.fillStyle=css('--muted');
-  const px=90, every=Math.max(1,Math.round(state.view.count/((W-AXIS_W)/px)));
-  for(let i=s;i<e;i++){
-    if(i%every!==0)continue;
-    const x=xOf(i);
-    ctx.fillText(fmtTime(state.data[i].t), x-24, H-9);
-    ctx.strokeStyle=css('--grid');
-    ctx.beginPath();ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,H-AXIS_H);ctx.stroke();
+  ctx.fillStyle = css('--panel') || '#131722';
+  ctx.fillRect(0, H - AXIS_H, W, AXIS_H);
+  ctx.strokeStyle = css('--line') || '#2A2E39';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, H - AXIS_H + 0.5);
+  ctx.lineTo(W, H - AXIS_H + 0.5);
+  ctx.stroke();
+
+  ctx.font = '10.5px "IBM Plex Mono", monospace';
+  ctx.fillStyle = css('--muted') || '#787B86';
+  ctx.textAlign = 'center';
+
+  const px = 95;
+  const every = Math.max(1, Math.round(state.view.count / ((W - AXIS_W) / px)));
+  const d = state.data;
+  let lastDay = null;
+
+  for(let i=s; i<e; i++){
+    const b = d[i];
+    if(!b || !b.t) continue;
+    const curDate = new Date(b.t);
+    const dayKey = curDate.getDate();
+    const isNewDay = (lastDay !== null && dayKey !== lastDay);
+    lastDay = dayKey;
+
+    if(i % every === 0 || isNewDay){
+      const x = Math.floor(xOf(i)) + 0.5;
+
+      // Grille verticale TradingView
+      ctx.strokeStyle = css('--grid') || 'rgba(42,46,57,0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H - AXIS_H);
+      ctx.stroke();
+
+      if(isNewDay){
+        const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+        const dayStr = `${curDate.getDate()} ${months[curDate.getMonth()]}`;
+        ctx.fillStyle = css('--text') || '#E7EDF8';
+        ctx.font = 'bold 10.5px "IBM Plex Mono", sans-serif';
+        ctx.fillText(dayStr, x, H - 7);
+        ctx.font = '10.5px "IBM Plex Mono", sans-serif';
+        ctx.fillStyle = css('--muted') || '#787B86';
+      } else {
+        ctx.fillText(fmtTime(b.t), x, H - 7);
+      }
+    }
   }
+
+  // Fuseau horaire discret TradingView en bas à droite
+  const tzLabel = state.tz === 'tunis' ? '🇹🇳 UTC+1' : (state.tz ? state.tz.toUpperCase() : 'UTC+1');
+  ctx.textAlign = 'right';
+  ctx.font = '9.5px "IBM Plex Mono", monospace';
+  ctx.fillStyle = 'rgba(120, 123, 134, 0.75)';
+  ctx.fillText(tzLabel, W - AXIS_W - 8, H - 7);
+  ctx.textAlign = 'left';
 }
 
-/* ----- réticule ----- */
+/* ----- Réticule (Crosshair) TradingView Pro ----- */
 function hoverIndex(){
   if(!state.mouse)return null;
   const i=Math.round(state.view.start + (state.mouse.x-((W-AXIS_W)/state.view.count)/2)/((W-AXIS_W)/state.view.count));
@@ -10804,25 +10914,56 @@ function drawCrosshair(panes,s,e){
   const {x,y}=state.mouse;
   if(x>W-AXIS_W||y>H-AXIS_H)return;
   const i=hoverIndex();
-  ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(126,140,168,.6)';
-  if(i!=null){
-    const cx=xOf(i);
-    ctx.beginPath();ctx.moveTo(cx+.5,0);ctx.lineTo(cx+.5,H-AXIS_H);ctx.stroke();
-    // étiquette temps
+  
+  ctx.setLineDash([3,3]);
+  ctx.strokeStyle='rgba(150,165,190,.55)';
+  ctx.lineWidth=1;
+
+  if(i!=null&&state.data[i]){
+    const cx=Math.floor(xOf(i))+0.5;
+    ctx.beginPath();
+    ctx.moveTo(cx,0);
+    ctx.lineTo(cx,H-AXIS_H);
+    ctx.stroke();
+
+    // Badge horaire TradingView
     ctx.setLineDash([]);
-    ctx.fillStyle=css('--panel-2');ctx.fillRect(cx-38,H-AXIS_H,76,AXIS_H);
-    ctx.fillStyle=css('--text');ctx.font='11px "IBM Plex Mono",monospace';
-    ctx.fillText(fmtTime(state.data[i].t),cx-30,H-9);
-    ctx.setLineDash([4,4]);
+    const tStr=fmtTime(state.data[i].t);
+    ctx.font='10.5px "IBM Plex Mono", monospace';
+    const tw=ctx.measureText(tStr).width+16;
+    ctx.fillStyle='#363A45';
+    roundRect(cx-tw/2, H-AXIS_H+2, tw, AXIS_H-4, 3);
+    ctx.fill();
+    ctx.strokeStyle='#505668';
+    roundRect(cx-tw/2+0.5, H-AXIS_H+2.5, tw-1, AXIS_H-5, 3);
+    ctx.stroke();
+    ctx.fillStyle='#FFFFFF';
+    ctx.textAlign='center';
+    ctx.fillText(tStr, cx, H-7);
+    ctx.textAlign='left';
+    ctx.setLineDash([3,3]);
   }
+
   const pane=panes.find(p=>y>=p.y&&y<p.y+p.h);
   if(pane&&pane.yOf){
-    ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W-AXIS_W,y+.5);ctx.stroke();
+    const cy=Math.floor(y)+0.5;
+    ctx.beginPath();
+    ctx.moveTo(0,cy);
+    ctx.lineTo(W-AXIS_W,cy);
+    ctx.stroke();
     ctx.setLineDash([]);
+
     const v=pane.lo+(1-(y-pane.y-(pane.isRsi?8:0))/(pane.h-(pane.isRsi?16:0)))*(pane.hi-pane.lo);
-    ctx.fillStyle=css('--panel-2');ctx.fillRect(W-AXIS_W,y-9,AXIS_W,18);
-    ctx.fillStyle=css('--text');ctx.font='11px "IBM Plex Mono",monospace';
-    ctx.fillText(pane.key==='price'?fmt(v):v.toFixed(1), W-AXIS_W+8, y+4);
+    const vStr=pane.key==='price'?fmt(v):v.toFixed(1);
+    ctx.fillStyle='#363A45';
+    roundRect(W-AXIS_W+2, y-9, AXIS_W-4, 18, 3);
+    ctx.fill();
+    ctx.strokeStyle='#505668';
+    roundRect(W-AXIS_W+2.5, y-8.5, AXIS_W-5, 17, 3);
+    ctx.stroke();
+    ctx.fillStyle='#FFFFFF';
+    ctx.font='11px "IBM Plex Mono", monospace';
+    ctx.fillText(vStr, W-AXIS_W+7, y+3.5);
   }
   ctx.setLineDash([]);
 }
@@ -30605,7 +30746,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1700';
+  window.__LUMEN_BUILD = 'B-1708-1710';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
