@@ -2104,11 +2104,19 @@ footer{
           Reçois toutes les alertes de pastilles (Entrées, Sorties, Démo) directement sur ton WhatsApp !
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px">
-          <a href="https://wa.me/34694234184?text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener" class="btn" style="display:block;text-align:center;text-decoration:none;font-size:10.5px;padding:6px;border-color:#25D366;color:#25D366;font-weight:700;width:100%;box-sizing:border-box;background:rgba(37,211,102,0.14)">
-            🟢 1. Ouvrir WhatsApp & Envoyer le message d'activation
-          </a>
-          <div style="font-size:9.5px;color:#94A3B8;line-height:1.3;margin-top:1px;background:rgba(15,23,42,0.6);padding:4px 6px;border-radius:4px">
-            💡 Numéro officiel du bot : <b>+34 694 23 41 84</b>. Cliquez sur le bouton vert ci-dessus pour ouvrir la discussion et envoyer le texte <code>I allow callmebot to send me messages</code>.
+          <div style="display:flex;gap:4px">
+            <a href="https://wa.me/34694234184?text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener" class="btn" style="flex:1;text-align:center;text-decoration:none;font-size:10px;padding:6px 4px;border-color:#25D366;color:#25D366;font-weight:700;background:rgba(37,211,102,0.14)">
+              🟢 Serveur 1 (+34 694)
+            </a>
+            <a href="https://wa.me/34644263377?text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener" class="btn" style="flex:1;text-align:center;text-decoration:none;font-size:10px;padding:6px 4px;border-color:#25D366;color:#25D366;font-weight:700;background:rgba(37,211,102,0.14)">
+              🟢 Serveur 2 (+34 644)
+            </a>
+            <a href="https://wa.me/34621331709?text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener" class="btn" style="flex:1;text-align:center;text-decoration:none;font-size:10px;padding:6px 4px;border-color:#25D366;color:#25D366;font-weight:700;background:rgba(37,211,102,0.14)">
+              🟢 Serveur 3 (+34 621)
+            </a>
+          </div>
+          <div style="font-size:9.5px;color:#94A3B8;line-height:1.3;background:rgba(15,23,42,0.6);padding:4px 6px;border-radius:4px">
+            💡 Cliquez sur un des 3 serveurs pour envoyer : <code>I allow callmebot to send me messages</code> et recevoir votre clé API.
           </div>
           <div style="display:flex;gap:4px;margin-top:2px">
             <input id="notif-wa-phone" type="tel" placeholder="Votre Numéro (+33... ou +216...)"
@@ -30251,7 +30259,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1500';
+  window.__LUMEN_BUILD = 'B-1708-1510';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
