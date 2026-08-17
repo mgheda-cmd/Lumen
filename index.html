@@ -157,23 +157,25 @@ body{
 /* ---------- Header ---------- */
 header{
   display:flex; align-items:center; gap:6px;
-  padding:3px 10px; border-bottom:1px solid var(--line);
-  background:var(--panel); flex-wrap:wrap;
+  padding:3px 8px; border-bottom:1px solid var(--line);
+  background:var(--panel); flex-wrap:nowrap;
+  overflow-x:auto; scrollbar-width:none;
   padding-top:calc(3px + env(safe-area-inset-top));
 }
-.logo{display:flex; align-items:center; gap:7px; font-weight:700; letter-spacing:.02em; font-size:13px}
+header::-webkit-scrollbar{ display:none; }
+.logo{display:flex; align-items:center; gap:6px; font-weight:700; letter-spacing:.02em; font-size:13px; flex:none}
 .logo .pulse{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
-.sep{width:1px;height:16px;background:var(--line)}
+.sep{width:1px;height:16px;background:var(--line); flex:none}
 
 select, .btn{
   background:var(--panel-2); color:var(--text); border:1px solid var(--line);
   border-radius:7px; padding:4px 9px; font-family:inherit; font-size:12px;
-  cursor:pointer; transition:border-color .15s, background .15s;
+  cursor:pointer; transition:border-color .15s, background .15s; flex:none;
 }
 select:hover,.btn:hover{border-color:var(--accent)}
 select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
-.tf-group,.type-group{display:flex; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.tf-group,.type-group{display:flex; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; overflow:hidden; flex:none}
 .tf-group button,.type-group button{
   background:none;border:none;color:var(--muted);padding:4px 8px;cursor:pointer;
   font-family:'IBM Plex Mono',monospace;font-size:11px;transition:.15s;
@@ -182,7 +184,7 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 .tf-group button:hover,.type-group button:hover{color:var(--text)}
 .tf-group button.active,.type-group button.active{background:var(--accent);color:#0A111F;font-weight:600}
 
-.price-block{margin-left:16px;text-align:right}
+.price-block{margin-left:auto;text-align:right;flex:none}
 .price-block{line-height:1.25}
 .price-block .last{font-size:14px;font-weight:600}
 .price-block .chg{font-size:12px}
@@ -415,8 +417,11 @@ footer{
   padding-bottom:calc(6px + env(safe-area-inset-bottom));
 }
 @media (max-width:720px){
-  .price-block{display:none}
-  header{gap:8px}
+  header{gap:4px; padding:2px 6px;}
+  .logo .logo-txt{display:none}
+  .btn-full-txt{display:none}
+  .price-block .last{font-size:12px}
+  .price-block .chg, .price-block #countdown{font-size:10px}
 }
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
@@ -424,11 +429,11 @@ footer{
 <body>
 
 <header>
-  <div class="logo"><span class="pulse"></span>Lumen&nbsp;Charts</div>
+  <div class="logo"><span class="pulse"></span><span class="logo-txt">Lumen</span></div>
   <span id="status" class="mono" title="Appuyer pour reconnecter" style="font-size:10px;letter-spacing:.06em;color:#7E8CA8;cursor:pointer">CHARGEMENT…</span>
-  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:4px 9px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700">⟳ MAJ</button>
-  <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge. À utiliser quand ⟳ MAJ ne suffit pas." style="font-size:11px;padding:4px 9px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700">⇩ FORCER</button>
-  <span id="build-tag" class="mono" title="Date de dernière modification du fichier réellement chargé, en heure locale. Elle change à chaque nouvelle version publiée." style="font-size:10px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:5px;padding:1px 7px">v …</span>
+  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700">⟳ MAJ</button>
+  <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge. À utiliser quand ⟳ MAJ ne suffit pas." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700">⇩ FORCER</button>
+  <span id="build-tag" class="mono" title="Date de dernière modification du fichier réellement chargé, en heure locale. Elle change à chaque nouvelle version publiée." style="font-size:10px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:5px;padding:1px 6px">v …</span>
   <div class="sep"></div>
 
   <div class="ind-wrap">
@@ -455,15 +460,6 @@ footer{
     <button data-tf="240">4H</button>
     <button data-tf="1440">1J</button>
   </div>
-
-  <div class="type-group" role="group" aria-label="Type de graphique">
-    <button data-type="candles" class="active" title="Chandeliers">🕯</button>
-    <button data-type="line" title="Ligne">〰</button>
-    <button data-type="area" title="Aire">◗</button>
-  </div>
-  <button id="btn-header-latest-candles" onclick="scrollToLatestCandles()" class="btn" title="Aller aux bougies les plus récentes (temps réel)" style="font-size:11px;padding:4px 9px;background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;font-weight:700;display:inline-flex;align-items:center;gap:4px;cursor:pointer">
-    ⏭️ Direct
-  </button>
 
   <div class="ind-wrap">
     <button class="btn btn-ind" id="btn-ind" aria-haspopup="true" aria-expanded="false">
@@ -1033,22 +1029,102 @@ footer{
       </div>
     </div>
   </div>
-  <div style="display:flex;gap:6px;flex:none">
-    <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:16px;padding:6px 11px">⤢</button>
-    <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:15px;padding:6px 11px">✛</button>
-    <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:15px;padding:6px 11px">▭</button>
-    <button class="btn" id="review-done-btn" title="J'ai terminé : enregistrer et envoyer mes annotations" style="font-size:15px;padding:6px 11px">✅</button>
-    <button class="btn" id="want-clear-btn" title="Effacer les repères ou annuler le dernier" style="font-size:15px;padding:6px 11px">🧽</button>
-    <button class="btn" id="want-btn" title="Pointer les entrées souhaitées : 1er appui = mode ACHAT, 2e = mode VENTE, 3e = arrêt" style="font-size:15px;padding:6px 11px">📌</button>
-    <button class="btn" id="full-chart-btn" title="Plein graphique : escamoter tous les indicateurs du bas" style="font-size:15px;padding:6px 11px">⛶</button>
-    <button class="btn" id="clean-chart-btn" title="Graphique propre : masquer toutes les pastilles pour travailler sur un graphique dégagé" style="font-size:15px;padding:6px 11px">🧹</button>
-    <button class="btn" id="exhaust-all-btn" title="Pastilles épuisement et sortie : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:15px;padding:6px 11px">🪫</button>
-    <span style="width:1px;height:20px;background:var(--line);margin:0 4px;display:inline-block"></span>
-    <button class="btn tzb" id="tz-ny" data-tz="ny" title="Heure de New York" style="font-size:12px;padding:6px 9px">NY</button>
-    <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:12px;padding:6px 9px">LDN</button>
-    <button class="btn tzb" id="tz-tunis" data-tz="tunis" title="Heure de Tunis" style="font-size:12px;padding:6px 9px">TUN</button>
-  <button class="btn" id="btn-backtest" title="Backtest de stratégie" style="font-size:14px;padding:6px 11px">🧪</button>
-  <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit">🌙</button>
+
+  <button class="btn" id="full-chart-btn" title="Plein graphique / Pleine page : escamoter tous les indicateurs du bas" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
+    <span style="font-size:14px">⛶</span> <span class="btn-full-txt">Pleine page</span>
+  </button>
+
+  <div class="ind-wrap" id="tools-wrap" style="position:relative">
+    <button class="btn" id="btn-tools-menu" aria-haspopup="true" aria-expanded="false" title="Menu des outils, réglages et options supplémentaires" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;border-color:var(--accent);color:var(--text)">
+      <span>⋯ Outils</span> <span style="font-size:9px;color:var(--muted)">▾</span>
+    </button>
+    <div class="ind-menu" id="tools-menu" style="width:320px;right:0;left:auto;padding:10px;max-height:82vh;overflow-y:auto;z-index:90">
+      
+      <!-- Section 1 : Graphique & Direct -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>📊 Type de graphique & Direct</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <div class="type-group" role="group" aria-label="Type de graphique" style="flex:1">
+          <button data-type="candles" class="active" title="Chandeliers" style="flex:1;padding:5px 6px">🕯 Bougies</button>
+          <button data-type="line" title="Ligne" style="flex:1;padding:5px 6px">〰 Ligne</button>
+          <button data-type="area" title="Aire" style="flex:1;padding:5px 6px">◗ Aire</button>
+        </div>
+        <button id="btn-header-latest-candles" onclick="scrollToLatestCandles()" class="btn" title="Aller aux bougies les plus récentes (temps réel)" style="font-size:11px;padding:5px 8px;background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;font-weight:700;display:inline-flex;align-items:center;gap:4px;cursor:pointer">
+          ⏭️ Direct
+        </button>
+      </div>
+
+      <!-- Section 2 : Outils de dessin & Tracés -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;border-top:1px solid var(--line);padding-top:8px">
+        <span>🛠️ Outils de dessin & Tracés</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <button class="btn" id="zoom-btn" title="Vue rapprochée (20 dernières bougies)" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
+          <span style="font-size:14px">⤢</span> Zoom 20b
+        </button>
+        <button class="btn" id="xhair-btn" title="Mode curseur : déplacer la ligne sans bouger le graphique" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
+          <span style="font-size:14px">✛</span> Curseur
+        </button>
+        <button class="btn" id="zone-btn" title="Outil zone : toucher une bougie, un rectangle s'étire jusqu'à maintenant" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
+          <span style="font-size:14px">▭</span> Zone
+        </button>
+        <button class="btn" id="want-btn" title="Pointer les entrées souhaitées : 1er appui = mode ACHAT, 2e = mode VENTE, 3e = arrêt" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
+          <span style="font-size:14px">📌</span> Pointer
+        </button>
+        <button class="btn" id="want-clear-btn" title="Effacer les repères ou annuler le dernier" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
+          <span style="font-size:14px">🧽</span> Effacer
+        </button>
+        <button class="btn" id="review-done-btn" title="J'ai terminé : enregistrer et envoyer mes annotations" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
+          <span style="font-size:14px">✅</span> Valider
+        </button>
+        <button class="btn" id="clean-chart-btn" title="Graphique propre : masquer toutes les pastilles pour travailler sur un graphique dégagé" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
+          <span style="font-size:14px">🧹</span> Propre
+        </button>
+        <button class="btn" id="exhaust-all-btn" title="Pastilles épuisement et sortie : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
+          <span style="font-size:14px">🪫</span> Épuisement
+        </button>
+      </div>
+
+      <!-- Section 3 : Backtest & Trading -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;border-top:1px solid var(--line);padding-top:8px">
+        <span>⚡ Trading & Backtest</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        <button class="btn" id="btn-backtest" title="Backtest de stratégie" style="font-size:11.5px;padding:6px 10px;display:flex;align-items:center;gap:8px;border-color:rgba(122,162,255,0.4);font-weight:600">
+          <span>🧪</span> Backtest de stratégie
+        </button>
+        <button class="btn" id="mexc-live-btn" onclick="openLiveExchangeModal()" title="Compte MEXC Direct & Trading en Réel" style="border-color:#00E5FF;color:#00E5FF;background:rgba(0,229,255,0.12);display:flex;align-items:center;gap:8px;font-weight:800;padding:6px 10px;box-shadow:0 0 10px rgba(0,229,255,0.2)">
+          <span>🟢</span> Compte MEXC Direct & Trading
+        </button>
+      </div>
+
+      <!-- Section 4 : Notifications & Synchronisation -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;border-top:1px solid var(--line);padding-top:8px">
+        <span>🔔 Alertes & Synchro</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <button class="btn" id="notif-btn" title="Alertes & Notifications Téléphone" style="border-color:#00E5FF;color:#00E5FF;display:inline-flex;align-items:center;gap:6px;font-weight:700;padding:6px 8px">
+          <span>🔔</span> Mobile
+        </button>
+        <button class="btn" id="sync-btn" title="Synchroniser entre appareils" style="display:inline-flex;align-items:center;gap:6px;padding:6px 8px">
+          <span>⇅</span> Synchro
+        </button>
+      </div>
+
+      <!-- Section 5 : Fuseaux horaires & Thème -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;border-top:1px solid var(--line);padding-top:8px">
+        <span>🌍 Fuseaux & Thème</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+        <div style="display:flex;gap:4px">
+          <button class="btn tzb" id="tz-ny" data-tz="ny" title="Heure de New York" style="font-size:11px;padding:5px 8px">NY</button>
+          <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:11px;padding:5px 8px">LDN</button>
+          <button class="btn tzb" id="tz-tunis" data-tz="tunis" title="Heure de Tunis" style="font-size:11px;padding:5px 8px">TUN</button>
+        </div>
+        <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit" style="padding:5px 10px;font-size:13px">🌙</button>
+      </div>
+    </div>
   </div>
 
   <div id="bt-zz-modal" style="display:none;position:fixed;inset:0;background:rgba(6,10,20,0.85);z-index:9999;align-items:center;justify-content:center;padding:14px">
@@ -1924,12 +2000,8 @@ footer{
   </div>
 </div>
 
-  <div class="ind-wrap">
-    <button class="btn" id="mexc-live-btn" onclick="openLiveExchangeModal()" title="Compte MEXC Direct & Trading en Réel" style="border-color:#00E5FF;color:#00E5FF;background:rgba(0,229,255,0.12);display:inline-flex;align-items:center;gap:6px;font-weight:800;box-shadow:0 0 10px rgba(0,229,255,0.2)">🟢 Compte MEXC Direct</button>
-  </div>
-
-  <div class="ind-wrap">
-    <button class="btn" id="notif-btn" title="Alertes & Notifications Téléphone" style="border-color:#00E5FF;color:#00E5FF;display:inline-flex;align-items:center;gap:4px;font-weight:700">🔔 Phone</button>
+  <!-- Popups notifications et synchronisation -->
+  <div class="ind-wrap" style="position:static">
     <div class="ind-menu" id="notif-menu" style="width:340px;right:0;left:auto;padding:12px">
       <div style="padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-weight:700;font-size:13px;color:#00E5FF">🔔 Notifications Mobile</span>
@@ -2036,8 +2108,7 @@ footer{
     </div>
   </div>
 
-  <div class="ind-wrap">
-    <button class="btn" id="sync-btn" title="Synchroniser entre appareils">⇅</button>
+  <div class="ind-wrap" style="position:static">
     <div class="ind-menu" id="sync-menu" style="width:320px;right:0;left:auto">
       <h4>Synchronisation iPhone ↔ iPad</h4>
       <div style="padding:2px 10px 8px;font-size:12px;color:var(--muted);line-height:1.5">
@@ -11258,18 +11329,23 @@ canvas.addEventListener('touchend',()=>{
   touch=null;pinch=null;
 },{passive:true});
 
-/* ---------- Menu indicateurs ---------- */
+/* ---------- Menu indicateurs & Menu Outils ---------- */
 const btnInd=document.getElementById('btn-ind'), menu=document.getElementById('ind-menu');
+const btnToolsMenu=document.getElementById('btn-tools-menu'), toolsMenuEl=document.getElementById('tools-menu');
 const btnTheme=document.getElementById('btn-theme');
 function applyTheme(t){
   document.documentElement.dataset.theme = t;
-  btnTheme.textContent = t==='light' ? '☀️' : '🌙';
-  btnTheme.title = t==='light' ? 'Passer en mode nuit' : 'Passer en mode jour';
+  if(btnTheme){
+    btnTheme.textContent = t==='light' ? '☀️' : '🌙';
+    btnTheme.title = t==='light' ? 'Passer en mode nuit' : 'Passer en mode jour';
+  }
   try{localStorage.setItem('lumen-theme',t);}catch(e){}
   if(typeof render==='function')render();
 }
-btnTheme.addEventListener('click',()=>
-  applyTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));
+if(btnTheme){
+  btnTheme.addEventListener('click',()=>
+    applyTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));
+}
 applyTheme(localStorage.getItem('lumen-theme')||'dark');
 function anchorLeft(el,btn){
   const r=btn.getBoundingClientRect();
@@ -11280,9 +11356,34 @@ function anchorLeft(el,btn){
 }
 btnInd.addEventListener('click',()=>{
   const open=menu.classList.toggle('open');
-  if(open)anchorLeft(menu,btnInd);
+  if(open){
+    anchorLeft(menu,btnInd);
+    if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
+    const sm=document.getElementById('sync-menu'); if(sm)sm.classList.remove('open');
+    const nm=document.getElementById('notif-menu'); if(nm)nm.classList.remove('open');
+    if(toolsMenuEl)toolsMenuEl.classList.remove('open');
+  }
   btnInd.setAttribute('aria-expanded',open);
 });
+if(btnToolsMenu && toolsMenuEl){
+  btnToolsMenu.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const open=toolsMenuEl.classList.toggle('open');
+    if(open){
+      if(menu) menu.classList.remove('open');
+      btnInd.setAttribute('aria-expanded','false');
+      if(typeof symMenu!=='undefined') symMenu.classList.remove('open');
+      const sm=document.getElementById('sync-menu'); if(sm) sm.classList.remove('open');
+      const nm=document.getElementById('notif-menu'); if(nm) nm.classList.remove('open');
+      const r=btnToolsMenu.getBoundingClientRect();
+      toolsMenuEl.style.position='fixed';
+      toolsMenuEl.style.top=(r.bottom+6)+'px';
+      toolsMenuEl.style.right=Math.max(6, window.innerWidth - r.right)+'px';
+      toolsMenuEl.style.left='auto';
+      toolsMenuEl.style.maxHeight=(window.innerHeight-r.bottom-16)+'px';
+    }
+  });
+}
 document.addEventListener('click',e=>{
   if(!e.target.closest('.ind-wrap')){
     menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');
@@ -11291,12 +11392,8 @@ document.addEventListener('click',e=>{
     if(sm)sm.classList.remove('open');
     const nm=document.getElementById('notif-menu');
     if(nm)nm.classList.remove('open');
+    if(toolsMenuEl)toolsMenuEl.classList.remove('open');
   }
-});
-btnInd.addEventListener('click',()=>{
-  if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
-  const sm=document.getElementById('sync-menu');
-  if(sm)sm.classList.remove('open');
 });
 const btnEnableStrat=document.getElementById('btn-enable-strat');
 if(btnEnableStrat)btnEnableStrat.addEventListener('click',e=>{
@@ -29969,7 +30066,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-0910';
+  window.__LUMEN_BUILD = 'B-1708-0930';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
