@@ -2796,12 +2796,12 @@ footer{
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 const SYMBOLS = {
-  BTCUSDT:{seed:42, base:64000, vol:0.014},
-  ETHUSDT:{seed:7,  base:3400,  vol:0.017},
-  SOLUSDT:{seed:12, base:150,   vol:0.020},
-  BNBUSDT:{seed:31, base:590,   vol:0.012},
-  XRPUSDT:{seed:55, base:0.55,  vol:0.020},
-  DOGEUSDT:{seed:9, base:0.12,  vol:0.025},
+  BTCUSDT:{seed:42, base:63300, vol:0.014},
+  ETHUSDT:{seed:7,  base:2600,  vol:0.017},
+  SOLUSDT:{seed:12, base:145,   vol:0.020},
+  BNBUSDT:{seed:31, base:560,   vol:0.012},
+  XRPUSDT:{seed:55, base:0.56,  vol:0.020},
+  DOGEUSDT:{seed:9, base:0.10,  vol:0.025},
 };
 const TF_MAP = {1:'1m',3:'3m',5:'5m',15:'15m',60:'1h',240:'4h',1440:'1d'};
 const TF_MIN = {1:1,3:3,5:5,15:15,60:60,240:240,1440:1440};
@@ -4948,10 +4948,10 @@ function applyConfigToUI(){
   if(typeof updateChips==='function') updateChips();
 }
 
-/* ---------- Flux Binance (temps réel) ---------- */
-const SPOT_REST=['','https://data-api.binance.vision','https://api.binance.com'];
-const SPOT_WS=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'];
-const PERP_REST=['','https://fapi.binance.com','https://fapi1.binance.com','https://fapi2.binance.com'];
+/* ---------- Flux Binance & MEXC (Temps Réel Haute Disponibilité) ---------- */
+const SPOT_REST=['https://api.mexc.com','https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com'];
+const SPOT_WS=['wss://data-stream.binance.vision','wss://stream.binance.com:9443','wss://wbs.mexc.com/ws'];
+const PERP_REST=['https://data-api.binance.vision','https://fapi.binance.com','https://fapi1.binance.com','https://fapi2.binance.com'];
 const PERP_WS=['wss://fstream.binance.com'];
 let wsHost=SPOT_WS[0];
 function isPerp(){return state.market==='perp';}
@@ -4964,7 +4964,7 @@ async function fetchJSON(path){
   for(let i=0;i<HOSTS.length;i++){
     try{
       const ctl=new AbortController();
-      const to=setTimeout(()=>ctl.abort(),10000);
+      const to=setTimeout(()=>ctl.abort(),6000);
       const r=await fetch(HOSTS[i]+p,{signal:ctl.signal});
       clearTimeout(to);
       if(!r.ok)throw new Error(r.status);
@@ -12590,9 +12590,14 @@ function updatePaper(){
   const eqEl=document.getElementById('paper-equity');
   if(!eqEl)return;
 
-  // Auto-correction des positions créées avec l'ancien bug de notionnel
+  // Auto-correction des positions et recalage des anciens trades de simulation
   if (Array.isArray(paper.positions)) {
     for (const p of paper.positions) {
+      const livePx = livePrice(p.sym);
+      if (livePx && p.entry && Math.abs(p.entry - livePx) > 4000 && p.entry > 70000 && livePx < 66000) {
+        p.entry = livePx;
+        if (p.notional && p.notional > 0) p.qty = p.notional / p.entry;
+      }
       if (p.lev && p.lev >= 10 && p.margin && p.margin < 2.0 && p.notional && p.notional <= 500) {
         const stratCap = window.activeDemoStrategy?.capital || 100;
         p.margin = Math.min(paper.cash > 0 ? paper.cash : stratCap, stratCap);
@@ -30747,7 +30752,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1720';
+  window.__LUMEN_BUILD = 'B-1708-1730';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
