@@ -2172,10 +2172,10 @@ footer{
   </div>
 </div>
 
-<div id="top-active-trade-bar" style="display:none;background:#0B132B;border-bottom:3px solid #10B981;padding:10px 16px;z-index:880;box-shadow:0 6px 20px rgba(0,0,0,0.6);font-family:'Space Grotesk',sans-serif"></div>
+<div id="top-active-trade-bar" style="display:none;background:rgba(11,19,43,0.96);border-bottom:2px solid #10B981;padding:4px 12px;z-index:880;box-shadow:0 3px 12px rgba(0,0,0,0.5);font-family:'Space Grotesk',sans-serif"></div>
 
 <div id="chart-area">
-  <div id="chart-trade-hud" style="display:none;position:absolute;top:10px;right:10px;z-index:15;pointer-events:auto;max-width:320px;width:calc(100% - 20px)"></div>
+  <div id="chart-trade-hud" style="display:none"></div>
   <button id="chips-toggle" title="Masquer / afficher la liste des indicateurs">▾</button>
   <div id="chips"></div>
   <button id="btn-float-latest-candles" onclick="scrollToLatestCandles()" title="Aller aux bougies les plus récentes (temps réel)" style="position:absolute;bottom:30px;right:75px;z-index:25;background:rgba(15,23,42,0.92);border:1px solid #00E5FF;color:#00E5FF;border-radius:20px;padding:6px 14px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.6);backdrop-filter:blur(6px);transition:all 0.2s">⏭️ Dernières bougies</button>
@@ -12513,11 +12513,11 @@ function formatElapsed(startTimeMs) {
 
 window.updateChartTradeHud = function() {
   const hud = document.getElementById('chart-trade-hud');
-  const topBar = document.getElementById('top-active-trade-bar');
+  if (hud) hud.style.display = 'none'; // Cadre flottant éliminé pour ne jamais cacher le graphique
 
+  const topBar = document.getElementById('top-active-trade-bar');
   const positions = (typeof paper !== 'undefined' && Array.isArray(paper.positions)) ? paper.positions : [];
   if (!positions || positions.length === 0) {
-    if (hud) hud.style.display = 'none';
     if (topBar) topBar.style.display = 'none';
     return;
   }
@@ -12533,7 +12533,6 @@ window.updateChartTradeHud = function() {
   
   const p = positions[posIdx];
   if (!p) {
-    if (hud) hud.style.display = 'none';
     if (topBar) topBar.style.display = 'none';
     return;
   }
@@ -12546,148 +12545,44 @@ window.updateChartTradeHud = function() {
   const isWin = pnlUsd >= 0;
   const mainColor = isWin ? '#22C55E' : '#EF4444';
   const badgeBg = isWin ? '#16A34A' : '#DC2626';
-  const mainBg = isWin ? 'rgba(34,197,94,0.16)' : 'rgba(239,68,68,0.16)';
   const mainBorder = isWin ? '#22C55E' : '#EF4444';
-  const sideLabel = p.side === 'long' ? '🟢 ACHAT (LONG)' : '🔴 VENTE (SHORT)';
+  const sideLabel = p.side === 'long' ? '🟢 LONG' : '🔴 SHORT';
 
   const startTime = p.t || Date.now();
   const elapsedStr = formatElapsed(startTime);
-  const timeStr = new Date(startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-  const liqPx = (p.lev && p.lev > 1) ? (p.side === 'long' ? p.entry * (1 - 0.95 / p.lev) : p.entry * (1 + 0.95 / p.lev)) : null;
 
   const pnlStr = (pnlUsd >= 0 ? '+' : '') + pnlUsd.toFixed(2) + ' $';
-  const pnlPctStr = '(' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%)';
+  const pnlPctStr = '(' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(1) + '%)';
   const entryStr = '$' + fmt(p.entry, p.entry >= 100 ? 2 : 4);
   const currentPxStr = '$' + fmt(px, px >= 100 ? 2 : 4);
 
-  // --- 1. POPULATE TOP SUMMARY BAR (OUTSIDE CHART) ---
+  // BANDE SUPÉRIEURE ULTRA-COMPACTE (Ne cache pas le graphique)
   if (topBar) {
     topBar.style.display = 'block';
-    topBar.style.borderBottom = `3px solid ${mainBorder}`;
+    topBar.style.borderBottom = `2px solid ${mainBorder}`;
     topBar.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <!-- Badge & Symbole -->
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="background:${badgeBg};color:#FFFFFF;font-weight:900;font-size:13px;padding:5px 12px;border-radius:6px;letter-spacing:0.3px;box-shadow:0 0 10px ${mainBorder}">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:11px">
+        <!-- Badge Sens, Levier & Symbole -->
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="background:${badgeBg};color:#FFFFFF;font-weight:900;font-size:10.5px;padding:2px 7px;border-radius:4px;letter-spacing:0.3px">
             ${sideLabel} ${p.lev ? p.lev + 'x' : '1x'}
-          </div>
-          <div>
-            <div style="color:#FFFFFF;font-weight:900;font-size:16px;letter-spacing:0.5px">${p.sym}</div>
-            <div style="font-size:11px;color:#93C5FD;font-weight:700">Position Active (${posIdx + 1}/${positions.length})</div>
-          </div>
+          </span>
+          <span style="color:#FFFFFF;font-weight:800;font-size:12px">${p.sym}</span>
         </div>
 
-        <!-- Bloc central PnL & Prix -->
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#1E293B;padding:6px 14px;border-radius:8px;border:1.5px solid #334155">
-          <div>
-            <div style="font-size:10.5px;color:#CBD5E1;font-weight:800;text-transform:uppercase">Prix d'Entrée</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:900;color:#FFFFFF;margin-top:2px">${entryStr}</div>
-          </div>
-          <div style="border-left:1.5px solid #334155;padding-left:14px">
-            <div style="font-size:10.5px;color:#CBD5E1;font-weight:800;text-transform:uppercase">Prix Actuel</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:900;color:${mainColor};margin-top:2px">${currentPxStr}</div>
-          </div>
-          <div style="border-left:1.5px solid #334155;padding-left:14px">
-            <div style="font-size:10.5px;color:#CBD5E1;font-weight:800;text-transform:uppercase">Gain / Perte (PnL)</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:900;color:${mainColor};margin-top:1px">
-              ${pnlStr} <span style="font-size:13px">${pnlPctStr}</span>
-            </div>
-          </div>
+        <!-- Données clés : Entrée, Actuel & PnL -->
+        <div style="display:flex;align-items:center;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+          <span style="color:#94A3B8">Entrée: <strong style="color:#FFF">${entryStr}</strong></span>
+          <span style="color:#94A3B8">Actuel: <strong style="color:${mainColor}">${currentPxStr}</strong></span>
+          <span style="color:#94A3B8">PnL: <strong style="font-size:12px;color:${mainColor}">${pnlStr} ${pnlPctStr}</strong></span>
         </div>
 
-        <!-- Bloc Temps & Bouton Clôture -->
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="background:#1E293B;padding:6px 12px;border-radius:8px;border:1.5px solid #334155">
-            <div style="font-size:10.5px;color:#CBD5E1;font-weight:800">⏱️ En trade depuis :</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:900;color:#FFD700;margin-top:2px">
-              ${elapsedStr} <span style="font-size:10px;color:#CBD5E1">(${timeStr})</span>
-            </div>
-          </div>
-          <button onclick="closePos(${posIdx})" style="background:#EF4444;color:#FFFFFF;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(239,68,68,0.5)">
-            ✕ Fermer Trade
+        <!-- Temps écoulé & Clôture Trade -->
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:#FFD700;font-family:'IBM Plex Mono',monospace;font-weight:700">⏱️ ${elapsedStr}</span>
+          <button onclick="closePos(${posIdx})" style="background:#EF4444;color:#FFFFFF;border:none;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(239,68,68,0.4)">
+            ✕ Fermer
           </button>
-        </div>
-      </div>
-    `;
-  }
-
-  // --- 2. POPULATE CHART FLOATING HUD ---
-  if (hud) {
-    hud.style.display = 'block';
-
-    if (window.__hudCollapsed) {
-      hud.innerHTML = `
-        <div onclick="window.toggleTradeHudCollapse(event)" style="display:inline-flex;align-items:center;gap:10px;background:#0F172A;border:2px solid ${mainBorder};border-radius:25px;padding:6px 14px;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,0.7);font-family:'Space Grotesk',sans-serif">
-          <span style="font-weight:900;font-size:12px;color:${mainColor}">${sideLabel} ${p.lev ? p.lev + 'x' : ''}</span>
-          <span style="font-size:12px;color:#FFFFFF;font-weight:800">${p.sym}</span>
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:900;color:${mainColor}">
-            ${pnlStr} ${pnlPctStr}
-          </span>
-          <span style="font-size:11px;color:#FFD700;font-family:'IBM Plex Mono',monospace;font-weight:800">⏱️ ${elapsedStr}</span>
-          <span style="font-size:11px;color:#38BDF8;font-weight:800;margin-left:4px">▲ Déplier</span>
-        </div>
-      `;
-      return;
-    }
-
-    const slStr = p.sl ? `$${fmt(p.sl, p.sl >= 100 ? 2 : 4)}` : '—';
-    const tpStr = p.tp ? `$${fmt(p.tp, p.tp >= 100 ? 2 : 4)}` : '—';
-    const liqStr = liqPx ? `$${fmt(liqPx, liqPx >= 100 ? 2 : 4)}` : 'Sans (1x)';
-
-    hud.innerHTML = `
-      <div style="background:#0F172A;border:2.5px solid ${mainBorder};border-radius:12px;padding:12px 14px;box-shadow:0 12px 35px rgba(0,0,0,0.8);font-family:'Space Grotesk',sans-serif">
-        <!-- Top bar: Badge, Pair, Actions -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="background:${badgeBg};color:#FFFFFF;font-weight:900;font-size:12px;padding:3px 8px;border-radius:5px">
-              ${sideLabel} ${p.lev ? p.lev + 'x' : '1x'}
-            </span>
-            <span style="font-weight:900;font-size:15px;color:#FFFFFF">${p.sym}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <button onclick="window.toggleTradeHudCollapse(event)" style="background:#1E293B;color:#CBD5E1;border:1px solid #334155;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:800;cursor:pointer" title="Réduire">
-              ▼
-            </button>
-            <button onclick="closePos(${posIdx})" style="background:#EF4444;color:#FFFFFF;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:900;cursor:pointer">
-              ✕ Fermer
-            </button>
-          </div>
-        </div>
-
-        <!-- Big PnL Display Box -->
-        <div style="background:${mainBg};border:1.5px solid ${mainColor};border-radius:8px;padding:10px;margin-bottom:10px;text-align:center">
-          <div style="font-size:11px;color:#CBD5E1;font-weight:800;text-transform:uppercase;letter-spacing:0.5px">PnL EN DIRECT (GAIN / PERTE)</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:900;color:${mainColor};margin-top:2px">
-            ${pnlStr} <span style="font-size:14px">${pnlPctStr}</span>
-          </div>
-        </div>
-
-        <!-- Prices Grid -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-          <div style="background:#1E293B;padding:8px;border-radius:8px;border:1px solid #334155">
-            <div style="font-size:10.5px;color:#CBD5E1;font-weight:800">Prix d'Entrée</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:900;color:#FFFFFF;margin-top:2px">${entryStr}</div>
-          </div>
-          <div style="background:#1E293B;padding:8px;border-radius:8px;border:1px solid #334155">
-            <div style="font-size:10.5px;color:#CBD5E1;font-weight:800">Prix Actuel</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:900;color:${mainColor};margin-top:2px">${currentPxStr}</div>
-          </div>
-        </div>
-
-        <!-- Protections (SL / TP / Liq) -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-size:10.5px;margin-bottom:10px;text-align:center;background:#1E293B;padding:6px;border-radius:6px;border:1px solid #334155">
-          <div><span style="color:#F87171;font-weight:800">SL:</span> <span style="color:#FFF;font-weight:800">${slStr}</span></div>
-          <div><span style="color:#34D399;font-weight:800">TP:</span> <span style="color:#FFF;font-weight:800">${tpStr}</span></div>
-          <div><span style="color:#FBBF24;font-weight:800">Liq:</span> <span style="color:#FFF;font-weight:800">${liqStr}</span></div>
-        </div>
-
-        <!-- Duration -->
-        <div style="display:flex;align-items:center;justify-content:space-between;background:#1E293B;border:1px solid #334155;border-radius:8px;padding:6px 10px">
-          <span style="font-size:11px;color:#CBD5E1;font-weight:800">⏱️ En trade depuis :</span>
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:900;color:#FFD700">
-            ${elapsedStr} <span style="font-size:10px;color:#94A3B8">(${timeStr})</span>
-          </span>
         </div>
       </div>
     `;
@@ -30146,7 +30041,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1410';
+  window.__LUMEN_BUILD = 'B-1708-1420';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
