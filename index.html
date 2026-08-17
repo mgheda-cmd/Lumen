@@ -14618,8 +14618,13 @@ function openCfg(ind){
         `</div></div>`;
     if(f.t==='tf'){
       const cur=(state.indicators[ind]&&state.indicators[ind].tf)||'chart';
-      const opts=[['chart','UT'],['3','3m'],['5','5m'],['15','15m'],['20','20m'],['30','30m'],['60','1H'],['240','4H']];
-      return `<div class="cfg-row"><label>Unité de temps</label>
+      /* Série complète, reprise du dépôt Google- : les minutes intermédiaires
+         manquaient, or ce sont elles qui servent à régler l'Impulse MACD de
+         la stratégie MM, où une minute d'écart déplace le prix d'entrée. */
+      const opts=[['chart','UT'],['1','1m'],['2','2m'],['3','3m'],['4','4m'],['5','5m'],
+                  ['6','6m'],['7','7m'],['8','8m'],['9','9m'],['10','10m'],['12','12m'],
+                  ['15','15m'],['20','20m'],['30','30m'],['60','1H'],['240','4H']];
+      return `<div class="cfg-row"><label>${f.lab || "Unité de temps"}</label>
         <div style="display:flex;gap:4px;flex-wrap:wrap">`+
         opts.map(o=>`<button class="cfg-tf ${cur===o[0]?'on':''}" data-tf="${o[0]}">${o[1]}</button>`).join('')+
         `</div></div>`;
@@ -29871,7 +29876,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-0720';
+  window.__LUMEN_BUILD = 'B-1708-0805';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
