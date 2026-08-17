@@ -2624,14 +2624,14 @@ footer{
 
       <!-- 5. Montant -->
       <label style="font-size:11px;color:#94A3B8">Montant<br>
-        <input id="paper-amt" type="number" value="100" step="any" onchange="window.syncPaperConfigFromUI()" style="width:78px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #334155;border-radius:6px;color:#E2E8F0">
+        <input id="paper-amt" type="number" value="0.02" step="any" onchange="window.syncPaperConfigFromUI()" style="width:78px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;background:#0B1220;border:1px solid #334155;border-radius:6px;color:#E2E8F0">
       </label>
 
       <!-- 6. Unité -->
       <label style="font-size:11px;color:#94A3B8">Unité<br>
         <select id="paper-unite" onchange="window.setPaperUniteFromSelect(this.value)" style="background:#0B1220;border:1px solid #334155;color:#00E5FF;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
-          <option value="USDT" selected>USDT (marge)</option>
-          <option value="BASE">BTC (taille)</option>
+          <option value="BASE" selected>BTC (taille)</option>
+          <option value="USDT">USDT (marge)</option>
         </select>
       </label>
 
@@ -13102,20 +13102,24 @@ function updatePaperDemoStrategyUI(){
     if(activeObj.dir) setVal('paper-dir', activeObj.dir);
     if(activeObj.mSor) setVal('paper-sor', activeObj.mSor);
 
-    const isUsdt = (activeObj.unite === 'USDT' || paperUnit === 'usdt');
-    if (isUsdt) {
+    const isBase = (activeObj.unite === 'BASE' || activeObj.unite === 'BTC' || activeObj.unite === 'coin');
+    if (isBase) {
+      paperUnit = 'coin';
+      setVal('paper-unite', 'BASE');
+      const amtVal = (activeObj.marge != null && activeObj.marge > 0) ? activeObj.marge : 0.02;
+      setVal('paper-amt', amtVal);
+    } else {
+      paperUnit = 'usdt';
+      setVal('paper-unite', 'USDT');
       const amtVal = (activeObj.marge != null && activeObj.marge >= 1) ? activeObj.marge : (activeObj.capital || 100);
       setVal('paper-amt', amtVal);
-      setVal('paper-unite', 'USDT');
-    } else if(activeObj.marge != null) {
-      setVal('paper-amt', activeObj.marge);
-      if(activeObj.unite) setVal('paper-unite', (activeObj.unite === 'BASE' || activeObj.unite === 'BTC') ? 'BASE' : 'USDT');
     }
     if(activeObj.lev != null) setVal('paper-lev', String(activeObj.lev));
     if(activeObj.capital != null) setVal('paper-capital', activeObj.capital);
     if(activeObj.mmode) setVal('paper-mmode', activeObj.mmode);
     if(activeObj.tp != null) setVal('paper-tp', activeObj.tp);
     if(activeObj.feePct != null) setVal('paper-fee', activeObj.feePct);
+    if(typeof refreshUnitUI === 'function') refreshUnitUI();
   }
 
   if (cardEl) {
@@ -14080,14 +14084,18 @@ function checkAutoTrade(inputSignals){
   }
   const strat = window.activeDemoStrategy;
 
-  // Si une stratégie active existe, configurer les paramètres du compte Démo de façon stricte
+  // Si une stratégie active existe, configurer les paramètres du compte Démo en respectant fidèlement le backtest
   if(strat && strat.active){
-    const reqCap = strat.capital || 100;
+    const isBase = (strat.unite === 'BASE' || strat.unite === 'BTC' || strat.unite === 'coin');
+    paperUnit = isBase ? 'coin' : 'usdt';
+    const reqAmt = isBase ? (strat.marge || 0.02) : (strat.marge || strat.capital || 100);
     const reqLev = strat.lev || 200;
     const amtEl = document.getElementById('paper-amt');
-    if(amtEl && (!amtEl.value || amtEl.value === '0' || amtEl.value === '0.02')){
-      amtEl.value = String(reqCap);
+    if(amtEl && (!amtEl.value || amtEl.value === '0')){
+      amtEl.value = String(reqAmt);
     }
+    const uniteEl = document.getElementById('paper-unite');
+    if(uniteEl) uniteEl.value = isBase ? 'BASE' : 'USDT';
     const levEl = document.getElementById('paper-lev');
     if(levEl && String(levEl.value) !== String(reqLev)){
       levEl.value = String(reqLev);
@@ -14095,7 +14103,6 @@ function checkAutoTrade(inputSignals){
     if(strat.feePct != null){
       window.paperFeePct = strat.feePct / 100;
     }
-    paperUnit = 'usdt';
   }
 
   const eMode = strat?.mode || state.indicators?.signal_ema_ha?.exitMode || 'macd';
@@ -14235,8 +14242,10 @@ function checkAutoTrade(inputSignals){
 
   // 3. Si aucune position n'est ouverte, vérifier les signaux d'entrée
   if (!existingPos) {
-    const stratCap = strat?.capital || 100;
+    const isBase = (strat?.unite === 'BASE' || strat?.unite === 'BTC' || paperUnit === 'coin');
+    const stratAmt = isBase ? (strat?.marge || 0.02) : (strat?.marge || strat?.capital || 100);
     const stratLev = strat?.lev || 200;
+    const displayAmtStr = isBase ? `${stratAmt} BTC` : `$${stratAmt}`;
 
     if (buySignal) {
       const sigId = `${state.symbol}|${state.tf}|${sigT}|buy`;
@@ -14246,15 +14255,15 @@ function checkAutoTrade(inputSignals){
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
 
-        openTrade('long', null, stratCap, stratLev);
+        openTrade('long', null, stratAmt, stratLev);
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
         const modeLabel = strat?.modeLabel || 'Stratégie Achat';
-        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre ACHAT (LONG) ($${stratCap} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#10B981');
+        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre ACHAT (LONG) (${displayAmtStr} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#10B981');
         try { beep(); } catch(e){}
 
         if (typeof sendTelegramNotification === 'function') {
-          sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] NOUVEL ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>$${stratCap} (${stratLev}x)</b>\n• Mode : <b>${modeLabel}</b>`, 'mexc');
+          sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] NOUVEL ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>\n• Mode : <b>${modeLabel}</b>`, 'mexc');
         }
 
         // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
@@ -14302,15 +14311,15 @@ function checkAutoTrade(inputSignals){
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
 
-        openTrade('short', null, stratCap, stratLev);
+        openTrade('short', null, stratAmt, stratLev);
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
         const modeLabel = strat?.modeLabel || 'Stratégie Vente';
-        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre VENTE (SHORT) ($${stratCap} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
+        toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre VENTE (SHORT) (${displayAmtStr} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
         try { beep(); } catch(e){}
 
         if (typeof sendTelegramNotification === 'function') {
-          sendTelegramNotification(`🔴 <b>[Lumen Auto-Trade] NOUVELLE VENTE (SHORT)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>$${stratCap} (${stratLev}x)</b>\n• Mode : <b>${modeLabel}</b>`, 'mexc');
+          sendTelegramNotification(`🔴 <b>[Lumen Auto-Trade] NOUVELLE VENTE (SHORT)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>\n• Mode : <b>${modeLabel}</b>`, 'mexc');
         }
 
         // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
@@ -30982,7 +30991,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1850';
+  window.__LUMEN_BUILD = 'B-1708-1860';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
