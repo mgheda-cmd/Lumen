@@ -7404,8 +7404,18 @@ function render(){
     ctx.restore();
   }
 
+  /* Pendant un glissement, on ne touche pas au tableau : la mémoire évite
+     déjà le recalcul, mais reconstruire le HTML à chaque image reste inutile.
+     Un rafraîchissement est programmé pour la fin du geste. */
   if(typeof updateMmsBoTable === 'function' && typeof mmsBoHudVisible !== 'undefined' && mmsBoHudVisible){
-    try{ updateMmsBoTable(); }catch(e){}
+    if(state.dragging){
+      clearTimeout(window.__mmsBoDiffere);
+      window.__mmsBoDiffere = setTimeout(function(){
+        try{ updateMmsBoTable(); }catch(e){}
+      }, 250);
+    } else {
+      try{ updateMmsBoTable(); }catch(e){}
+    }
   }
   updateChips();
   updatePaper();
@@ -25658,7 +25668,39 @@ const DASHBOARD_TFS = [
   { key: 1440, label: '1J', name: '1d' }
 ];
 
+/* Le tableau interroge huit unités de temps, et chacune fait tourner la
+   stratégie MM au complet : mesuré à 3,5 s l'appel. Relancé à chaque rendu,
+   cela figeait le graphique pendant plusieurs secondes au moindre geste.
+
+   On garde donc le résultat de chaque unité, et on ne le refait que si la
+   dernière bougie a changé, ou si la paire a changé. Le tableau reste juste
+   au bougie près, sans coûter un centime pendant un déplacement. */
+const __mmsBoMemo = new Map();
+
+/* Valeur déjà en mémoire pour cette unité, sans déclencher de calcul. */
+function __mmsBoDejaCalcule(tf) {
+  const derniere = (state.data && state.data.length) ? state.data[state.data.length - 1].t : 0;
+  const cle = state.symbol + '|' + state.tf + '|' + (+tf) + '|' + derniere;
+  if (__mmsBoMemo.has(cle)) return __mmsBoMemo.get(cle);
+  for (const [k, v] of __mmsBoMemo) {
+    const p = k.split('|');
+    if (p[0] === state.symbol && +p[2] === +tf) return v;   // valeur un peu ancienne
+  }
+  return null;
+}
+
 function computeMmsBoForTf(tf) {
+  tf = +tf;
+  const derniere = (state.data && state.data.length) ? state.data[state.data.length - 1].t : 0;
+  const cle = state.symbol + '|' + state.tf + '|' + tf + '|' + derniere;
+  if (__mmsBoMemo.has(cle)) return __mmsBoMemo.get(cle);
+  const val = __computeMmsBoForTfBrut(tf);
+  if (__mmsBoMemo.size > 40) __mmsBoMemo.clear();
+  __mmsBoMemo.set(cle, val);
+  return val;
+}
+
+function __computeMmsBoForTfBrut(tf) {
   tf = +tf;
   let bars = null;
   if (tf === state.tf) {
@@ -25674,6 +25716,14 @@ function computeMmsBoForTf(tf) {
     if (tf !== state.tf && typeof ensureMTF === 'function') ensureMTF(tf);
     return null;
   }
+
+  /* Le tableau ne lit que l'état de la dernière bougie : la structure, la
+     pente, la dernière cassure, le dernier bloc. Faire tourner la stratégie
+     sur six mille bougies pour n'en garder qu'une coûtait 3,5 s par unité de
+     temps, soit un gel de plusieurs secondes à chaque nouvelle bougie.
+     On garde de quoi amorcer les moyennes et les pivots, pas davantage. */
+  const FENETRE_HUD = 400;
+  if (bars.length > FENETRE_HUD) bars = bars.slice(-FENETRE_HUD);
 
   const N = bars.length;
   const lastBar = bars[N - 1];
@@ -25842,11 +25892,27 @@ function updateMmsBoTable() {
   let bearCount = 0;
   let neutralCount = 0;
 
+  /* Les huit unités ne sont pas recalculées d'un bloc : celle affichée passe
+     en premier, les autres s'étalent sur les rafraîchissements suivants, deux
+     par deux. Le tableau se remplit en une seconde ou deux au lieu de figer
+     la page d'un coup, et les valeurs déjà en mémoire s'affichent tout de
+     suite. */
+  if (typeof window.__mmsBoTour !== 'number') window.__mmsBoTour = 0;
+  const aRecalculer = new Set([state.tf]);
+  for (let q = 0; q < 2; q++) {
+    const it = DASHBOARD_TFS[(window.__mmsBoTour + q) % DASHBOARD_TFS.length];
+    if (it) aRecalculer.add(it.key);
+  }
+  window.__mmsBoTour = (window.__mmsBoTour + 2) % DASHBOARD_TFS.length;
+
   let rowsHtml = '';
   DASHBOARD_TFS.forEach(item => {
     const tf = item.key;
     const isCurrent = (state.tf === tf);
-    const data = computeMmsBoForTf(tf);
+    /* Hors de son tour, on se contente de ce qui est déjà en mémoire :
+       computeMmsBoForTf le rend sans rien recalculer, et renvoie null si
+       l'unité n'a jamais été calculée — la ligne s'affiche alors en attente. */
+    const data = aRecalculer.has(tf) ? computeMmsBoForTf(tf) : __mmsBoDejaCalcule(tf);
 
     if (!data) {
       rowsHtml += `
@@ -29733,7 +29799,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-0330';
+  window.__LUMEN_BUILD = 'B-1708-0450';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
