@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    console.log('[Lumen Extension] Extension MEXC Auto-Trader v1.5.0 active (Entrées & Sorties)...');
+    console.log('[Lumen Extension] Extension MEXC Auto-Trader v1.6.0 active (Gestion Retournements & Reversals)...');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -29,7 +29,7 @@
                 hud.style.borderColor = '#10B981';
                 hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen Connecté</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.02% FRAIS</span>';
             }
-        }, 5000);
+        }, 6000);
     }
 
     function setNativeValue(element, value) {
@@ -49,8 +49,8 @@
 
     async function executeCloseOrder(signal) {
         try {
-            console.log('[Lumen Extension] Signal de FERMETURE reçu:', signal);
-            notifyHud(`Clôture : ${signal.side || 'Position'} ${signal.symbol}`, '#EC4899');
+            console.log('[Lumen Extension] Fermeture de position en cours...');
+            notifyHud(`Clôture : ${signal?.reason || 'Sortie Trade'}`, '#EC4899');
 
             const allElements = Array.from(document.querySelectorAll('button, a, span, div'));
             const flashCloseBtn = allElements.find(el => {
@@ -69,8 +69,9 @@
                 });
                 if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
 
-                notifyHud(`✅ Position ${signal.symbol} clôturée au marché (Flash Close) !`, '#EC4899');
-                return;
+                notifyHud(`✅ Position clôturée au marché (Flash Close) !`, '#EC4899');
+                await new Promise(r => setTimeout(r, 300));
+                return true;
             }
 
             const tabs = Array.from(document.querySelectorAll('button, div[role="tab"], span'));
@@ -91,25 +92,24 @@
 
                 await new Promise(r => setTimeout(r, 150));
 
-                const isLongClose = (signal.side === 'CLOSE_LONG' || signal.side === 'SELL');
+                const isLongClose = (signal?.side === 'CLOSE_LONG' || signal?.side === 'SELL');
                 const closeActionBtn = Array.from(document.querySelectorAll('button')).find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
-                    if (isLongClose) return txt.includes('close long') || txt.includes('fermer long') || txt.includes('fermer achat');
-                    return txt.includes('close short') || txt.includes('fermer short') || txt.includes('fermer vente');
+                    if (isLongClose) return txt.includes('close long') || txt.includes('fermer long');
+                    return txt.includes('close short') || txt.includes('fermer short');
                 });
 
                 if (closeActionBtn && !closeActionBtn.disabled) {
                     closeActionBtn.click();
-                    notifyHud(`✅ Trade ${signal.symbol} clôturé avec succès !`, '#EC4899');
-                    return;
+                    notifyHud(`✅ Trade clôturé avec succès !`, '#EC4899');
+                    await new Promise(r => setTimeout(r, 300));
+                    return true;
                 }
             }
-
-            notifyHud(`⚠️ Impossible de localiser le bouton de fermeture`, '#F59E0B');
         } catch (e) {
             console.error('[Lumen Extension] Erreur fermeture:', e);
-            notifyHud('❌ Erreur fermeture trade', '#EF4444');
         }
+        return false;
     }
 
     async function executeMarketOrder(signal) {
@@ -118,9 +118,21 @@
         }
 
         try {
-            console.log('[Lumen Extension] Signal d\'ENTRÉE reçu:', signal);
+            console.log('[Lumen Extension] Signal d\'ENTRÉE / RETOURNEMENT reçu:', signal);
             const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
-            notifyHud(`Signal : ${signal.side} ${signal.symbol} (${budgetStr})`, signal.side === 'BUY' ? '#10B981' : '#EF4444');
+
+            const hasOpenPos = Array.from(document.querySelectorAll('button, a, span')).some(el => {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair';
+            });
+
+            if (hasOpenPos) {
+                notifyHud(`🔄 RETOURNEMENT : Clôture de l'ancien trade...`, '#F59E0B');
+                await executeCloseOrder({ reason: 'Retournement de position' });
+                await new Promise(r => setTimeout(r, 350));
+            }
+
+            notifyHud(`🚀 Ouverture : ${signal.side} ${signal.symbol} (${budgetStr})`, signal.side === 'BUY' ? '#10B981' : '#EF4444');
 
             const openTab = Array.from(document.querySelectorAll('button, div[role="tab"], span')).find(el => {
                 const txt = (el.textContent || '').trim();
@@ -128,7 +140,7 @@
             });
             if (openTab) openTab.click();
 
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise(r => setTimeout(r, 120));
 
             const marketBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, div')).find(el => {
                 const txt = (el.textContent || '').trim();
@@ -169,7 +181,8 @@
 
             if (targetBtn && !targetBtn.disabled) {
                 targetBtn.click();
-                notifyHud(`✅ Ordre ${signal.side} (${budgetStr}) validé à 0.02% !`, isBuy ? '#10B981' : '#EF4444');
+                const reversalMsg = hasOpenPos ? '🔄 RETOURNEMENT RÉUSSI : Ancien fermé + Nouveau ouvert !' : `✅ Ordre ${signal.side} (${budgetStr}) validé à 0.02% !`;
+                notifyHud(reversalMsg, isBuy ? '#10B981' : '#EF4444');
             } else {
                 notifyHud('⚠️ Bouton d\'action non trouvé sur MEXC', '#F59E0B');
             }

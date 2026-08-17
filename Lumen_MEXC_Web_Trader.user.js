@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (Frais Réduits 0.02%)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      1.5.0
-// @description  Exécution automatique des entrées et sorties (Take-Profit, Stop-Loss, Pastilles inverses) sur MEXC Futures (0.02% de frais)
+// @version      1.6.0
+// @description  Gestion intelligente des Entrées, Sorties et Retournements instantanés (Fermeture de l'ancien + Ouverture du nouveau dans l'autre sens) sur MEXC (0.02% de frais)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
 // @match        *://futures.mexc.com/*
@@ -14,7 +14,7 @@
 (function() {
     'use strict';
 
-    console.log('>>> [Lumen Web Trader] Script v1.5.0 actif (Gestion Entrées & Sorties automatiques)');
+    console.log('>>> [Lumen Web Trader] Script v1.6.0 actif (Gestion Retournements & Reversals)');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -42,7 +42,7 @@
                 hud.style.borderColor = '#10B981';
                 hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen Connecté</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.02% FRAIS</span>';
             }
-        }, 5000);
+        }, 6000);
     }
 
     function setNativeValue(element, value) {
@@ -60,13 +60,13 @@
         element.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    // --- FERMETURE DE POSITION (SORTIE AUTOMATIQUE) ---
+    // --- FERMETURE RAPIDE (FLASH CLOSE) ---
     async function executeCloseOrder(signal) {
         try {
-            console.log('[Lumen Web Trader] Signal de FERMETURE reçu:', signal);
-            notifyHud(`Clôture : ${signal.side || 'Position'} ${signal.symbol}`, '#EC4899');
+            console.log('[Lumen Web Trader] Fermeture de position en cours...');
+            notifyHud(`Clôture : ${signal?.reason || 'Sortie Trade'}`, '#EC4899');
 
-            // Méthode 1 : Trouver le bouton "Flash Close" ou "Market Close" dans le tableau des positions
+            // 1. Bouton Flash Close dans le tableau des positions
             const allElements = Array.from(document.querySelectorAll('button, a, span, div'));
             const flashCloseBtn = allElements.find(el => {
                 const txt = (el.textContent || '').trim().toLowerCase();
@@ -77,7 +77,6 @@
                 flashCloseBtn.click();
                 await new Promise(r => setTimeout(r, 200));
 
-                // Confirmation éventuelle de la modale MEXC
                 const confirmBtns = Array.from(document.querySelectorAll('button'));
                 const confirmBtn = confirmBtns.find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
@@ -85,12 +84,12 @@
                 });
                 if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
 
-                notifyHud(`✅ Position ${signal.symbol} clôturée au marché (Flash Close) !`, '#EC4899');
-                console.log('[Lumen Web Trader] Position fermée via Flash Close');
-                return;
+                notifyHud(`✅ Position clôturée au marché (Flash Close) !`, '#EC4899');
+                await new Promise(r => setTimeout(r, 300));
+                return true;
             }
 
-            // Méthode 2 : Basculer sur l'onglet 'Close' (Fermer) dans le ticket d'ordre
+            // 2. Onglet Close dans le panneau
             const tabs = Array.from(document.querySelectorAll('button, div[role="tab"], span'));
             const closeTab = tabs.find(el => {
                 const txt = (el.textContent || '').trim();
@@ -101,7 +100,6 @@
                 closeTab.click();
                 await new Promise(r => setTimeout(r, 150));
 
-                // Sélectionner Market
                 const marketBtn = Array.from(document.querySelectorAll('button, div, span')).find(el => {
                     const txt = (el.textContent || '').trim();
                     return txt === 'Market' || txt === 'Marché';
@@ -110,39 +108,50 @@
 
                 await new Promise(r => setTimeout(r, 150));
 
-                // Choisir 100% ou cliquer sur Close Long / Close Short
-                const isLongClose = (signal.side === 'CLOSE_LONG' || signal.side === 'SELL');
+                const isLongClose = (signal?.side === 'CLOSE_LONG' || signal?.side === 'SELL');
                 const closeActionBtn = Array.from(document.querySelectorAll('button')).find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
-                    if (isLongClose) return txt.includes('close long') || txt.includes('fermer long') || txt.includes('fermer achat');
-                    return txt.includes('close short') || txt.includes('fermer short') || txt.includes('fermer vente');
+                    if (isLongClose) return txt.includes('close long') || txt.includes('fermer long');
+                    return txt.includes('close short') || txt.includes('fermer short');
                 });
 
                 if (closeActionBtn && !closeActionBtn.disabled) {
                     closeActionBtn.click();
-                    notifyHud(`✅ Trade ${signal.symbol} clôturé avec succès !`, '#EC4899');
-                    console.log('[Lumen Web Trader] Position fermée via onglet Close');
-                    return;
+                    notifyHud(`✅ Trade clôturé avec succès !`, '#EC4899');
+                    await new Promise(r => setTimeout(r, 300));
+                    return true;
                 }
             }
-
-            notifyHud(`⚠️ Impossible de localiser le bouton de fermeture`, '#F59E0B');
         } catch (e) {
             console.error('[Lumen Web Trader] Erreur fermeture:', e);
-            notifyHud('❌ Erreur fermeture trade', '#EF4444');
         }
+        return false;
     }
 
-    // --- OUVERTURE DE POSITION ---
+    // --- ENTRÉE / RETOURNEMENT DE POSITION ---
     async function executeMarketOrder(signal) {
         if (signal.action === 'CLOSE' || signal.side === 'CLOSE_LONG' || signal.side === 'CLOSE_SHORT') {
             return executeCloseOrder(signal);
         }
 
         try {
-            console.log('[Lumen Web Trader] Signal d\'ENTRÉE reçu:', signal);
+            console.log('[Lumen Web Trader] Signal d\'ENTRÉE / RETOURNEMENT reçu:', signal);
             const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
-            notifyHud(`Signal : ${signal.side} ${signal.symbol} (${budgetStr})`, signal.side === 'BUY' ? '#10B981' : '#EF4444');
+
+            // ÉTAPE 1 : Si une ancienne position existe, on la ferme d'abord (RETOURNEMENT PROPRE)
+            const hasOpenPos = Array.from(document.querySelectorAll('button, a, span')).some(el => {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair';
+            });
+
+            if (hasOpenPos) {
+                notifyHud(`🔄 RETOURNEMENT : Clôture de l'ancien trade...`, '#F59E0B');
+                await executeCloseOrder({ reason: 'Retournement de position' });
+                await new Promise(r => setTimeout(r, 350)); // Attente de libération de marge MEXC
+            }
+
+            // ÉTAPE 2 : Ouvrir le nouveau trade dans le sens demandé
+            notifyHud(`🚀 Ouverture : ${signal.side} ${signal.symbol} (${budgetStr})`, signal.side === 'BUY' ? '#10B981' : '#EF4444');
 
             // 1. Onglet Open / Ouvrir
             const openTab = Array.from(document.querySelectorAll('button, div[role="tab"], span')).find(el => {
@@ -151,7 +160,7 @@
             });
             if (openTab) openTab.click();
 
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise(r => setTimeout(r, 120));
 
             // 2. Onglet Market
             const marketBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, div')).find(el => {
@@ -162,7 +171,7 @@
 
             await new Promise(r => setTimeout(r, 150));
 
-            // 3. Montant / Quantité
+            // 3. Montant / Quantité automatique
             if (signal.budget && signal.budget > 0) {
                 const inputs = Array.from(document.querySelectorAll('input'));
                 const qtyInput = inputs.find(inp => {
@@ -195,13 +204,14 @@
 
             if (targetBtn && !targetBtn.disabled) {
                 targetBtn.click();
-                notifyHud(`✅ Ordre ${signal.side} (${budgetStr}) validé à 0.02% !`, isBuy ? '#10B981' : '#EF4444');
-                console.log('[Lumen Web Trader] Ordre d\'entrée validé avec succès sur MEXC !');
+                const reversalMsg = hasOpenPos ? '🔄 RETOURNEMENT RÉUSSI : Ancien fermé + Nouveau ouvert !' : `✅ Ordre ${signal.side} (${budgetStr}) validé à 0.02% !`;
+                notifyHud(reversalMsg, isBuy ? '#10B981' : '#EF4444');
+                console.log('[Lumen Web Trader]', reversalMsg);
             } else {
                 notifyHud('⚠️ Bouton d\'action non trouvé sur MEXC', '#F59E0B');
             }
         } catch (e) {
-            console.error('[Lumen Web Trader] Erreur:', e);
+            console.error('[Lumen Web Trader] Erreur exécution:', e);
             notifyHud('❌ Erreur exécution', '#EF4444');
         }
     }
