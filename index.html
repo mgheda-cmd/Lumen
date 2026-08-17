@@ -14101,103 +14101,50 @@ function checkAutoTrade(inputSignals){
 
   const eMode = strat?.mode || state.indicators?.signal_ema_ha?.exitMode || 'macd';
 
-  // 1. SOURCE UNIQUE : on interroge exactement la même fonction que le
-    //    backtest et que les pastilles du graphique. Auparavant cette section
-    //    recalculait la stratégie de son côté, avec ses propres options : la
-    //    démo n'exécutait donc pas ce qui était backtesté ni ce qui était
-    //    dessiné à l'écran.
+    // 1. SOURCE UNIQUE ET STRICTEMENT SYNCHRONE : SEULEMENT LA STRATÉGIE MM
     const lastIdx = d.length - 1;
     let buySignal = false, sellSignal = false, exitTriggered = false, exitReason = '';
-    let allDetectedSigs = [];
+    let sigT = null;
 
-    if (Array.isArray(inputSignals) && inputSignals.length > 0) {
-      allDetectedSigs = inputSignals;
-    } else {
-      // 1. Signaux Z. Z.
-      try {
-        const indZZ = Object.assign({}, (state.indicators && state.indicators.strat_zz) || {});
-        const elStrict = document.getElementById('bt-zz-strict');
-        const elStrictEmaHa = document.getElementById('bt-zz-strict-emaha');
-        const isStrictAuto = elStrict ? elStrict.checked : !!(indZZ.strictMode || strat?.isStrict);
-        const isStrictEmaHaAuto = elStrictEmaHa ? elStrictEmaHa.checked : !!(indZZ.strictEmaHa || strat?.isStrictEmaHa);
-        indZZ.strictMode = isStrictAuto;
-        indZZ.strictEmaHa = isStrictEmaHaAuto;
-        const zzSigs = computeZZSignals(d, indZZ, isStrictAuto, isStrictEmaHaAuto) || [];
-        allDetectedSigs.push(...zzSigs);
-      } catch(e){}
+    try {
+      const baseMM = (state.indicators && state.indicators.strat_mm) || {};
+      const mmData = computeMMSignals(d, baseMM);
+      if (mmData && mmData.signals && mmData.signals.length > 0) {
+        // Ne regarder QUE la dernière pastille validée (sur la bougie fermée : lastIdx - 1 ou lastIdx)
+        const lastSig = mmData.signals[mmData.signals.length - 1];
+        const sigIdx = (lastSig.t != null ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
 
-      // 2. Signaux Stratégie MM (Confluence)
-      try {
-        const mmSigs = computeSignals(d, state.indicators?.signal || {}) || [];
-        allDetectedSigs.push(...mmSigs);
-      } catch(e){}
-
-      // 3. Signaux Triple Confluence
-      try {
-        if (typeof computeTripleConfluence === 'function') {
-          const tripleSigs = computeTripleConfluence(d, state.indicators?.signal_triple || {}) || [];
-          allDetectedSigs.push(...tripleSigs);
+        // La pastille doit être récente (sur la dernière bougie venant de clôturer)
+        if (sigIdx != null && sigIdx >= lastIdx - 1) {
+          sigT = lastSig.t || (d[sigIdx] ? d[sigIdx].t : null);
+          if (lastSig.dir === 1) buySignal = true;
+          else if (lastSig.dir === -1) sellSignal = true;
         }
-      } catch(e){}
-    }
+      }
 
-    const sigNow = allDetectedSigs.filter(x => (x.i != null ? x.i >= lastIdx - 3 : true));
-    let sigT = d[lastIdx].t;
-    if(sigNow.length && sigNow[sigNow.length - 1].i != null && d[sigNow[sigNow.length - 1].i]) {
-      sigT = d[sigNow[sigNow.length - 1].i].t;
-    }
-
-    for(const sg of sigNow){
-      if(sg.isExit || sg.type === 'SORTIE'){ exitTriggered = true; exitReason = sg.reason || 'Sortie Stratégie'; }
-      else if(sg.dir === 1 || (sg.type && sg.type.includes('ACHAT'))) buySignal = true;
-      else if(sg.dir === -1 || (sg.type && sg.type.includes('VENTE'))) sellSignal = true;
-    }
-
-    /* SORTIE kk bis — même source que le backtest.
-       On lit les sorties calculées par l'indicateur et on déclenche si l'une
-       d'elles apparaît sur les trois dernières bougies, dans le sens de la
-       position ouverte. La pastille Z.Z. opposée reste active comme filet :
-       si kk bis ne donne rien, la position se ferme quand même. */
-    try{
-      const modeSortie = (function(){
-        const el = document.getElementById('live-ex-mode');
-        if(el && el.value) return el.value;
-        const raw = localStorage.getItem('lumen_live_exchange_bot');
-        return raw ? (JSON.parse(raw).mode || '') : '';
-      })();
-
-      if(modeSortie.indexOf('kk_') === 0){
-        /* Le bot lit les sorties de kk bis : l'indicateur doit être actif,
-           sinon getInd ne renvoie rien et seul le filet fonctionnerait.
-           Une configuration enregistrée dans le navigateur peut l'avoir
-           éteint, on le rallume donc au besoin. */
-        if(state.indicators.kk_bis && !state.indicators.kk_bis.on){
-          state.indicators.kk_bis.on = true;
-          delete state.cache['kk_bis'];
-          try{ if(typeof saveConfig === 'function') saveConfig(); }catch(e){}
-          try{ if(typeof syncMenu === 'function') syncMenu(); }catch(e){}
-          try{ toast('kk bis réactivé : le bot en a besoin pour ses sorties', '#00E5FF'); }catch(e){}
-        }
-        const kb = getInd('kk_bis');
-        let sorties = (kb && Array.isArray(kb.exits)) ? kb.exits : [];
-        if(modeSortie === 'kk_div')   sorties = sorties.filter(x => x.div);
-        if(modeSortie === 'kk_seuil') sorties = sorties.filter(x => !x.div);
-
-        // position réellement ouverte, pour ne fermer que dans le bon sens
-        const posOuverte = (paper && paper.positions && paper.positions[0]) ? paper.positions[0] : null;
-        if(posOuverte){
-          const sensPos = (posOuverte.side === 'long') ? 1 : -1;
-          for(const ex of sorties){
-            if(ex.i == null || ex.i < lastIdx - 2) continue;
-            const sensEx = (ex.type === 'SORTIE_ACHAT') ? 1 : -1;
-            if(sensEx !== sensPos) continue;
+      // Sorties sur sommets / creux MM
+      if (existingPos && mmData) {
+        if (existingPos.side === 'long' && mmData.sommetsList && mmData.sommetsList.length) {
+          const lastSommet = mmData.sommetsList[mmData.sommetsList.length - 1];
+          const somIdx = (lastSommet.t != null ? idxOfTime(lastSommet.t) : null) ?? lastSommet.i;
+          if (somIdx != null && somIdx >= lastIdx - 1) {
             exitTriggered = true;
-            exitReason = 'Sortie kk bis · ' + (ex.div ? 'divergence' : 'seuil + pente');
-            break;
+            exitReason = 'Sommet Extrême MM (Sortie Achat)';
+            sigT = lastSommet.t || sigT;
+          }
+        } else if (existingPos.side === 'short' && mmData.creuxList && mmData.creuxList.length) {
+          const lastCreux = mmData.creuxList[mmData.creuxList.length - 1];
+          const creuxIdx = (lastCreux.t != null ? idxOfTime(lastCreux.t) : null) ?? lastCreux.i;
+          if (creuxIdx != null && creuxIdx >= lastIdx - 1) {
+            exitTriggered = true;
+            exitReason = 'Creux Extrême MM (Sortie Vente)';
+            sigT = lastCreux.t || sigT;
           }
         }
       }
-    }catch(e){}
+    } catch(e){}
+
+    if (!sigT) return; // STRICTEMENT AUCUNE PASTILLE SUR LA DERNIÈRE BOUGIE -> NE RIEN DÉCLENCHER !
 
     // Récupération du filtre de direction si le bot réel est configuré
     let liveBotDir = 'both';
@@ -14210,14 +14157,15 @@ function checkAutoTrade(inputSignals){
     } catch(e){}
 
     if (liveBotDir === 'long_only') {
-      sellSignal = false; // Ne jamais exécuter de SHORT si le filtre est LONG uniquement
+      sellSignal = false;
     } else if (liveBotDir === 'short_only') {
-      buySignal = false; // Ne jamais exécuter de LONG si le filtre est SHORT uniquement
+      buySignal = false;
     }
-    // une pastille de sens opposé ferme la position en cours
+
+    // Une pastille opposée ferme la position en cours
     if(existingPos && !exitTriggered){
-      if(existingPos.side === 'long' && sellSignal){ exitTriggered = true; exitReason = 'Pastille Vente Z. Z.'; }
-      if(existingPos.side === 'short' && buySignal){ exitTriggered = true; exitReason = 'Pastille Achat Z. Z.'; }
+      if(existingPos.side === 'long' && sellSignal){ exitTriggered = true; exitReason = 'Pastille Vente MM (Retournement)'; }
+      if(existingPos.side === 'short' && buySignal){ exitTriggered = true; exitReason = 'Pastille Achat MM (Retournement)'; }
     }
     // une seule position à la fois : pas d'ouverture si une autre est en cours
     if(existingPos){ buySignal = false; sellSignal = false; }
@@ -31022,7 +30970,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1810';
+  window.__LUMEN_BUILD = 'B-1708-1820';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
