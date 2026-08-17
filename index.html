@@ -30122,7 +30122,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1240';
+  window.__LUMEN_BUILD = 'B-1708-1340';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30173,6 +30173,32 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       let mmData;
       try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
       let sg = (mmData && Array.isArray(mmData.signals)) ? mmData.signals.slice() : [];
+
+      /* Un signal MM est armé par un creux, ou par un sommet pour les ventes.
+         Or l'épisode qui contient ce creux n'est refermé qu'au retour du score
+         sous son seuil : avant, on ne sait pas encore où était le point bas.
+         Mesuré : 34 signaux sur 100 étaient émis avant cette confirmation,
+         3,6 bougies trop tôt en moyenne, jusqu'à 16.
+
+         On repousse ces signaux à la bougie de confirmation. Les autres,
+         déjà postérieurs, ne bougent pas. */
+      const netMM = mmData.net || [];
+      const sH = (state.indicators.kk_bis2 && state.indicators.kk_bis2.upper != null)
+                 ? +state.indicators.kk_bis2.upper : 75;
+      const sB = (state.indicators.kk_bis2 && state.indicators.kk_bis2.lower != null)
+                 ? +state.indicators.kk_bis2.lower : -75;
+      sg = sg.map(function(x){
+        if(x.creuxIdx == null) return x;
+        const haut = (x.dir === -1);
+        let j = x.creuxIdx;
+        while(j < netMM.length && netMM[j] != null &&
+              (haut ? netMM[j] >= sH : netMM[j] <= sB)) j++;
+        if(j >= d.length) return null;          // épisode encore ouvert
+        if(x.i >= j) return x;                  // déjà confirmé
+        return Object.assign({}, x, {
+          i: j, t: d[j].t, price: d[j].c, retarde: j - x.i
+        });
+      }).filter(Boolean).sort(function(a,b){ return a.i - b.i; });
       if(mode === 'mm_base') sg = sg.filter(x => x.optKey === 'base');
       else if(mode === 'mm_opt2') sg = sg.filter(x => x.optKey === 'opt2');
 
