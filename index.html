@@ -7137,8 +7137,15 @@ function render(){
         const isDirect = (g.tag === 'DIRECT');
         const color = isTemp ? '#FFC107' : (isDirect ? '#FF9800' : '#00E5FF');
         const bgFill = isTemp ? 'rgba(35, 25, 5, 0.95)' : (isDirect ? 'rgba(38, 20, 6, 0.95)' : 'rgba(6, 20, 38, 0.95)');
+        let timeTag = '';
+        if(g.t){
+          const dObj = new Date(g.t);
+          const pad = n => String(n).padStart(2, '0');
+          timeTag = `[${pad(dObj.getHours())}:${pad(dObj.getMinutes())}] `;
+        }
         let labelText = isDirect ? '⚡ ACHAT DIRECT' : '🎯 ACHAT (EMA 9 / HA 5m)';
-        if(isTemp) labelText += ' ⏳ TEMPORAIRE';
+        if(isTemp) labelText += ' ⏳ TEMPO';
+        if(timeTag) labelText = timeTag + labelText;
 
         // Puce cible (exactement sur le point de croisement)
         ctx.fillStyle = color;
@@ -7186,8 +7193,15 @@ function render(){
         const isDirect = (g.tag === 'DIRECT');
         const color = isTemp ? '#FFC107' : (isDirect ? '#FF9800' : '#FF007A');
         const bgFill = isTemp ? 'rgba(35, 25, 5, 0.95)' : (isDirect ? 'rgba(38, 20, 6, 0.95)' : 'rgba(38, 8, 22, 0.95)');
+        let timeTag = '';
+        if(g.t){
+          const dObj = new Date(g.t);
+          const pad = n => String(n).padStart(2, '0');
+          timeTag = `[${pad(dObj.getHours())}:${pad(dObj.getMinutes())}] `;
+        }
         let labelText = isDirect ? '⚡ VENTE DIRECTE' : '🎯 VENTE (EMA 9 / HA 5m)';
-        if(isTemp) labelText += ' ⏳ TEMPORAIRE';
+        if(isTemp) labelText += ' ⏳ TEMPO';
+        if(timeTag) labelText = timeTag + labelText;
 
         // Puce cible néon magenta ou orange (exactement sur le point)
         ctx.fillStyle = color;
@@ -25181,12 +25195,25 @@ function drawMMSignals(res, s, e, yOf, cw) {
       ctx.stroke();
       ctx.shadowBlur = 0;
 
+      // Format de l'heure sur la pastille
+      const sigCandleTime = sig.t || (baseCandle ? baseCandle.t : 0);
+      let timeTag = "";
+      if (sigCandleTime) {
+        const dObj = new Date(sigCandleTime);
+        const pad = n => String(n).padStart(2, "0");
+        timeTag = `[${pad(dObj.getHours())}:${pad(dObj.getMinutes())}] `;
+      }
+
       // Textes dans la pastille
       ctx.font = 'bold 10px "IBM Plex Sans", -apple-system, sans-serif';
       ctx.fillStyle = color;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(sig.badge || (isLong ? "🟢 ENTRÉE LONG" : "🔴 ENTRÉE SHORT"), bx + bw / 2, by + 4.5);
+      let mainBadge = sig.badge || (isLong ? "🟢 ENTRÉE LONG" : "🔴 ENTRÉE SHORT");
+      if (timeTag && !mainBadge.includes("[")) {
+        mainBadge = mainBadge.replace(/^([^a-zA-Z0-9À-ÿ]*)/, `$1${timeTag}`);
+      }
+      ctx.fillText(mainBadge, bx + bw / 2, by + 4.5);
 
       ctx.font = '8px "IBM Plex Mono", monospace';
       ctx.fillStyle = "#E2E8F0";
@@ -30333,7 +30360,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1560';
+  window.__LUMEN_BUILD = 'B-1708-1570';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
