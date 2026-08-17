@@ -12858,12 +12858,19 @@ function openTrade(side, targetPosIdx, customVal, customLev){
   let bonusApplied = 0;
 
   if (isIsole) {
+    const capRef = (+(document.getElementById('paper-capital')?.value || 100));
     const mpct = Math.max(1, Math.min(100, +(document.getElementById('paper-mpct')?.value || 50))) / 100;
     const mbonus = Math.max(0, Math.min(100, +(document.getElementById('paper-mbonus')?.value || 20))) / 100;
     const lastWin = (paper.lastWinPnl && paper.lastWinPnl > 0) ? paper.lastWinPnl : 0;
     bonusApplied = lastWin * mbonus;
-    margin = (paper.cash * mpct) + bonusApplied;
-    if (margin > paper.cash) margin = paper.cash;
+    const baseMargin = capRef * mpct;
+    margin = baseMargin + bonusApplied;
+
+    // Plafonner la marge au solde disponible net des frais
+    const totalCostFactor = (1 + lev * feeRate);
+    if (margin * totalCostFactor > paper.cash && paper.cash > 0) {
+      margin = paper.cash / totalCostFactor;
+    }
     notional = margin * lev;
     qty = px > 0 ? notional / px : 0;
   } else if(paperUnit==='coin' && (customVal == null || customVal <= 0)){
@@ -13307,25 +13314,41 @@ window.updatePaperIsolatedMarginUI = function() {
       return;
     }
     previewBox.style.display = 'block';
-    const capCourant = (typeof paper === 'object' && paper.cash != null) ? paper.cash : 100;
+    const capRef = +(document.getElementById('paper-capital')?.value || 100);
+    const capDispo = (typeof paper === 'object' && paper.cash != null) ? paper.cash : capRef;
     const mpctVal = Math.max(1, Math.min(100, +(document.getElementById('paper-mpct')?.value || 50)));
     const mbonusVal = Math.max(0, Math.min(100, +(document.getElementById('paper-mbonus')?.value || 20)));
+    const levVal = parseInt(document.getElementById('paper-lev')?.value || '200', 10);
+    const feeRate = (typeof getPaperFeeRate === 'function') ? getPaperFeeRate() : 0.0002;
     const lastWin = (typeof paper === 'object' && paper.lastWinPnl && paper.lastWinPnl > 0) ? paper.lastWinPnl : 0;
 
-    const baseMargin = capCourant * (mpctVal / 100);
+    // 1. Base fixe de 50% sur le capital initial de référence (ex: 50% de 100$ = 50.00$)
+    const baseMargin = capRef * (mpctVal / 100);
+    // 2. Bonus de 20% sur le gain du trade précédent (ex: 20% de 15$ = +3.00$)
     const bonusMargin = lastWin * (mbonusVal / 100);
-    const totalAlloc = Math.min(capCourant, baseMargin + bonusMargin);
+    const totalMargin = baseMargin + bonusMargin;
+
+    // 3. Coût du trade / Frais d'entrée estimés
+    const notional = totalMargin * levVal;
+    const entryFeeEst = notional * feeRate;
+    const totalCostEst = totalMargin + entryFeeEst;
 
     previewBox.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div>
-          <span>🛡️ <b>Marge Isolée Allouée :</b> <span style="color:#00E676;font-size:13px;font-weight:900">$${typeof fmtUsd === 'function' ? fmtUsd(totalAlloc) : totalAlloc.toFixed(2)}</span></span>
-          <span style="color:#94A3B8;margin-left:6px">
-            [Base : <strong style="color:#FFF">$${typeof fmtUsd === 'function' ? fmtUsd(baseMargin) : baseMargin.toFixed(2)}</strong> (${mpctVal}% de $${typeof fmtUsd === 'function' ? fmtUsd(capCourant) : capCourant.toFixed(2)}) + Bonus Gain : <strong style="color:#FFD700">+$${typeof fmtUsd === 'function' ? fmtUsd(bonusMargin) : bonusMargin.toFixed(2)}</strong> (${mbonusVal}% du gain précédent $${typeof fmtUsd === 'function' ? fmtUsd(lastWin) : lastWin.toFixed(2)})]
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>
+            <span>🛡️ <b>Marge Isolée Allouée :</b> <span style="color:#00E676;font-size:13.5px;font-weight:900">$${typeof fmtUsd === 'function' ? fmtUsd(totalMargin) : totalMargin.toFixed(2)}</span></span>
+            <span style="color:#CBD5E1;margin-left:6px">
+              = Base fixe : <b>$${typeof fmtUsd === 'function' ? fmtUsd(baseMargin) : baseMargin.toFixed(2)}</b> (${mpctVal}% du capital réf. $${typeof fmtUsd === 'function' ? fmtUsd(capRef) : capRef.toFixed(2)}) + Bonus Gain : <b style="color:#FFD700">+$${typeof fmtUsd === 'function' ? fmtUsd(bonusMargin) : bonusMargin.toFixed(2)}</b> (${mbonusVal}% du gain $${typeof fmtUsd === 'function' ? fmtUsd(lastWin) : lastWin.toFixed(2)})
+            </span>
+          </div>
+          <span style="background:rgba(0,230,118,0.15);border:1px solid #00E676;color:#00E676;padding:2px 8px;border-radius:4px;font-weight:800;font-size:11px">
+            ${mpctVal}% Fixe + ${mbonusVal}% Gain
           </span>
         </div>
-        <div style="font-size:10px;color:#38BDF8;font-weight:700">
-          💡 En cas de trade gagnant, ${mbonusVal}% du gain sera automatiquement réinvesti en bonus sur la marge suivante.
+        <div style="font-size:10.5px;color:#94A3B8;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;border-top:1px dashed rgba(255,255,255,0.1);padding-top:5px">
+          <span>🧾 Frais entrée est. (${levVal}x taker) : <strong style="color:#F87171">~$${typeof fmtUsd === 'function' ? fmtUsd(entryFeeEst) : entryFeeEst.toFixed(2)}</strong> · Coût total prélevé : <strong style="color:#FFF">$${typeof fmtUsd === 'function' ? fmtUsd(totalCostEst) : totalCostEst.toFixed(2)}</strong></span>
+          <span>💼 Solde disponible actuel : <strong style="color:#00E5FF">$${typeof fmtUsd === 'function' ? fmtUsd(capDispo) : capDispo.toFixed(2)}</strong></span>
         </div>
       </div>
     `;
@@ -30125,7 +30148,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1430';
+  window.__LUMEN_BUILD = 'B-1708-1440';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30551,7 +30574,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
          Le réglage de levier ne bouge pas ; le levier effectif, lui, baisse,
          et c'est lui qui fixe la distance à la liquidation. */
       if(mMode === 'isole' && capital > 0){
-        marge = capCourant * mPct + Math.max(0, dernierGain) * mBonus;
+        marge = capital * mPct + Math.max(0, dernierGain) * mBonus;
         if(marge > capCourant) marge = capCourant;
         if(marge > 0){ sommeLev += (notionnel / marge); nLev++; }
       }
