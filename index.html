@@ -1174,15 +1174,17 @@ footer{
 
       <!-- Section 5 : Fuseaux horaires & Thème -->
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;border-top:1px solid var(--line);padding-top:8px">
-        <span>🌍 Fuseaux & Thème</span>
+        <span>🌍 Fuseaux horaires & Thème</span>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-        <div style="display:flex;gap:4px">
-          <button class="btn tzb" id="tz-ny" data-tz="ny" title="Heure de New York" style="font-size:11px;padding:5px 8px">NY</button>
-          <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:11px;padding:5px 8px">LDN</button>
-          <button class="btn tzb" id="tz-tunis" data-tz="tunis" title="Heure de Tunis" style="font-size:11px;padding:5px 8px">TUN</button>
+        <div style="display:flex;gap:3px;flex-wrap:wrap">
+          <button class="btn tzb" id="tz-paris" data-tz="paris" title="Heure de Paris (France / Europe)" style="font-size:10.5px;padding:4px 6px;font-weight:700">PARIS</button>
+          <button class="btn tzb" id="tz-tunis" data-tz="tunis" title="Heure de Tunis" style="font-size:10.5px;padding:4px 6px">TUN</button>
+          <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:10.5px;padding:4px 6px">LDN</button>
+          <button class="btn tzb" id="tz-ny" data-tz="ny" title="Heure de New York" style="font-size:10.5px;padding:4px 6px">NY</button>
+          <button class="btn tzb" id="tz-utc" data-tz="utc" title="Heure UTC (Temps universel)" style="font-size:10.5px;padding:4px 6px">UTC</button>
         </div>
-        <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit" style="padding:5px 10px;font-size:13px">🌙</button>
+        <button class="btn" id="btn-theme" title="Thème jour / nuit" aria-label="Basculer le thème jour / nuit" style="padding:5px 9px;font-size:13px">🌙</button>
       </div>
     </div>
 
@@ -6451,10 +6453,10 @@ function fmtCompact(v){
   if(v>=1e3)return (v/1e3).toFixed(1)+' k';
   return v.toFixed(0);
 }
-const TZ_MAP={ny:'America/New_York',london:'Europe/London',tunis:'Africa/Tunis'};
+const TZ_MAP={paris:'Europe/Paris',tunis:'Africa/Tunis',london:'Europe/London',ny:'America/New_York',utc:'UTC'};
 function fmtTime(t){
   const d=new Date(t);
-  const tz=TZ_MAP[state.tz]; const opt=tz?{timeZone:tz}:{};
+  const tz=TZ_MAP[state.tz] || 'Europe/Paris'; const opt=tz?{timeZone:tz}:{};
   if(state.tf>=1440)return d.toLocaleDateString('fr-FR',Object.assign({day:'2-digit',month:'short'},opt));
   return d.toLocaleTimeString('fr-FR',Object.assign({hour:'2-digit',minute:'2-digit'},opt));
 }
@@ -6587,20 +6589,24 @@ try{
   applyCollapsed();
 }catch(e){}
 state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{}; state.subLock=state.subLock||{};
-state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'tunis';
+state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'paris';
 function applyTzButtons(){
-  for(const id of ['tz-ny','tz-london','tz-tunis']){
+  for(const id of ['tz-paris','tz-tunis','tz-london','tz-ny','tz-utc']){
     const b=document.getElementById(id); if(!b)continue;
     const on=b.dataset.tz===state.tz;
-    b.style.background=on?'var(--accent)':''; b.style.color=on?'#fff':'';
+    b.style.background=on?'var(--accent)':''; b.style.color=on?'#0A111F':'';
+    b.style.fontWeight=on?'800':'';
   }
 }
 try{
-  ['tz-ny','tz-london','tz-tunis'].forEach(id=>{
-    document.getElementById(id).addEventListener('click',()=>{
-      state.tz=document.getElementById(id).dataset.tz;
-      applyTzButtons(); saveConfig(); render();
-    });
+  ['tz-paris','tz-tunis','tz-london','tz-ny','tz-utc'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) {
+      el.addEventListener('click',()=>{
+        state.tz=el.dataset.tz;
+        applyTzButtons(); saveConfig(); render();
+      });
+    }
   });
   applyTzButtons();
 }catch(e){}
@@ -7138,10 +7144,8 @@ function render(){
         const color = isTemp ? '#FFC107' : (isDirect ? '#FF9800' : '#00E5FF');
         const bgFill = isTemp ? 'rgba(35, 25, 5, 0.95)' : (isDirect ? 'rgba(38, 20, 6, 0.95)' : 'rgba(6, 20, 38, 0.95)');
         let timeTag = '';
-        if(g.t){
-          const dObj = new Date(g.t);
-          const pad = n => String(n).padStart(2, '0');
-          timeTag = `[${pad(dObj.getHours())}:${pad(dObj.getMinutes())}] `;
+        if(g.t && typeof fmtTime === 'function'){
+          timeTag = `[${fmtTime(g.t)}] `;
         }
         let labelText = isDirect ? '⚡ ACHAT DIRECT' : '🎯 ACHAT (EMA 9 / HA 5m)';
         if(isTemp) labelText += ' ⏳ TEMPO';
@@ -7194,10 +7198,8 @@ function render(){
         const color = isTemp ? '#FFC107' : (isDirect ? '#FF9800' : '#FF007A');
         const bgFill = isTemp ? 'rgba(35, 25, 5, 0.95)' : (isDirect ? 'rgba(38, 20, 6, 0.95)' : 'rgba(38, 8, 22, 0.95)');
         let timeTag = '';
-        if(g.t){
-          const dObj = new Date(g.t);
-          const pad = n => String(n).padStart(2, '0');
-          timeTag = `[${pad(dObj.getHours())}:${pad(dObj.getMinutes())}] `;
+        if(g.t && typeof fmtTime === 'function'){
+          timeTag = `[${fmtTime(g.t)}] `;
         }
         let labelText = isDirect ? '⚡ VENTE DIRECTE' : '🎯 VENTE (EMA 9 / HA 5m)';
         if(isTemp) labelText += ' ⏳ TEMPO';
@@ -25195,13 +25197,11 @@ function drawMMSignals(res, s, e, yOf, cw) {
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Format de l'heure sur la pastille
+      // Format de l'heure sur la pastille synchronisé avec le fuseau horaire
       const sigCandleTime = sig.t || (baseCandle ? baseCandle.t : 0);
       let timeTag = "";
-      if (sigCandleTime) {
-        const dObj = new Date(sigCandleTime);
-        const pad = n => String(n).padStart(2, "0");
-        timeTag = `[${pad(dObj.getHours())}:${pad(dObj.getMinutes())}] `;
+      if (sigCandleTime && typeof fmtTime === "function") {
+        timeTag = `[${fmtTime(sigCandleTime)}] `;
       }
 
       // Textes dans la pastille
@@ -30360,7 +30360,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1570';
+  window.__LUMEN_BUILD = 'B-1708-1580';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
