@@ -30080,7 +30080,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1030';
+  window.__LUMEN_BUILD = 'B-1708-1050';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -30124,6 +30124,32 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   function entrees(mode){
     const d = state.data || [];
     if(!d.length) return [];
+
+    // Stratégie MM : Base ou Option 2 (iMACD)
+    if(mode === 'mm_base' || mode === 'mm_opt2'){
+      const baseMM = (state.indicators && state.indicators.strat_mm) || {};
+      let mmData;
+      try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
+      let sg = (mmData && Array.isArray(mmData.signals)) ? mmData.signals.slice() : [];
+      if(mode === 'mm_base') sg = sg.filter(x => x.optKey === 'base');
+      else if(mode === 'mm_opt2') sg = sg.filter(x => x.optKey === 'opt2');
+
+      let last = 0;
+      sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
+      return sg.map(function(x, idx){
+        const i = (x.t != null && typeof idxOfTime === 'function') ? idxOfTime(x.t) : x.i;
+        return (i != null) ? {
+          i: i,
+          dir: x.dir,
+          num: x.num != null ? x.num : (idx + 1),
+          uid: x.uid || ('mm_' + i + '_' + x.dir),
+          price: x.price,
+          t: x.t,
+          trigger: x.label || x.badge || (x.dir === 1 ? 'ACHAT MM' : 'VENTE MM')
+        } : null;
+      }).filter(Boolean);
+    }
+
     const base = (state.indicators && state.indicators.strat_zz) || {};
     let cfg = Object.assign({}, base);
     if(mode === 'nouveau')  cfg = Object.assign(cfg, { yellowMode:'msr', strictEmaHa:true });
@@ -30142,6 +30168,66 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }
 
   function sorties(filtre){
+    const d = state.data || [];
+    if(filtre === 'mm_opp'){
+      const baseMM = (state.indicators && state.indicators.strat_mm) || {};
+      let mmData;
+      try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
+      const exits = [];
+      // Sommets MM (ferment les achats / Longs) -> type: 'SORTIE_ACHAT'
+      (mmData.sommetsList || []).forEach(function(s, k){
+        const i = (s.t != null && typeof idxOfTime === 'function') ? idxOfTime(s.t) : s.i;
+        if(i != null && d[i]) {
+          exits.push({
+            i: i,
+            type: 'SORTIE_ACHAT',
+            dir: 1,
+            isExit: true,
+            price: d[i].c || s.price,
+            t: s.t,
+            div: false,
+            label: 'Sommet MM (Sortie Achat)',
+            num: k + 1
+          });
+        }
+      });
+      // Creux MM (ferment les ventes / Shorts) -> type: 'SORTIE_VENTE'
+      (mmData.creuxList || []).forEach(function(c, k){
+        const i = (c.t != null && typeof idxOfTime === 'function') ? idxOfTime(c.t) : c.i;
+        if(i != null && d[i]) {
+          exits.push({
+            i: i,
+            type: 'SORTIE_VENTE',
+            dir: -1,
+            isExit: true,
+            price: d[i].c || c.price,
+            t: c.t,
+            div: false,
+            label: 'Creux MM (Sortie Vente)',
+            num: k + 1
+          });
+        }
+      });
+      // Signaux d'entrée opposés comme sorties
+      (mmData.signals || []).forEach(function(sg, k){
+        const i = (sg.t != null && typeof idxOfTime === 'function') ? idxOfTime(sg.t) : sg.i;
+        if(i != null && d[i]) {
+          exits.push({
+            i: i,
+            type: (sg.dir === -1) ? 'SORTIE_ACHAT' : 'SORTIE_VENTE',
+            dir: (sg.dir === -1) ? 1 : -1,
+            isExit: true,
+            price: sg.price || d[i].c,
+            t: sg.t,
+            div: false,
+            label: 'Signal MM Opposé',
+            num: k + 1
+          });
+        }
+      });
+      return exits.filter(x => x.i != null).sort((a,b) => a.i - b.i);
+    }
+
     const kb = getInd('kk_bis');
     let out = (kb && Array.isArray(kb.exits)) ? kb.exits.slice() : [];
     if(filtre === 'div')   out = out.filter(x => x.div);
@@ -30973,6 +31059,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<button onclick="document.getElementById(\'bta-back\').style.display=\'none\'" style="background:transparent;border:1px solid #475569;color:#94A3B8;border-radius:6px;padding:4px 11px;cursor:pointer">Fermer</button></div></div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:end;margin-bottom:12px">' +
       '<label style="font-size:11px;color:#94A3B8">Entrées<br><select id="bta-ent" style="' + sel + '">' +
+        '<option value="mm_base" selected>🟢 Stratégie MM — Base</option>' +
+        '<option value="mm_opt2">⚡ Stratégie MM — Option 2 (iMACD)</option>' +
         '<option value="zz">Z.Z. classiques</option>' +
         '<option value="nouveau">Nouvelles conditions</option>' +
         '<option value="sansRosc">Sans Range Oscillator</option></select></label>' +
@@ -30986,9 +31074,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="chrono">Première sortie qui suit</option>' +
         '<option value="numero">Même numéro strictement</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8">Sorties<br><select id="bta-sor" style="' + sel + '">' +
+        '<option value="mm_opp" selected>🔄 Stratégie MM — Sommet / Creux opposé</option>' +
         '<option value="tout">kk bis — toutes</option>' +
-        '<option value="div">Divergences seules</option>' +
-        '<option value="seuil">Seuil + pente seul</option></select></label>' +
+        '<option value="div">kk bis — divergences seules</option>' +
+        '<option value="seuil">kk bis — seuil + pente seul</option></select></label>' +
       '<label style="font-size:11px;color:#94A3B8" title="Une entrée en sens opposé ferme-t-elle la position en cours ? Dès qu\'elle arrive : la première des deux, sortie kk bis ou signal opposé, ferme le trade, donc une seule position à la fois. Seulement si aucune sortie kk bis : le signal opposé ne sert que de secours, ce qui laisse des positions se chevaucher.">Sortie entrée opposée<br><select id="bta-opp" style="' + sel + '">' +
         '<option value="toujours" selected>Dès qu\'elle arrive — la 1re des deux ferme</option>' +
         '<option value="sans_sortie">Seulement si aucune sortie kk bis</option>' +
@@ -31016,6 +31105,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         '<option value="30">1 mois</option></select></label>' +
       '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value, true)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
+      '<button onclick="window.balayerMM()" title="Compare toutes les combinaisons MM (Base vs Option 2 et chaque type de sortie)" style="background:rgba(0,230,118,.16);border:1.5px solid #00E676;color:#00E676;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔎 Balayer MM</button>' +
       '<button onclick="window.balayerKK()" title="Teste toutes les combinaisons d\'unites de temps de kk bis et classe les resultats" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔎 Balayer kk bis</button>' +
       '<button onclick="window.balayerKKFusion(\'union\')" title="Meme balayage, mais la seconde unite de temps produit elle aussi des sorties, fusionnees avec les premieres. Les 21 combinaisons deviennent reellement distinctes. Attention : cela modifie aussi les pastilles kk bis affichees." style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔗 Balayer fusionné</button>' +
       '<button onclick="window.reinitBt()" title="Libère les verrous de chargement si un lancement est resté bloqué" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer">↺ Débloquer</button>' +
@@ -31564,6 +31654,141 @@ window.envoyerVersMexc = function(){
     try{ if(typeof saveConfig === 'function') saveConfig(); }catch(e){}
     try{ if(typeof syncMenu === 'function') syncMenu(); }catch(e){}
     // le backtest détaillé habituel reprend la main
+    window.runBtApparie();
+  };
+
+  /* ================================================================
+     BALAYAGE STRATÉGIE MM — Base & Option 2 (iMACD) vs Sorties
+     ================================================================ */
+  window.balayerMM = async function(){
+    const box = document.getElementById('bta-res');
+    const info = document.getElementById('bta-charge');
+    if(!state.indicators || !state.indicators.strat_mm){
+      if(box) box.innerHTML = '<div style="color:#F59E0B;padding:10px">Stratégie MM introuvable.</div>';
+      return;
+    }
+
+    const selEnt = document.getElementById('bta-ent');
+    const selSor = document.getElementById('bta-sor');
+    const avEnt = selEnt ? selEnt.value : 'mm_base';
+    const avSor = selSor ? selSor.value : 'mm_opp';
+
+    const mmConfigs = [
+      { ent: 'mm_base', sor: 'mm_opp', entNom: 'MM Base (Ligne Verte/Rouge)', sorNom: 'Sommet / Creux MM' },
+      { ent: 'mm_base', sor: 'tout',   entNom: 'MM Base (Ligne Verte/Rouge)', sorNom: 'KK bis (Toutes sorties)' },
+      { ent: 'mm_base', sor: 'div',    entNom: 'MM Base (Ligne Verte/Rouge)', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_base', sor: 'seuil',  entNom: 'MM Base (Ligne Verte/Rouge)', sorNom: 'KK bis (Seuil + pente)' },
+      { ent: 'mm_opt2', sor: 'mm_opp', entNom: 'MM Option 2 (iMACD)',        sorNom: 'Sommet / Creux MM' },
+      { ent: 'mm_opt2', sor: 'tout',   entNom: 'MM Option 2 (iMACD)',        sorNom: 'KK bis (Toutes sorties)' },
+      { ent: 'mm_opt2', sor: 'div',    entNom: 'MM Option 2 (iMACD)',        sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_opt2', sor: 'seuil',  entNom: 'MM Option 2 (iMACD)',        sorNom: 'KK bis (Seuil + pente)' }
+    ];
+
+    const res = [];
+    for(let k = 0; k < mmConfigs.length; k++){
+      const cfg = mmConfigs[k];
+      if(info) info.innerHTML = '<span style="color:#00E676">Balayage MM ' + (k+1) + ' / ' +
+        mmConfigs.length + ' · ' + cfg.entNom + ' × ' + cfg.sorNom + '…</span>';
+      
+      if(selEnt) selEnt.value = cfg.ent;
+      if(selSor) selSor.value = cfg.sor;
+      state.cache = {};
+
+      await new Promise(r => setTimeout(r, 20));
+      try{
+        await window.__runBtInterne();
+        const r = window.__btDernier;
+        if(r && r.trades > 0){
+          const dd2 = window.__btDirs || null;
+          res.push(Object.assign({}, cfg, {
+            trades: r.trades, wr: r.wr, pnl: r.pnl, dd: r.dd,
+            pf: r.pf, conforme: r.conforme, liq: (r.liq || 0), dirs: dd2
+          }));
+        } else {
+          res.push(Object.assign({}, cfg, { trades: 0, wr: 0, pnl: 0, dd: 0, pf: 0, conforme: false, liq: 0 }));
+        }
+      }catch(e){
+        res.push(Object.assign({}, cfg, { trades: 0, wr: 0, pnl: 0, dd: 0, pf: 0, conforme: false, liq: 0, err: true }));
+      }
+    }
+
+    // Restauration des sélections
+    if(selEnt) selEnt.value = avEnt;
+    if(selSor) selSor.value = avSor;
+    state.cache = {};
+
+    res.forEach(function(x){
+      const rap = (x.dd > 0) ? (x.pnl / x.dd) : (x.pnl > 0 ? 3 : 0);
+      const pf  = isFinite(x.pf) ? x.pf : 3;
+
+      let score = Math.max(0, Math.min(4, rap * 2))
+                + Math.max(0, Math.min(3, (pf - 1) * 3))
+                + Math.max(0, Math.min(2, x.trades / 30 * 2))
+                + (x.conforme ? 1 : 0);
+      if(x.pnl <= 0)    score = Math.min(score, 2);
+      if(x.trades < 5)  score = Math.min(score, 3);
+      if(!x.conforme)   score = Math.min(score, 7);
+      x.note = Math.round(score * 10) / 10;
+    });
+
+    res.sort(function(x, y){ return y.note - x.note; });
+    window.__balayageMM = res;
+
+    let h = '<div style="font-size:13px;font-weight:800;color:#00E676;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">' +
+      '<span>🟢 Balayage Stratégie MM (Base & Option 2) — ' + res.length + ' combinaisons</span>' +
+      '</div>' +
+      '<div style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:\'IBM Plex Mono\',monospace">' +
+      '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
+      '<th style="padding:6px;text-align:center">Score</th>' +
+      '<th style="padding:6px;text-align:left">Entrée MM</th>' +
+      '<th style="padding:6px;text-align:left">Sortie</th>' +
+      '<th style="padding:6px;text-align:center">Trades</th>' +
+      '<th style="padding:6px;text-align:center">Réussite</th>' +
+      '<th style="padding:6px;text-align:right">PnL Net</th>' +
+      '<th style="padding:6px;text-align:right">Repli max</th>' +
+      '<th style="padding:6px;text-align:center">Liquid.</th>' +
+      '<th style="padding:6px;text-align:right">Action</th>' +
+      '</tr>';
+
+    res.forEach(function(x, i){
+      const cw = x.wr >= 55 ? '#10B981' : x.wr >= 45 ? '#F59E0B' : '#FF5252';
+      const cp = x.pnl >= 0 ? '#10B981' : '#FF5252';
+      const cScore = x.note >= 7 ? '#10B981' : x.note >= 5 ? '#F59E0B' : '#FF5252';
+      h += '<tr style="border-top:1px solid #1E293B;background:' +
+        (i === 0 ? 'rgba(0,230,118,.08)' : (i % 2 ? 'rgba(255,255,255,.02)' : 'transparent')) + '">' +
+        '<td style="padding:5px 6px;text-align:center;font-weight:900;font-size:13px;color:' + cScore + '">' +
+          x.note.toFixed(1) + '/10</td>' +
+        '<td style="padding:5px 6px;color:#00E676;font-weight:800">' + x.entNom + '</td>' +
+        '<td style="padding:5px 6px;color:#C4B5FD;font-weight:700">' + x.sorNom + '</td>' +
+        '<td style="padding:5px 6px;text-align:center;color:#94A3B8">' + x.trades + '</td>' +
+        '<td style="padding:5px 6px;text-align:center;font-weight:800;color:' + cw + '">' + x.wr.toFixed(1) + ' %</td>' +
+        '<td style="padding:5px 6px;text-align:right;font-weight:900;color:' + cp + '">' + (x.pnl >= 0 ? '+' : '') + x.pnl.toFixed(2) + ' $</td>' +
+        '<td style="padding:5px 6px;text-align:right;color:#FF9F1C">−' + x.dd.toFixed(2) + ' $</td>' +
+        '<td style="padding:5px 6px;text-align:center;font-weight:800;color:' + (x.liq ? '#FF5252' : '#10B981') + '">' +
+          (x.liq ? '💀 ' + x.liq : '0') + '</td>' +
+        '<td style="padding:5px 6px;text-align:right">' +
+          '<button onclick="window.appliquerCombiMM(' + i + ')" style="background:rgba(0,230,118,.16);border:1px solid #00E676;color:#00E676;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:800;cursor:pointer">Choisir &amp; Lancer</button>' +
+        '</td></tr>';
+    });
+
+    h += '</table></div>' +
+      '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.5">' +
+      '💡 Cliquez sur <b>« Choisir &amp; Lancer »</b> pour charger la configuration retenue et afficher la liste détaillée de tous les trades.' +
+      '</div>';
+
+    if(box) box.innerHTML = h;
+    if(info) info.innerHTML = '<span style="color:#00E676">Balayage MM terminé · ' + res.length + ' combinaisons testées</span>';
+  };
+
+  window.appliquerCombiMM = function(i){
+    const x = (window.__balayageMM || [])[i];
+    if(!x) return;
+    const selEnt = document.getElementById('bta-ent');
+    const selSor = document.getElementById('bta-sor');
+    if(selEnt) selEnt.value = x.ent;
+    if(selSor) selSor.value = x.sor;
+    state.cache = {};
     window.runBtApparie();
   };
 
