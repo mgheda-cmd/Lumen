@@ -15539,7 +15539,7 @@ function sendWhatsAppNotification(text, source){
     .catch(err => ({ ok: false, description: err.message || 'Erreur WhatsApp' }));
 }
 
-function sendTelegramNotification(text, source){
+function sendTelegramNotification(text, source, options){
   const cfg = getPhoneNotifConfig();
   const provenance = source || 'strat_mm';
   if(cfg.mexcOnly !== false && provenance !== 'mexc' && provenance !== 'strat_mm' && provenance !== 'test'){
@@ -15548,15 +15548,24 @@ function sendTelegramNotification(text, source){
 
   if(!cfg.telegramToken || !cfg.telegramChatId) return Promise.resolve({ ok: false, description: 'Token ou Chat ID manquant' });
   const url = `https://api.telegram.org/bot${cfg.telegramToken.trim()}/sendMessage`;
+
+  const payload = {
+    chat_id: cfg.telegramChatId.trim(),
+    text: text,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true
+  };
+
+  if(options && options.buttons && Array.isArray(options.buttons)){
+    payload.reply_markup = {
+      inline_keyboard: options.buttons
+    };
+  }
+
   return fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: cfg.telegramChatId.trim(),
-      text: text,
-      parse_mode: 'HTML',
-      disable_web_page_preview: true
-    })
+    body: JSON.stringify(payload)
   })
   .then(r => r.json())
   .then(data => {
@@ -15721,15 +15730,47 @@ function triggerMobileNotification(title, body, sig){
     } catch(e){}
   }
 
-  const symbolClean = (state.symbol || '').replace('USDT', '');
+  const symbolClean = (state.symbol || 'BTCUSDT').replace('USDT', '').toUpperCase();
+  const mexcPair = `${symbolClean}_USDT`;
+  const mexcUrl = `https://futures.mexc.com/exchange/${mexcPair}`;
+
+  const isBuy = (sig && (sig.dir === 1 || (sig.type && sig.type.includes('ACHAT'))));
+  const btnActionText = isBuy ? `🟢 1-Clic App MEXC : ACHETER (0.02%)` : `🔴 1-Clic App MEXC : VENDRE (0.02%)`;
+
+  const tgButtons = [
+    [
+      { text: btnActionText, url: mexcUrl }
+    ],
+    [
+      { text: `📊 Voir #${symbolClean} sur Lumen Charts`, url: `https://mgheda-cmd.github.io/Lumen/?sym=${symbolClean}USDT&tf=${state.tf}` }
+    ]
+  ];
+
   const tgMsg = `<b>🔔 ${escapeHtml(title)}</b>
 ${escapeHtml(body)}
 ──────────────────────────
 ⏰ <b>Déclenchement direct :</b> <code>${nowStr}</code> (${dateStr})${candleTimeStr}
 📊 <b>Paire :</b> #${escapeHtml(symbolClean)}/USDT (${state.tf}m)`;
 
-  sendTelegramNotification(tgMsg);
+  sendTelegramNotification(tgMsg, 'strat_mm', { buttons: tgButtons });
   if(typeof sendWhatsAppNotification === 'function') sendWhatsAppNotification(tgMsg);
+
+  // Émission vers le Web Auto-Trader (Userscript Tampermonkey à 0.02%)
+  try {
+    const webSignal = {
+      type: 'LUMEN_TRADE_SIGNAL',
+      symbol: mexcPair,
+      side: isBuy ? 'BUY' : 'SELL',
+      price: sig?.price,
+      timeframe: state.tf,
+      timestamp: Date.now()
+    };
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('lumen_mexc_channel');
+      bc.postMessage(webSignal);
+    }
+    localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
+  } catch(e){}
 
   sendWebhookNotification({
     title,
@@ -30360,7 +30401,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1590';
+  window.__LUMEN_BUILD = 'B-1708-1600';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
