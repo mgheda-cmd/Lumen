@@ -5186,6 +5186,7 @@ function applyTickPrice(px){
     updateHeader();
     if(typeof updatePaper === 'function') updatePaper();
     if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+    if(typeof checkAllAlerts === 'function') checkAllAlerts();
     if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
     scheduleRender();
   }
@@ -5199,6 +5200,7 @@ function applyKline(k){
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
   if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+  if(typeof checkAllAlerts === 'function') checkAllAlerts();
   if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   scheduleRender();
 }
@@ -30980,7 +30982,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1840';
+  window.__LUMEN_BUILD = 'B-1708-1850';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
