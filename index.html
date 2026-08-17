@@ -7827,11 +7827,16 @@ function drawPrice(p,s,e,cw,sharedXStack){
   if(vis('bb')){const b=getInd('bb');
     for(let i=s;i<e;i++){if(b.up[i]!=null)hi=Math.max(hi,b.up[i]);if(b.lo[i]!=null)lo=Math.min(lo,b.lo[i]);}}
   if(vis('lrc')){const L=getInd('lrc');
-    if(L){
+    if(L && isFinite(L.a) && isFinite(L.b)){
       const dev2 = L.dev2 ?? (L.dev * 2);
-      for(const i of [L.s0,d.length-1]){
-        const v=L.a+L.b*(i-L.s0);
-        lo=Math.min(lo,v-dev2);hi=Math.max(hi,v+dev2);}}}
+      const startP = L.a;
+      const endP = L.a + L.b * (L.len - 1);
+      if (isFinite(startP) && isFinite(endP)) {
+        lo=Math.min(lo, Math.min(startP, endP) - dev2);
+        hi=Math.max(hi, Math.max(startP, endP) + dev2);
+      }
+    }
+  }
   if(vis('ema3')){const a=getInd('ema3');
     for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}
   if(vis('emacloud')){const c=getInd('emacloud');
@@ -17871,58 +17876,73 @@ function drawMasterStrategy(signals, s, e, yOf) {
 }
 
 function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
-  if (!L || !d || !d.length) return;
+  if (!L || !d || !d.length || !isFinite(L.a) || !isFinite(L.b)) return;
 
+  const isMtf = !!(L.mtf && L.mtf !== state.tf && L.htfBars && L.htfBars.length);
   const mtfMinutes = L.mtf || state.tf;
   const mtfMs = mtfMinutes * 60000;
-  const tStart = L.tStart != null ? L.tStart : (d[L.s0] ? d[L.s0].t : (d[0] ? d[0].t : 0));
 
-  const iStart = L.htfBars ? (idxOfTime(tStart) ?? 0) : L.s0;
+  // Détermination de l'index de départ sur le graphique (iStart)
+  let iStart = 0;
+  if (!isMtf) {
+    iStart = (L.s0 != null && L.s0 >= 0) ? L.s0 : Math.max(0, d.length - (L.len || 100));
+  } else {
+    const tStart = L.tStart || (L.htfBars[L.s0] ? L.htfBars[L.s0].t : d[0].t);
+    const foundIdx = (typeof idxOfTime === 'function') ? idxOfTime(tStart) : null;
+    iStart = (foundIdx != null && foundIdx >= 0) ? foundIdx : Math.max(0, d.length - (L.len || 100));
+  }
+
   const isExtend = S('lrc', 'extendit') !== false && S('lrc', 'extend') !== false;
-  const iEnd = isExtend
+  let iEnd = isExtend
     ? Math.max(d.length - 1, Math.ceil(state.view.start + state.view.count))
-    : (L.htfBars ? (idxOfTime(L.htfBars[L.htfBars.length - 1].t) ?? (d.length - 1)) : (d.length - 1));
+    : (d.length - 1);
+
+  if (iEnd <= iStart) iEnd = iStart + (L.len || 100);
 
   const x0 = xOf(iStart);
   const x1 = xOf(iEnd);
 
-  // Configuration des couleurs et de l'épaisseur d'après le Pine Script
-  /* Second tunnel : mêmes calculs, teintes propres et trait plus fin pour
-     qu'on distingue les deux horizons sur le même graphique. */
+  // Calcul du prix le long de la droite de régression
+  const priceAt = idx => {
+    if (!isMtf) {
+      const k = idx - iStart;
+      return L.a + L.b * k;
+    } else {
+      let t;
+      if (idx < d.length) {
+        t = d[Math.max(0, idx)].t;
+      } else {
+        const lastD = d[d.length - 1];
+        t = lastD ? (lastD.t + (idx - (d.length - 1)) * state.tf * 60000) : 0;
+      }
+      const tStart = L.tStart || d[iStart].t;
+      const k_eff = (t - tStart) / mtfMs;
+      return L.a + L.b * k_eff;
+    }
+  };
+
+  const dev2 = L.dev2 ?? (L.dev * (S('lrc', 'devlen') || S('lrc', 'mult') || 2.0));
+  const dev1 = L.dev1 ?? (L.dev * (S('lrc', 'mult1') || 1.0));
+
+  const pMid0 = priceAt(iStart), pMid1 = priceAt(iEnd);
+  if (!isFinite(pMid0) || !isFinite(pMid1)) return;
+
+  const yMid0 = yOf(pMid0), yMid1 = yOf(pMid1);
+  const yUp20 = yOf(pMid0 + dev2), yUp21 = yOf(pMid1 + dev2);
+  const yLo20 = yOf(pMid0 - dev2), yLo21 = yOf(pMid1 - dev2);
+  const yUp10 = yOf(pMid0 + dev1), yUp11 = yOf(pMid1 + dev1);
+  const yLo10 = yOf(pMid0 - dev1), yLo11 = yOf(pMid1 - dev1);
+
   const estSecond = !!L.__second;
   const upcol = estSecond ? (S('lrc','cLine2') || '#FF9F1C') : (S('lrc', 'upcol') || '#00FF00');
   const dncol = estSecond ? (S('lrc','cBand2') || '#FF9F1C') : (S('lrc', 'dncol') || '#FF0000');
   const brokencol = estSecond ? (S('lrc','cLine2') || '#FF9F1C') : (S('lrc', 'brokencol') || '#3B82F6');
   const widt = estSecond ? Math.max(1, (S('lrc', 'widt') || 2) - 1) : (S('lrc', 'widt') || 2);
 
-  // Calcul du prix le long de la droite de régression
-  const priceAt = idx => {
-    let t;
-    if (idx < d.length) {
-      t = d[Math.max(0, idx)].t;
-    } else {
-      const lastD = d[d.length - 1];
-      t = lastD ? (lastD.t + (idx - (d.length - 1)) * state.tf * 60000) : 0;
-    }
-    const k_eff = (t - tStart) / mtfMs;
-    return L.a + L.b * k_eff;
-  };
-
-  const dev2 = L.dev2 ?? (L.dev * (S('lrc', 'devlen') || S('lrc', 'mult') || 2.0));
-  const dev1 = L.dev1 ?? (L.dev * (S('lrc', 'mult1') || 1.0));
-
-  const yMid0 = yOf(priceAt(iStart)), yMid1 = yOf(priceAt(iEnd));
-  const yUp20 = yOf(priceAt(iStart) + dev2), yUp21 = yOf(priceAt(iEnd) + dev2);
-  const yLo20 = yOf(priceAt(iStart) - dev2), yLo21 = yOf(priceAt(iEnd) - dev2);
-  const yUp10 = yOf(priceAt(iStart) + dev1), yUp11 = yOf(priceAt(iEnd) + dev1);
-  const yLo10 = yOf(priceAt(iStart) - dev1), yLo11 = yOf(priceAt(iEnd) - dev1);
-
-  // Couleur du canal selon la pente
   const isUp = L.b > 0;
   const isDn = L.b < 0;
   const activeColor = isUp ? upcol : (isDn ? dncol : brokencol);
-  const fillUp = hexA(activeColor, 0.07);
-  const fillLo = hexA(activeColor, 0.07);
+  const fillUp = hexA(activeColor, 0.08);
 
   const showBands = true;
   const showInnerBands = S('lrc', 'showInnerBands') !== false;
@@ -17945,22 +17965,24 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.fill();
   }
 
-  // 2. Affichage du canal brisé (Show Broken Channel)
+  // 2. Affichage du canal brisé
   if (showBroken && L.brokenChannel) {
     const bk = L.brokenChannel;
     const bkY1 = yOf(bk.y1_ + (bk.type === 2 ? bk.dev * bk.devlen : -bk.dev * bk.devlen));
     const bkY2 = yOf(bk.y2_ + (bk.type === 2 ? bk.dev * bk.devlen : -bk.dev * bk.devlen));
-    ctx.strokeStyle = brokencol;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(x0, bkY1);
-    ctx.lineTo(xOf(d.length - 1), bkY2);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    if (isFinite(bkY1) && isFinite(bkY2)) {
+      ctx.strokeStyle = brokencol;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x0, bkY1);
+      ctx.lineTo(xOf(d.length - 1), bkY2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
 
-  // 3. Niveaux de Fibonacci (0.236, 0.382, 0.618, 0.786)
+  // 3. Niveaux de Fibonacci
   if (showFibo) {
     const fibRatios = [0.236, 0.382, 0.618, 0.786];
     const rangeHeight = 2 * dev2;
@@ -17968,56 +17990,43 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.lineWidth = Math.max(1, widt - 1);
     ctx.setLineDash([2, 3]);
     for (const r of fibRatios) {
-      const fibP0 = (priceAt(iStart) - dev2) + rangeHeight * r;
-      const fibP1 = (priceAt(iEnd) - dev2) + rangeHeight * r;
+      const fibP0 = (pMid0 - dev2) + rangeHeight * r;
+      const fibP1 = (pMid1 - dev2) + rangeHeight * r;
       const fibY0 = yOf(fibP0), fibY1 = yOf(fibP1);
-      ctx.beginPath();
-      ctx.moveTo(x0, fibY0);
-      ctx.lineTo(x1, fibY1);
-      ctx.stroke();
+      if (isFinite(fibY0) && isFinite(fibY1)) {
+        ctx.beginPath();
+        ctx.moveTo(x0, fibY0);
+        ctx.lineTo(x1, fibY1);
+        ctx.stroke();
+      }
     }
     ctx.setLineDash([]);
   }
 
-  // 4. Bandes externes du canal (2σ) - Lignes pointillées/tirets
+  // 4. Bandes externes (2σ)
   ctx.lineWidth = widt;
   ctx.strokeStyle = activeColor;
   ctx.setLineDash([6, 4]);
 
-  // Bande Supérieure
   ctx.beginPath();
-  ctx.moveTo(x0, yUp20);
-  ctx.lineTo(x1, yUp21);
-  ctx.stroke();
-
-  // Bande Inférieure
+  ctx.moveTo(x0, yUp20); ctx.lineTo(x1, yUp21); ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(x0, yLo20);
-  ctx.lineTo(x1, yLo21);
-  ctx.stroke();
-
+  ctx.moveTo(x0, yLo20); ctx.lineTo(x1, yLo21); ctx.stroke();
   ctx.setLineDash([]);
 
-  // 5. Lignes internes (1σ)
+  // 5. Bandes internes (1σ)
   if (showInnerBands) {
     ctx.lineWidth = Math.max(1, widt - 1);
     ctx.strokeStyle = hexA(activeColor, 0.65);
     ctx.setLineDash([4, 4]);
-
     ctx.beginPath();
-    ctx.moveTo(x0, yUp10);
-    ctx.lineTo(x1, yUp11);
-    ctx.stroke();
-
+    ctx.moveTo(x0, yUp10); ctx.lineTo(x1, yUp11); ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(x0, yLo10);
-    ctx.lineTo(x1, yLo11);
-    ctx.stroke();
-
+    ctx.moveTo(x0, yLo10); ctx.lineTo(x1, yLo11); ctx.stroke();
     ctx.setLineDash([]);
   }
 
-  // 6. Ligne médiane (Pente de régression linreg) - Ligne continue
+  // 6. Ligne médiane
   ctx.lineWidth = widt + 0.5;
   ctx.strokeStyle = activeColor;
   ctx.shadowColor = activeColor;
@@ -18028,16 +18037,10 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  /* Pastille d'unité de temps, accrochée au bord gauche de l'écran sur la
-     médiane. Placée ici, après la déclaration de yMid1 et le tracé de la
-     ligne : la référencer plus haut levait une ReferenceError qui
-     interrompait le dessin de tout ce qui suit. */
+  // Pastille d'unité de temps à gauche
   {
     const tfChip = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
     ctx.save();
-    ctx.save();
-    /* Réinitialisation complète : la médiane laisse une ombre active, et un
-       globalAlpha ou un filtre hérité rendait le texte invisible. */
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
@@ -18051,8 +18054,6 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     const hautPan = (p && p.y != null) ? p.y : 0;
     const basPan  = (p && p.y != null && p.h != null) ? (p.y + p.h) : (typeof H !== 'undefined' ? H : 600);
     const cby = Math.max(hautPan + 2, Math.min(basPan - ch2 - 2, yGauche - ch2 / 2));
-    /* Rectangle tracé directement : roundRect laisse un chemin ouvert,
-       ce qui brouillait le texte dessiné ensuite. Fond blanc, texte noir. */
     ctx.beginPath();
     ctx.rect(cbx, cby, cw2, ch2);
     ctx.fillStyle = '#FFFFFF';
@@ -18066,107 +18067,10 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(tfChip, cbx + cw2 / 2, cby + ch2 / 2 + 0.5);
-    ctx.textBaseline = 'alphabetic';
-    ctx.textAlign = 'left';
-    ctx.restore();
     ctx.restore();
   }
 
-  // 7. Étiquette d'orientation latérale (Side Label sidelab) au début du canal (x0)
-  if (x0 >= -50 && x0 <= W - AXIS_W) {
-    const prevB = L.prevB ?? L.b;
-    let arrowTxt = '⇒';
-    if (isUp) {
-      arrowTxt = L.b > prevB ? '⇑' : '⇗';
-    } else if (isDn) {
-      arrowTxt = L.b < prevB ? '⇓' : '⇘';
-    }
-
-    const sideY = isUp ? yLo20 + 12 : (isDn ? yUp20 - 12 : yMid0);
-    // Unité de temps du canal, pour distinguer les deux tunnels superposés
-    const tfTxt = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
-    const sideLabelTxt = 'S ' + arrowTxt;
-
-    ctx.font = 'bold 11px "IBM Plex Mono",monospace';
-    const sideW = ctx.measureText(sideLabelTxt).width + 12;
-    const sideH = 20;
-    const sideBx = Math.max(4, x0 - sideW / 2);
-    const sideBy = Math.max(p.y + 4, Math.min(p.y + p.h - sideH - 4, sideY - sideH / 2));
-
-    ctx.fillStyle = activeColor;
-    roundRect(sideBx, sideBy, sideW, sideH, 4);
-    ctx.fill();
-
-    ctx.fillStyle = '#0F172A';
-    ctx.textAlign = 'center';
-    ctx.fillText(sideLabelTxt, sideBx + sideW / 2, sideBy + 13);
-
-    /* Pastille d'unité de temps accolée au badge S, en couleurs inversées
-       pour qu'on la distingue immédiatement. */
-    {
-      const utTxt = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
-      ctx.save();
-      /* Même réinitialisation que la pastille de gauche : le badge S est
-         dessiné avec une ombre portée qui rendait ce texte invisible. */
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-      ctx.setLineDash([]);
-      if ('filter' in ctx) ctx.filter = 'none';
-      ctx.font = 'bold 12px "IBM Plex Mono",monospace';
-      const utW = ctx.measureText(utTxt).width + 14;
-      const utX = sideBx + sideW + 3;
-
-      /* Rectangle dessiné directement, sans roundRect : cette fonction laisse
-         un chemin ouvert, et l'enchaînement fill puis stroke sur deux appels
-         successifs brouillait le texte tracé ensuite. */
-      ctx.beginPath();
-      ctx.rect(utX, sideBy, utW, sideH);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fill();
-      ctx.lineWidth = 1.6;
-      ctx.strokeStyle = activeColor;
-      ctx.stroke();
-      ctx.closePath();
-
-      // texte noir, tracé après fermeture complète du chemin
-      ctx.fillStyle = '#000000';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(utTxt, utX + utW / 2, sideBy + sideH / 2 + 0.5);
-      ctx.textBaseline = 'alphabetic';
-      ctx.textAlign = 'left';
-      ctx.restore();
-    }
-  }
-
-  // 8. Points de contact / Cassures sur les bougies
-  const endCheckIdx = Math.min(d.length - 1, e + 1);
-  const startCheckIdx = Math.max(iStart, s - 1);
-
-  for (let i = startCheckIdx; i <= endCheckIdx; i++) {
-    const candle = d[i];
-    if (!candle) continue;
-    const midP = priceAt(i);
-    const upperP = midP + dev2;
-    const lowerP = midP - dev2;
-
-    const bx = xOf(i);
-    if (bx < -20 || bx > W - AXIS_W + 20) continue;
-
-    if (candle.h >= upperP) {
-      const cy = yOf(candle.h);
-      ctx.fillStyle = activeColor;
-      ctx.beginPath(); ctx.arc(bx, cy - 3, 3, 0, Math.PI * 2); ctx.fill();
-    }
-    if (candle.l <= lowerP) {
-      const cy = yOf(candle.l);
-      ctx.fillStyle = activeColor;
-      ctx.beginPath(); ctx.arc(bx, cy + 3, 3, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-
-  // 9. Badge de statistiques à l'extrémité droite
+  // 7. Badge de statistiques à droite
   if (showStats && x1 >= 50 && x1 <= W - AXIS_W + 50) {
     const r2Pct = (L.r2 * 100).toFixed(1);
     const pctTxt = (L.pctChange >= 0 ? '+' : '') + L.pctChange.toFixed(2) + '%';
@@ -18180,7 +18084,6 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
 
     let bx = Math.min(W - AXIS_W - bw - 6, x1 + 8);
     let by = yMid1 - bh / 2;
-
     if (p && p.y != null) {
       by = Math.max(p.y + 6, Math.min(p.y + p.h - bh - 6, by));
     }
@@ -18194,7 +18097,8 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
 
     ctx.fillStyle = '#F8FAFC';
     ctx.textAlign = 'center';
-    ctx.fillText(badgeTxt, bx + bw / 2, by + 13);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(badgeTxt, bx + bw / 2, by + bh / 2 + 0.5);
     labelHits.push({x: bx, y: by, w: bw, h: bh, key: 'lrc'});
   }
 
@@ -30991,7 +30895,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-1860';
+  window.__LUMEN_BUILD = 'B-1708-1870';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
