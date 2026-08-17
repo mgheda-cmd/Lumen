@@ -2502,7 +2502,7 @@ footer{
       <button class="btn-buy" id="paper-buy" style="padding:6px 12px;font-weight:800;font-size:12px">🟢 ACHAT (LONG)</button>
       <button class="btn-sell" id="paper-sell" style="padding:6px 12px;font-weight:800;font-size:12px">🔴 VENTE (SHORT)</button>
       <button class="btn" id="paper-auto-trade" style="padding:6px 12px;font-weight:800;font-size:12px;background:var(--panel,#0A111F);border:1px solid var(--line,#1E293B);color:var(--muted,#94A3B8);transition:all 0.2s ease" title="Exécuter automatiquement un trade lors de l'apparition d'une pastille ACHAT DIRECT ou VENTE DIRECTE">🤖 Auto-Trade Direct : OFF</button>
-      <button class="btn" id="paper-reset" style="margin-left:auto;font-size:11px;padding:4px 8px">Réinitialiser 100k$</button>
+      <button class="btn" id="paper-reset" style="margin-left:auto;font-size:11px;padding:4px 8px">Réinitialiser 100$</button>
     </div>
 
     <!-- Presets & Live Calculation Preview -->
@@ -4601,7 +4601,7 @@ const state = {
 };
 
 /* ---------- Portefeuille de trading démo ---------- */
-const paper={cash:100000,bank:0,withdrawals:[],positions:[],history:[]};
+const paper={cash:100,bank:0,withdrawals:[],positions:[],history:[]};
 let paperUnit='coin';
 
 /* ---------- Mémorisation de la configuration ---------- */
@@ -4620,7 +4620,7 @@ function mergeConfig(c){
   if(c.market==='spot'||c.market==='perp')state.market=c.market;
   if(c.paperUnit==='usdt'||c.paperUnit==='coin')paperUnit=c.paperUnit;
   if(c.paper&&typeof c.paper.cash==='number'&&isFinite(c.paper.cash)){
-    paper.cash=c.paper.cash;
+    paper.cash=(c.paper.cash === 100000) ? 100 : c.paper.cash;
     paper.bank=typeof c.paper.bank==='number'&&isFinite(c.paper.bank)?c.paper.bank:0;
     paper.withdrawals=Array.isArray(c.paper.withdrawals)?c.paper.withdrawals:[];
     paper.positions=Array.isArray(c.paper.positions)?c.paper.positions.filter(x=>
@@ -12323,10 +12323,10 @@ function updatePaper(){
   const totalPortfolio = equity + paper.bank;
 
   if (paper.bank > 0) {
-    eqEl.innerHTML = `Dispo: <strong style="color:${equity>=100000?'#25D0A4':'#F45B7D'}">$${fmtUsd(equity)}</strong> | 🏛️ Banque: <strong style="color:#FFD700">$${fmtUsd(paper.bank)}</strong> <span style="color:var(--muted);font-size:10px">(Total: $${fmtUsd(totalPortfolio)})</span>`;
+    eqEl.innerHTML = `Dispo: <strong style="color:${equity>=100?'#25D0A4':'#F45B7D'}">$${fmtUsd(equity)}</strong> | 🏛️ Banque: <strong style="color:#FFD700">$${fmtUsd(paper.bank)}</strong> <span style="color:var(--muted);font-size:10px">(Total: $${fmtUsd(totalPortfolio)})</span>`;
   } else {
     eqEl.textContent='Équité '+fmtUsd(equity);
-    eqEl.style.color=equity>=100000?'#25D0A4':'#F45B7D';
+    eqEl.style.color=equity>=100?'#25D0A4':'#F45B7D';
   }
 
   const bankTotEl = document.getElementById('paper-bank-total');
@@ -13828,8 +13828,8 @@ document.getElementById('paper-pos').addEventListener('click',e=>{
 });
 
 document.getElementById('paper-reset').addEventListener('click',()=>{
-  if(!confirm('Remettre le compte démo à 100 000 $ ? Positions, historique et banque seront effacés.'))return;
-  paper.cash=100000; paper.bank=0; paper.withdrawals=[]; paper.positions=[]; paper.history=[];
+  if(!confirm('Remettre le compte démo à 100 $ ? Positions, historique et banque seront effacés.'))return;
+  paper.cash=100; paper.bank=0; paper.withdrawals=[]; paper.positions=[]; paper.history=[];
   saveConfig(); updatePaper();
 });
 
@@ -30122,7 +30122,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1345';
+  window.__LUMEN_BUILD = 'B-1708-1350';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -31485,6 +31485,12 @@ window.envoyerVersDemo = function(){
   if(amtInput && r.marge != null){ amtInput.value = r.marge; }
   if(levSel && r.lev != null){ levSel.value = r.lev; }
   if(tpInput && r.tp != null && r.tp > 0){ tpInput.value = r.tp; }
+
+  // Ajuster le capital / solde Démo
+  if(typeof paper === 'object' && paper){
+    paper.cash = (r.capital && r.capital > 0) ? r.capital : 100;
+    saveConfig();
+  }
 
   // 3. Configurer la stratégie active du compte Démo
   window.activeDemoStrategy = {
