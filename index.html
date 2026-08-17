@@ -757,6 +757,9 @@ footer{
         <span class="srtf" data-kkbis2b="20" title="Seconde ligne en 20m">20m</span>
         <span class="srtf" data-kkbis2b="30" title="Seconde ligne en 30m">30m</span>
         <span class="srtf" data-kkbis2b="60" title="Seconde ligne en 1H">1H</span>
+        <span class="srtf" data-kktoggle="showCrossOnPrice" data-kkind="kk_bis2" id="btn-pot-kk_bis2" style="font-weight:700" title="Activer / Désactiver les signaux Potentiel Achat & Vente">⚡ Potentiels A/V: OFF</span>
+        <span class="srtf on" data-kktoggle="showPivotsOnPrice" data-kkind="kk_bis2" title="Afficher / Masquer les pastilles Sommets et Creux sur le prix">⛰️ Sommets & Creux</span>
+        <span class="srtf on" data-kktoggle="showVerticalLines" data-kkind="kk_bis2" title="Afficher / Masquer les lignes verticales jusqu'en bas">📏 Lignes vert.</span>
         <span class="state">on</span>
       </div>
       <div class="ind-item on" data-ind="signal_exit_ob" id="item-signal_exit_ob" style="background:var(--panel-2,#0F172A);border:1.5px solid #C084FC;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(192,132,252,0.25)">
@@ -908,12 +911,22 @@ footer{
         <span class="dot" style="background:#7CE38B"></span>
         <span class="name">Impulse MACD <span class="desc">LazyBear</span></span>
         <input type="number" min="5" max="200" value="34" aria-label="Période Impulse MACD">
-        <span class="srtf mtf on" data-ind2="imp" data-tf="chart">UT</span>
-        <span class="srtf mtf" data-ind2="imp" data-tf="3">3m</span>
-        <span class="srtf mtf" data-ind2="imp" data-tf="5">5m</span>
-        <span class="srtf mtf" data-ind2="imp" data-tf="15">15m</span>
-        <span class="srtf mtf" data-ind2="imp" data-tf="60">1H</span>
-        <span class="srtf mtf" data-ind2="imp" data-tf="240">4H</span>
+        <span class="srtf mtf on" data-ind2="imp" data-tf="chart" title="Unité de temps du graphique">UT</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="1" title="1 minute">1m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="2" title="2 minutes">2m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="3" title="3 minutes">3m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="4" title="4 minutes">4m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="5" title="5 minutes">5m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="6" title="6 minutes">6m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="7" title="7 minutes">7m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="8" title="8 minutes">8m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="9" title="9 minutes">9m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="10" title="10 minutes">10m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="12" title="12 minutes">12m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="15" title="15 minutes">15m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="30" title="30 minutes">30m</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="60" title="1 Heure">1H</span>
+        <span class="srtf mtf" data-ind2="imp" data-tf="240" title="4 Heures">4H</span>
         <span class="srtf on" data-indzero="imp" title="Afficher/Masquer la Ligne Zéro">Axe 0</span>
         <span class="state">off</span>
       </div>
@@ -11438,6 +11451,20 @@ function syncMenu(){
       if(stEl)stEl.textContent=on?'on':'off';
     }
   });
+  try{ document.querySelectorAll('.srtf[data-kktoggle]').forEach(el=>{
+    const kInd = el.dataset.kkind;
+    const kProp = el.dataset.kktoggle;
+    if(state.indicators[kInd]){
+      const isAct = state.indicators[kInd][kProp] !== false;
+      el.classList.toggle('on', isAct);
+      if(kProp === 'showCrossOnPrice'){
+        el.textContent = isAct ? '⚡ Potentiels A/V: ON' : '⚡ Potentiels A/V: OFF';
+        el.style.background = isAct ? 'rgba(34,211,238,0.2)' : 'rgba(255,255,255,0.06)';
+        el.style.color = isAct ? '#22D3EE' : '#94A3B8';
+        el.style.borderColor = isAct ? '#22D3EE' : '#475569';
+      }
+    }
+  }); }catch(e){}
   updateZZToggleButtons();
   const btnExits = document.getElementById('btn-toggle-exits-menu');
   if(btnExits && state.indicators.signal_ema_ha){
@@ -14785,7 +14812,28 @@ try{
 /* Même chose pour kk bis 2. Ses boutons portent leur propre attribut,
    sinon les deux indicateurs se partageraient les mêmes réglages. */
 try{
-  menu.querySelectorAll('[data-kkbis2b]').forEach(function(el){
+/* Bascules rapides des pastilles kk bis, reprises du dépôt Google- :
+   potentiels achat/vente, sommets et creux, lignes verticales. Elles
+   évitent d'ouvrir le panneau pour un simple affichage. */
+document.querySelectorAll('.srtf[data-kktoggle]').forEach(el=>{
+  const kind = el.dataset.kkind;
+  const toggleKey = el.dataset.kktoggle;
+  if(state.indicators[kind]){
+    el.classList.toggle('on', state.indicators[kind][toggleKey] !== false);
+  }
+  el.addEventListener('click', e=>{
+    e.stopPropagation();
+    if(state.indicators[kind]){
+      const cur = state.indicators[kind][toggleKey] !== false;
+      state.indicators[kind][toggleKey] = !cur;
+      if(state.style[kind]) state.style[kind][toggleKey] = !cur;
+      el.classList.toggle('on', !cur);
+      state.cache={}; saveConfig(); render();
+    }
+  });
+});
+
+    menu.querySelectorAll('[data-kkbis2b]').forEach(function(el){
     el.addEventListener('click', function(ev){
       ev.stopPropagation();
       const v = el.dataset.kkbis2b;
@@ -29823,7 +29871,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-0625';
+  window.__LUMEN_BUILD = 'B-1708-0720';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
