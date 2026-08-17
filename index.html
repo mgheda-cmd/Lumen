@@ -1148,6 +1148,9 @@ footer{
         <span>⚡ Trading & Analyses</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        <button class="btn" id="btn-toggle-web-autotrader-menu" onclick="toggleWebAutoTrader()" style="font-size:11.5px;padding:7px 10px;display:flex;align-items:center;gap:8px;font-weight:800;border:1.5px solid #64748B;color:#94A3B8;background:rgba(15,23,42,0.85);transition:all 0.2s">
+          <span id="web-at-indicator-dot">⚪</span> <span id="web-at-indicator-txt">Actionner Web Auto-Trader (0.02%)</span>
+        </button>
         <button class="btn" id="btn-header-toggle-mmsbo" onclick="toggleMmsBoHud()" title="Afficher ou masquer la matrice multi-unités de temps MMS & BO" style="font-size:11.5px;padding:6px 10px;display:flex;align-items:center;gap:8px;border-color:#38BDF8;color:#38BDF8;font-weight:700;background:rgba(56,189,248,0.12)">
           <span>📊</span> Matrice MMS & BO
         </button>
@@ -1701,7 +1704,24 @@ footer{
           </div>
         </div>
       </div>
-      <button class="btn" onclick="closeLiveExchangeModal()" style="padding:4px 10px;font-size:15px;background:rgba(255,255,255,0.08);border:1px solid var(--line);border-radius:8px">✕</button>
+    <!-- Bouton Master Switch Actionner Web Auto-Trader (Frais 0.02%) -->
+    <div style="background:rgba(15,23,42,0.9);border:1.5px solid #38BDF8;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-weight:900;color:#00E5FF;font-size:13px;display:flex;align-items:center;gap:6px">
+          <span>⚡ OPTION 2 : WEB AUTO-TRADER MEXC (FRAIS RÉDUITS 0.02%)</span>
+        </div>
+        <div style="font-size:11px;color:#94A3B8;margin-top:2px">
+          Exécute automatiquement sur votre page Web MEXC sans clés API au tarif manuel (0.02%).
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a href="https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js" target="_blank" rel="noopener" class="btn" style="text-decoration:none;font-size:10.5px;padding:6px 10px;border-color:#38BDF8;color:#38BDF8;font-weight:700">
+          📥 Script Tampermonkey
+        </a>
+        <button id="btn-toggle-web-autotrader" onclick="toggleWebAutoTrader()" style="background:rgba(15,23,42,0.85);color:#94A3B8;border:1.5px solid #64748B;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s">
+          <span id="web-at-modal-dot">⚪</span> <span id="web-at-modal-txt">Actionner le Web Auto-Trader</span>
+        </button>
+      </div>
     </div>
 
     <!-- Active Live Status Banner if active -->
@@ -15755,22 +15775,25 @@ ${escapeHtml(body)}
   sendTelegramNotification(tgMsg, 'strat_mm', { buttons: tgButtons });
   if(typeof sendWhatsAppNotification === 'function') sendWhatsAppNotification(tgMsg);
 
-  // Émission vers le Web Auto-Trader (Userscript Tampermonkey à 0.02%)
-  try {
-    const webSignal = {
-      type: 'LUMEN_TRADE_SIGNAL',
-      symbol: mexcPair,
-      side: isBuy ? 'BUY' : 'SELL',
-      price: sig?.price,
-      timeframe: state.tf,
-      timestamp: Date.now()
-    };
-    if (typeof BroadcastChannel !== 'undefined') {
-      const bc = new BroadcastChannel('lumen_mexc_channel');
-      bc.postMessage(webSignal);
-    }
-    localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
-  } catch(e){}
+  // Émission vers le Web Auto-Trader (UNIQUEMENT SI LE BOUTON EST ACTIONNÉ)
+  if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
+    try {
+      const webSignal = {
+        type: 'LUMEN_TRADE_SIGNAL',
+        symbol: mexcPair,
+        side: isBuy ? 'BUY' : 'SELL',
+        price: sig?.price,
+        timeframe: state.tf,
+        timestamp: Date.now()
+      };
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('lumen_mexc_channel');
+        bc.postMessage(webSignal);
+      }
+      localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
+      toast(`⚡ Web Auto-Trader : Signal ${webSignal.side} transmis à MEXC (0.02%)`, '#10B981');
+    } catch(e){}
+  }
 
   sendWebhookNotification({
     title,
@@ -23659,6 +23682,71 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
   }
 };
 
+window.isWebAutoTraderActive = function() {
+  return localStorage.getItem('lumen_web_autotrader_active') === '1';
+};
+
+window.updateWebAutoTraderUI = function() {
+  const active = window.isWebAutoTraderActive();
+  const btnMenu = document.getElementById('btn-toggle-web-autotrader-menu');
+  const btnModal = document.getElementById('btn-toggle-web-autotrader');
+  const dotMenu = document.getElementById('web-at-indicator-dot');
+  const txtMenu = document.getElementById('web-at-indicator-txt');
+  const dotModal = document.getElementById('web-at-modal-dot');
+  const txtModal = document.getElementById('web-at-modal-txt');
+
+  if (active) {
+    if (btnMenu) {
+      btnMenu.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+      btnMenu.style.borderColor = '#34D399';
+      btnMenu.style.color = '#FFFFFF';
+      btnMenu.style.boxShadow = '0 0 14px rgba(16,185,129,0.5)';
+    }
+    if (btnModal) {
+      btnModal.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+      btnModal.style.borderColor = '#34D399';
+      btnModal.style.color = '#FFFFFF';
+      btnModal.style.boxShadow = '0 0 16px rgba(16,185,129,0.6)';
+    }
+    if (dotMenu) dotMenu.textContent = '🟢';
+    if (txtMenu) txtMenu.textContent = 'WEB AUTO-TRADER : ACTIONNÉ (0.02%)';
+    if (dotModal) dotModal.textContent = '🟢';
+    if (txtModal) txtModal.textContent = 'ACTIONNÉ (Prêt à trader à 0.02%)';
+  } else {
+    if (btnMenu) {
+      btnMenu.style.background = 'rgba(15,23,42,0.85)';
+      btnMenu.style.borderColor = '#64748B';
+      btnMenu.style.color = '#94A3B8';
+      btnMenu.style.boxShadow = 'none';
+    }
+    if (btnModal) {
+      btnModal.style.background = 'rgba(15,23,42,0.85)';
+      btnModal.style.borderColor = '#64748B';
+      btnModal.style.color = '#94A3B8';
+      btnModal.style.boxShadow = 'none';
+    }
+    if (dotMenu) dotMenu.textContent = '⚪';
+    if (txtMenu) txtMenu.textContent = 'Actionner Web Auto-Trader (0.02%)';
+    if (dotModal) dotModal.textContent = '⚪';
+    if (txtModal) txtModal.textContent = 'Actionner le Web Auto-Trader';
+  }
+};
+
+window.toggleWebAutoTrader = function() {
+  const currentlyActive = window.isWebAutoTraderActive();
+  const nextState = !currentlyActive;
+  localStorage.setItem('lumen_web_autotrader_active', nextState ? '1' : '0');
+  window.updateWebAutoTraderUI();
+
+  if (nextState) {
+    toast('🟢 Web Auto-Trader ACTIONNÉ : Les signaux seront exécutés sur votre onglet MEXC Web (Frais 0.02%)', '#10B981');
+  } else {
+    toast('🛑 Web Auto-Trader DÉSACTIVÉ : Aucun ordre ne sera envoyé à MEXC', '#94A3B8');
+  }
+};
+
+setTimeout(function(){ try { window.updateWebAutoTraderUI(); } catch(e){} }, 500);
+
 window.recalcLiveModalNotional = function() {
   const unit = document.getElementById('live-ex-trade-unit')?.value || 'USDT';
   const rawBudget = Number(document.getElementById('live-ex-trade-budget')?.value || (unit === 'BTC' ? 0.0005 : 10));
@@ -30401,7 +30489,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1600';
+  window.__LUMEN_BUILD = 'B-1708-1610';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
