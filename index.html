@@ -1164,14 +1164,19 @@ footer{
 
       <!-- Section 4 : Notifications & Synchronisation -->
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;border-top:1px solid var(--line);padding-top:8px">
-        <span>🔔 Alertes & Synchro</span>
+        <span>🔔 Alertes & Synchronisations</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-        <button class="btn" id="notif-btn" title="Alertes & Notifications Téléphone" style="border-color:#00E5FF;color:#00E5FF;display:inline-flex;align-items:center;gap:6px;font-weight:700;padding:6px 8px">
-          <span>🔔</span> Mobile
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+        <button class="btn" id="sync-btn" title="Synchronisation Studio & Appareils (iPhone ↔ iPad via GitHub)" style="display:inline-flex;align-items:center;gap:6px;padding:7px 8px;font-weight:700;border-color:#A78BFA;color:#A78BFA;background:rgba(167,139,250,0.1)">
+          <span>☁️</span> Synchro Studio
         </button>
-        <button class="btn" id="sync-btn" title="Synchroniser entre appareils" style="display:inline-flex;align-items:center;gap:6px;padding:6px 8px">
-          <span>⇅</span> Synchro
+        <button class="btn" id="sync-4tabs-btn" onclick="toggle4TabsSync()" title="Synchronisation en direct entre vos 4 onglets / fenêtres de trading (Symbole, Zoom & Rendu)" style="display:inline-flex;align-items:center;gap:6px;padding:7px 8px;font-weight:700;border-color:#64748B;color:#94A3B8;background:rgba(15,23,42,0.85);transition:all 0.2s">
+          <span id="sync-4tabs-dot">⚪</span> <span id="sync-4tabs-txt">Synchro 4-Tabs</span>
+        </button>
+      </div>
+      <div style="margin-bottom:10px">
+        <button class="btn" id="notif-btn" title="Alertes & Notifications Téléphone (Telegram / WhatsApp / Webhook)" style="width:100%;border-color:#00E5FF;color:#00E5FF;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:700;padding:7px 8px;background:rgba(0,229,255,0.08)">
+          <span>🔔</span> Notifications Téléphone (Telegram / App)
         </button>
       </div>
 
@@ -2237,11 +2242,14 @@ footer{
   </div>
 
   <div class="ind-wrap" style="position:static">
-    <div class="ind-menu" id="sync-menu" style="width:min(400px,92vw);padding:14px;border:1.5px solid #A78BFA">
-      <h4>Synchronisation iPhone ↔ iPad</h4>
+    <div class="ind-menu" id="sync-menu" style="width:min(420px,94vw);padding:14px;border:1.5px solid #A78BFA">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h4 style="margin:0;color:#A78BFA;display:flex;align-items:center;gap:6px">☁️ Synchronisation Studio ↔ Appareils</h4>
+        <button class="btn" onclick="document.getElementById('sync-menu').classList.remove('open')" style="padding:2px 8px;font-size:12px">✕</button>
+      </div>
       <div style="padding:2px 10px 8px;font-size:12px;color:var(--muted);line-height:1.5">
-        Colle un jeton GitHub (accès « Contents » en écriture au dépôt Lumen).
-        Tes réglages seront enregistrés dans le dépôt et partagés entre tous tes appareils.
+        Colle ton jeton GitHub PAT (accès « Contents » en écriture au dépôt Lumen).
+        Tes réglages, indicateurs et tracés seront synchronisés entre le Studio et tous tes appareils (iPhone, iPad, Mac).
       </div>
       <input id="sync-token" type="password" placeholder="github_pat_…" autocomplete="off"
         style="width:calc(100% - 20px);margin:0 10px;box-sizing:border-box;background:var(--panel);
@@ -23747,7 +23755,71 @@ window.toggleWebAutoTrader = function() {
   }
 };
 
-setTimeout(function(){ try { window.updateWebAutoTraderUI(); } catch(e){} }, 500);
+// --- SYNCHRONISATION 4-TABS (MULTI-ONGLETS EN TEMPS RÉEL) ---
+let tabsBroadcastChannel = null;
+try { tabsBroadcastChannel = new BroadcastChannel('lumen_4tabs_sync_channel'); } catch(e){}
+
+window.is4TabsSyncActive = function() {
+  return localStorage.getItem('lumen_4tabs_sync_active') === '1';
+};
+
+window.update4TabsSyncUI = function() {
+  const active = window.is4TabsSyncActive();
+  const btn = document.getElementById('sync-4tabs-btn');
+  const dot = document.getElementById('sync-4tabs-dot');
+  const txt = document.getElementById('sync-4tabs-txt');
+  if (!btn) return;
+
+  if (active) {
+    btn.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.25), rgba(5,150,105,0.25))';
+    btn.style.borderColor = '#10B981';
+    btn.style.color = '#10B981';
+    btn.style.boxShadow = '0 0 10px rgba(16,185,129,0.4)';
+    if (dot) dot.textContent = '🟢';
+    if (txt) txt.textContent = '4-Tabs : ACTIF';
+  } else {
+    btn.style.background = 'rgba(15,23,42,0.85)';
+    btn.style.borderColor = '#64748B';
+    btn.style.color = '#94A3B8';
+    btn.style.boxShadow = 'none';
+    if (dot) dot.textContent = '⚪';
+    if (txt) txt.textContent = 'Synchro 4-Tabs';
+  }
+};
+
+window.toggle4TabsSync = function() {
+  const next = !window.is4TabsSyncActive();
+  localStorage.setItem('lumen_4tabs_sync_active', next ? '1' : '0');
+  window.update4TabsSyncUI();
+
+  if (next) {
+    toast('🟢 Synchro 4-Tabs ACTIVÉE : Vos onglets se synchronisent en direct (Symbole, Zoom & Tracés)', '#10B981');
+    if (tabsBroadcastChannel) {
+      tabsBroadcastChannel.postMessage({ type: 'SYNC_STATE', symbol: state.symbol, tf: state.tf, time: Date.now() });
+    }
+  } else {
+    toast('⚪ Synchro 4-Tabs DÉSACTIVÉE', '#94A3B8');
+  }
+};
+
+if (tabsBroadcastChannel) {
+  tabsBroadcastChannel.onmessage = function(e) {
+    if (!window.is4TabsSyncActive() || !e.data) return;
+    if (e.data.type === 'SYNC_STATE') {
+      let changed = false;
+      if (e.data.symbol && e.data.symbol !== state.symbol) {
+        state.symbol = e.data.symbol;
+        changed = true;
+      }
+      if (changed) {
+        applyConfigToUI();
+        loadData();
+      }
+    }
+  };
+}
+
+setTimeout(function(){ try { window.update4TabsSyncUI(); } catch(e){} }, 600);
 
 window.recalcLiveModalNotional = function() {
   const unit = document.getElementById('live-ex-trade-unit')?.value || 'USDT';
@@ -30491,7 +30563,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1630';
+  window.__LUMEN_BUILD = 'B-1708-1640';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
