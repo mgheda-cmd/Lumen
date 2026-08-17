@@ -143,7 +143,7 @@
     top: 8px;
   }
 
-html,body{height:100%}
+html,body{height:100%;height:100dvh}
 *{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent}
   input,textarea{-webkit-user-select:text; user-select:text}
 body{
@@ -160,7 +160,9 @@ header{
   padding:3px 8px; border-bottom:1px solid var(--line);
   background:var(--panel); flex-wrap:nowrap;
   overflow-x:auto; scrollbar-width:none;
-  padding-top:calc(3px + env(safe-area-inset-top));
+  position:sticky; top:0; left:0; right:0;
+  z-index:1000; flex:none;
+  padding-top:max(4px, env(safe-area-inset-top));
 }
 header::-webkit-scrollbar{ display:none; }
 .logo{display:flex; align-items:center; gap:6px; font-weight:700; letter-spacing:.02em; font-size:13px; flex:none}
@@ -433,9 +435,17 @@ footer{
   padding-bottom:calc(6px + env(safe-area-inset-bottom));
 }
 @media (max-width:720px){
-  header{gap:4px; padding:2px 6px;}
+  header{gap:4px; padding:2px 6px; padding-top:max(4px, env(safe-area-inset-top));}
   .logo .logo-txt{display:none}
   .btn-full-txt{display:none}
+  #header-build-tag{display:none !important}
+  #btn-tools-menu{
+    border-color: #00E5FF !important;
+    color: #00E5FF !important;
+    background: rgba(0, 229, 255, 0.16) !important;
+    font-weight: 800 !important;
+    padding: 3px 8px !important;
+  }
   .price-block .last{font-size:12px}
   .price-block .chg, .price-block #countdown{font-size:10px}
 }
@@ -30259,7 +30269,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1510';
+  window.__LUMEN_BUILD = 'B-1708-1520';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
