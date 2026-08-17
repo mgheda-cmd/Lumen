@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    console.log('[Lumen Extension] Extension MEXC Auto-Trader v1.6.0 active (Gestion Retournements & Reversals)...');
+    console.log('[Lumen Extension] Extension MEXC Auto-Trader v1.7.0 active (Mode REVERSE NATIF)...');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -49,7 +49,7 @@
 
     async function executeCloseOrder(signal) {
         try {
-            console.log('[Lumen Extension] Fermeture de position en cours...');
+            console.log('[Lumen Extension] Clôture simple de position...');
             notifyHud(`Clôture : ${signal?.reason || 'Sortie Trade'}`, '#EC4899');
 
             const allElements = Array.from(document.querySelectorAll('button, a, span, div'));
@@ -60,37 +60,31 @@
 
             if (flashCloseBtn) {
                 flashCloseBtn.click();
-                await new Promise(r => setTimeout(r, 200));
+                await new Promise(r => setTimeout(r, 150));
 
-                const confirmBtns = Array.from(document.querySelectorAll('button'));
-                const confirmBtn = confirmBtns.find(b => {
+                const confirmBtn = Array.from(document.querySelectorAll('button')).find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
                     return txt === 'confirm' || txt === 'confirmer' || txt === 'ok';
                 });
                 if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
 
-                notifyHud(`✅ Position clôturée au marché (Flash Close) !`, '#EC4899');
-                await new Promise(r => setTimeout(r, 300));
+                notifyHud(`✅ Position clôturée (Flash Close) !`, '#EC4899');
                 return true;
             }
 
-            const tabs = Array.from(document.querySelectorAll('button, div[role="tab"], span'));
-            const closeTab = tabs.find(el => {
+            const closeTab = Array.from(document.querySelectorAll('button, div[role="tab"], span')).find(el => {
                 const txt = (el.textContent || '').trim();
                 return txt === 'Close' || txt === 'Fermer' || txt === '平仓';
             });
 
             if (closeTab) {
                 closeTab.click();
-                await new Promise(r => setTimeout(r, 150));
+                await new Promise(r => setTimeout(r, 120));
 
-                const marketBtn = Array.from(document.querySelectorAll('button, div, span')).find(el => {
-                    const txt = (el.textContent || '').trim();
-                    return txt === 'Market' || txt === 'Marché';
-                });
+                const marketBtn = Array.from(document.querySelectorAll('button, div, span')).find(el => (el.textContent || '').trim() === 'Market');
                 if (marketBtn) marketBtn.click();
 
-                await new Promise(r => setTimeout(r, 150));
+                await new Promise(r => setTimeout(r, 120));
 
                 const isLongClose = (signal?.side === 'CLOSE_LONG' || signal?.side === 'SELL');
                 const closeActionBtn = Array.from(document.querySelectorAll('button')).find(b => {
@@ -102,7 +96,6 @@
                 if (closeActionBtn && !closeActionBtn.disabled) {
                     closeActionBtn.click();
                     notifyHud(`✅ Trade clôturé avec succès !`, '#EC4899');
-                    await new Promise(r => setTimeout(r, 300));
                     return true;
                 }
             }
@@ -118,37 +111,59 @@
         }
 
         try {
-            console.log('[Lumen Extension] Signal d\'ENTRÉE / RETOURNEMENT reçu:', signal);
+            console.log('[Lumen Extension] Signal d\'action reçu:', signal);
+            const isBuy = signal.side === 'BUY' || signal.side === 'LONG';
             const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
 
-            const hasOpenPos = Array.from(document.querySelectorAll('button, a, span')).some(el => {
+            const allBtns = Array.from(document.querySelectorAll('button, a, span, div'));
+            const nativeReverseBtn = allBtns.find(el => {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                return txt === 'reverse' || txt === 'retourner' || txt === 'inverser' || txt === '⚡ reverse' || txt === '反手';
+            });
+
+            const hasActivePosition = allBtns.some(el => {
                 const txt = (el.textContent || '').trim().toLowerCase();
                 return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair';
             });
 
-            if (hasOpenPos) {
-                notifyHud(`🔄 RETOURNEMENT : Clôture de l'ancien trade...`, '#F59E0B');
-                await executeCloseOrder({ reason: 'Retournement de position' });
-                await new Promise(r => setTimeout(r, 350));
+            if (hasActivePosition && nativeReverseBtn) {
+                console.log('[Lumen Extension] Déclenchement du bouton natif REVERSE MEXC !');
+                notifyHud(`⚡ REVERSE NATIF MEXC : Inversion instantanée...`, '#F59E0B');
+
+                nativeReverseBtn.click();
+                await new Promise(r => setTimeout(r, 120));
+
+                const confirmBtn = Array.from(document.querySelectorAll('button')).find(b => {
+                    const txt = (b.textContent || '').trim().toLowerCase();
+                    return txt === 'confirm' || txt === 'confirmer' || txt === 'ok' || txt === 'reverse';
+                });
+                if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
+
+                notifyHud(`⚡ REVERSE RÉUSSI EN 1 CLIC : Inversion immédiate à 0.02% !`, isBuy ? '#10B981' : '#EF4444');
+                return;
             }
 
-            notifyHud(`🚀 Ouverture : ${signal.side} ${signal.symbol} (${budgetStr})`, signal.side === 'BUY' ? '#10B981' : '#EF4444');
+            if (hasActivePosition) {
+                notifyHud(`🔄 RETOURNEMENT : Flash Close + Nouvel Ordre...`, '#F59E0B');
+                await executeCloseOrder({ reason: 'Inversion de signal' });
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            notifyHud(`🚀 Ouverture : ${signal.side} ${signal.symbol} (${budgetStr})`, isBuy ? '#10B981' : '#EF4444');
 
             const openTab = Array.from(document.querySelectorAll('button, div[role="tab"], span')).find(el => {
                 const txt = (el.textContent || '').trim();
                 return txt === 'Open' || txt === 'Ouvrir' || txt === '开仓';
             });
             if (openTab) openTab.click();
-
-            await new Promise(r => setTimeout(r, 120));
+            await new Promise(r => setTimeout(r, 100));
 
             const marketBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, div')).find(el => {
                 const txt = (el.textContent || '').trim();
                 return txt === 'Market' || txt === 'Marché' || txt === '市价';
             });
             if (marketBtn) marketBtn.click();
-
-            await new Promise(r => setTimeout(r, 150));
+            await new Promise(r => setTimeout(r, 120));
 
             if (signal.budget && signal.budget > 0) {
                 const inputs = Array.from(document.querySelectorAll('input'));
@@ -164,25 +179,18 @@
                     setNativeValue(qtyInput, String(signal.budget));
                 }
             }
+            await new Promise(r => setTimeout(r, 120));
 
-            await new Promise(r => setTimeout(r, 150));
-
-            const isBuy = signal.side === 'BUY' || signal.side === 'LONG';
             const actionButtons = Array.from(document.querySelectorAll('button'));
-            
             const targetBtn = actionButtons.find(b => {
                 const txt = (b.textContent || '').trim().toLowerCase();
-                if (isBuy) {
-                    return txt.includes('open long') || txt.includes('ouvrir long') || txt.includes('buy / long') || txt.includes('acheter') || txt.includes('long');
-                } else {
-                    return txt.includes('open short') || txt.includes('ouvrir short') || txt.includes('sell / short') || txt.includes('vendre') || txt.includes('short');
-                }
+                if (isBuy) return txt.includes('open long') || txt.includes('ouvrir long') || txt.includes('buy / long') || txt.includes('acheter') || txt.includes('long');
+                return txt.includes('open short') || txt.includes('ouvrir short') || txt.includes('sell / short') || txt.includes('vendre') || txt.includes('short');
             });
 
             if (targetBtn && !targetBtn.disabled) {
                 targetBtn.click();
-                const reversalMsg = hasOpenPos ? '🔄 RETOURNEMENT RÉUSSI : Ancien fermé + Nouveau ouvert !' : `✅ Ordre ${signal.side} (${budgetStr}) validé à 0.02% !`;
-                notifyHud(reversalMsg, isBuy ? '#10B981' : '#EF4444');
+                notifyHud(`✅ Ordre ${signal.side} (${budgetStr}) validé à 0.02% !`, isBuy ? '#10B981' : '#EF4444');
             } else {
                 notifyHud('⚠️ Bouton d\'action non trouvé sur MEXC', '#F59E0B');
             }
