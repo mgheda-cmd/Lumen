@@ -238,11 +238,19 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 #cfg-back.open{display:flex}
 #cfg-box{
   background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
-  width:min(560px,96vw);max-height:85vh;overflow:auto;
+  width:min(560px,96vw);max-height:85vh;
   box-shadow:0 24px 60px rgba(0,0,0,.75);
   position:relative;                    /* déplacé par transform */
-  touch-action:none;
+  display:flex;flex-direction:column;   /* titre fixe, corps défilant, pied fixe */
+  overflow:hidden;
 }
+/* touch-action:none était posé sur toute la boîte pour permettre de la
+   déplacer au doigt. Résultat : le navigateur ne traitait plus aucun geste
+   de défilement à l'intérieur, et les panneaux longs — kk bis 2 en compte
+   47 — devenaient impossibles à parcourir. La règle ne s'applique donc
+   plus qu'à la barre de titre, qui est la seule poignée de déplacement. */
+#cfg-head{ touch-action:none; flex:none; }
+#cfg-foot{ flex:none; }
 #cfg-head{ cursor:grab; user-select:none; }
 #cfg-head:active{ cursor:grabbing; }
 #cfg-head::before{
@@ -253,7 +261,15 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel-2);
 }
 #cfg-head h3{font-size:15px;font-weight:600;flex:1}
-#cfg-body{padding:8px 16px 4px}
+#cfg-body{
+  padding:8px 16px 4px;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;   /* défilement à inertie sur iPad */
+  touch-action:pan-y;                 /* le doigt fait défiler, verticalement */
+  flex:1 1 auto;
+  min-height:0;                       /* sans quoi flex refuse de rétrécir */
+  overscroll-behavior:contain;
+}
 .cfg-row{
   display:flex;align-items:center;gap:12px;padding:9px 0;
   border-bottom:1px solid rgba(29,42,66,.6);font-size:13px;
@@ -29799,7 +29815,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-0450';
+  window.__LUMEN_BUILD = 'B-1708-0540';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
