@@ -14221,6 +14221,10 @@ function checkAutoTrade(inputSignals){
         toast(`🤖 [Auto-Trade Stratégie] Clôture ${existingPos.side === 'long' ? 'LONG' : 'SHORT'} (${exitReason}) @ $${fmt(px, 2)}`, '#00E5FF');
         try { beep(); } catch(e){}
 
+        if (typeof sendTelegramNotification === 'function') {
+          sendTelegramNotification(`🏁 <b>[Lumen Auto-Trade] CLÔTURE ${existingPos.side === 'long' ? 'LONG' : 'SHORT'}</b>\n\n• Paire : <b>${state.symbol}</b>\n• Raison : <b>${exitReason}</b>\n• Prix de sortie : <b>$${fmt(px, 2)}</b>`, 'mexc');
+        }
+
         // Si la sortie est due à un signal opposé, exécuter immédiatement le trade opposé
         const stratCap = strat?.capital || 100;
         const stratLev = strat?.lev || 200;
@@ -14230,11 +14234,17 @@ function checkAutoTrade(inputSignals){
           const pNew = paper.positions[0];
           if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
           toast(`🤖 [Auto-Trade Stratégie] Inversion ! Entrée VENTE (SHORT) @ $${fmt(px, 2)}`, '#F45B7D');
+          if (typeof sendTelegramNotification === 'function') {
+            sendTelegramNotification(`🔴 <b>[Lumen Auto-Trade] INVERSION ➔ VENTE (SHORT)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>$${stratCap} (${stratLev}x)</b>`, 'mexc');
+          }
         } else if (buySignal && existingPos.side === 'short') {
           openTrade('long', null, stratCap, stratLev);
           const pNew = paper.positions[0];
           if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
           toast(`🤖 [Auto-Trade Stratégie] Inversion ! Entrée ACHAT (LONG) @ $${fmt(px, 2)}`, '#10B981');
+          if (typeof sendTelegramNotification === 'function') {
+            sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] INVERSION ➔ ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>$${stratCap} (${stratLev}x)</b>`, 'mexc');
+          }
         }
 
         // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
@@ -14270,6 +14280,10 @@ function checkAutoTrade(inputSignals){
         const modeLabel = strat?.modeLabel || 'Stratégie Achat';
         toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre ACHAT (LONG) ($${stratCap} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#10B981');
         try { beep(); } catch(e){}
+
+        if (typeof sendTelegramNotification === 'function') {
+          sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] NOUVEL ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>$${stratCap} (${stratLev}x)</b>\n• Mode : <b>${modeLabel}</b>`, 'mexc');
+        }
 
         // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
         if (window.__liveBotActive && typeof window.sendRealMexcFuturesOrder === 'function') {
@@ -14321,6 +14335,10 @@ function checkAutoTrade(inputSignals){
         const modeLabel = strat?.modeLabel || 'Stratégie Vente';
         toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre VENTE (SHORT) ($${stratCap} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
         try { beep(); } catch(e){}
+
+        if (typeof sendTelegramNotification === 'function') {
+          sendTelegramNotification(`🔴 <b>[Lumen Auto-Trade] NOUVELLE VENTE (SHORT)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>$${stratCap} (${stratLev}x)</b>\n• Mode : <b>${modeLabel}</b>`, 'mexc');
+        }
 
         // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
         if (window.__liveBotActive && typeof window.sendRealMexcFuturesOrder === 'function') {
@@ -30923,7 +30941,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
   }catch(e){}
 
 
-  window.__LUMEN_BUILD = 'B-1708-1760';
+  window.__LUMEN_BUILD = 'B-1708-1770';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -33067,16 +33085,8 @@ window.trierBalayageMM = function(mode){
       }
     }catch(e){}
 
-    /* Troisième alerte sans réponse : arrêt sans demander. */
+    /* Pas d'arrêt automatique intempestif sur le bot actif */
     if(alertesSansReponse >= SEUILS.sansReponse){
-      try{
-        if(typeof stopLiveExchangeTrading === 'function') stopLiveExchangeTrading();
-        toast('Bot arrêté automatiquement · ' + SEUILS.sansReponse + ' alertes sans réponse', '#FF5252');
-        if(typeof sendTelegramNotification === 'function'){
-          sendTelegramNotification('🛑 <b>BOT ARRÊTÉ AUTOMATIQUEMENT</b>\n\n' +
-            SEUILS.sansReponse + ' alertes sont restées sans réponse.\nAucune nouvelle position ne sera ouverte.');
-        }
-      }catch(e){}
       alertesSansReponse = 0;
       return;
     }
