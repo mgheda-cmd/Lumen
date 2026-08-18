@@ -26626,8 +26626,8 @@ function drawMMSignals(res, s, e, yOf, cw) {
       const bgFill = sig.bgFill || (isLong ? "rgba(6, 32, 20, 0.95)" : "rgba(38, 8, 16, 0.95)");
       const anchorY = isLong ? yOf(baseCandle.l) : yOf(baseCandle.h);
 
-      const bw = 260;
-      const bh = 36;
+      const bw = 148;
+      const bh = 46;
       const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
 
       let by;
@@ -26713,10 +26713,10 @@ function drawMMSignals(res, s, e, yOf, cw) {
 
       // Fond de pastille avec lueur
       ctx.shadowColor = color;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 8;
       ctx.fillStyle = bgFill;
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
       if (typeof ctx.roundRect === "function") {
         ctx.roundRect(bx, by, bw, bh, 6);
@@ -26734,61 +26734,50 @@ function drawMMSignals(res, s, e, yOf, cw) {
         timeTag = `[${fmtTime(sigCandleTime)}] `;
       }
 
-      // Textes dans la pastille avec coloration directionnelle ciblée :
-      // - L'icône, l'heure, le nom de l'option et les niveaux gardent la COULEUR D'ORIGINE DE L'OPTION (Cyan, Or, Violet, etc.)
-      // - Les mots "ACHAT (LONG)" passent en VERT ÉCLATANT (#00E676)
-      // - Les mots "VENTE (SHORT)" passent en ROUGE ÉCLATANT (#FF3366)
+      // --- RENDU COMPACT SUR 3 LIGNES (FORMAT PLUS CARRÉ) ---
+      // Ligne 1 : Heure + Mot-clé ACHAT (Vert) ou VENTE (Rouge)
       ctx.font = 'bold 10px "IBM Plex Sans", -apple-system, sans-serif';
       ctx.textBaseline = "top";
-      let mainBadge = sig.badge || (isLong ? "🟢 ENTRÉE LONG" : "🔴 ENTRÉE SHORT");
-      if (timeTag && !mainBadge.includes("[")) {
-        mainBadge = mainBadge.replace(/^([^a-zA-Z0-9À-ÿ]*)/, `$1${timeTag}`);
-      }
-
-      const dirTxt = isLong ? "ACHAT (LONG)" : "VENTE (SHORT)";
+      const dirTxt = isLong ? "ACHAT" : "VENTE";
       const dirColor = isLong ? "#00E676" : "#FF3366";
 
-      let segPrefix = "", segDir = "", segSuffix = "";
-      if (mainBadge.includes(dirTxt)) {
-        const parts = mainBadge.split(dirTxt);
-        segPrefix = parts[0] || "";
-        segDir = dirTxt;
-        segSuffix = parts.slice(1).join(dirTxt) || "";
-      } else {
-        segDir = isLong ? "ACHAT" : "VENTE";
-        segPrefix = "";
-        segSuffix = mainBadge.replace(segDir, "");
-      }
+      const wTime = timeTag ? ctx.measureText(timeTag).width : 0;
+      const wDir = ctx.measureText(dirTxt).width;
+      const totalL1W = wTime + wDir;
+      let startL1X = bx + (bw - totalL1W) / 2;
 
       ctx.textAlign = "left";
-      const wPrefix = ctx.measureText(segPrefix).width;
-      const wDir = ctx.measureText(segDir).width;
-      const wSuffix = ctx.measureText(segSuffix).width;
-      const totalW = wPrefix + wDir + wSuffix;
-
-      let curX = bx + (bw - totalW) / 2;
-
-      // 1. Préfixe (icône + heure) en couleur d'origine de l'option
-      if (segPrefix) {
+      if (timeTag) {
         ctx.fillStyle = color;
-        ctx.fillText(segPrefix, curX, by + 4.5);
-        curX += wPrefix;
+        ctx.fillText(timeTag, startL1X, by + 4);
+        startL1X += wTime;
       }
-      // 2. Mots ACHAT (LONG) / VENTE (SHORT) en Vert / Rouge
-      if (segDir) {
-        ctx.fillStyle = dirColor;
-        ctx.fillText(segDir, curX, by + 4.5);
-        curX += wDir;
-      }
-      // 3. Suffixe (nom de l'option, niveau) en couleur d'origine de l'option
-      if (segSuffix) {
-        ctx.fillStyle = color;
-        ctx.fillText(segSuffix, curX, by + 4.5);
-      }
+      ctx.fillStyle = dirColor;
+      ctx.fillText(dirTxt, startL1X, by + 4);
 
-      ctx.font = '8px "IBM Plex Mono", monospace';
-      ctx.fillStyle = "#E2E8F0";
-      ctx.fillText(sig.sub || "", bx + bw / 2, by + 18.5);
+      // Ligne 2 : Nom court de l'Option avec son icône thématique (Couleur d'origine)
+      const optLabels = {
+        base: '🟢 Signal Base',
+        opt1: '💎 Opt 1 (KK 2ᵉ UT)',
+        opt2: '⚡ Opt 2 (iMACD)',
+        opt3: '🛡️ Opt 3 (Cassure)',
+        opt4: '🎯 Opt 4 (Lissage)',
+        opt5: '🚀 Opt 5 (Rebond V)',
+        opt6: '💎 Opt 6 (BOS/DIV)'
+      };
+      const optName = optLabels[sig.optKey] || '🟢 Entrée';
+      ctx.font = 'bold 9px "IBM Plex Sans", -apple-system, sans-serif';
+      ctx.textAlign = "center";
+      ctx.fillStyle = color;
+      ctx.fillText(optName, bx + bw / 2, by + 18);
+
+      // Ligne 3 : Prix d'entrée & Niveau de déclenchement (Police claire et nette)
+      const priceStr = `$${fmt(sig.price, 1)}`;
+      const lvlStr = (sig.triggerLevel != null) ? (sig.triggerLevel > 0 ? `+${sig.triggerLevel.toFixed(0)}` : `${sig.triggerLevel.toFixed(0)}`) : '';
+      const subTxt = lvlStr ? `${priceStr} · Niv: ${lvlStr}` : priceStr;
+      ctx.font = '8.5px "IBM Plex Mono", monospace';
+      ctx.fillStyle = "#CBD5E1";
+      ctx.fillText(subTxt, bx + bw / 2, by + 31);
 
       ctx.restore();
 
@@ -31985,7 +31974,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2310';
+  window.__LUMEN_BUILD = 'B-1808-2315';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
