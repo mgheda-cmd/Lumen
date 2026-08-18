@@ -25251,9 +25251,18 @@ function computeMMSignals(d, ind) {
   const bars = mtf ? getMTFBars(mtf) : d;
   if (!bars || !bars.length) return { signals: [], line: [], dir: [], net: [], creuxList: [], sommetsList: [] };
 
-  const oscThreshold = (ind.oscThreshold != null) ? +ind.oscThreshold : (indKK.lower != null ? +indKK.lower : -75);
-  const lowerThreshold = oscThreshold < 0 ? oscThreshold : -oscThreshold; // ex: -75
-  const upperThreshold = Math.abs(oscThreshold);                          // ex: +75
+  /* Les seuils viennent de kk bis 2, et de lui seul. Deux défauts corrigés ici :
+     oscThreshold, un réglage propre à la stratégie, passait avant celui de
+     l'indicateur — deux endroits pour la même valeur, qui pouvaient diverger.
+     Et le seuil haut était déduit du seuil bas par valeur absolue, si bien
+     qu'un seuil haut asymétrique dans kk bis 2 n'avait aucun effet.
+
+     oscThreshold ne sert plus que de repli si kk bis 2 n'existe pas. */
+  const lowerThreshold = (indKK.lower != null) ? +indKK.lower
+                       : ((ind.oscThreshold != null) ? -Math.abs(+ind.oscThreshold) : -75);
+  const upperThreshold = (indKK.upper != null) ? +indKK.upper
+                       : ((ind.oscThreshold != null) ? Math.abs(+ind.oscThreshold) : 75);
+  const oscThreshold = lowerThreshold;
 
   const maxLongLevel = ind.maxLongLevel != null ? +ind.maxLongLevel : -65;
   const minShortLevel = ind.minShortLevel != null ? +ind.minShortLevel : 65;
@@ -31292,7 +31301,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2710';
+  window.__LUMEN_BUILD = 'B-1708-2810';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
