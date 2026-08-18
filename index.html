@@ -4931,15 +4931,26 @@ function mergeConfig(c){
       &&(x.side==='long'||x.side==='short')&&/^[A-Z0-9]{5,20}$/.test(x.sym||'')):[];
     paper.history=Array.isArray(c.paper.history)?c.paper.history.slice(0,50):[];
 
-    // Nettoyage et restauration du solde suite aux micro-boucles
+    /* Nettoyage des micro-boucles : les trades ouverts et refermés en moins de
+       cinq secondes viennent du défaut de rebouclage, pas de la stratégie. On
+       les retire de l'historique et on annule leur effet sur le solde.
+
+       Le plancher était fixé à 100, ce qui inventait de l'argent : un solde
+       tombé à 43 remontait à 100 au chargement suivant. Sur un compte qui sert
+       à mesurer une stratégie, c'est la dernière chose à faire. Le solde ne
+       peut pas devenir négatif, rien de plus. */
     if (paper && paper.history) {
       const nowTs = Date.now();
       const loopTrades = paper.history.filter(h => h && Math.abs((h.t1 || nowTs) - (h.t0 || nowTs)) < 5000);
       if (loopTrades.length > 2) {
-        let totalLoss = 0;
-        loopTrades.forEach(h => { totalLoss += (h.pnl || 0); });
+        let effetBoucles = 0;
+        loopTrades.forEach(h => { effetBoucles += (h.pnl || 0); });
         paper.history = paper.history.filter(h => !loopTrades.includes(h));
-        paper.cash = Math.max(100, (paper.cash || 100) - totalLoss);
+        paper.cash = Math.max(0, (paper.cash || 0) - effetBoucles);
+        if (typeof toast === 'function') {
+          toast(loopTrades.length + ' trades de rebouclage retirés du compte démo (' +
+                (effetBoucles >= 0 ? '+' : '') + effetBoucles.toFixed(2) + ' $ annulés)', '#FF9F1C');
+        }
       }
     }
 
