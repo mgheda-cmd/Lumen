@@ -2762,8 +2762,8 @@ footer{
 
       <!-- Boutons d'action -->
       <div style="display:flex;gap:6px;align-items:center;margin-left:auto;flex-wrap:wrap">
-        <button class="btn-buy" id="paper-buy" style="padding:6px 12px;font-weight:800;font-size:12px">🟢 ACHAT</button>
-        <button class="btn-sell" id="paper-sell" style="padding:6px 12px;font-weight:800;font-size:12px">🔴 VENTE</button>
+        <button class="btn-buy" id="paper-buy" onclick="window.openTrade('long')" style="padding:6px 12px;font-weight:800;font-size:12px">🟢 ACHAT</button>
+        <button class="btn-sell" id="paper-sell" onclick="window.openTrade('short')" style="padding:6px 12px;font-weight:800;font-size:12px">🔴 VENTE</button>
         <button class="btn" id="paper-auto-trade" style="padding:6px 12px;font-weight:800;font-size:12px;background:var(--panel,#0A111F);border:1px solid var(--line,#1E293B);color:var(--muted,#94A3B8);transition:all 0.2s ease" title="Exécuter automatiquement un trade lors de l'apparition des signaux configurés">🤖 Auto-Trade : OFF</button>
         <button class="btn" id="paper-reset" style="margin-left:auto;font-size:11px;padding:5px 8px" title="Remettre le compte démo à 100$">↺ Réinit 100$</button>
       </div>
@@ -13713,61 +13713,68 @@ function refreshUnitUI(){
 }
 
 function openTrade(side, targetPosIdx, customVal, customLev){
-  const amtEl=document.getElementById('paper-amt');
-  const val = (customVal != null && customVal > 0) ? customVal : parseFloat(amtEl?.value||'0');
-  const px=livePrice(state.symbol);
-  if(!px) return paperFlash('Prix indisponible');
+  try {
+    const amtEl=document.getElementById('paper-amt');
+    const val = (customVal != null && customVal > 0) ? customVal : parseFloat(amtEl?.value||'0');
+    const px=livePrice(state.symbol);
+    if(!px) return paperFlash('Prix indisponible');
 
-  const lev = (customLev != null && customLev > 0) ? customLev : parseInt(document.getElementById('paper-lev')?.value||'1',10);
-  const mode=document.getElementById('paper-mode')?.value||'merge';
-  const mmode=document.getElementById('paper-mmode')?.value||'croise';
-  const isIsole = (mmode === 'isole');
-  const coinSym=baseAsset(state.symbol);
+    const lev = (customLev != null && customLev > 0) ? customLev : parseInt(document.getElementById('paper-lev')?.value||'1',10);
+    const mode=document.getElementById('paper-mode')?.value||'merge';
+    const mmode=document.getElementById('paper-mmode')?.value||'croise';
+    const isIsole = (mmode === 'isole');
+    const coinSym=baseAsset(state.symbol);
 
-  const slInp = parseFloat(document.getElementById('paper-sl')?.value || '0');
-  const tpInp = parseFloat(document.getElementById('paper-tp')?.value || '0');
-  const sl = (slInp > 0 && isFinite(slInp)) ? slInp : null;
-  const tp = (tpInp > 0 && isFinite(tpInp)) ? tpInp : null;
+    const slInp = parseFloat(document.getElementById('paper-sl')?.value || '0');
+    const tpInp = parseFloat(document.getElementById('paper-tp')?.value || '0');
+    const sl = (slInp > 0 && isFinite(slInp)) ? slInp : null;
+    const tp = (tpInp > 0 && isFinite(tpInp)) ? tpInp : null;
 
-  const isCoinUnit = (paperUnit === 'coin' || document.getElementById('paper-unite')?.value === 'BASE' || window.activeDemoStrategy?.unite === 'BASE' || window.activeDemoStrategy?.unite === 'BTC' || (val > 0 && val <= 1 && (state.symbol || '').includes('BTC')));
+    const isCoinUnit = (paperUnit === 'coin' || document.getElementById('paper-unite')?.value === 'BASE' || window.activeDemoStrategy?.unite === 'BASE' || window.activeDemoStrategy?.unite === 'BTC' || (val > 0 && val <= 1 && (state.symbol || '').includes('BTC')));
 
-  if (isIsole) {
-    const capRef = (+(document.getElementById('paper-capital')?.value || 100));
-    const mpct = Math.max(1, Math.min(100, +(document.getElementById('paper-mpct')?.value || 50))) / 100;
-    const mbonus = Math.max(0, Math.min(100, +(document.getElementById('paper-mbonus')?.value || 20))) / 100;
-    const lastWin = (paper.lastWinPnl && paper.lastWinPnl > 0) ? paper.lastWinPnl : 0;
-    bonusApplied = lastWin * mbonus;
-    const baseMargin = capRef * mpct;
-    margin = baseMargin + bonusApplied;
+    const feeRate = (typeof getPaperFeeRate === 'function') ? getPaperFeeRate() : 0.0004;
+    let margin = 0;
+    let notional = 0;
+    let qty = 0;
+    let bonusApplied = 0;
 
-    // Plafonner la marge au solde disponible net des frais
-    const totalCostFactor = (1 + lev * feeRate);
-    if (margin * totalCostFactor > paper.cash && paper.cash > 0) {
-      margin = paper.cash / totalCostFactor;
+    if (isIsole) {
+      const capRef = (+(document.getElementById('paper-capital')?.value || 100));
+      const mpct = Math.max(1, Math.min(100, +(document.getElementById('paper-mpct')?.value || 50))) / 100;
+      const mbonus = Math.max(0, Math.min(100, +(document.getElementById('paper-mbonus')?.value || 20))) / 100;
+      const lastWin = (paper.lastWinPnl && paper.lastWinPnl > 0) ? paper.lastWinPnl : 0;
+      bonusApplied = lastWin * mbonus;
+      const baseMargin = capRef * mpct;
+      margin = baseMargin + bonusApplied;
+
+      // Plafonner la marge au solde disponible net des frais
+      const totalCostFactor = (1 + lev * feeRate);
+      if (margin * totalCostFactor > paper.cash && paper.cash > 0) {
+        margin = paper.cash / totalCostFactor;
+      }
+      notional = margin * lev;
+      qty = px > 0 ? notional / px : 0;
+    } else if(isCoinUnit){
+      if(!(val>0)) return paperFlash('Quantité invalide');
+      qty = val; // Exactement la taille en BTC (ex: 0.02 BTC)
+      notional = qty * px;
+      margin = notional / lev;
+    } else {
+      if(!(val>0)) return paperFlash('Quantité invalide');
+      // Mode USDT (val = Marge en USDT, ex: 100 $)
+      margin = val;
+      if (margin * (1 + lev * feeRate) > paper.cash && paper.cash > 0) {
+        margin = paper.cash / (1 + lev * feeRate);
+      }
+      notional = margin * lev;
+      qty = px > 0 ? notional / px : 0;
     }
-    notional = margin * lev;
-    qty = px > 0 ? notional / px : 0;
-  } else if(isCoinUnit){
-    if(!(val>0)) return paperFlash('Quantité invalide');
-    qty = val; // Exactement la taille en BTC (ex: 0.02 BTC)
-    notional = qty * px;
-    margin = notional / lev;
-  } else {
-    if(!(val>0)) return paperFlash('Quantité invalide');
-    // Mode USDT (val = Marge en USDT, ex: 100 $)
-    margin = val;
-    if (margin * (1 + lev * feeRate) > paper.cash && paper.cash > 0) {
-      margin = paper.cash / (1 + lev * feeRate);
+
+    const fee = notional * feeRate;
+
+    if (margin <= 0 || (margin + fee) > paper.cash + 0.001) {
+      return paperFlash(`Solde insuffisant (Requis: ${fmtUsd(margin + fee)})`);
     }
-    notional = margin * lev;
-    qty = px > 0 ? notional / px : 0;
-  }
-
-  const fee = notional * feeRate;
-
-  if (margin <= 0 || (margin + fee) > paper.cash + 0.001) {
-    return paperFlash(`Solde insuffisant (Requis: ${fmtUsd(margin + fee)})`);
-  }
 
   // Verification de rerentrée / cumul
   let existingIndex = -1;
@@ -13821,7 +13828,13 @@ function openTrade(side, targetPosIdx, customVal, customLev){
   }
 
   beep();
+  } catch(err) {
+    console.error('[Paper Trade Error]', err);
+    paperFlash('Erreur : ' + (err.message || 'Action impossible'));
+    toast('❌ Erreur Paper Trade : ' + (err.message || 'Action impossible'), '#FF5252');
+  }
 }
+window.openTrade = openTrade;
 
 function closePos(i){
   const p=paper.positions[i];
@@ -31561,7 +31574,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1755';
+  window.__LUMEN_BUILD = 'B-1808-1802';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
