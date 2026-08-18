@@ -1,0 +1,6 @@
+{
+  "appId": "com.lumen.app",
+  "appName": "Lumen",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
