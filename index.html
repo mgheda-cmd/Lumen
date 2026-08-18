@@ -26093,17 +26093,21 @@ function computeMMSignals(d, ind) {
         }
       }
 
-      // --- OPTION 5 : Validation par V (Rebond V-Shape Violent) ---
+      // --- OPTION 5 : Validation par V (Englobe la Base + Rebond V-Shape Violent) ---
       let idxOpt5 = -1;
-      for (let j = cIdx; j < maxScanIdx; j++) {
-        const deltaScore = (net[j] != null && cScore != null) ? (net[j] - cScore) : 0;
-        const barsSince = j - cIdx;
-        const isVRebound = (dir[j] === 1 && (j === 0 || dir[j-1] === -1)) ||
-                           (barsSince <= 3 && deltaScore >= 18) ||
-                           (barsSince <= 5 && deltaScore >= 30);
-        if (isVRebound) {
-          idxOpt5 = j;
-          break;
+      if (idxBase !== -1) {
+        idxOpt5 = idxBase;
+      } else {
+        for (let j = cIdx; j < maxScanIdx; j++) {
+          const deltaScore = (net[j] != null && cScore != null) ? (net[j] - cScore) : 0;
+          const barsSince = j - cIdx;
+          const isVRebound = (dir[j] === 1 && (j === 0 || dir[j-1] === -1)) ||
+                             (barsSince <= 3 && deltaScore >= 18) ||
+                             (barsSince <= 5 && deltaScore >= 30);
+          if (isVRebound) {
+            idxOpt5 = j;
+            break;
+          }
         }
       }
       if (idxOpt5 !== -1) {
@@ -26349,17 +26353,21 @@ function computeMMSignals(d, ind) {
         }
       }
 
-      // --- OPTION 5 : Validation par V (Chute V-Shape Violente) ---
+      // --- OPTION 5 : Validation par V (Englobe la Base + Chute V-Shape Violente) ---
       let idxOpt5 = -1;
-      for (let j = sIdx; j < maxScanIdx; j++) {
-        const deltaScore = (sScore != null && net[j] != null) ? (sScore - net[j]) : 0;
-        const barsSince = j - sIdx;
-        const isVDump = (dir[j] === -1 && (j === 0 || dir[j-1] === 1)) ||
-                        (barsSince <= 3 && deltaScore >= 18) ||
-                        (barsSince <= 5 && deltaScore >= 30);
-        if (isVDump) {
-          idxOpt5 = j;
-          break;
+      if (idxBase !== -1) {
+        idxOpt5 = idxBase;
+      } else {
+        for (let j = sIdx; j < maxScanIdx; j++) {
+          const deltaScore = (sScore != null && net[j] != null) ? (sScore - net[j]) : 0;
+          const barsSince = j - sIdx;
+          const isVDump = (dir[j] === -1 && (j === 0 || dir[j-1] === 1)) ||
+                          (barsSince <= 3 && deltaScore >= 18) ||
+                          (barsSince <= 5 && deltaScore >= 30);
+          if (isVDump) {
+            idxOpt5 = j;
+            break;
+          }
         }
       }
       if (idxOpt5 !== -1) {
@@ -27362,7 +27370,8 @@ window.__runBtInterneMM = async function(){
       opt1: '💎 Option 1 KK',
       opt2: '⚡ Option 2 iMACD',
       opt3: '🛡️ Option 3 Breakout',
-      opt4: '🎯 Option 4 Lissage'
+      opt4: '🎯 Option 4 Lissage',
+      opt5: '🚀 Option 5 Validation par V'
     };
 
     window.__btMMDernier = {
@@ -31820,7 +31829,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2035';
+  window.__LUMEN_BUILD = 'B-1808-2042';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
