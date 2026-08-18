@@ -549,6 +549,19 @@ footer{
           </div>
           <span class="state" style="margin-left:8px;flex:none">on</span>
         </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:2px">
+          <select class="param" data-key="tf" title="Unité de Temps (Filtre le bruit sur les petites UT)">
+            <option value="chart">Chart</option>
+            <option value="1">1m</option>
+            <option value="3">3m</option>
+            <option value="5">5m</option>
+            <option value="15">15m</option>
+            <option value="30">30m</option>
+            <option value="60">1H</option>
+            <option value="240">4H</option>
+            <option value="1440">1D</option>
+          </select>
+        </div>
         <div class="desc" style="color:#CBD5E1;font-size:11px;line-height:1.4">
           Pastilles d'entrée (Long / Short) basées sur la divergence du Footprint Delta et les pics de volume CVD.
         </div>
@@ -3218,12 +3231,24 @@ const TwoIndicator = (function (root, factory) {
 
 /* ---------- Calcul des indicateurs ---------- */
 const calc = {
-  strat_delta(bars) {
+  strat_delta(bars, ind) {
     if(!bars || !bars.length) return [];
-    const v = calc.vol_delta(bars);
-    let signals = new Array(bars.length).fill(0);
-    for(let i=5; i<bars.length; i++) {
-      const b = bars[i];
+    
+    // Config de timeframe (par défaut 15 minutes pour lisser le bruit)
+    let targetTf = (ind && ind.tf && ind.tf !== 'chart') ? +ind.tf : 15;
+    if(ind && ind.tf === 'chart') targetTf = state.tf || 1;
+    
+    let baseBars = bars;
+    const isMTF = (targetTf > (state.tf || 1));
+    if (isMTF && typeof getMTFBars === 'function') {
+      const mtfBars = getMTFBars(targetTf);
+      if (mtfBars && mtfBars.length) baseBars = mtfBars;
+    }
+
+    const v = calc.vol_delta(baseBars);
+    let mtfSignals = new Array(baseBars.length).fill(0);
+    for(let i=5; i<baseBars.length; i++) {
+      const b = baseBars[i];
       const vd = v[i].delta;
       let sumAbsDelta = 0;
       for(let j=1; j<=5; j++) sumAbsDelta += Math.abs(v[i-j].delta);
@@ -3233,10 +3258,21 @@ const calc = {
       const isGreen = b.c > b.o;
       
       if(isRed && vd > avgAbsDelta * 1.5 && vd > 0) {
-         signals[i] = 1;
+         mtfSignals[i] = 1;
       }
       if(isGreen && vd < -avgAbsDelta * 1.5 && vd < 0) {
-         signals[i] = -1;
+         mtfSignals[i] = -1;
+      }
+    }
+    
+    if (!isMTF) return mtfSignals;
+
+    // Reprojection MTF vers Base Timeframe pour l'affichage des pastilles
+    let signals = new Array(bars.length).fill(0);
+    for(let i=0; i<baseBars.length; i++) {
+      if (mtfSignals[i] !== 0) {
+        const idx = typeof timeToIdxF === 'function' ? timeToIdxF(baseBars[i].t) : -1;
+        if (idx !== -1) signals[idx] = mtfSignals[i];
       }
     }
     return signals;
@@ -4799,7 +4835,7 @@ const state = {
   data:[], view:{start:0,count:150},
   indicators:{
     vol_delta:{on:true},
-    strat_delta:{on:true},
+    strat_delta:{on:true, tf:"15"},
     sma:{on:false,period:20},
     ema:{on:true,period:50},
     ema2:{on:true,period:200},
@@ -5758,7 +5794,7 @@ function getInd(key){
   if(!state.cache[ck]){
     const d = state.data;
     if(key==='vol_delta') state.cache[ck]=calc.vol_delta(d);
-    if(key==='strat_delta') state.cache[ck]=calc.strat_delta(d);
+    if(key==='strat_delta') state.cache[ck]=calc.strat_delta(d, state.indicators.strat_delta);
     if(key==='sma') state.cache[ck]=calc.sma(d,ind.period);
     if(key==='ema') state.cache[ck]=calc.ema(d,ind.period);
     if(key==='bb')  state.cache[ck]=calc.bb(d,ind.period);
@@ -16592,7 +16628,7 @@ function checkAllAlerts(){
   // 3. Signaux Stratégie Delta (Pastilles)
   try {
     if (state.indicators && state.indicators.strat_delta && state.indicators.strat_delta.on) {
-      const deltaSigs = calc.strat_delta(d);
+      const deltaSigs = calc.strat_delta(d, state.indicators.strat_delta);
       if (deltaSigs && deltaSigs.length) {
         const endIdx = d.length - 1;
         const startIdx = Math.max(0, endIdx - 5);
@@ -31189,7 +31225,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2519';
+  window.__LUMEN_BUILD = 'B-1708-2520';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
