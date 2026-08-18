@@ -2812,24 +2812,7 @@ footer{
       </div>
     </div>
 
-    <!-- Section Exportation Stratégie & Compte Démo -->
-    <div id="paper-export-bar" style="margin-top:6px;margin-bottom:12px;padding:8px 12px;background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.3);border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:16px">💾</span>
-        <div>
-          <div style="font-size:11px;font-weight:800;color:#00E5FF">EXPORTATION STRATÉGIE & COMPTE DÉMO</div>
-          <div style="font-size:10px;color:var(--muted)">Téléchargez la stratégie et toutes ses règles pour l'importer sur un autre support</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <button class="btn" id="btn-export-strat-json" style="padding:4px 10px;font-size:11px;font-weight:800;background:rgba(0,229,255,0.15);border-color:#00E5FF;color:#00E5FF" title="Exporter la configuration de la stratégie, le solde démo et l'historique en JSON">
-          📥 Exporter Config (.json)
-        </button>
-        <button class="btn" id="btn-download-strat-js" style="padding:4px 10px;font-size:11px;font-weight:800;background:rgba(255,215,0,0.15);border-color:#FFD700;color:#FFD700" title="Télécharger le module JavaScript autonome prêt à être exécuté ailleurs">
-          📦 Code JS Standalone (.js)
-        </button>
-      </div>
-    </div>
+
 
     <div id="paper-pos"></div>
     <div id="paper-hist"></div>
@@ -13814,7 +13797,7 @@ function openTrade(side, targetPosIdx, customVal, customLev){
     const qFmt = qty >= 1 ? qty.toFixed(3) : qty.toFixed(4);
     const newLiqPx = (p.lev && p.lev > 1) ? (p.side === 'long' ? newAvgPrice * (1 - 0.95 / p.lev) : newAvgPrice * (1 + 0.95 / p.lev)) : null;
     const newLiqStr = newLiqPx ? ` | 💥 Liq: $${fmt(newLiqPx, 2)}` : '';
-    toast(`🔄 Rerentrée #${p.entries} (${side==='long'?'ACHAT':'VENTE'}) : +${qFmt} ${coinSym} @ $${fmt(px, 2)} | Prix Moyen: $${fmt(newAvgPrice, 2)}${newLiqStr}`, side==='long'?'#10B981':'#F45B7D');
+    toast(`🔄 Cumul DCA #${p.entries} (${side==='long'?'ACHAT':'VENTE'}) : +${qFmt} ${coinSym} ajoutés @ $${fmt(px, 2)} | Nouvelle taille totale: ${p.qty.toFixed(3)} ${coinSym} (Prix Moyen: $${fmt(newAvgPrice, 2)})${newLiqStr}`, side==='long'?'#10B981':'#F45B7D');
     sendTelegramDemoEntryNotification(p, true);
   } else {
     // NOUVELLE POSITION
@@ -14826,7 +14809,20 @@ document.getElementById('paper-pos').addEventListener('click',e=>{
   if(bReentry){
     const idx = +bReentry.dataset.reentry;
     const pos = paper.positions[idx];
-    if(pos) openTrade(pos.side, idx);
+    if(pos){
+      const coin = baseAsset(pos.sym);
+      const amtInp = document.getElementById('paper-amt');
+      const defaultAdd = parseFloat(amtInp?.value || '0.02');
+      const valStr = prompt(`➕ RERENTRÉE / CUMUL (DCA) :\n\nTaille actuelle du trade : ${pos.qty.toFixed(4)} ${coin}\nEntrez la quantité exacte à AJOUTER à ce trade :`, defaultAdd > 0 ? String(defaultAdd) : "0.02");
+      if(valStr != null){
+        const addNum = parseFloat(valStr.replace(',', '.'));
+        if(addNum > 0 && isFinite(addNum)){
+          openTrade(pos.side, idx, addNum);
+        } else {
+          toast('Montant d\'ajout invalide', '#F45B7D');
+        }
+      }
+    }
   }
   const bPartial=e.target.closest('[data-partial]');
   if(bPartial){
@@ -31602,7 +31598,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1835';
+  window.__LUMEN_BUILD = 'B-1808-1845';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
