@@ -16125,6 +16125,10 @@ function getPhoneNotifConfig(){
     mmOpt2Alerts: true,
     mmOpposeAlerts: true,
     mmPivotsAlerts: true,
+    exitAlerts: false,
+    /* Préavis d'entrée en zone extrême : prévient qu'un trade se prépare,
+       plusieurs bougies avant le signal d'entrée lui-même. */
+    mmPreavisAlerts: true,
     mexcOnly: false,
     telegramToken: '',
     telegramChatId: '',
@@ -16610,6 +16614,12 @@ function alertNewPhoneSignals(sigs, d){
       const ico = isSommet ? '🏔️' : '🌊';
       title = `${ico} SORTIE : ${sig.tag} (${symbolClean})`;
       body = `${isSommet ? 'Sommet extrême atteint (Sortie Achat/Résistance)' : 'Creux extrême atteint (Sortie Vente/Support)'} sur #${symbolClean}/USDT à ${price}`;
+    } else if(sig.type === 'PREAVIS') {
+      const achat = (sig.dir === 1);
+      title = `\u23F3 PR\u00c9AVIS ${achat ? 'ACHAT' : 'VENTE'} (${symbolClean})`;
+      body = `Le score entre en zone ${achat ? 'basse' : 'haute'} (${sig.niveau}) sur #${symbolClean}/USDT \u00e0 ${price}. `
+           + `Un ${achat ? 'creux' : 'sommet'} se forme : ${achat ? 'achat' : 'vente'} probable dans les prochaines bougies. `
+           + `Rien \u00e0 faire pour l'instant, l'entr\u00e9e sera signal\u00e9e s\u00e9par\u00e9ment.`;
     } else if(sig.type === 'SORTIE_OPPOSE') {
       const isAchatOppose = (sig.dir === 1);
       const ico = '🔄';
@@ -16658,6 +16668,44 @@ function checkAllAlerts(){
           sourceName: isOpt2 ? 'Stratégie MM · Option 2' : 'Stratégie MM · Base'
         });
       });
+
+      /* PRÉAVIS : le score vient d'entrer en zone extrême. C'est le début
+         de l'épisode qui formera le creux ou le sommet, donc le plus tôt
+         qu'on puisse prévenir sans rien deviner. L'entrée elle-même viendra
+         plus tard, quand la ligne virera de couleur.
+
+         On ne signale que le franchissement, pas le maintien : sans ça,
+         une longue zone basse enverrait une alerte à chaque bougie. */
+      if(phoneCfg.mmPreavisAlerts !== false){
+        const netP = mmData.net || [];
+        const sBas = (state.indicators.kk_bis2 && state.indicators.kk_bis2.lower != null)
+                     ? +state.indicators.kk_bis2.lower : -75;
+        const sHaut = (state.indicators.kk_bis2 && state.indicators.kk_bis2.upper != null)
+                      ? +state.indicators.kk_bis2.upper : 75;
+        for(let q = 1; q < netP.length; q++){
+          const av = netP[q-1], ap = netP[q];
+          if(av == null || ap == null || !d[q]) continue;
+
+          if(av > sBas && ap <= sBas){
+            allSignals.push({
+              i: q, t: d[q].t, price: d[q].c, dir: 1,
+              type: 'PREAVIS', tag: 'ZONE BASSE',
+              niveau: Math.round(ap),
+              source: 'strat_mm_preavis',
+              sourceName: 'Stratégie MM · Zone basse atteinte'
+            });
+          }
+          if(av < sHaut && ap >= sHaut){
+            allSignals.push({
+              i: q, t: d[q].t, price: d[q].c, dir: -1,
+              type: 'PREAVIS', tag: 'ZONE HAUTE',
+              niveau: Math.round(ap),
+              source: 'strat_mm_preavis',
+              sourceName: 'Stratégie MM · Zone haute atteinte'
+            });
+          }
+        }
+      }
 
       if(phoneCfg.mmPivotsAlerts !== false){
         (mmData.sommetsList || []).forEach(s => {
@@ -31301,7 +31349,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2810';
+  window.__LUMEN_BUILD = 'B-1708-2910';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
