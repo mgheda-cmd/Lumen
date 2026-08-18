@@ -5396,8 +5396,23 @@ document.addEventListener('visibilitychange',()=>{
 
 let wakeLock = null;
 window._wlActive = false;
+let keepAliveAudio = null;
+function playKeepAlive() {
+  if (!keepAliveAudio) {
+    keepAliveAudio = new Audio();
+    keepAliveAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAJA=';
+    keepAliveAudio.loop = true;
+    keepAliveAudio.setAttribute('playsinline', 'true');
+  }
+  keepAliveAudio.play().catch(()=>{});
+}
+function stopKeepAlive() {
+  if (keepAliveAudio) keepAliveAudio.pause();
+}
+
 async function requestWakeLock() {
   try {
+    playKeepAlive(); // Audio hack pour forcer iOS à rester réveillé en arrière-plan
     if ('wakeLock' in navigator) {
       wakeLock = await navigator.wakeLock.request('screen');
       window._wlActive = true;
@@ -5409,7 +5424,7 @@ async function requestWakeLock() {
         btn.textContent = '🌞 ÉCRAN ACTIF';
       }
     } else {
-      toast('Wake Lock non supporté sur ce navigateur', '#F59E0B');
+      toast('Mode Keep-Alive Audio activé (WakeLock non natif)', '#F59E0B');
     }
   } catch (err) { }
 }
@@ -5419,6 +5434,7 @@ window.toggleWakeLock = function() {
     wakeLock.release().then(() => {
       wakeLock = null;
       window._wlActive = false;
+      stopKeepAlive();
       const btn = document.getElementById('wake-btn');
       if(btn){
         btn.style.background = 'rgba(255,255,255,.05)';
@@ -5428,9 +5444,21 @@ window.toggleWakeLock = function() {
       }
       toast('L\'écran peut s\'éteindre', '#A0AEC0');
     });
+  } else if (window._wlActive) { // Cas où seul l'audio hack tourne
+    window._wlActive = false;
+    stopKeepAlive();
+    const btn = document.getElementById('wake-btn');
+    if(btn){
+      btn.style.background = 'rgba(255,255,255,.05)';
+      btn.style.border = '1px solid rgba(255,255,255,.1)';
+      btn.style.color = '#A0AEC0';
+      btn.textContent = '🌙 VEILLE AUTO';
+    }
+    toast('L\'écran peut s\'éteindre', '#A0AEC0');
   } else {
+    window._wlActive = true;
     requestWakeLock().then(() => {
-      if(wakeLock !== null) toast('L\'écran restera allumé en continu', '#EC4899');
+      if(wakeLock !== null || window._wlActive) toast('App active en continu (Écran + Arrière-plan)', '#EC4899');
     });
   }
 };
@@ -31227,7 +31255,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2522';
+  window.__LUMEN_BUILD = 'B-1708-2523';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
