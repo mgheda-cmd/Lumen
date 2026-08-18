@@ -12785,6 +12785,15 @@ function loadPhoneNotifUI(){
   if(document.getElementById('notif-type-mm-opt2')) document.getElementById('notif-type-mm-opt2').checked = cfg.mmOpt2Alerts !== false;
   if(document.getElementById('notif-type-mm-oppose')) document.getElementById('notif-type-mm-oppose').checked = cfg.mmOpposeAlerts !== false;
   if(document.getElementById('notif-type-mm-pivots')) document.getElementById('notif-type-mm-pivots').checked = cfg.mmPivotsAlerts !== false;
+  /* Le canal ntfy et les préavis n'étaient pas rechargés dans l'interface :
+     le champ repartait sur sa valeur par défaut à chaque ouverture, et la
+     sauvegarde suivante écrasait le vrai réglage. */
+  if(document.getElementById('notif-ntfy-topic'))
+    document.getElementById('notif-ntfy-topic').value = cfg.ntfyTopic || 'lumen_mm_alerts';
+  if(document.getElementById('notif-ntfy-link'))
+    document.getElementById('notif-ntfy-link').href = 'https://ntfy.sh/' + (cfg.ntfyTopic || 'lumen_mm_alerts');
+  if(document.getElementById('notif-type-mm-preavis'))
+    document.getElementById('notif-type-mm-preavis').checked = cfg.mmPreavisAlerts !== false;
   if(document.getElementById('notif-tg-token')) document.getElementById('notif-tg-token').value = cfg.telegramToken || '';
   if(document.getElementById('notif-tg-chatid')) document.getElementById('notif-tg-chatid').value = cfg.telegramChatId || '';
   if(document.getElementById('notif-wa-provider')) document.getElementById('notif-wa-provider').value = cfg.waProvider || 'callmebot';
@@ -12812,7 +12821,13 @@ function savePhoneNotifUI(){
     webhookUrl: document.getElementById('notif-webhook-url')?.value.trim() ?? '',
     sound: document.getElementById('notif-sound')?.checked ?? true,
     vibrate: document.getElementById('notif-vibrate')?.checked ?? true,
-    mexcOnly: false
+    mexcOnly: false,
+    /* Deux réglages manquaient ici : cette fonction réécrit la configuration
+       entière, si bien que le canal ntfy et les préavis étaient effacés dès
+       qu'on touchait n'importe quel autre réglage. Sur iPhone, c'était la
+       cause des notifications qui s'arrêtaient après le test. */
+    ntfyTopic: document.getElementById('notif-ntfy-topic')?.value.trim() || 'lumen_mm_alerts',
+    mmPreavisAlerts: document.getElementById('notif-type-mm-preavis')?.checked ?? true
   };
   savePhoneNotifConfig(cfg);
 }
