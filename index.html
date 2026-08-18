@@ -262,37 +262,29 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 }
 .gear:hover{color:var(--accent)}
 #cfg-back{
-  position:fixed;inset:0;background:transparent;z-index:200;
-  display:none;align-items:center;justify-content:center;padding:16px;
+  position:fixed;top:44px;bottom:0;left:0;right:0;background:transparent;z-index:2500;
+  display:none;align-items:center;justify-content:center;padding:12px 16px 24px;
   pointer-events:none;                 /* le graphique reste visible et utilisable */
 }
 #cfg-back > #cfg-box{ pointer-events:auto; }
 #cfg-back.open{display:flex}
 #cfg-box{
   background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
-  width:min(560px,96vw);max-height:85vh;
-  box-shadow:0 24px 60px rgba(0,0,0,.75);
+  width:min(560px,96vw);max-height:calc(100vh - 65px);
+  box-shadow:0 24px 60px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,0.08);
   position:relative;                    /* déplacé par transform */
   display:flex;flex-direction:column;   /* titre fixe, corps défilant, pied fixe */
   overflow:hidden;
 }
-/* touch-action:none était posé sur toute la boîte pour permettre de la
-   déplacer au doigt. Résultat : le navigateur ne traitait plus aucun geste
-   de défilement à l'intérieur, et les panneaux longs — kk bis 2 en compte
-   47 — devenaient impossibles à parcourir. La règle ne s'applique donc
-   plus qu'à la barre de titre, qui est la seule poignée de déplacement. */
-#cfg-head{ touch-action:none; flex:none; }
-#cfg-foot{ flex:none; }
-#cfg-head{ cursor:grab; user-select:none; }
+#cfg-head{ touch-action:none; flex:none; cursor:grab; user-select:none; }
 #cfg-head:active{ cursor:grabbing; }
-#cfg-head::before{
-  content:'⠿'; color:var(--muted); font-size:15px; margin-right:2px; opacity:.7;
-}
+#cfg-foot{ flex:none; }
 #cfg-head{
-  display:flex;align-items:center;gap:10px;padding:14px 16px;
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
   border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel-2);
+  z-index:2;
 }
-#cfg-head h3{font-size:15px;font-weight:600;flex:1}
+#cfg-head h3{font-size:14px;font-weight:700;flex:1;margin:0}
 #cfg-body{
   padding:8px 16px 4px;
   overflow-y:auto;
@@ -32126,7 +32118,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2355';
+  window.__LUMEN_BUILD = 'B-1808-2358';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
