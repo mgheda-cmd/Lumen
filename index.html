@@ -15507,49 +15507,64 @@ const SCHEMA={
     {k:'impTf',t:'num',lab:'UT Impulse MACD (minutes)',min:1,max:240,ind:1},
     {k:'impPeriod',t:'num',lab:'Période Impulse MACD',min:5,max:200,ind:1}
   ]},
-  strat_mm:{title:'Stratégie Ligne Principale & 4 Confluences',fields:[
+  strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
+    {k:'confluenceFilter',t:'choice',lab:"🎯 MODE CONFLUENCE & FILTRAGE",opts:[
+      {v:'all',t:'Toutes les options actives'},
+      {v:'conf_1_6',t:'💎 Confluence Élite : Opt 1 (2ᵉ UT) + Opt 6 (BOS/DIV)'},
+      {v:'conf_1_2',t:'🌟 Confluence Duo : Opt 1 (2ᵉ UT) + Opt 2 (iMACD)'},
+      {v:'conf_2_6',t:'⚡ Confluence Duo : Opt 2 (iMACD) + Opt 6 (BOS/DIV)'},
+      {v:'conf_1_2_6',t:'🏆 Triple Confluence : Opt 1 + Opt 2 + Opt 6'},
+      {v:'conf_any_2',t:'🎯 Confluence 2-sur-3 (Au moins 2 parmi 1, 2, 6)'},
+      {v:'opt6',t:'💎 Option 6 uniquement (BOS/DIV)'},
+      {v:'opt1',t:'💎 Option 1 uniquement (2ᵉ UT)'},
+      {v:'opt2',t:'⚡ Option 2 uniquement (iMACD)'},
+      {v:'base',t:'🟢 Signal Base uniquement'}
+    ],def:'all'},
     {k:'oscThreshold',t:'num',lab:"Seuil extrême Long sous (ex: -75)",min:-95,max:-10,def:-75,ind:1},
     {k:'maxLongLevel',t:'num',lab:"Seuil maximum déclenchement Long (ex: -65)",min:-95,max:-10,def:-65,ind:1},
     {k:'allowShorts',t:'bool',lab:"Activer les entrées SHORT (Sommet > +75 ➔ Rouge)",def:true},
     {k:'alternateSignals',t:'bool',lab:"Alternance stricte (1 Long ➔ 1 Short ➔ 1 Long)",def:true},
-    {k:'showBadges',t:'bool',lab:"Afficher les pastilles d'entrée Long / Short",def:true},
-    {k:'confluenceFilter',t:'choice',lab:"Filtre d'affichage des pastilles",opts:[
-      {v:'all',t:'Toutes les pastilles'},
-      {v:'base',t:'🟢 Signal Base (Ligne Verte)'},
-      {v:'opt1',t:'💎 Option 1 (KK bis 2ᵉ UT)'},
-      {v:'opt2',t:'⚡ Option 2 (iMACD)'},
-      {v:'opt3',t:'🛡️ Option 3 (Cassure High / Low)'},
-      {v:'opt4',t:'🎯 Option 4 (Lissage Robuste 34)'},
-      {v:'opt5',t:'🚀 Option 5 (Validation par V)'},
-      {v:'opt6',t:'💎 Option 6 (Divergence & BOS Structure)'}
-    ],def:'all'},
-    {k:'showVerticalLines',t:'bool',lab:"Afficher les lignes verticales de projection jusqu'en bas",def:true},
-    {k:'showOpt1',t:'bool',lab:"Afficher Pastille 💎 Option 1 (KK bis 2ᵉ UT)",def:true},
-    {k:'opt1Tf',t:'choice',lab:"💎 Option 1 : Unité de Temps (2ᵉ UT)",opts:[
+    {k:'showBadges',t:'bool',lab:"Afficher les pastilles d'entrée",def:true},
+    {k:'showVerticalLines',t:'bool',lab:"Afficher les lignes verticales de projection",def:true},
+
+    {k:'showOpt1',t:'bool',lab:"--- 💎 OPTION 1 (KK bis 2ᵉ UT) : Afficher Pastille ---",def:true},
+    {k:'opt1Tf',t:'choice',lab:"Option 1 — Unité de Temps (2ᵉ UT)",opts:[
       {v:'auto',t:'Auto (Dynamique)'},
       {v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'4',t:'4m'},{v:'5',t:'5m'},
       {v:'6',t:'6m'},{v:'7',t:'7m'},{v:'8',t:'8m'},{v:'9',t:'9m'},{v:'10',t:'10m'},
       {v:'12',t:'12m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},
       {v:'60',t:'1H'},{v:'240',t:'4H'}
     ],def:'auto'},
-    {k:'showOpt2',t:'bool',lab:"Afficher Pastille ⚡ Option 2 (iMACD)",def:true},
-    {k:'opt2Tf',t:'choice',lab:"⚡ Option 2 : Unité de Temps (iMACD)",opts:[
+    {k:'opt1Phase',t:'num',lab:"Option 1 — Phase PhiSmoother",min:1.0,max:10.0,step:0.1,def:3.7,ind:1},
+    {k:'opt1Spacing',t:'num',lab:"Option 1 — Dispersion cluster",min:1,max:20,def:3,ind:1},
+
+    {k:'showOpt2',t:'bool',lab:"--- ⚡ OPTION 2 (Impulse MACD) : Afficher Pastille ---",def:true},
+    {k:'opt2Tf',t:'choice',lab:"Option 2 — Unité de Temps (iMACD)",opts:[
       {v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'4',t:'4m'},{v:'5',t:'5m'},
       {v:'6',t:'6m'},{v:'7',t:'7m'},{v:'8',t:'8m'},{v:'9',t:'9m'},{v:'10',t:'10m'},
       {v:'12',t:'12m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},
       {v:'60',t:'1H'},{v:'240',t:'4H'}
     ],def:'5'},
-    {k:'showOpt3',t:'bool',lab:"Afficher Pastille 🛡️ Option 3 (Cassure High / Low)",def:true},
-    {k:'showOpt4',t:'bool',lab:"Afficher Pastille 🎯 Option 4 (Lissage Robuste 34)",def:true},
-    {k:'showOpt5',t:'bool',lab:"Afficher Pastille 🚀 Option 5 (Validation par V)",def:true},
-    {k:'showOpt6',t:'bool',lab:"Afficher Pastille 💎 Option 6 (Divergence & BOS Structure)",def:true},
-    {k:'opt6Tf',t:'choice',lab:"💎 Option 6 : Unité de Temps (BOS / Structure)",opts:[
-      {v:'chart',t:'UT du Graphique (Défaut)'},
-      {v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'5',t:'5m'},
-      {v:'15',t:'15m'},{v:'30',t:'30m'},{v:'60',t:'1H'},{v:'240',t:'4H'}
+    {k:'opt2Period',t:'num',lab:"Option 2 — Période MA Impulse",min:5,max:100,def:34,ind:1},
+    {k:'opt2Sig',t:'num',lab:"Option 2 — Période Signal Impulse",min:2,max:50,def:9,ind:1},
+
+    {k:'showOpt6',t:'bool',lab:"--- 💎 OPTION 6 (Divergence & BOS) : Afficher Pastille ---",def:true},
+    {k:'opt6Tf',t:'choice',lab:"Option 6 — Unité de Temps (BOS / Structure)",opts:[
+      {v:'chart',t:'UT Graphique (Défaut)'},
+      {v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'4',t:'4m'},{v:'5',t:'5m'},
+      {v:'6',t:'6m'},{v:'7',t:'7m'},{v:'8',t:'8m'},{v:'9',t:'9m'},{v:'10',t:'10m'},
+      {v:'12',t:'12m'},{v:'15',t:'15m'},{v:'20',t:'20m'},{v:'30',t:'30m'},
+      {v:'60',t:'1H'},{v:'240',t:'4H'}
     ],def:'chart'},
-    {k:'showBase',t:'bool',lab:"Afficher Pastille 🟢 Signal Base (Ligne Verte)",def:true},
+    {k:'opt6RequireExtreme',t:'bool',lab:"Option 6 — Exiger creux/sommet extrême (< -75 ou > +75)",def:true},
+    {k:'opt6BodyClose',t:'bool',lab:"Option 6 — Validation par clôture de corps (Body Close)",def:true},
+    {k:'opt6PivotLen',t:'num',lab:"Option 6 — Largeur pivot structure (bougies)",min:1,max:10,def:3,ind:1},
+
+    {k:'showBase',t:'bool',lab:"Afficher Pastille 🟢 Signal Base (Ligne MM)",def:true},
+    {k:'showOpt3',t:'bool',lab:"Afficher Pastille 🛡️ Option 3 (Cassure High / Low)",def:false},
+    {k:'showOpt4',t:'bool',lab:"Afficher Pastille 🎯 Option 4 (Lissage Robuste 34)",def:false},
+    {k:'showOpt5',t:'bool',lab:"Afficher Pastille 🚀 Option 5 (Validation par V)",def:false},
     {k:'showLineOnPrice',t:'bool',lab:"Afficher la ligne de tendance sur le prix",def:true},
     {k:'showCreuxMarkers',t:'bool',lab:"Afficher les repères ▲ Creux et ▼ Sommets",def:true},
     {k:'cBuy',t:'col',lab:"Couleur Entrée Long (Vert)",def:'#00E676'},
@@ -25755,17 +25770,19 @@ function computeMMSignals(d, ind) {
     }
   }
 
-  // 2. Calcul Option 1 (2e UT - avec sélection explicite ou dynamique)
+  // 2. Calcul Option 1 (2e UT - avec sélection explicite ou dynamique & paramètres dédiés)
   const opt1TfVal = indMM.opt1Tf;
   const mtf2 = (opt1TfVal && opt1TfVal !== 'auto') 
     ? (+opt1TfVal || 5) 
     : (mtf ? (mtf >= 5 ? mtf * 3 : 5) : (state.tf === 1 ? 3 : (state.tf === 3 ? 5 : (state.tf <= 15 ? 15 : state.tf * 2))));
   const bars2 = getMTFBars(mtf2) || bars;
+  const opt1Phase = indMM.opt1Phase != null ? +indMM.opt1Phase : 3.7;
+  const opt1Spacing = indMM.opt1Spacing != null ? +indMM.opt1Spacing : 3;
   const two2 = calc.twoIndicator(bars2, {
     src: indKK.src || "close",
     mode: indKK.mode || "Trend Strength",
     filter: indKK.filter || "PhiSmoother",
-    phase: 3.7, spacing: 3, ssLen: 21, sigLen: 20
+    phase: opt1Phase, spacing: opt1Spacing, ssLen: 21, sigLen: 20
   });
   const net2 = (bars2 === d) ? (two2.net || []) : mapHTF(bars2, two2.net || [], d);
   const sig2 = (bars2 === d) ? (two2.signal || []) : mapHTF(bars2, two2.signal || [], d);
@@ -25778,8 +25795,8 @@ function computeMMSignals(d, ind) {
   const impTf = (opt2TfVal && opt2TfVal !== 'chart') ? (+opt2TfVal || 5) : 5;
   const impTfLabel = (impTf >= 60) ? ((impTf / 60) + "H") : (impTf + "m");
   const impBars = (impTf !== state.tf) ? getMTFBars(impTf) : d;
-  const impPeriod = indMM.impPeriod != null ? +indMM.impPeriod : (indImp.period != null ? +indImp.period : 34);
-  const impSig = (typeof S === "function" ? S("imp", "sig") : null) || 9;
+  const impPeriod = indMM.opt2Period != null ? +indMM.opt2Period : (indMM.impPeriod != null ? +indMM.impPeriod : (indImp.period != null ? +indImp.period : 34));
+  const impSig = indMM.opt2Sig != null ? +indMM.opt2Sig : ((typeof S === "function" ? S("imp", "sig") : null) || 9);
   const rawImp = (impBars && impBars.length && typeof calc.impmacd === "function")
     ? calc.impmacd(impBars, impPeriod, impSig)
     : { md: [], sb: [], sh: [], col: [] };
@@ -26429,18 +26446,21 @@ function computeMMSignals(d, ind) {
   }
 
   // ==========================================
-  // ÉTAPE 3 : OPTION 6 — DIVERGENCES & STRUCTURE BOS / CHOCH
-  // Déclenchée lors d'un retournement de structure (BOS / CHoCH) ou d'une Divergence (DIV)
-  // confirmée par la bascule de couleur de la ligne MM (sans dépendre des seuils extrêmes +/-75).
+  // ÉTAPE 3 : OPTION 6 — DIVERGENCES & STRUCTURE BOS AVANCÉE
+  // Paramétrable : Seuil extrême (< -75 / > +75), Clôture de corps (Body Close), Pivot configurable
   // ==========================================
   let lastOpt6Dir = null;
   const opt6TfVal = indMM.opt6Tf || 'chart';
+  const opt6RequireExtreme = indMM.opt6RequireExtreme !== false;
+  const opt6BodyClose = indMM.opt6BodyClose !== false;
+  const opt6PivotLen = indMM.opt6PivotLen != null ? +indMM.opt6PivotLen : 3;
+
   const bosBars = (opt6TfVal !== 'chart' && typeof getMTFBars === 'function') ? (getMTFBars(+opt6TfVal) || d) : d;
   const bosTfNum = (opt6TfVal !== 'chart') ? (+opt6TfVal || state.tf) : state.tf;
   const bosEvents = (typeof calc.bosOne === 'function') ? calc.bosOne(bosBars, '', bosTfNum) : [];
 
   const divList = [];
-  const pL = 5;
+  const pL = Math.max(2, opt6PivotLen);
   for (let j = pL; j < d.length - pL; j++) {
     let isNetTrough = true, isNetPeak = true;
     for (let k = 1; k <= pL; k++) {
@@ -26458,19 +26478,25 @@ function computeMMSignals(d, ind) {
     if (!isUpFlip && !isDownFlip) continue;
 
     const jTime = d[j].t;
-    const lookbackBars = 20;
+    const lookbackBars = 25;
     const minBarIdx = Math.max(0, j - lookbackBars);
 
     if (isUpFlip) {
       const recentBosUp = bosEvents.find(b => b.up && b.t >= d[minBarIdx].t && b.t <= jTime);
-      const recentTroughs = divList.filter(v => v.type === 'trough' && v.i >= j - 40 && v.i <= j);
+      const recentTroughs = divList.filter(v => v.type === 'trough' && v.i >= j - 50 && v.i <= j);
       let hasBullDiv = false;
       if (recentTroughs.length >= 2) {
         const t1 = recentTroughs[recentTroughs.length - 2], t2 = recentTroughs[recentTroughs.length - 1];
-        if (t2.low <= t1.low && t2.val > t1.val) hasBullDiv = true;
+        if (t2.low <= t1.low && t2.val > t1.val) {
+          if (!opt6RequireExtreme || t1.val <= lowerThreshold || t2.val <= lowerThreshold) {
+            hasBullDiv = true;
+          }
+        }
       }
 
-      if (recentBosUp || hasBullDiv) {
+      const isValidBody = !opt6BodyClose || (d[j].c >= d[j].o);
+
+      if ((recentBosUp || hasBullDiv) && isValidBody) {
         const canTrigger = !alternateSignals || (lastOpt6Dir !== 'LONG');
         if (canTrigger) {
           const reason = recentBosUp ? (recentBosUp.kind || 'BOS') : 'DIV ▲';
@@ -26497,14 +26523,20 @@ function computeMMSignals(d, ind) {
       }
     } else if (isDownFlip && allowShorts) {
       const recentBosDown = bosEvents.find(b => !b.up && b.t >= d[minBarIdx].t && b.t <= jTime);
-      const recentPeaks = divList.filter(v => v.type === 'peak' && v.i >= j - 40 && v.i <= j);
+      const recentPeaks = divList.filter(v => v.type === 'peak' && v.i >= j - 50 && v.i <= j);
       let hasBearDiv = false;
       if (recentPeaks.length >= 2) {
         const p1 = recentPeaks[recentPeaks.length - 2], p2 = recentPeaks[recentPeaks.length - 1];
-        if (p2.high >= p1.high && p2.val < p1.val) hasBearDiv = true;
+        if (p2.high >= p1.high && p2.val < p1.val) {
+          if (!opt6RequireExtreme || p1.val >= upperThreshold || p2.val >= upperThreshold) {
+            hasBearDiv = true;
+          }
+        }
       }
 
-      if (recentBosDown || hasBearDiv) {
+      const isValidBody = !opt6BodyClose || (d[j].c <= d[j].o);
+
+      if ((recentBosDown || hasBearDiv) && isValidBody) {
         const canTrigger = !alternateSignals || (lastOpt6Dir !== 'SHORT');
         if (canTrigger) {
           const reason = recentBosDown ? (recentBosDown.kind || 'BOS') : 'DIV ▼';
@@ -26621,18 +26653,64 @@ function drawMMSignals(res, s, e, yOf, cw) {
   if (ind.showBadges !== false && Array.isArray(res.signals) && res.signals.length) {
     const cFilter = ind.confluenceFilter || "all";
 
-    for (const sig of res.signals) {
-      // Vérification du filtre de confluence
-      if (cFilter !== "all" && sig.optKey !== cFilter) continue;
-      if (cFilter === "all") {
-        if (sig.optKey === "opt1" && ind.showOpt1 === false) continue;
-        if (sig.optKey === "opt2" && ind.showOpt2 === false) continue;
-        if (sig.optKey === "opt3" && ind.showOpt3 === false) continue;
-        if (sig.optKey === "opt4" && ind.showOpt4 === false) continue;
-        if (sig.optKey === "opt5" && ind.showOpt5 === false) continue;
-        if (sig.optKey === "opt6" && ind.showOpt6 === false) continue;
-        if (sig.optKey === "base" && ind.showBase === false) continue;
+    // Prétraitement pour les Modes Confluence Élite (conf_1_6, conf_1_2, conf_2_6, conf_1_2_6, conf_any_2)
+    let displaySignals = [];
+    if (cFilter && cFilter.startsWith('conf_')) {
+      const usedIndices = new Set();
+      for (let sIdx = 0; sIdx < res.signals.length; sIdx++) {
+        if (usedIndices.has(sIdx)) continue;
+        const mainSig = res.signals[sIdx];
+        const nearGroup = res.signals.filter((s, idx) => 
+          s.dir === mainSig.dir && Math.abs(s.i - mainSig.i) <= 12
+        );
+        const has1 = nearGroup.some(s => s.optKey === 'opt1');
+        const has2 = nearGroup.some(s => s.optKey === 'opt2');
+        const has6 = nearGroup.some(s => s.optKey === 'opt6');
+        const count = (has1 ? 1 : 0) + (has2 ? 1 : 0) + (has6 ? 1 : 0);
+
+        let isMatch = false;
+        let confTitle = '';
+        if (cFilter === 'conf_1_6' && has1 && has6) {
+          isMatch = true; confTitle = '💎 CONF ÉLITE (1+6)';
+        } else if (cFilter === 'conf_1_2' && has1 && has2) {
+          isMatch = true; confTitle = '🌟 CONF DUO (1+2)';
+        } else if (cFilter === 'conf_2_6' && has2 && has6) {
+          isMatch = true; confTitle = '⚡ CONF DUO (2+6)';
+        } else if (cFilter === 'conf_1_2_6' && has1 && has2 && has6) {
+          isMatch = true; confTitle = '🏆 TRIPLE CONF (1+2+6)';
+        } else if (cFilter === 'conf_any_2' && count >= 2) {
+          isMatch = true; confTitle = `🎯 CONF (${has1?'1+':''}${has2?'2+':''}${has6?'6':''}`.replace(/\+$/, ')') + ')';
+        }
+
+        if (isMatch) {
+          const bestSig = nearGroup[nearGroup.length - 1];
+          nearGroup.forEach(s => usedIndices.add(res.signals.indexOf(s)));
+          displaySignals.push(Object.assign({}, bestSig, {
+            optKey: 'confluence',
+            label: `${bestSig.type} ${confTitle}`,
+            badge: `${bestSig.type === 'ACHAT' ? '🏆 ACHAT (LONG)' : '🏆 VENTE (SHORT)'} · ${confTitle}`,
+            color: '#38BDF8',
+            bgFill: bestSig.dir === 1 ? 'rgba(6, 36, 44, 0.96)' : 'rgba(44, 12, 28, 0.96)'
+          }));
+        }
       }
+    } else {
+      displaySignals = res.signals.filter(sig => {
+        if (cFilter !== 'all' && sig.optKey !== cFilter) return false;
+        if (cFilter === 'all') {
+          if (sig.optKey === 'opt1' && ind.showOpt1 === false) return false;
+          if (sig.optKey === 'opt2' && ind.showOpt2 === false) return false;
+          if (sig.optKey === 'opt3' && ind.showOpt3 === false) return false;
+          if (sig.optKey === 'opt4' && ind.showOpt4 === false) return false;
+          if (sig.optKey === 'opt5' && ind.showOpt5 === false) return false;
+          if (sig.optKey === 'opt6' && ind.showOpt6 === false) return false;
+          if (sig.optKey === 'base' && ind.showBase === false) return false;
+        }
+        return true;
+      });
+    }
+
+    for (const sig of displaySignals) {
 
       const i = (sig.t != null && typeof idxOfTime === "function" ? idxOfTime(sig.t) : null) ?? sig.i;
       if (i == null || i < s - 2 || i > e + 2) continue;
@@ -31995,7 +32073,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2325';
+  window.__LUMEN_BUILD = 'B-1808-2335';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
