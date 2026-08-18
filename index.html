@@ -406,15 +406,29 @@ body.chips-collapsed #chips-toggle{ transform:none; }
 .chip button:hover{color:var(--down)}
 
 #toast{
-  position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
-  z-index:999999;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;
+  position:fixed;top:calc(16px + env(safe-area-inset-top));right:16px;
+  z-index:999999;display:flex;flex-direction:column;gap:10px;align-items:flex-end;pointer-events:none;
+}
+@media (max-width: 600px) {
+  #toast { right:10px; left:10px; align-items:stretch; }
 }
 .toast-item{
-  background:var(--panel-2);border:1px solid var(--up);border-left:4px solid var(--up);
-  color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;
-  font-family:'IBM Plex Mono',monospace;box-shadow:0 10px 30px rgba(0,0,0,.55);
+  background:#1e222d;border-left:4px solid var(--up);
+  color:#d1d4dc;border-radius:4px;padding:12px 16px;font-size:13px;
+  font-family:-apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif;
+  box-shadow:0 4px 12px rgba(0,0,0,0.5);
   animation:tin .25s ease-out;
+  pointer-events:auto;
+  max-width:320px;width:100%;
+  display:flex;flex-direction:column;gap:6px;
 }
+.toast-header{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:12px;color:#787b86;font-weight:600;
+}
+.toast-body{line-height:1.4;word-wrap:break-word;}
+.toast-close{cursor:pointer;color:#787b86;font-size:16px;line-height:1;margin-left:8px;}
+.toast-close:hover{color:#d1d4dc;}
 @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 #paper-bar{border-top:1px solid var(--line);background:var(--panel);font-size:12px}
 #paper-summary{
@@ -16068,11 +16082,39 @@ function toast(msg,col){
   const box=document.getElementById('toast');
   const el=document.createElement('div');
   el.className='toast-item';
-  if(col){el.style.borderColor=col;el.style.borderLeftColor=col;}
-  el.textContent=msg;
+  if(col) el.style.borderLeftColor=col;
+  
+  const sym = state.symbol || 'LUMEN';
+  const tf = state.tf ? TF_MAP[state.tf] : 'Système';
+  
+  el.innerHTML = `
+    <div class="toast-header">
+      <span>🔔 ${sym} • ${tf}</span>
+      <span class="toast-close">×</span>
+    </div>
+    <div class="toast-body">${escapeHtml(msg)}</div>
+  `;
+  
+  const closeBtn = el.querySelector('.toast-close');
+  closeBtn.onclick = () => el.remove();
+
   box.appendChild(el);
-  setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';
-    setTimeout(()=>el.remove(),450);},6000);
+  
+  let fadeTimeout, removeTimeout;
+  const startTimer = () => {
+    fadeTimeout = setTimeout(() => {
+      el.style.transition = 'opacity .4s'; el.style.opacity = '0';
+      removeTimeout = setTimeout(() => el.remove(), 450);
+    }, 6000);
+  };
+  
+  el.onmouseenter = () => {
+    clearTimeout(fadeTimeout); clearTimeout(removeTimeout);
+    el.style.opacity = '1';
+  };
+  el.onmouseleave = startTimer;
+  
+  startTimer();
 }
 function escapeHtml(str) {
   if (!str) return '';
