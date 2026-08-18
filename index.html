@@ -13485,13 +13485,16 @@ function updatePaperDemoStrategyUI(){
     activeObj = window.activeDemoStrategy;
   } catch(e){}
 
-  const isAuto = typeof paperAutoTrade !== 'undefined' && paperAutoTrade;
+  const isAuto = !!((typeof paperAutoTrade !== 'undefined' && paperAutoTrade) || (typeof window.paperAutoTrade !== 'undefined' && window.paperAutoTrade));
 
   if (badgeEl) {
-    if (isAuto && activeObj) {
+    if (activeObj) {
       const wrStr = activeObj.winRate != null ? ` | WR: ${activeObj.winRate.toFixed(1)}%` : '';
-      const ddStr = activeObj.maxDDPct != null ? ` | DD: -${activeObj.maxDDPct.toFixed(1)}%` : '';
-      badgeEl.innerHTML = `<span style="background:rgba(0,230,118,0.18);color:#00E676;border:1px solid #00E676;padding:2px 8px;border-radius:12px;font-weight:800;box-shadow:0 0 8px rgba(0,230,118,0.3)">🤖 ${activeObj.modeLabel || activeObj.mode} (${activeObj.lev}x)${wrStr}${ddStr}</span>`;
+      const statCol = isAuto ? '#00E676' : '#94A3B8';
+      const statBg = isAuto ? 'rgba(0,230,118,0.18)' : 'rgba(148,163,184,0.12)';
+      const statBorder = isAuto ? '#00E676' : '#64748B';
+      const statTxt = isAuto ? '● ACTIF' : '⏸️ PAUSE';
+      badgeEl.innerHTML = `<span style="background:${statBg};color:${statCol};border:1px solid ${statBorder};padding:2px 8px;border-radius:12px;font-weight:800;cursor:pointer" onclick="window.toggleAutoTrade()" title="Cliquez pour Activer/Désactiver l'Auto-Trade">🤖 ${activeObj.modeLabel || activeObj.mode} (${activeObj.lev}x)${wrStr} [${statTxt}]</span>`;
     } else {
       badgeEl.innerHTML = ``;
     }
@@ -13531,7 +13534,7 @@ function updatePaperDemoStrategyUI(){
   }
 
   if (cardEl) {
-    if (isAuto && activeObj) {
+    if (activeObj) {
       const modeName = activeObj.modeLabel || activeObj.mode;
       const wr = activeObj.winRate != null ? activeObj.winRate.toFixed(1) + '%' : '—';
       const dd = activeObj.maxDDPct != null ? `-${activeObj.maxDD.toFixed(2)} $ (-${activeObj.maxDDPct.toFixed(1)}%)` : '—';
@@ -13581,35 +13584,43 @@ function updatePaperDemoStrategyUI(){
       }
       const gainNetColor = (gainNetVal || 0) >= 0 ? '#00E676' : '#FF5252';
 
+      const cardBorder = isAuto ? '#00E676' : '#64748B';
+      const cardTitleCol = isAuto ? '#00E676' : '#94A3B8';
+
       cardEl.innerHTML = `
-        <div style="background:#0B1222;border:2px solid #00E676;border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 18px rgba(0,230,118,0.2)">
+        <div style="background:#0B1222;border:2px solid ${cardBorder};border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:${isAuto ? '0 0 18px rgba(0,230,118,0.2)' : 'none'}">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:8px">
             <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:30px;height:30px;border-radius:50%;background:#00E676;color:#0F172A;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;box-shadow:0 0 10px #00E676;flex-shrink:0">🤖</div>
+              <div style="width:30px;height:30px;border-radius:50%;background:${isAuto ? '#00E676' : '#64748B'};color:#0F172A;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;box-shadow:${isAuto ? '0 0 10px #00E676' : 'none'};flex-shrink:0">🤖</div>
               <div>
-                <div style="font-weight:900;font-size:13px;color:#00E676;display:flex;align-items:center;gap:6px;letter-spacing:0.3px">
-                  <span>STRATÉGIE ACTIVÉE EN DÉMO (AUTO-TRADE)</span>
+                <div style="font-weight:900;font-size:13px;color:${cardTitleCol};display:flex;align-items:center;gap:6px;letter-spacing:0.3px">
+                  <span>STRATÉGIE CHARGÉE EN DÉMO ${isAuto ? '(AUTO-TRADE ACTIF)' : '(EN PAUSE)'}</span>
                 </div>
                 <div style="font-size:11px;color:#E2E8F0;font-weight:700;margin-top:2px">
                   <span style="background:rgba(122,162,255,.22);border-radius:4px;padding:1px 6px;color:#7AA2FF">UT ${activeObj.tf ? (activeObj.tf >= 60 ? (activeObj.tf/60) + 'H' : activeObj.tf + 'm') : (state.tf >= 60 ? (state.tf/60) + 'H' : state.tf + 'm')}</span> · <span style="color:#00E5FF">${modeName}</span> · Levier : <span style="color:#FFD700">${activeObj.lev}x</span> · Capital Départ : <span style="color:#FFF">${activeObj.capital} $</span> · Frais : <span style="color:#FFF">${activeObj.feePct}%</span>
                 </div>
                 <div style="font-size:11px;color:#94A3B8;margin-top:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                  <div>📅 Activée le : <span style="color:#FFF;font-weight:700;background:rgba(255,255,255,0.1);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);font-size:10.5px">${activatedFormatted}</span></div>
+                  <div>📅 Chargée le : <span style="color:#FFF;font-weight:700;background:rgba(255,255,255,0.1);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);font-size:10.5px">${activatedFormatted}</span></div>
                   ${(paper.bank && paper.bank > 0) ? `<div>🏛️ Banque : <span style="color:#FFD700;font-weight:800;background:rgba(255,215,0,0.15);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,215,0,0.3);font-size:10.5px">$${fmtUsd(paper.bank)}</span></div>` : ''}
                 </div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
-              <span style="background:#00E676;color:#0F172A;font-size:10.5px;padding:4px 10px;border-radius:12px;font-weight:900;box-shadow:0 0 10px rgba(0,230,118,0.5)">AUTO-TRADE : ACTIF ●</span>
+              <button onclick="window.toggleAutoTrade()" style="cursor:pointer;border:none;background:${isAuto ? '#00E676' : '#64748B'};color:${isAuto ? '#0F172A' : '#FFF'};font-size:11px;padding:5px 12px;border-radius:12px;font-weight:900;box-shadow:${isAuto ? '0 0 10px rgba(0,230,118,0.5)' : 'none'}">
+                ${isAuto ? 'AUTO-TRADE : ACTIF ●' : 'AUTO-TRADE : EN PAUSE ⏸️'}
+              </button>
+              <button onclick="window.desactiverStrategieDemo()" style="cursor:pointer;background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;font-size:10.5px;padding:4px 8px;border-radius:12px;font-weight:800" title="Retirer cette stratégie du compte démo">
+                ✕ Retirer
+              </button>
             </div>
           </div>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px">
-            <div style="background:#1E293B;border:1px solid rgba(0,230,118,0.4);padding:8px 10px;border-radius:6px">
+            <div style="background:#1E293B;border:1px solid ${isAuto ? 'rgba(0,230,118,0.4)' : 'rgba(148,163,184,0.2)'};padding:8px 10px;border-radius:6px">
               <div style="color:#94A3B8;font-size:9.5px;font-weight:bold;margin-bottom:2px">💰 PnL Session (Réel)</div>
               <div style="font-weight:800;font-size:12px;color:${pnlColor}">${sessionPnlFormatted}</div>
             </div>
-            <div style="background:#1E293B;border:1px solid rgba(0,230,118,0.4);padding:8px 10px;border-radius:6px">
+            <div style="background:#1E293B;border:1px solid ${isAuto ? 'rgba(0,230,118,0.4)' : 'rgba(148,163,184,0.2)'};padding:8px 10px;border-radius:6px">
               <div style="color:#94A3B8;font-size:9.5px;font-weight:bold;margin-bottom:2px">📈 Gain Net Est. (BT)</div>
               <div style="font-weight:800;font-size:12px;color:${gainNetColor}">${gainNetFormatted}</div>
             </div>
@@ -13645,6 +13656,13 @@ function updatePaperDemoStrategyUI(){
     }
   }
 }
+
+window.desactiverStrategieDemo = function(){
+  window.activeDemoStrategy = null;
+  try { localStorage.removeItem('lumen_active_demo_strategy'); } catch(e){}
+  if(typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
+  toast('Stratégie retirée du compte démo', '#94A3B8');
+};
 
 function paperFlash(msg){
   const el=document.getElementById('paper-pnl');
@@ -31619,7 +31637,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1850';
+  window.__LUMEN_BUILD = 'B-1808-1855';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
