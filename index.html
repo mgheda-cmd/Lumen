@@ -20244,7 +20244,8 @@ function integrateIndicatorFromEmail(email) {
   render();
 
   toast(`✨ Indicateur "${email.subject.substring(0, 30)}..." intégré avec succès sur votre Support !`);
-  document.getElementById('gmail-modal-back').style.display = 'none';
+  const gmb = document.getElementById('gmail-modal-back');
+  if (gmb) gmb.style.display = 'none';
 }
 
 // duplicate escapeHtml removed
@@ -30140,7 +30141,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       + '<b>Configs PF ≥ 1</b> : combien de combinaisons dépassent le seuil de rentabilité, sur celles ayant au moins 30 trades.<br>'
       + 'La meilleure piste est celle qui maximise à la fois le taux d\'alignement et le nombre de configurations rentables.</div>';
 
-    document.getElementById('cmp3-res').innerHTML = h;
+    const cmpRes = document.getElementById('cmp3-res');
+    if (cmpRes) cmpRes.innerHTML = h;
   }
 
   window.openCmp3 = function(){
@@ -31843,12 +31845,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         ? ' <span style="color:#F59E0B">— moins que demandé, Binance limite le remontage</span>'
         : ' <span style="color:#10B981">— période complète</span>');
 
-    const mEnt   = document.getElementById('bta-ent').value;
-    const mSor   = document.getElementById('bta-sor').value;
-    const lev    = +document.getElementById('bta-lev').value || 200;
-    const margeIn = +document.getElementById('bta-marge').value || 0.02;
+    const mEnt   = document.getElementById('bta-ent')?.value || 'kkbis_direct';
+    const mSor   = document.getElementById('bta-sor')?.value || 'kkbis';
+    const lev    = +(document.getElementById('bta-lev')?.value || 200);
+    const margeIn = +(document.getElementById('bta-marge')?.value || 0.02);
     const unite   = (document.getElementById('bta-unite') || {}).value || 'BASE';
-    const fraisP = (+document.getElementById('bta-frais').value || 0.02) / 100;
+    const fraisP = (+(document.getElementById('bta-frais')?.value || 0.02)) / 100;
     /* Capital adosse a la position. A 0, on reste en marge isolee : seule la
        marge du trade absorbe la perte, et la liquidation tombe a 0,475 % au
        levier 200. Renseigne, il joue le role du solde en marge croisee. */
@@ -31872,7 +31874,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     let capCourant = capital;
     let ruine = false;
     let nonFinances = 0;
-    const sens   = document.getElementById('bta-sens').value;
+    const sens   = document.getElementById('bta-sens')?.value || 'tous';
     const dirF   = (document.getElementById('bta-dir') || {}).value || 'tout';
     const tpVal  = +((document.getElementById('bta-tp') || {}).value) || 0;
     const rangS  = (document.getElementById('bta-rang') || {}).value || '1';
