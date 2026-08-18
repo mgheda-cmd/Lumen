@@ -16658,6 +16658,7 @@ function checkAllAlerts(){
     }
   } catch(e){}
 
+  /*
   // 3. Signaux Stratégie Delta (Pastilles)
   try {
     if (state.indicators && state.indicators.strat_delta && state.indicators.strat_delta.on) {
@@ -16706,6 +16707,7 @@ function checkAllAlerts(){
       }
     }
   } catch(e){}
+  */
 
   if(allSignals.length > 0){
     alertNewPhoneSignals(allSignals, state.data);
@@ -31258,7 +31260,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2524';
+  window.__LUMEN_BUILD = 'B-1708-2525';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
