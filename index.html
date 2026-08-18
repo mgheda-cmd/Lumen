@@ -14512,41 +14512,55 @@ function checkAutoTrade(inputSignals){
     const lastIdx = d.length - 1;
     let buySignal = false, sellSignal = false, exitTriggered = false, exitReason = '';
     let sigT = null;
+    const posEntryTime = (existingPos && (existingPos.t || existingPos.openedAt)) || 0;
 
     try {
       const baseMM = (state.indicators && state.indicators.strat_mm) || {};
       const mmData = computeMMSignals(d, baseMM);
-      if (mmData && mmData.signals && mmData.signals.length > 0) {
-        // Ne regarder QUE la dernière pastille validée (sur la bougie fermée : lastIdx - 1 ou lastIdx)
-        const lastSig = mmData.signals[mmData.signals.length - 1];
-        const sigIdx = (lastSig.t != null ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
-
-        // La pastille doit être récente (sur la dernière bougie venant de clôturer)
-        if (sigIdx != null && sigIdx >= lastIdx - 1) {
-          sigT = lastSig.t || (d[sigIdx] ? d[sigIdx].t : null);
-          if (lastSig.dir === 1) buySignal = true;
-          else if (lastSig.dir === -1) sellSignal = true;
+      
+      // -- GESTION DES SORTIES (Priorité absolue pour débloquer les trades) --
+      if (existingPos && mmData) {
+        // Chercher s'il y a eu un sommet/creux APRÈS l'entrée
+        if (existingPos.side === 'long' && mmData.sommetsList) {
+          const validSommets = mmData.sommetsList.filter(s => s.t > posEntryTime);
+          if (validSommets.length > 0) {
+            exitTriggered = true;
+            exitReason = 'Sommet Extrême MM (Sortie Achat)';
+            sigT = validSommets[validSommets.length - 1].t;
+          }
+        } else if (existingPos.side === 'short' && mmData.creuxList) {
+          const validCreux = mmData.creuxList.filter(c => c.t > posEntryTime);
+          if (validCreux.length > 0) {
+            exitTriggered = true;
+            exitReason = 'Creux Extrême MM (Sortie Vente)';
+            sigT = validCreux[validCreux.length - 1].t;
+          }
+        }
+        
+        // Chercher une pastille de retournement APRÈS l'entrée
+        if (!exitTriggered && mmData.signals) {
+          const validReversals = mmData.signals.filter(s => s.t > posEntryTime && ((existingPos.side === 'long' && s.dir === -1) || (existingPos.side === 'short' && s.dir === 1)));
+          if (validReversals.length > 0) {
+            const revSig = validReversals[validReversals.length - 1];
+            exitTriggered = true;
+            exitReason = revSig.dir === -1 ? 'Pastille Vente MM (Retournement)' : 'Pastille Achat MM (Retournement)';
+            sigT = revSig.t;
+            if (revSig.dir === 1) buySignal = true;
+            else if (revSig.dir === -1) sellSignal = true;
+          }
         }
       }
 
-      // Sorties sur sommets / creux MM
-      if (existingPos && mmData) {
-        if (existingPos.side === 'long' && mmData.sommetsList && mmData.sommetsList.length) {
-          const lastSommet = mmData.sommetsList[mmData.sommetsList.length - 1];
-          const somIdx = (lastSommet.t != null ? idxOfTime(lastSommet.t) : null) ?? lastSommet.i;
-          if (somIdx != null && somIdx >= lastIdx - 1) {
-            exitTriggered = true;
-            exitReason = 'Sommet Extrême MM (Sortie Achat)';
-            sigT = lastSommet.t || sigT;
-          }
-        } else if (existingPos.side === 'short' && mmData.creuxList && mmData.creuxList.length) {
-          const lastCreux = mmData.creuxList[mmData.creuxList.length - 1];
-          const creuxIdx = (lastCreux.t != null ? idxOfTime(lastCreux.t) : null) ?? lastCreux.i;
-          if (creuxIdx != null && creuxIdx >= lastIdx - 1) {
-            exitTriggered = true;
-            exitReason = 'Creux Extrême MM (Sortie Vente)';
-            sigT = lastCreux.t || sigT;
-          }
+      // -- GESTION DES ENTRÉES (Uniquement si pas de position ou si inversion) --
+      if (mmData && mmData.signals && mmData.signals.length > 0) {
+        const lastSig = mmData.signals[mmData.signals.length - 1];
+        const sigIdx = (lastSig.t != null ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
+
+        // Grâce à un seuil tolérant (lastIdx - 3), on accepte les signaux ratés par de courtes déconnexions
+        if (sigIdx != null && sigIdx >= lastIdx - 3) {
+          if (!sigT || lastSig.t > sigT) sigT = lastSig.t;
+          if (lastSig.dir === 1) buySignal = true;
+          else if (lastSig.dir === -1) sellSignal = true;
         }
       }
     } catch(e){}
@@ -14555,7 +14569,7 @@ function checkAutoTrade(inputSignals){
     window.__lastAutoTradeActionTime = window.__lastAutoTradeActionTime || 0;
     if (Date.now() - window.__lastAutoTradeActionTime < 5000) return;
 
-    if (!sigT) return; // STRICTEMENT AUCUNE PASTILLE SUR LA DERNIÈRE BOUGIE -> NE RIEN DÉCLENCHER !
+    if (!sigT && !exitTriggered && !buySignal && !sellSignal) return; // Aucun événement à traiter
 
     // Récupération du filtre de direction si le bot réel est configuré
     let liveBotDir = 'both';
@@ -14567,23 +14581,11 @@ function checkAutoTrade(inputSignals){
       }
     } catch(e){}
 
-    if (liveBotDir === 'long_only') {
-      sellSignal = false;
-    } else if (liveBotDir === 'short_only') {
-      buySignal = false;
-    }
+    if (liveBotDir === 'long_only') sellSignal = false;
+    else if (liveBotDir === 'short_only') buySignal = false;
 
-    // Un trade ne peut JAMAIS être fermé par un signal survenu sur la même bougie ou avant son ouverture
-    const posEntryTime = (existingPos && (existingPos.t || existingPos.openedAt)) || 0;
-    if (existingPos && sigT <= posEntryTime) {
-      exitTriggered = false;
-    }
-
-    // Une pastille opposée ferme la position en cours (uniquement si survenue après l'entrée)
-    if(existingPos && !exitTriggered && sigT > posEntryTime){
-      if(existingPos.side === 'long' && sellSignal){ exitTriggered = true; exitReason = 'Pastille Vente MM (Retournement)'; }
-      if(existingPos.side === 'short' && buySignal){ exitTriggered = true; exitReason = 'Pastille Achat MM (Retournement)'; }
-    }
+    // une seule position à la fois : pas d'ouverture si une autre est en cours (sauf si retournement)
+    if(existingPos && !exitTriggered){ buySignal = false; sellSignal = false; }
     // une seule position à la fois : pas d'ouverture si une autre est en cours
     if(existingPos){ buySignal = false; sellSignal = false; }
 
@@ -16682,7 +16684,8 @@ function alertNewPhoneSignals(sigs, d){
   const key = state.symbol + '|' + state.market + '|' + state.tf;
   const now = Date.now();
   const lastCandleIdx = d.length - 1;
-  const maxAge = 48 * 60 * 60 * 1000; // Allow up to 48H for MTF candles
+  const tfMin = (typeof state !== 'undefined' && state.tf) ? +state.tf : 5;
+  const maxAge = Math.max(tfMin * 60 * 1000 * 3, 20 * 60 * 1000); // 3 bougies récentes max (ou 20 min)
 
   let seenSet = new Set();
   try {
@@ -31558,7 +31561,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-0455';
+  window.__LUMEN_BUILD = 'B-1808-1755';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
