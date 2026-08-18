@@ -519,9 +519,6 @@ footer{
   <button class="btn" id="collapse-panes-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
   </button>
-  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2518</span>
-  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
-  <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:3px">⇩ FORCER</button>
   <button id="wake-btn" class="btn" onclick="toggleWakeLock()" title="Empêcher l'écran de s'éteindre pour ne rater aucune notification" style="font-size:11px;padding:3px 7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#A0AEC0;font-weight:700;display:inline-flex;align-items:center;gap:3px;margin-left:4px">🌙 VEILLE AUTO</button>
 
   <div class="price-block">
@@ -5184,7 +5181,8 @@ function loadViaWS(){
    peut pas servir sa copie en cache, puisque l'adresse n'a jamais été
    visitée. C'est l'équivalent d'un rechargement forcé, en un appui. */
 try{
-  document.getElementById('maj-btn').addEventListener('click', function(){
+  const mb = document.getElementById('maj-btn');
+  if(mb) mb.addEventListener('click', function(){
     try{
       if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
     }catch(e){}
@@ -5236,7 +5234,8 @@ try{
    Cache API, sessionStorage) avant de recharger sans cache.
    ============================================================ */
 try{
-  document.getElementById('force-btn').addEventListener('click', async function(){
+  const fb = document.getElementById('force-btn');
+  if(fb) fb.addEventListener('click', async function(){
     const btn = this;
     const original = btn.textContent;
     btn.textContent = '⏳ Vérification…';
@@ -31986,7 +31985,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2305';
+  window.__LUMEN_BUILD = 'B-1808-2310';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
