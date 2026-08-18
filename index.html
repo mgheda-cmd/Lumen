@@ -5348,12 +5348,12 @@ function startWatchdog(g){
   stopWatchdog();
   watchdog=setInterval(()=>{
     if(g!==gen)return;
-    if(lastTick&&Date.now()-lastTick>20000){   // flux figé : on relance
+    if(lastTick&&Date.now()-lastTick>15000){   // flux figé : on relance
       lastTick=Date.now();
       try{if(ws)ws.close();}catch(e){}
       ws=null; startStream(g);
     }
-  },5000);
+  },3000);
 }
 async function resync(g){
   try{
@@ -5402,14 +5402,20 @@ function startStream(g){
       if(!pollTimer)startPolling(g);
       if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
     };
-    ws.onerror=()=>{clearTimeout(guard);
-      if(g!==gen&&!pollTimer){setStatus('poll');startPolling(g);}};
+    ws.onerror=()=>{
+      clearTimeout(guard);
+      try{ if(ws) ws.close(); }catch(e){}
+    };
   }catch(e){setStatus('poll');startPolling(g);}
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')return;
   const g=gen; resync(g);
-  if(!ws){wsRetry=0;startStream(g);}
+  if(!ws || (Date.now() - lastTick > 15000)){
+    if(ws){ try{ws.close();}catch(e){} ws=null; }
+    wsRetry=0;
+    startStream(g);
+  }
   if(window._wlActive && typeof requestWakeLock === 'function') requestWakeLock();
 });
 
@@ -5486,7 +5492,11 @@ document.addEventListener('click', _handleFirstInteract, {once:true});
 document.addEventListener('touchstart', _handleFirstInteract, {once:true, passive:true});
 window.addEventListener('online',()=>{
   const g=gen; resync(g);
-  if(!ws){wsRetry=0;startStream(g);}
+  if(!ws || (Date.now() - lastTick > 15000)){
+    if(ws){ try{ws.close();}catch(e){} ws=null; }
+    wsRetry=0;
+    startStream(g);
+  }
 });
 /* ---------- S/R multi-timeframe : données par unité de temps ---------- */
 const srStore={sym:null,data:{}};
@@ -31255,7 +31265,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
           const txt = u.nom + ' · ' + p.n + 'b' + (p.encours ? ' ⏳' : '');
           ctx.font = 'bold 8.5px "IBM Plex Mono",monospace';
           const tw = ctx.measureText(txt).width;
-          // étiquette collée au bord de sa propre bande, du côté du liseré
           const bx = (u.cote === 'gauche') ? (x1 + 4) : (x2 - tw - 12);
           const by = Math.max(top + 2, yHaut + 3);
           ctx.fillStyle = hexRgba(u.teinte, 0.92);
