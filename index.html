@@ -495,6 +495,7 @@ footer{
   <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2518</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:3px">⇩ FORCER</button>
+  <button id="wake-btn" class="btn" onclick="toggleWakeLock()" title="Empêcher l'écran de s'éteindre pour ne rater aucune notification" style="font-size:11px;padding:3px 7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#A0AEC0;font-weight:700;display:inline-flex;align-items:center;gap:3px;margin-left:4px">🌙 VEILLE AUTO</button>
 
   <div class="price-block">
     <div class="last mono" id="last-price">—</div>
@@ -5354,7 +5355,49 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')return;
   const g=gen; resync(g);
   if(!ws){wsRetry=0;startStream(g);}
+  if(window._wlActive && typeof requestWakeLock === 'function') requestWakeLock();
 });
+
+let wakeLock = null;
+window._wlActive = false;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      window._wlActive = true;
+      const btn = document.getElementById('wake-btn');
+      if(btn){
+        btn.style.background = 'rgba(236,72,153,.16)';
+        btn.style.border = '1px solid #EC4899';
+        btn.style.color = '#EC4899';
+        btn.textContent = '🌞 ÉCRAN ACTIF';
+      }
+    } else {
+      toast('Wake Lock non supporté sur ce navigateur', '#F59E0B');
+    }
+  } catch (err) { }
+}
+
+window.toggleWakeLock = function() {
+  if (wakeLock !== null) {
+    wakeLock.release().then(() => {
+      wakeLock = null;
+      window._wlActive = false;
+      const btn = document.getElementById('wake-btn');
+      if(btn){
+        btn.style.background = 'rgba(255,255,255,.05)';
+        btn.style.border = '1px solid rgba(255,255,255,.1)';
+        btn.style.color = '#A0AEC0';
+        btn.textContent = '🌙 VEILLE AUTO';
+      }
+      toast('L\'écran peut s\'éteindre', '#A0AEC0');
+    });
+  } else {
+    requestWakeLock().then(() => {
+      if(wakeLock !== null) toast('L\'écran restera allumé en continu', '#EC4899');
+    });
+  }
+};
 window.addEventListener('online',()=>{
   const g=gen; resync(g);
   if(!ws){wsRetry=0;startStream(g);}
@@ -31146,7 +31189,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2518';
+  window.__LUMEN_BUILD = 'B-1708-2519';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
