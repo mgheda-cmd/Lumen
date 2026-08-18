@@ -5429,22 +5429,13 @@ async function requestWakeLock() {
   } catch (err) { }
 }
 
-window.toggleWakeLock = function() {
-  if (wakeLock !== null) {
-    wakeLock.release().then(() => {
-      wakeLock = null;
-      window._wlActive = false;
-      stopKeepAlive();
-      const btn = document.getElementById('wake-btn');
-      if(btn){
-        btn.style.background = 'rgba(255,255,255,.05)';
-        btn.style.border = '1px solid rgba(255,255,255,.1)';
-        btn.style.color = '#A0AEC0';
-        btn.textContent = '🌙 VEILLE AUTO';
-      }
-      toast('L\'écran peut s\'éteindre', '#A0AEC0');
-    });
-  } else if (window._wlActive) { // Cas où seul l'audio hack tourne
+window.toggleWakeLock = function(forceState) {
+  const isCurrentlyActive = (wakeLock !== null || window._wlActive);
+  
+  if (forceState === false || (forceState !== true && isCurrentlyActive)) {
+    try { localStorage.setItem('lumen_autowake', 'off'); } catch(e){}
+    if (wakeLock !== null) wakeLock.release().catch(()=>{});
+    wakeLock = null;
     window._wlActive = false;
     stopKeepAlive();
     const btn = document.getElementById('wake-btn');
@@ -5454,14 +5445,26 @@ window.toggleWakeLock = function() {
       btn.style.color = '#A0AEC0';
       btn.textContent = '🌙 VEILLE AUTO';
     }
-    toast('L\'écran peut s\'éteindre', '#A0AEC0');
-  } else {
+    if(forceState !== false) toast('L\'écran peut s\'éteindre', '#A0AEC0');
+  } else if (!isCurrentlyActive) {
+    try { localStorage.setItem('lumen_autowake', 'on'); } catch(e){}
     window._wlActive = true;
     requestWakeLock().then(() => {
       if(wakeLock !== null || window._wlActive) toast('App active en continu (Écran + Arrière-plan)', '#EC4899');
     });
   }
 };
+
+let _firstInteractDone = false;
+function _handleFirstInteract() {
+  if (_firstInteractDone) return;
+  _firstInteractDone = true;
+  let pref = 'on';
+  try { pref = localStorage.getItem('lumen_autowake') || 'on'; } catch(e){}
+  if (pref === 'on') toggleWakeLock(true);
+}
+document.addEventListener('click', _handleFirstInteract, {once:true});
+document.addEventListener('touchstart', _handleFirstInteract, {once:true, passive:true});
 window.addEventListener('online',()=>{
   const g=gen; resync(g);
   if(!ws){wsRetry=0;startStream(g);}
@@ -31255,7 +31258,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2523';
+  window.__LUMEN_BUILD = 'B-1708-2524';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
