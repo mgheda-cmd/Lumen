@@ -14186,7 +14186,13 @@ window.setPaperUniteFromSelect = function(val){
 window.setPaperCapital = function(val){
   const cap = parseFloat(val) || 100;
   if(typeof paper === 'object' && paper){
-    paper.cash = cap;
+    let openMargin = 0;
+    if(Array.isArray(paper.positions)){
+      for(const p of paper.positions){
+        openMargin += (p.margin || (p.qty * (p.entry || 0) / (p.lev || 1)));
+      }
+    }
+    paper.cash = Math.max(0, cap - openMargin);
     if(typeof saveConfig === 'function') saveConfig();
     if(typeof updatePaper === 'function') updatePaper();
   }
@@ -31596,7 +31602,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1820';
+  window.__LUMEN_BUILD = 'B-1808-1835';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
