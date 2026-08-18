@@ -5641,6 +5641,9 @@ async function loadData(){
   const g=++gen; stopFeeds(); setStatus('loading');
   state.data=[]; state.cache={}; histBusy=false; histDone=false;
   state.yScale={auto:true,lo:0,hi:0};
+  /* Réinitialiser la déduplication des alertes : on change de paire ou de TF,
+     les signaux historiques de la nouvelle paire ne doivent pas être ignorés. */
+  window.__alertsInitialized = false;
   try{
     let rows;
     try{
@@ -16915,7 +16918,11 @@ function checkAllAlerts(){
                      ? +state.indicators.kk_bis2.lower : -75;
         const sHaut = (state.indicators.kk_bis2 && state.indicators.kk_bis2.upper != null)
                       ? +state.indicators.kk_bis2.upper : 75;
-        for(let q = 1; q < netP.length; q++){
+        /* CORRECTIF : on ne scanne QUE les 4 dernières bougies.
+           Autrement, une entrée en zone extrême ancienne (ex: -87 il y a 2h)
+           était détectée à chaque tick et envoyait un PRÉAVIS fantôme. */
+        const pStart = Math.max(1, netP.length - 4);
+        for(let q = pStart; q < netP.length; q++){
           const av = netP[q-1], ap = netP[q];
           if(av == null || ap == null || !d[q]) continue;
 
@@ -18775,15 +18782,18 @@ async function fetchBigHistory(days = 7){
   return uniq;
 }
 function openEmaHaBacktestModal(){
-  document.getElementById('bt-back').style.display='flex';
-  document.getElementById('bt-n').textContent=state.data.length;
-  document.getElementById('bt-tf').textContent=TF_MAP[state.tf]||state.tf;
-  
+  const btBack = document.getElementById('bt-back');
+  if(btBack) btBack.style.display='flex';
+  const btN = document.getElementById('bt-n');
+  if(btN) btN.textContent=state.data.length;
+  const btTf = document.getElementById('bt-tf');
+  if(btTf) btTf.textContent=TF_MAP[state.tf]||state.tf;
+
   const ind = state.indicators.signal_ema_ha || {};
-  if(ind.emaPeriod) document.getElementById('bt-ema').value = ind.emaPeriod;
-  if(ind.haTf) document.getElementById('bt-hatf').value = ind.haTf;
-  if(ind.haPeriod) document.getElementById('bt-haperiod').value = ind.haPeriod;
-  if(ind.exitMode) document.getElementById('bt-exitmode').value = ind.exitMode;
+  if(ind.emaPeriod) { const el=document.getElementById('bt-ema'); if(el) el.value=ind.emaPeriod; }
+  if(ind.haTf) { const el=document.getElementById('bt-hatf'); if(el) el.value=ind.haTf; }
+  if(ind.haPeriod) { const el=document.getElementById('bt-haperiod'); if(el) el.value=ind.haPeriod; }
+  if(ind.exitMode) { const el=document.getElementById('bt-exitmode'); if(el) el.value=ind.exitMode; }
 
   runBacktest(false);
 }
@@ -18968,20 +18978,23 @@ async function runBacktest(skipFetch){
   }
 
   if(!d||d.length<80){
-    document.getElementById('bt-results').innerHTML='<div style="color:var(--down);padding:10px">Impossible de charger l\'historique.</div>';
+    const btRes = document.getElementById('bt-results');
+    if(btRes) btRes.innerHTML='<div style="color:var(--down);padding:10px">Impossible de charger l\'historique.</div>';
     return;
   }
 
-  document.getElementById('bt-n').textContent=d.length;
-  document.getElementById('bt-tf').textContent=TF_MAP[state.tf]||state.tf;
+  const elBtN = document.getElementById('bt-n');
+  if(elBtN) elBtN.textContent=d.length;
+  const elBtTf = document.getElementById('bt-tf');
+  if(elBtTf) elBtTf.textContent=TF_MAP[state.tf]||state.tf;
 
-  const emaPeriod=+document.getElementById('bt-ema').value||9;
-  const haTf=+document.getElementById('bt-hatf').value||5;
-  const haPeriod=+document.getElementById('bt-haperiod').value||10;
+  const emaPeriod=+(document.getElementById('bt-ema')?.value||9);
+  const haTf=+(document.getElementById('bt-hatf')?.value||5);
+  const haPeriod=+(document.getElementById('bt-haperiod')?.value||10);
   const haMode=document.getElementById('bt-hamode')?.value||'lisse';
-  const selExitMode=document.getElementById('bt-exitmode').value||'combined';
-  const initialCapital=+document.getElementById('bt-capital').value||100;
-  const feePct=(+document.getElementById('bt-fee').value ?? 0.04)/100;
+  const selExitMode=document.getElementById('bt-exitmode')?.value||'combined';
+  const initialCapital=+(document.getElementById('bt-capital')?.value||100);
+  const feePct=(+(document.getElementById('bt-fee')?.value??0.04))/100;
   const btLev=+(document.getElementById('bt-lev')?.value||1);
 
   function simMode(eMode, levOverride, candlesInput, tfMinInput){
@@ -31581,7 +31594,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1815';
+  window.__LUMEN_BUILD = 'B-1808-1820';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
