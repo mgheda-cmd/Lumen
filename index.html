@@ -15513,13 +15513,13 @@ const SCHEMA={
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
     {k:'confluenceFilter',t:'choice',lab:"🎯 MODE CONFLUENCE & FILTRAGE",opts:[
       {v:'all',t:'Toutes les options actives'},
-      {v:'conf_1_6',t:'💎 Confluence Élite : Opt 1 (2ᵉ UT) + Opt 6 (BOS/DIV)'},
+      {v:'conf_1_6',t:'✨ Confluence Élite : Opt 1 (2ᵉ UT) + Opt 6 (BOS/DIV)'},
       {v:'conf_1_2',t:'🌟 Confluence Duo : Opt 1 (2ᵉ UT) + Opt 2 (iMACD)'},
       {v:'conf_2_6',t:'⚡ Confluence Duo : Opt 2 (iMACD) + Opt 6 (BOS/DIV)'},
       {v:'conf_1_2_6',t:'🏆 Triple Confluence : Opt 1 + Opt 2 + Opt 6'},
       {v:'conf_any_2',t:'🎯 Confluence 2-sur-3 (Au moins 2 parmi 1, 2, 6)'},
       {v:'opt6',t:'💎 Option 6 uniquement (BOS/DIV)'},
-      {v:'opt1',t:'💎 Option 1 uniquement (2ᵉ UT)'},
+      {v:'opt1',t:'🔷 Option 1 uniquement (2ᵉ UT)'},
       {v:'opt2',t:'⚡ Option 2 uniquement (iMACD)'},
       {v:'base',t:'🟢 Signal Base uniquement'}
     ],def:'all'},
@@ -26048,10 +26048,10 @@ function computeMMSignals(d, ind) {
             score: cScore,
             triggerLevel: net[idxOpt1],
             label: `ACHAT Option 1 (Niv: ${lvlOpt1})`,
-            badge: `💎 ACHAT (LONG) · OPT 1 KK (${lvlOpt1})`,
+            badge: `🔷 ACHAT (LONG) · OPT 1 KK (${lvlOpt1})`,
             sub: `Croisement @ $${fmt(d[idxOpt1].c, 1)} · Niv: ${lvlOpt1} (Creux ${cScoreVal})`,
-            color: "#00E5FF",
-            bgFill: "rgba(4, 28, 44, 0.95)"
+            color: "#6366F1",
+            bgFill: "rgba(22, 27, 72, 0.95)"
           });
           lastState.opt1 = "LONG";
           hasAnySignalInEp = true;
@@ -26308,10 +26308,10 @@ function computeMMSignals(d, ind) {
             score: sScore,
             triggerLevel: net[idxOpt1],
             label: `VENTE Option 1 (Niv: ${lvlOpt1})`,
-            badge: `💎 VENTE (SHORT) · OPT 1 KK (${lvlOpt1})`,
+            badge: `🔷 VENTE (SHORT) · OPT 1 KK (${lvlOpt1})`,
             sub: `Croisement @ $${fmt(d[idxOpt1].c, 1)} · Niv: ${lvlOpt1} (Sommet ${sScoreVal})`,
-            color: "#00E5FF",
-            bgFill: "rgba(4, 28, 44, 0.95)"
+            color: "#6366F1",
+            bgFill: "rgba(22, 27, 72, 0.95)"
           });
           lastState.opt1 = "SHORT";
           hasAnySignalInEp = true;
@@ -26901,7 +26901,7 @@ function drawMMSignals(res, s, e, yOf, cw) {
       // Ligne 2 : Nom court de l'Option avec son icône thématique (Couleur d'origine)
       const optLabels = {
         base: '🟢 Signal Base',
-        opt1: '💎 Opt 1 (KK 2ᵉ UT)',
+        opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
         opt2: '⚡ Opt 2 (iMACD)',
         opt3: '🛡️ Opt 3 (Cassure)',
         opt4: '🎯 Opt 4 (Lissage)',
@@ -32118,7 +32118,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2358';
+  window.__LUMEN_BUILD = 'B-1808-2359';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
