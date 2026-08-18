@@ -5688,7 +5688,8 @@ function aggregateData(data, targetTfMin, baseTfMin){
           h: maxH,
           l: minL,
           c: curChunk[curChunk.length - 1].c,
-          v: curChunk.reduce((s, x) => s + (x.v || 0), 0)
+          v: curChunk.reduce((s, x) => s + (x.v || 0), 0),
+          tbv: curChunk.reduce((s, x) => s + (x.tbv || 0), 0)
         });
       }
       curBucket = bucket;
@@ -5709,7 +5710,8 @@ function aggregateData(data, targetTfMin, baseTfMin){
       h: maxH,
       l: minL,
       c: curChunk[curChunk.length - 1].c,
-      v: curChunk.reduce((s, x) => s + (x.v || 0), 0)
+      v: curChunk.reduce((s, x) => s + (x.v || 0), 0),
+      tbv: curChunk.reduce((s, x) => s + (x.tbv || 0), 0)
     });
   }
   return agg;
@@ -31225,7 +31227,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2521';
+  window.__LUMEN_BUILD = 'B-1708-2522';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
