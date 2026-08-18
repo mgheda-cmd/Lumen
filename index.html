@@ -2294,7 +2294,8 @@ footer{
           <span>📳 Vibration tel</span>
         </label>
       </div>
-      <div id="notif-status-msg" style="font-size:10.5px;color:#00E5FF;margin-top:6px;text-align:center;min-height:16px"></div>
+      <div id="notif-heartbeat" style="font-size:10.5px;color:#94A3B8;padding:6px 0;line-height:1.4">Surveillance en attente de données…</div>
+        <div id="notif-status-msg" style="font-size:10.5px;color:#00E5FF;margin-top:6px;text-align:center;min-height:16px"></div>
       <button class="btn" id="btn-close-notif-bottom" style="width:100%;margin-top:10px;padding:6px;font-size:11px;font-weight:700;border-color:var(--line);color:#94A3B8;background:var(--panel-2,#0F172A)">✖ Fermer la fenêtre</button>
     </div>
   </div>
@@ -16692,8 +16693,47 @@ function alertNewPhoneSignals(sigs, d){
   }
 }
 
+/* Témoin de vie de la surveillance. Sur iPhone, iOS suspend le JavaScript
+   dès que l'application passe en arrière-plan : plus rien n'est calculé, donc
+   plus aucune notification. Impossible de distinguer « application endormie »
+   de « aucun signal depuis » sans cette trace. On note donc l'heure du dernier
+   passage, ce qui répond à la question d'un coup d'oeil. */
+window.__derniereVeille = 0;
+window.__veilleCompteur = 0;
+
+function majTemoinVeille(){
+  window.__derniereVeille = Date.now();
+  window.__veilleCompteur++;
+  const el = document.getElementById('notif-heartbeat');
+  if(!el) return;
+  const d = new Date(window.__derniereVeille);
+  const p = n => String(n).padStart(2, '0');
+  el.textContent = 'Surveillance active \u2014 dernier contrôle à ' +
+    p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) +
+    ' (' + window.__veilleCompteur + ' depuis l\'ouverture)';
+  el.style.color = '#10B981';
+}
+
+/* Si plus rien ne passe pendant deux minutes, la surveillance dort. */
+setInterval(function(){
+  const el = document.getElementById('notif-heartbeat');
+  if(!el) return;
+  const ecart = Date.now() - (window.__derniereVeille || 0);
+  if(!window.__derniereVeille){
+    el.textContent = 'Surveillance en attente de données\u2026';
+    el.style.color = '#94A3B8';
+  } else if(ecart > 120000){
+    const min = Math.round(ecart / 60000);
+    el.textContent = '\u26A0 Aucun contrôle depuis ' + min + ' min : ' +
+      'l\'application a été mise en veille par le système. ' +
+      'Gardez Lumen au premier plan pour recevoir les alertes.';
+    el.style.color = '#FF9F1C';
+  }
+}, 20000);
+
 function checkAllAlerts(){
   if(!state.data || !state.data.length) return;
+  majTemoinVeille();
 
   // 1. Exécution de l'Auto-Trade si actif (indépendant des notifs)
   if(paperAutoTrade){
