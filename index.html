@@ -26735,16 +26735,57 @@ function drawMMSignals(res, s, e, yOf, cw) {
         timeTag = `[${fmtTime(sigCandleTime)}] `;
       }
 
-      // Textes dans la pastille
+      // Textes dans la pastille avec coloration directionnelle ciblée :
+      // - L'icône, l'heure, le nom de l'option et les niveaux gardent la COULEUR D'ORIGINE DE L'OPTION (Cyan, Or, Violet, etc.)
+      // - Les mots "ACHAT (LONG)" passent en VERT ÉCLATANT (#00E676)
+      // - Les mots "VENTE (SHORT)" passent en ROUGE ÉCLATANT (#FF3366)
       ctx.font = 'bold 10px "IBM Plex Sans", -apple-system, sans-serif';
-      ctx.fillStyle = color;
-      ctx.textAlign = "center";
       ctx.textBaseline = "top";
       let mainBadge = sig.badge || (isLong ? "🟢 ENTRÉE LONG" : "🔴 ENTRÉE SHORT");
       if (timeTag && !mainBadge.includes("[")) {
         mainBadge = mainBadge.replace(/^([^a-zA-Z0-9À-ÿ]*)/, `$1${timeTag}`);
       }
-      ctx.fillText(mainBadge, bx + bw / 2, by + 4.5);
+
+      const dirTxt = isLong ? "ACHAT (LONG)" : "VENTE (SHORT)";
+      const dirColor = isLong ? "#00E676" : "#FF3366";
+
+      let segPrefix = "", segDir = "", segSuffix = "";
+      if (mainBadge.includes(dirTxt)) {
+        const parts = mainBadge.split(dirTxt);
+        segPrefix = parts[0] || "";
+        segDir = dirTxt;
+        segSuffix = parts.slice(1).join(dirTxt) || "";
+      } else {
+        segDir = isLong ? "ACHAT" : "VENTE";
+        segPrefix = "";
+        segSuffix = mainBadge.replace(segDir, "");
+      }
+
+      ctx.textAlign = "left";
+      const wPrefix = ctx.measureText(segPrefix).width;
+      const wDir = ctx.measureText(segDir).width;
+      const wSuffix = ctx.measureText(segSuffix).width;
+      const totalW = wPrefix + wDir + wSuffix;
+
+      let curX = bx + (bw - totalW) / 2;
+
+      // 1. Préfixe (icône + heure) en couleur d'origine de l'option
+      if (segPrefix) {
+        ctx.fillStyle = color;
+        ctx.fillText(segPrefix, curX, by + 4.5);
+        curX += wPrefix;
+      }
+      // 2. Mots ACHAT (LONG) / VENTE (SHORT) en Vert / Rouge
+      if (segDir) {
+        ctx.fillStyle = dirColor;
+        ctx.fillText(segDir, curX, by + 4.5);
+        curX += wDir;
+      }
+      // 3. Suffixe (nom de l'option, niveau) en couleur d'origine de l'option
+      if (segSuffix) {
+        ctx.fillStyle = color;
+        ctx.fillText(segSuffix, curX, by + 4.5);
+      }
 
       ctx.font = '8px "IBM Plex Mono", monospace';
       ctx.fillStyle = "#E2E8F0";
@@ -31938,7 +31979,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2125';
+  window.__LUMEN_BUILD = 'B-1808-2130';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
