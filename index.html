@@ -2422,9 +2422,15 @@ footer{
 
 <div id="cfg-back">
   <div id="cfg-box">
-    <div id="cfg-head">
-      <h3 id="cfg-title">Paramètres</h3>
-      <button class="btn" id="cfg-close" style="padding:4px 10px">✕</button>
+    <div id="cfg-head" title="Maintenez le clic sur cette barre pour déplacer le panneau où vous voulez sur l'écran">
+      <span class="cfg-drag-handle" style="font-size:16px;cursor:grab;color:#00E5FF;margin-right:2px;user-select:none">⠿</span>
+      <h3 id="cfg-title" style="margin:0;font-size:14px;font-weight:700">Paramètres</h3>
+      <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
+        <button class="btn" id="cfg-snap-left" title="Déplacer le panneau tout à gauche de l'écran" style="padding:2px 7px;font-size:11px;font-weight:700">↖ Gauche</button>
+        <button class="btn" id="cfg-snap-right" title="Déplacer le panneau tout à droite (pour voir tout le graphique au centre)" style="padding:2px 7px;font-size:11px;font-weight:700;border-color:#00E5FF;color:#00E5FF;background:rgba(0,229,255,0.12)">↗ Droite</button>
+        <button class="btn" id="cfg-snap-center" title="Recentrer le panneau au milieu de l'écran" style="padding:2px 7px;font-size:11px;font-weight:700">⟲ Centre</button>
+        <button class="btn" id="cfg-close" title="Fermer (Échap)" style="padding:2px 9px;font-size:13px;font-weight:800;border-color:rgba(255,255,255,0.2)">✕</button>
+      </div>
     </div>
     <div id="cfg-body"></div>
     <div id="cfg-foot">
@@ -16008,14 +16014,14 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
     dragging = true;
     const p = e.touches ? e.touches[0] : e;
     sx = p.clientX - dx; sy = p.clientY - dy;
-    e.preventDefault();
+    box.style.transition = 'none';
   }
   function move(e){
     if(!dragging) return;
     const p = e.touches ? e.touches[0] : e;
     dx = p.clientX - sx; dy = p.clientY - sy;
     apply();
-    e.preventDefault();
+    if(e.cancelable) e.preventDefault();
   }
   function end(){
     if(!dragging) return;
@@ -16031,10 +16037,52 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
   window.addEventListener('touchmove', move, {passive:false});
   window.addEventListener('touchend', end);
 
+  // Boutons d'ancrage rapide
+  const snapLeft = document.getElementById('cfg-snap-left');
+  const snapRight = document.getElementById('cfg-snap-right');
+  const snapCenter = document.getElementById('cfg-snap-center');
+
+  if(snapLeft){
+    snapLeft.addEventListener('click', function(e){
+      e.stopPropagation();
+      box.style.transition = 'transform .2s ease';
+      dx = -Math.max(10, Math.round(window.innerWidth / 2 - (box.offsetWidth / 2) - 16));
+      dy = -Math.max(10, Math.round(window.innerHeight / 2 - (box.offsetHeight / 2) - 30));
+      clamp(); apply();
+      try{ localStorage.setItem('lumen_cfg_pos', JSON.stringify({x:dx, y:dy})); }catch(err){}
+      setTimeout(()=>{ box.style.transition = 'none'; }, 220);
+    });
+  }
+
+  if(snapRight){
+    snapRight.addEventListener('click', function(e){
+      e.stopPropagation();
+      box.style.transition = 'transform .2s ease';
+      dx = Math.max(10, Math.round(window.innerWidth / 2 - (box.offsetWidth / 2) - 16));
+      dy = -Math.max(10, Math.round(window.innerHeight / 2 - (box.offsetHeight / 2) - 30));
+      clamp(); apply();
+      try{ localStorage.setItem('lumen_cfg_pos', JSON.stringify({x:dx, y:dy})); }catch(err){}
+      setTimeout(()=>{ box.style.transition = 'none'; }, 220);
+    });
+  }
+
+  if(snapCenter){
+    snapCenter.addEventListener('click', function(e){
+      e.stopPropagation();
+      box.style.transition = 'transform .2s ease';
+      dx = 0; dy = 0; apply();
+      try{ localStorage.removeItem('lumen_cfg_pos'); }catch(err){}
+      setTimeout(()=>{ box.style.transition = 'none'; }, 220);
+    });
+  }
+
   // double-clic sur l'en-tête : recentrer
-  head.addEventListener('dblclick', function(){
+  head.addEventListener('dblclick', function(e){
+    if(e.target.closest('button')) return;
+    box.style.transition = 'transform .2s ease';
     dx = 0; dy = 0; apply();
-    try{ localStorage.removeItem('lumen_cfg_pos'); }catch(e){}
+    try{ localStorage.removeItem('lumen_cfg_pos'); }catch(err){}
+    setTimeout(()=>{ box.style.transition = 'none'; }, 220);
   });
 })();
 
@@ -32078,7 +32126,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2350';
+  window.__LUMEN_BUILD = 'B-1808-2355';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
