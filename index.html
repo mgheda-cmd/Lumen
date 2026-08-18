@@ -15505,6 +15505,7 @@ const SCHEMA={
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
     {k:'oscThreshold',t:'num',lab:"Seuil extrême Long sous (ex: -75)",min:-95,max:-10,def:-75,ind:1},
     {k:'maxLongLevel',t:'num',lab:"Seuil maximum déclenchement Long (ex: -65)",min:-95,max:-10,def:-65,ind:1},
+    {k:'maxLongLevelFast',t:'num',lab:"⚡ Seuil dynamique Rebond Violent (ex: -55)",min:-90,max:0,def:-55,ind:1},
     {k:'allowShorts',t:'bool',lab:"Activer les entrées SHORT (Sommet > +75 ➔ Rouge)",def:true},
     {k:'alternateSignals',t:'bool',lab:"Alternance stricte (1 Long ➔ 1 Short ➔ 1 Long)",def:true},
     {k:'showBadges',t:'bool',lab:"Afficher les pastilles d'entrée Long / Short",def:true},    {k:'showVerticalLines',t:'bool',lab:"Afficher les lignes verticales de projection jusqu'en bas",def:true},
@@ -25687,7 +25688,25 @@ function computeMMSignals(d, ind) {
   const oscThreshold = lowerThreshold;
 
   const maxLongLevel = ind.maxLongLevel != null ? +ind.maxLongLevel : -65;
+  const maxLongLevelFast = ind.maxLongLevelFast != null ? +ind.maxLongLevelFast : -55;
   const minShortLevel = ind.minShortLevel != null ? +ind.minShortLevel : 65;
+  const minShortLevelFast = ind.minShortLevelFast != null ? +ind.minShortLevelFast : 55;
+
+  const getMaxLongThreshold = (cIdx, j, cScore) => {
+    const barsSince = j - cIdx;
+    const delta = (net[j] != null && cScore != null) ? (net[j] - cScore) : 0;
+    // Si rebond violent (progression rapide de >=15 pts en <=2 bougies ou >=25 pts en <=4 bougies)
+    const isFastBounce = (barsSince <= 2 && delta >= 15) || (barsSince <= 4 && delta >= 25);
+    return isFastBounce ? Math.max(maxLongLevel, maxLongLevelFast) : maxLongLevel;
+  };
+
+  const getMinShortThreshold = (sIdx, j, sScore) => {
+    const barsSince = j - sIdx;
+    const delta = (sScore != null && net[j] != null) ? (sScore - net[j]) : 0;
+    // Si chute violente (baisse rapide de >=15 pts en <=2 bougies ou >=25 pts en <=4 bougies)
+    const isFastDump = (barsSince <= 2 && delta >= 15) || (barsSince <= 4 && delta >= 25);
+    return isFastDump ? Math.min(minShortLevel, minShortLevelFast) : minShortLevel;
+  };
 
   const allowShorts = ind.allowShorts !== false;
   const alternateSignals = ind.alternateSignals !== false;
@@ -25884,7 +25903,7 @@ function computeMMSignals(d, ind) {
       let idxBase = -1;
       for (let j = cIdx; j < maxScanIdx; j++) {
         if (dir[j] === 1 && (j === 0 || dir[j - 1] === -1)) {
-          if (net[j] != null && net[j] <= maxLongLevel) {
+          if (net[j] != null && net[j] <= getMaxLongThreshold(cIdx, j, cScore)) {
             idxBase = j;
           }
           break;
@@ -25927,7 +25946,7 @@ function computeMMSignals(d, ind) {
         const cross2 = (n2 != null && s2 != null && n2 > s2 && (n2Prev == null || s2Prev == null || n2Prev <= s2Prev));
         const cross12 = (n1 != null && n2 != null && n1 > n2 && (n1Prev == null || n2Prev == null || n1Prev <= n2Prev));
         if (cross2 || cross12) {
-          if (net[j] != null && net[j] <= maxLongLevel) {
+          if (net[j] != null && net[j] <= getMaxLongThreshold(cIdx, j, cScore)) {
             idxOpt1 = j;
           }
           break;
@@ -26006,7 +26025,7 @@ function computeMMSignals(d, ind) {
       let idxOpt3 = -1;
       for (let j = cIdx + 1; j < maxScanIdx; j++) {
         if (d[j].c > cHigh || d[j].h > cHigh) {
-          if (net[j] != null && net[j] <= maxLongLevel) {
+          if (net[j] != null && net[j] <= getMaxLongThreshold(cIdx, j, cScore)) {
             idxOpt3 = j;
           }
           break;
@@ -26046,7 +26065,7 @@ function computeMMSignals(d, ind) {
       for (let j = cIdx; j < maxScanIdx; j++) {
         const nR = netRob[j], sR = sigRob[j], nRPrev = netRob[j - 1], sRPrev = sigRob[j - 1];
         if (nR != null && sR != null && nR > sR && (nRPrev == null || sRPrev == null || nRPrev <= sRPrev)) {
-          if (net[j] != null && net[j] <= maxLongLevel) {
+          if (net[j] != null && net[j] <= getMaxLongThreshold(cIdx, j, cScore)) {
             idxOpt4 = j;
           }
           break;
@@ -26098,7 +26117,7 @@ function computeMMSignals(d, ind) {
       let idxBase = -1;
       for (let j = sIdx; j < maxScanIdx; j++) {
         if (dir[j] === -1 && (j === 0 || dir[j - 1] === 1)) {
-          if (net[j] != null && net[j] >= minShortLevel) {
+          if (net[j] != null && net[j] >= getMinShortThreshold(sIdx, j, sScore)) {
             idxBase = j;
           }
           break;
@@ -26141,7 +26160,7 @@ function computeMMSignals(d, ind) {
         const cross2 = (n2 != null && s2 != null && n2 <= s2 && (n2Prev == null || s2Prev == null || n2Prev > s2Prev));
         const cross12 = (n1 != null && n2 != null && n1 <= n2 && (n1Prev == null || n2Prev == null || n1Prev > n2Prev));
         if (cross2 || cross12) {
-          if (net[j] != null && net[j] >= minShortLevel) {
+          if (net[j] != null && net[j] >= getMinShortThreshold(sIdx, j, sScore)) {
             idxOpt1 = j;
           }
           break;
@@ -26220,7 +26239,7 @@ function computeMMSignals(d, ind) {
       let idxOpt3 = -1;
       for (let j = sIdx + 1; j < maxScanIdx; j++) {
         if (d[j].c < sLow || d[j].l < sLow) {
-          if (net[j] != null && net[j] >= minShortLevel) {
+          if (net[j] != null && net[j] >= getMinShortThreshold(sIdx, j, sScore)) {
             idxOpt3 = j;
           }
           break;
@@ -26260,7 +26279,7 @@ function computeMMSignals(d, ind) {
       for (let j = sIdx; j < maxScanIdx; j++) {
         const nR = netRob[j], sR = sigRob[j], nRPrev = netRob[j - 1], sRPrev = sigRob[j - 1];
         if (nR != null && sR != null && nR <= sR && (nRPrev == null || sRPrev == null || nRPrev > sRPrev)) {
-          if (net[j] != null && net[j] >= minShortLevel) {
+          if (net[j] != null && net[j] >= getMinShortThreshold(sIdx, j, sScore)) {
             idxOpt4 = j;
           }
           break;
@@ -31723,7 +31742,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1950';
+  window.__LUMEN_BUILD = 'B-1808-1955';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
