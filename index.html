@@ -24807,22 +24807,40 @@ window.ouvrirMexcEtScript = function(e) {
   const rawSym = (state.symbol || 'BTCUSDT').toUpperCase();
   const base = rawSym.replace('USDT', '') || 'BTC';
   const mexcPair = `${base}_USDT`;
-  const mexcUrl = `https://futures.mexc.com/exchange/${mexcPair}`;
-  const scriptUrl = 'https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js';
+  const mexcHttps = `https://futures.mexc.com/exchange/${mexcPair}`;
+  const scriptHttps = 'https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js';
+  
+  // Protocole dédié googlechromes:// pour forcer macOS / iOS à ouvrir l'URL directement dans Google Chrome
+  const chromeMexcUrl = `googlechromes://futures.mexc.com/exchange/${mexcPair}`;
+  const chromeScriptUrl = `googlechromes://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js`;
 
-  // 1. Ouvrir le script pour installation/mise à jour Tampermonkey
-  window.open(scriptUrl, '_blank');
+  try {
+    const a1 = document.createElement('a');
+    a1.href = chromeMexcUrl;
+    document.body.appendChild(a1);
+    a1.click();
+    setTimeout(() => a1.remove(), 150);
+  } catch(err){}
 
-  // 2. Ouvrir la page MEXC Futures correspondante
+  try {
+    const a2 = document.createElement('a');
+    a2.href = chromeScriptUrl;
+    document.body.appendChild(a2);
+    a2.click();
+    setTimeout(() => a2.remove(), 150);
+  } catch(err){}
+
+  // Fallback classique
   setTimeout(() => {
-    window.open(mexcUrl, '_blank');
+    try { window.open(mexcHttps, '_blank'); } catch(e){}
+    try { window.open(scriptHttps, '_blank'); } catch(e){}
   }, 400);
 
-  // 3. Mettre l'indicateur en pastille verte d'attente (PRÊT)
+  // Mettre l'indicateur en pastille verte d'attente (PRÊT)
   localStorage.setItem('lumen_web_autotrader_ready', '1');
   if (typeof window.updateWebAutoTraderUI === 'function') window.updateWebAutoTraderUI();
 
-  toast(`🚀 Page MEXC (${mexcPair}) & Script ouverts ! Le badge vert apparaît sur votre onglet MEXC. Cliquez sur "Actionner" pour démarrer le trading !`, '#10B981');
+  toast(`🚀 Commande envoyée à Google Chrome pour ouvrir MEXC (${mexcPair}) & le Script ! Badge vert PRÊT.`, '#10B981');
 };
 
 window.toggleWebAutoTrader = function() {
@@ -31703,7 +31721,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1920';
+  window.__LUMEN_BUILD = 'B-1808-1925';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
