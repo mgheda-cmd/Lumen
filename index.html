@@ -7137,7 +7137,7 @@ let _blinkAny=false, _blinkOn=false, _blinkTimer=null;
 function ensureBlinkTimer(){
   if(_blinkTimer)return;
   _blinkTimer=setInterval(()=>{
-    if(!_blinkAny)return;
+    if(!_blinkAny){ clearInterval(_blinkTimer); _blinkTimer=null; return; }
     _blinkOn=!_blinkOn;
     try{render();}catch(e){}
   },480);
@@ -12718,12 +12718,13 @@ syncBtn.addEventListener('click',(e)=>{
     if(typeof notifMenuEl!=='undefined'&&notifMenuEl) notifMenuEl.classList.remove('open');
     const toolsMenu = document.getElementById('tools-menu');
     if(toolsMenu) toolsMenu.classList.remove('open');
-    document.getElementById('sync-token').value=syncToken;
+    const syncTokenInput = document.getElementById('sync-token');
+    if(syncTokenInput) syncTokenInput.value=syncToken;
     setSyncStatus(syncToken?'Synchro active':'Synchro désactivée');
   }
 });
-document.getElementById('sync-on').addEventListener('click',async()=>{
-  const t=document.getElementById('sync-token').value.trim();
+document.getElementById('sync-on')?.addEventListener('click',async()=>{
+  const t=document.getElementById('sync-token')?.value?.trim() || '';
   if(!t){setSyncStatus('Colle d\'abord un jeton',false);return;}
   syncToken=t;
   try{localStorage.setItem('lumen-sync-token',t);}catch(e){}
@@ -12843,8 +12844,8 @@ function loadPhoneNotifUI(){
     document.getElementById('notif-ntfy-topic').value = cfg.ntfyTopic || sujetNtfyPrive();
   if(document.getElementById('notif-ntfy-link'))
     document.getElementById('notif-ntfy-link').href = 'https://ntfy.sh/' + (cfg.ntfyTopic || 'lumen_mm_alerts');
-  if(document.getElementById('notif-type-mm-preavis'))
-    document.getElementById('notif-type-mm-preavis').checked = cfg.mmPreavisAlerts !== false;
+  const elMmPreavis = document.getElementById('notif-type-mm-preavis');
+  if(elMmPreavis) elMmPreavis.checked = cfg.mmPreavisAlerts !== false;
   if(document.getElementById('notif-tg-token')) document.getElementById('notif-tg-token').value = cfg.telegramToken || '';
   if(document.getElementById('notif-tg-chatid')) document.getElementById('notif-tg-chatid').value = cfg.telegramChatId || '';
   if(document.getElementById('notif-wa-provider')) document.getElementById('notif-wa-provider').value = cfg.waProvider || 'callmebot';
@@ -13359,6 +13360,7 @@ function updatePaper(){
   updatePaperDemoStrategyUI();
   updateChartTradeHud();
 }
+window.updatePaper = updatePaper;
 
 window.__hudCollapsed = false;
 window.toggleTradeHudCollapse = function(e) {
@@ -13647,6 +13649,7 @@ function paperFlash(msg){
   el.textContent=msg; el.style.color='#F2C14E';
   setTimeout(()=>{el.textContent=old;el.style.color=oldCol;updatePaper();},2000);
 }
+window.paperFlash = paperFlash;
 
 function baseAsset(sym){return (sym||'').replace(/USDT$/,'');}
 
@@ -13863,6 +13866,7 @@ function closePos(i){
   toast(`Position fermée : PnL ${netPnl>=0?'+':''}${fmtUsd(netPnl)}`, netPnl>=0?'#10B981':'#F45B7D');
   sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: p.qty, reason: 'Clôture de position', capitalAfter: paper.cash });
 }
+window.closePos = closePos;
 
 function closePartial(i, pctOrVal, unitMode){
   const p=paper.positions[i];
@@ -14143,11 +14147,12 @@ try{
   }
 }catch(e){}
 
-document.getElementById('paper-summary').addEventListener('click',()=>{
+document.getElementById('paper-summary')?.addEventListener('click',()=>{
   const pn=document.getElementById('paper-panel');
   if(!pn) return;
   const open=pn.classList.toggle('open');
-  document.getElementById('paper-caret').textContent=open?'▾':'▴';
+  const caret=document.getElementById('paper-caret');
+  if(caret) caret.textContent=open?'▾':'▴';
   try{localStorage.setItem('lumenPaperOpen', open ? '1' : '0');}catch(e){}
   resize();
 });
@@ -14372,6 +14377,7 @@ function toggleAutoTrade(){
   }
   updateAutoTradeUI();
 }
+window.toggleAutoTrade = toggleAutoTrade;
 
 function collectAllActiveSignals() {
   if (!state.data || !state.data.length) return [];
@@ -14778,6 +14784,7 @@ function checkAutoTrade(inputSignals){
     }
   }
 }
+window.checkAutoTrade = checkAutoTrade;
 
 // Boucle périodique de vérification d'Auto-Trade
 setInterval(()=>{
@@ -15743,8 +15750,10 @@ function openCfg(ind){
   if(!state.indicators[ind]) state.indicators[ind] = {};
   _cfgOpenTime=Date.now();
   cfgInd=ind;
-  document.getElementById('cfg-title').textContent=sc.title;
+  const cfgTitle=document.getElementById('cfg-title');
+  if(cfgTitle) cfgTitle.textContent=sc.title;
   const body=document.getElementById('cfg-body');
+  if(!body) return;
   body.innerHTML=sc.fields.map(f=>{
     const v=S(ind,f.k);
     if(f.t==='bool')
@@ -16862,10 +16871,8 @@ function checkAllAlerts(){
   if(!state.data || !state.data.length) return;
   majTemoinVeille();
 
-  // 1. Exécution de l'Auto-Trade si actif (indépendant des notifs)
-  if(paperAutoTrade){
-    checkAutoTrade();
-  }
+  // Note: checkAutoTrade() est déjà appelé via applyKline/tick loop
+  // On ne le re-déclenche pas ici pour éviter un double-appel par bougie.
 
   const phoneCfg = getPhoneNotifConfig();
   if(!phoneCfg.enabled) return;
@@ -31574,7 +31581,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1802';
+  window.__LUMEN_BUILD = 'B-1808-1815';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
