@@ -4903,7 +4903,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_mm:{on:true,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
+    strat_mm:{on:true,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
@@ -15505,10 +15505,19 @@ const SCHEMA={
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
     {k:'oscThreshold',t:'num',lab:"Seuil extrême Long sous (ex: -75)",min:-95,max:-10,def:-75,ind:1},
     {k:'maxLongLevel',t:'num',lab:"Seuil maximum déclenchement Long (ex: -65)",min:-95,max:-10,def:-65,ind:1},
-    {k:'maxLongLevelFast',t:'num',lab:"⚡ Seuil dynamique Rebond Violent (ex: -55)",min:-90,max:0,def:-55,ind:1},
     {k:'allowShorts',t:'bool',lab:"Activer les entrées SHORT (Sommet > +75 ➔ Rouge)",def:true},
     {k:'alternateSignals',t:'bool',lab:"Alternance stricte (1 Long ➔ 1 Short ➔ 1 Long)",def:true},
-    {k:'showBadges',t:'bool',lab:"Afficher les pastilles d'entrée Long / Short",def:true},    {k:'showVerticalLines',t:'bool',lab:"Afficher les lignes verticales de projection jusqu'en bas",def:true},
+    {k:'showBadges',t:'bool',lab:"Afficher les pastilles d'entrée Long / Short",def:true},
+    {k:'confluenceFilter',t:'choice',lab:"Filtre d'affichage des pastilles",opts:[
+      {v:'all',t:'Toutes les pastilles'},
+      {v:'base',t:'🟢 Signal Base (Ligne Verte)'},
+      {v:'opt1',t:'💎 Option 1 (KK bis 2ᵉ UT)'},
+      {v:'opt2',t:'⚡ Option 2 (iMACD)'},
+      {v:'opt3',t:'🛡️ Option 3 (Cassure High / Low)'},
+      {v:'opt4',t:'🎯 Option 4 (Lissage Robuste 34)'},
+      {v:'opt5',t:'🚀 Option 5 (Validation par V)'}
+    ],def:'all'},
+    {k:'showVerticalLines',t:'bool',lab:"Afficher les lignes verticales de projection jusqu'en bas",def:true},
     {k:'showOpt1',t:'bool',lab:"Afficher Pastille 💎 Option 1 (KK bis 2ᵉ UT)",def:true},
     {k:'showOpt2',t:'bool',lab:"Afficher Pastille ⚡ Option 2 (iMACD)",def:true},
     {k:'opt2Tf',t:'choice',lab:"⚡ Option 2 : Unité de Temps (iMACD)",opts:[
@@ -15519,6 +15528,7 @@ const SCHEMA={
     ],def:'5'},
     {k:'showOpt3',t:'bool',lab:"Afficher Pastille 🛡️ Option 3 (Cassure High / Low)",def:true},
     {k:'showOpt4',t:'bool',lab:"Afficher Pastille 🎯 Option 4 (Lissage Robuste 34)",def:true},
+    {k:'showOpt5',t:'bool',lab:"Afficher Pastille 🚀 Option 5 (Validation par V)",def:true},
     {k:'showBase',t:'bool',lab:"Afficher Pastille 🟢 Signal Base (Ligne Verte)",def:true},
     {k:'showLineOnPrice',t:'bool',lab:"Afficher la ligne de tendance sur le prix",def:true},
     {k:'showCreuxMarkers',t:'bool',lab:"Afficher les repères ▲ Creux et ▼ Sommets",def:true},
@@ -25688,25 +25698,7 @@ function computeMMSignals(d, ind) {
   const oscThreshold = lowerThreshold;
 
   const maxLongLevel = ind.maxLongLevel != null ? +ind.maxLongLevel : -65;
-  const maxLongLevelFast = ind.maxLongLevelFast != null ? +ind.maxLongLevelFast : -55;
   const minShortLevel = ind.minShortLevel != null ? +ind.minShortLevel : 65;
-  const minShortLevelFast = ind.minShortLevelFast != null ? +ind.minShortLevelFast : 55;
-
-  const getMaxLongThreshold = (cIdx, j, cScore) => {
-    const barsSince = j - cIdx;
-    const delta = (net[j] != null && cScore != null) ? (net[j] - cScore) : 0;
-    // Si rebond violent (progression rapide de >=15 pts en <=2 bougies ou >=25 pts en <=4 bougies)
-    const isFastBounce = (barsSince <= 2 && delta >= 15) || (barsSince <= 4 && delta >= 25);
-    return isFastBounce ? Math.max(maxLongLevel, maxLongLevelFast) : maxLongLevel;
-  };
-
-  const getMinShortThreshold = (sIdx, j, sScore) => {
-    const barsSince = j - sIdx;
-    const delta = (sScore != null && net[j] != null) ? (sScore - net[j]) : 0;
-    // Si chute violente (baisse rapide de >=15 pts en <=2 bougies ou >=25 pts en <=4 bougies)
-    const isFastDump = (barsSince <= 2 && delta >= 15) || (barsSince <= 4 && delta >= 25);
-    return isFastDump ? Math.min(minShortLevel, minShortLevelFast) : minShortLevel;
-  };
 
   const allowShorts = ind.allowShorts !== false;
   const alternateSignals = ind.alternateSignals !== false;
@@ -25881,7 +25873,8 @@ function computeMMSignals(d, ind) {
     opt1: null,
     opt2: null,
     opt3: null,
-    opt4: null
+    opt4: null,
+    opt5: null
   };
 
   for (let epIdx = 0; epIdx < allEpisodes.length; epIdx++) {
@@ -25903,7 +25896,7 @@ function computeMMSignals(d, ind) {
       let idxBase = -1;
       for (let j = cIdx; j < maxScanIdx; j++) {
         if (dir[j] === 1 && (j === 0 || dir[j - 1] === -1)) {
-          if (net[j] != null && net[j] <= getMaxLongThreshold(cIdx, j, cScore)) {
+          if (net[j] != null && net[j] <= maxLongLevel) {
             idxBase = j;
           }
           break;
@@ -25946,7 +25939,7 @@ function computeMMSignals(d, ind) {
         const cross2 = (n2 != null && s2 != null && n2 > s2 && (n2Prev == null || s2Prev == null || n2Prev <= s2Prev));
         const cross12 = (n1 != null && n2 != null && n1 > n2 && (n1Prev == null || n2Prev == null || n1Prev <= n2Prev));
         if (cross2 || cross12) {
-          if (net[j] != null && net[j] <= getMaxLongThreshold(cIdx, j, cScore)) {
+          if (net[j] != null && net[j] <= maxLongLevel) {
             idxOpt1 = j;
           }
           break;
@@ -26025,7 +26018,7 @@ function computeMMSignals(d, ind) {
       let idxOpt3 = -1;
       for (let j = cIdx + 1; j < maxScanIdx; j++) {
         if (d[j].c > cHigh || d[j].h > cHigh) {
-          if (net[j] != null && net[j] <= getMaxLongThreshold(cIdx, j, cScore)) {
+          if (net[j] != null && net[j] <= maxLongLevel) {
             idxOpt3 = j;
           }
           break;
@@ -26065,7 +26058,7 @@ function computeMMSignals(d, ind) {
       for (let j = cIdx; j < maxScanIdx; j++) {
         const nR = netRob[j], sR = sigRob[j], nRPrev = netRob[j - 1], sRPrev = sigRob[j - 1];
         if (nR != null && sR != null && nR > sR && (nRPrev == null || sRPrev == null || nRPrev <= sRPrev)) {
-          if (net[j] != null && net[j] <= getMaxLongThreshold(cIdx, j, cScore)) {
+          if (net[j] != null && net[j] <= maxLongLevel) {
             idxOpt4 = j;
           }
           break;
@@ -26100,6 +26093,48 @@ function computeMMSignals(d, ind) {
         }
       }
 
+      // --- OPTION 5 : Validation par V (Rebond V-Shape Violent) ---
+      let idxOpt5 = -1;
+      for (let j = cIdx; j < maxScanIdx; j++) {
+        const deltaScore = (net[j] != null && cScore != null) ? (net[j] - cScore) : 0;
+        const barsSince = j - cIdx;
+        const isVRebound = (dir[j] === 1 && (j === 0 || dir[j-1] === -1)) ||
+                           (barsSince <= 3 && deltaScore >= 18) ||
+                           (barsSince <= 5 && deltaScore >= 30);
+        if (isVRebound) {
+          idxOpt5 = j;
+          break;
+        }
+      }
+      if (idxOpt5 !== -1) {
+        const canTriggerOpt5 = !alternateSignals || (lastState.opt5 !== "LONG");
+        if (canTriggerOpt5) {
+          const lvlOpt5 = (net[idxOpt5] != null) ? (net[idxOpt5] > 0 ? `+${net[idxOpt5].toFixed(0)}` : `${net[idxOpt5].toFixed(0)}`) : cScoreVal;
+          signals.push({
+            i: idxOpt5,
+            t: d[idxOpt5].t,
+            dir: 1,
+            type: "ACHAT",
+            optKey: "opt5",
+            price: d[idxOpt5].c,
+            low: d[idxOpt5].l,
+            high: d[idxOpt5].h,
+            creuxIdx: cIdx,
+            creuxPrice: cP,
+            creuxTime: d[cIdx] ? d[cIdx].t : d[idxOpt5].t,
+            score: cScore,
+            triggerLevel: net[idxOpt5],
+            label: `ACHAT Option 5 (Validation en V ${lvlOpt5})`,
+            badge: `🚀 ACHAT (LONG) · OPT 5 VALIDATION EN V (${lvlOpt5})`,
+            sub: `Rebond en V @ $${fmt(d[idxOpt5].c, 1)} · Niv: ${lvlOpt5} (Creux ${cScoreVal})`,
+            color: "#FACC15",
+            bgFill: "rgba(45, 34, 4, 0.95)"
+          });
+          lastState.opt5 = "LONG";
+          hasAnySignalInEp = true;
+        }
+      }
+
       if (hasAnySignalInEp || !creuxList.some(c => c.i === cIdx)) {
         creuxList.push({ i: cIdx, t: d[cIdx].t, price: cP, score: cScore });
       }
@@ -26117,7 +26152,7 @@ function computeMMSignals(d, ind) {
       let idxBase = -1;
       for (let j = sIdx; j < maxScanIdx; j++) {
         if (dir[j] === -1 && (j === 0 || dir[j - 1] === 1)) {
-          if (net[j] != null && net[j] >= getMinShortThreshold(sIdx, j, sScore)) {
+          if (net[j] != null && net[j] >= minShortLevel) {
             idxBase = j;
           }
           break;
@@ -26160,7 +26195,7 @@ function computeMMSignals(d, ind) {
         const cross2 = (n2 != null && s2 != null && n2 <= s2 && (n2Prev == null || s2Prev == null || n2Prev > s2Prev));
         const cross12 = (n1 != null && n2 != null && n1 <= n2 && (n1Prev == null || n2Prev == null || n1Prev > n2Prev));
         if (cross2 || cross12) {
-          if (net[j] != null && net[j] >= getMinShortThreshold(sIdx, j, sScore)) {
+          if (net[j] != null && net[j] >= minShortLevel) {
             idxOpt1 = j;
           }
           break;
@@ -26239,7 +26274,7 @@ function computeMMSignals(d, ind) {
       let idxOpt3 = -1;
       for (let j = sIdx + 1; j < maxScanIdx; j++) {
         if (d[j].c < sLow || d[j].l < sLow) {
-          if (net[j] != null && net[j] >= getMinShortThreshold(sIdx, j, sScore)) {
+          if (net[j] != null && net[j] >= minShortLevel) {
             idxOpt3 = j;
           }
           break;
@@ -26279,7 +26314,7 @@ function computeMMSignals(d, ind) {
       for (let j = sIdx; j < maxScanIdx; j++) {
         const nR = netRob[j], sR = sigRob[j], nRPrev = netRob[j - 1], sRPrev = sigRob[j - 1];
         if (nR != null && sR != null && nR <= sR && (nRPrev == null || sRPrev == null || nRPrev > sRPrev)) {
-          if (net[j] != null && net[j] >= getMinShortThreshold(sIdx, j, sScore)) {
+          if (net[j] != null && net[j] >= minShortLevel) {
             idxOpt4 = j;
           }
           break;
@@ -26310,6 +26345,48 @@ function computeMMSignals(d, ind) {
             bgFill: "rgba(6, 36, 26, 0.95)"
           });
           lastState.opt4 = "SHORT";
+          hasAnySignalInEp = true;
+        }
+      }
+
+      // --- OPTION 5 : Validation par V (Chute V-Shape Violente) ---
+      let idxOpt5 = -1;
+      for (let j = sIdx; j < maxScanIdx; j++) {
+        const deltaScore = (sScore != null && net[j] != null) ? (sScore - net[j]) : 0;
+        const barsSince = j - sIdx;
+        const isVDump = (dir[j] === -1 && (j === 0 || dir[j-1] === 1)) ||
+                        (barsSince <= 3 && deltaScore >= 18) ||
+                        (barsSince <= 5 && deltaScore >= 30);
+        if (isVDump) {
+          idxOpt5 = j;
+          break;
+        }
+      }
+      if (idxOpt5 !== -1) {
+        const canTriggerOpt5 = !alternateSignals || (lastState.opt5 !== "SHORT");
+        if (canTriggerOpt5) {
+          const lvlOpt5 = (net[idxOpt5] != null) ? (net[idxOpt5] > 0 ? `+${net[idxOpt5].toFixed(0)}` : `${net[idxOpt5].toFixed(0)}`) : sScoreVal;
+          signals.push({
+            i: idxOpt5,
+            t: d[idxOpt5].t,
+            dir: -1,
+            type: "VENTE",
+            optKey: "opt5",
+            price: d[idxOpt5].c,
+            low: d[idxOpt5].l,
+            high: d[idxOpt5].h,
+            sommetIdx: sIdx,
+            sommetPrice: sP,
+            sommetTime: d[sIdx] ? d[sIdx].t : d[idxOpt5].t,
+            score: sScore,
+            triggerLevel: net[idxOpt5],
+            label: `VENTE Option 5 (Validation en V ${lvlOpt5})`,
+            badge: `🚀 VENTE (SHORT) · OPT 5 VALIDATION EN V (${lvlOpt5})`,
+            sub: `Chute en V @ $${fmt(d[idxOpt5].c, 1)} · Niv: ${lvlOpt5} (Sommet ${sScoreVal})`,
+            color: "#FACC15",
+            bgFill: "rgba(45, 34, 4, 0.95)"
+          });
+          lastState.opt5 = "SHORT";
           hasAnySignalInEp = true;
         }
       }
@@ -26417,6 +26494,7 @@ function drawMMSignals(res, s, e, yOf, cw) {
         if (sig.optKey === "opt2" && ind.showOpt2 === false) continue;
         if (sig.optKey === "opt3" && ind.showOpt3 === false) continue;
         if (sig.optKey === "opt4" && ind.showOpt4 === false) continue;
+        if (sig.optKey === "opt5" && ind.showOpt5 === false) continue;
         if (sig.optKey === "base" && ind.showBase === false) continue;
       }
 
@@ -31742,7 +31820,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1955';
+  window.__LUMEN_BUILD = 'B-1808-2035';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
