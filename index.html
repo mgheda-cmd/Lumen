@@ -25715,8 +25715,10 @@ window.__notifSortie = function(prefixe, px, motif){
 
 function computeMMSignals(d, ind) {
   if (!d || d.length < 5) return { signals: [], line: [], dir: [], net: [], creuxList: [], sommetsList: [] };
-  ind = ind || {};
+  const indMM = (typeof ind === 'object' && ind) ? ind : (state.indicators.strat_mm || {});
   const indKK = state.indicators.kk_bis2 || state.indicators.two_ind || {};
+  const indImp = state.indicators.imp || {};
+  ind = indMM;
   const mtf = (ind.tf && ind.tf !== "chart" && +ind.tf !== state.tf)
     ? +ind.tf
     : ((indKK.tf && indKK.tf !== "chart" && +indKK.tf !== state.tf) ? +indKK.tf : null);
@@ -25792,8 +25794,6 @@ function computeMMSignals(d, ind) {
   const sig2 = (bars2 === d) ? (two2.signal || []) : mapHTF(bars2, two2.signal || [], d);
 
   // 3. Calcul Option 2 (Impulse MACD - iMACD avec la TF choisie dans les paramètres)
-  const indImp = state.indicators.imp || {};
-  const indMM = (typeof ind === 'object' && ind) ? ind : (state.indicators.strat_mm || {});
   // Prendre la TF explicitement choisie pour l'Option 2 (défaut 5m), indépendamment du graphique
   const opt2TfVal = indMM.opt2Tf || indMM.impTf || (indImp.tf && indImp.tf !== 'chart' ? indImp.tf : '5');
   const impTf = (opt2TfVal && opt2TfVal !== 'chart') ? (+opt2TfVal || 5) : 5;
@@ -26721,7 +26721,7 @@ function drawMMSignals(res, s, e, yOf, cw) {
       const x = xOf(i);
       if (x < -220 || x > W - AXIS_W + 220) continue;
 
-      const isLong = (sig.dir === 1 || sig.type === "LONG");
+      const isLong = (sig.dir === 1 || sig.type === "ACHAT" || sig.type === "LONG");
       const baseCandle = state.data[i];
       if (!baseCandle) continue;
 
@@ -26866,9 +26866,10 @@ function drawMMSignals(res, s, e, yOf, cw) {
         opt3: '🛡️ Opt 3 (Cassure)',
         opt4: '🎯 Opt 4 (Lissage)',
         opt5: '🚀 Opt 5 (Rebond V)',
-        opt6: '💎 Opt 6 (BOS/DIV)'
+        opt6: '💎 Opt 6 (BOS/DIV)',
+        confluence: (sig.label || '🏆 Confluence Élite')
       };
-      const optName = optLabels[sig.optKey] || '🟢 Entrée';
+      const optName = optLabels[sig.optKey] || (sig.label || '🟢 Entrée');
       ctx.font = 'bold 9px "IBM Plex Sans", -apple-system, sans-serif';
       ctx.textAlign = "center";
       ctx.fillStyle = color;
@@ -32077,7 +32078,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2340';
+  window.__LUMEN_BUILD = 'B-1808-2345';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
