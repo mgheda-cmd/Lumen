@@ -1815,20 +1815,20 @@ footer{
     </div>
 
     <!-- Navigation Tabs Bar -->
-    <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px;overflow-x:auto">
-      <button class="mexc-tab-btn active" id="mexc-tab-btn-account" onclick="switchMexcTab('account')" style="background:linear-gradient(135deg, rgba(0,229,255,0.25), rgba(16,185,129,0.25));color:#00E5FF;border:1.5px solid #00E5FF;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 0 12px rgba(0,229,255,0.3)">
+    <div style="display:flex;gap:8px;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;overflow-x:auto">
+      <button class="mexc-tab-btn active" id="mexc-tab-btn-account" onclick="switchMexcTab('account')" style="background:linear-gradient(135deg, rgba(0,229,255,0.25), rgba(16,185,129,0.25));color:#00E5FF;border:1.5px solid #00E5FF;border-radius:8px;padding:10px 18px;font-weight:900;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 0 12px rgba(0,229,255,0.35)">
         💼 Compte & Soldes
       </button>
-      <button class="mexc-tab-btn" id="mexc-tab-btn-trade" onclick="switchMexcTab('trade')" style="background:#131C2E;color:#CBD5E1;border:1px solid #2A3A5B;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn" id="mexc-tab-btn-trade" onclick="switchMexcTab('trade')" style="background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
         ⚡ Passer un Trade Réel
       </button>
-      <button class="mexc-tab-btn" id="mexc-tab-btn-bot" onclick="switchMexcTab('bot')" style="background:#131C2E;color:#CBD5E1;border:1px solid #2A3A5B;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn" id="mexc-tab-btn-bot" onclick="switchMexcTab('bot')" style="background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
         🤖 Bot Auto Stratégie
       </button>
-      <button class="mexc-tab-btn" id="mexc-tab-btn-config" onclick="switchMexcTab('config')" style="background:#131C2E;color:#CBD5E1;border:1px solid #2A3A5B;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn" id="mexc-tab-btn-config" onclick="switchMexcTab('config')" style="background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
         🔑 Clés & API
       </button>
-      <button class="mexc-tab-btn" id="mexc-tab-btn-logs" onclick="switchMexcTab('logs')" style="background:#131C2E;color:#CBD5E1;border:1px solid #2A3A5B;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <button class="mexc-tab-btn" id="mexc-tab-btn-logs" onclick="switchMexcTab('logs')" style="background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
         📋 Journal Ordres
       </button>
     </div>
@@ -24208,16 +24208,18 @@ window.onLiveTradeUnitChange = function() {
 window.switchMexcTab = function(tabName) {
   document.querySelectorAll('.mexc-tab-btn').forEach(btn => {
     btn.classList.remove('active');
-    btn.style.background = 'rgba(255,255,255,0.05)';
-    btn.style.color = 'var(--text)';
-    btn.style.borderColor = 'var(--line)';
+    btn.style.background = '#1E293B';
+    btn.style.color = '#F1F5F9';
+    btn.style.borderColor = '#334155';
+    btn.style.boxShadow = 'none';
   });
   const activeBtn = document.getElementById('mexc-tab-btn-' + tabName);
   if (activeBtn) {
     activeBtn.classList.add('active');
-    activeBtn.style.background = 'rgba(0,229,255,0.15)';
+    activeBtn.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.25), rgba(16,185,129,0.25))';
     activeBtn.style.color = '#00E5FF';
     activeBtn.style.borderColor = '#00E5FF';
+    activeBtn.style.boxShadow = '0 0 12px rgba(0,229,255,0.35)';
   }
   document.querySelectorAll('.mexc-tab-content').forEach(content => {
     content.style.display = 'none';
@@ -31721,7 +31723,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1945';
+  window.__LUMEN_BUILD = 'B-1808-1950';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
