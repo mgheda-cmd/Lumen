@@ -507,6 +507,12 @@ footer{
     </button>
   </div>
 
+  <div class="ind-wrap" id="alerts-wrap" style="position:relative">
+    <button class="btn" id="btn-alerts-panel" onclick="toggleAlertsPanel()" title="Gestionnaire d'Alertes" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;color:var(--text)">
+      <span>🔔 Alertes</span>
+    </button>
+  </div>
+
   <button class="btn" id="full-chart-btn" title="Plein graphique / Pleine page : escamoter tous les indicateurs du bas" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">⛶</span> <span class="btn-full-txt">Pleine page</span>
   </button>
@@ -5316,6 +5322,7 @@ function applyTickPrice(px){
   if(px < last.l){ last.l = px; changed = true; }
   if(changed){
     lastTick = Date.now();
+    if(typeof checkPriceAlerts === 'function') checkPriceAlerts(px);
     const now = Date.now();
     // Throttle intelligent des recalculs lourds (300ms) pour libérer 95% du CPU et rendre le drag/zoom ultra-fluide à 60 FPS
     if(now - _lastHeavyTickTime > 300){
@@ -12235,7 +12242,9 @@ if(btnToolsMenu && toolsMenuEl){
   });
 }
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.ind-wrap') && !e.target.closest('.ind-menu') && !e.target.closest('#tools-menu')){
+  if(!e.target.closest('.ind-wrap') && !e.target.closest('.ind-menu') && !e.target.closest('#tools-menu') && !e.target.closest('#alerts-panel')){
+    const ap = document.getElementById('alerts-panel');
+    if(ap) ap.style.display = 'none';
     menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');
     if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
     const sm=document.getElementById('sync-menu');
@@ -16099,6 +16108,8 @@ function toast(msg,col){
   closeBtn.onclick = () => el.remove();
 
   box.appendChild(el);
+  
+  if(typeof window.recordStratAlertInLog === 'function') window.recordStratAlertInLog(msg);
   
   let fadeTimeout, removeTimeout;
   const startTimer = () => {
@@ -33881,6 +33892,249 @@ window.balayerMM_MTF = async function(){
 
 })();
 
+</script>
+<!-- ALERTS PANEL -->
+<div id="alerts-panel" style="display:none;position:absolute;z-index:99999;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 16px 40px rgba(0,0,0,0.8);width:320px;right:10px;top:45px;padding:0;flex-direction:column;">
+  <div style="display:flex;border-bottom:1px solid var(--line);background:var(--panel-2);border-radius:8px 8px 0 0">
+    <button id="tab-alerts-active" style="flex:1;padding:12px;background:none;color:var(--text);border:none;border-bottom:2px solid var(--accent);font-weight:bold;cursor:pointer">Actives</button>
+    <button id="tab-alerts-log" style="flex:1;padding:12px;background:none;color:#787b86;border:none;border-bottom:2px solid transparent;font-weight:bold;cursor:pointer">Journal</button>
+  </div>
+  
+  <div id="alerts-active-view" style="padding:12px;max-height:60vh;overflow-y:auto;">
+    <button id="btn-create-alert" style="width:100%;padding:10px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;font-weight:bold;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px">
+      <span>+</span> Créer une alerte
+    </button>
+    <div id="alerts-list"></div>
+  </div>
+
+  <div id="alerts-log-view" style="display:none;padding:12px;max-height:60vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="color:#787b86;font-size:12px">Historique récent</span>
+      <button onclick="clearAlertLog()" style="background:none;border:none;color:var(--down);cursor:pointer;font-size:12px">Effacer</button>
+    </div>
+    <div id="alerts-log-list"></div>
+  </div>
+</div>
+
+<!-- MODAL CREATION ALERTE -->
+<div id="alert-modal-bg" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999999;align-items:center;justify-content:center">
+  <div style="background:var(--panel);width:340px;border-radius:8px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,0.8);display:flex;flex-direction:column">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0;font-size:14px;color:var(--text)">Créer une alerte</h3>
+      <button onclick="document.getElementById('alert-modal-bg').style.display='none'" style="background:none;border:none;color:#787b86;font-size:20px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="display:block;font-size:11px;color:#787b86;margin-bottom:4px">Condition</label>
+        <select id="alert-cond-type" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);padding:8px;border-radius:4px;outline:none">
+          <option value="price_cross">Prix croise</option>
+          <option value="price_greater">Prix &gt;</option>
+          <option value="price_less">Prix &lt;</option>
+        </select>
+      </div>
+      <div id="alert-val-container">
+        <label style="display:block;font-size:11px;color:#787b86;margin-bottom:4px">Valeur (Prix)</label>
+        <input type="number" id="alert-val" placeholder="ex: 65000" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);padding:8px;border-radius:4px;outline:none">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:#787b86;margin-bottom:4px">Message de notification</label>
+        <input type="text" id="alert-msg" placeholder="Alerte déclenchée !" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);padding:8px;border-radius:4px;outline:none">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="document.getElementById('alert-modal-bg').style.display='none'" style="flex:1;padding:8px;background:var(--panel-2);color:var(--text);border:1px solid var(--line);border-radius:4px;cursor:pointer">Annuler</button>
+        <button id="btn-save-alert" style="flex:1;padding:8px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;font-weight:bold">Créer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let customAlerts = JSON.parse(localStorage.getItem('lumen_custom_alerts') || '[]');
+let alertsLog = JSON.parse(localStorage.getItem('lumen_alerts_log') || '[]');
+
+function saveAlerts() { localStorage.setItem('lumen_custom_alerts', JSON.stringify(customAlerts)); }
+function saveAlertsLog() { localStorage.setItem('lumen_alerts_log', JSON.stringify(alertsLog)); }
+
+function toggleAlertsPanel() {
+  const p = document.getElementById('alerts-panel');
+  if (p.style.display === 'none') {
+    if(typeof closeAllMenus === 'function') closeAllMenus();
+    p.style.display = 'flex';
+    renderAlertsList();
+  } else {
+    p.style.display = 'none';
+  }
+}
+
+document.getElementById('tab-alerts-active').onclick = function() {
+  this.style.color = 'var(--text)';
+  this.style.borderBottom = '2px solid var(--accent)';
+  document.getElementById('tab-alerts-log').style.color = '#787b86';
+  document.getElementById('tab-alerts-log').style.borderBottom = '2px solid transparent';
+  document.getElementById('alerts-active-view').style.display = 'block';
+  document.getElementById('alerts-log-view').style.display = 'none';
+  renderAlertsList();
+};
+
+document.getElementById('tab-alerts-log').onclick = function() {
+  this.style.color = 'var(--text)';
+  this.style.borderBottom = '2px solid var(--accent)';
+  document.getElementById('tab-alerts-active').style.color = '#787b86';
+  document.getElementById('tab-alerts-active').style.borderBottom = '2px solid transparent';
+  document.getElementById('alerts-log-view').style.display = 'block';
+  document.getElementById('alerts-active-view').style.display = 'none';
+  renderAlertsLog();
+};
+
+document.getElementById('btn-create-alert').onclick = function() {
+  document.getElementById('alert-modal-bg').style.display = 'flex';
+};
+
+document.getElementById('btn-save-alert').onclick = function() {
+  const type = document.getElementById('alert-cond-type').value;
+  const val = parseFloat(document.getElementById('alert-val').value);
+  let msg = document.getElementById('alert-msg').value.trim();
+  
+  if (isNaN(val)) {
+    if(typeof toast === 'function') toast('Veuillez entrer un prix valide', '#F45B7D');
+    return;
+  }
+  if (!msg) {
+    if(type === 'price_cross') msg = 'Le prix a croisé ' + val;
+    else if(type === 'price_greater') msg = 'Le prix a dépassé ' + val;
+    else if(type === 'price_less') msg = 'Le prix a chuté sous ' + val;
+  }
+  
+  customAlerts.push({
+    id: Date.now().toString(), type, val, msg, active: true, symbol: window.state?.symbol || 'BTCUSDT', createdAt: Date.now()
+  });
+  saveAlerts();
+  renderAlertsList();
+  document.getElementById('alert-modal-bg').style.display = 'none';
+  if(typeof toast === 'function') toast('Alerte créée avec succès', '#10B981');
+};
+
+function renderAlertsList() {
+  const list = document.getElementById('alerts-list');
+  if (customAlerts.length === 0) {
+    list.innerHTML = '<div style="color:#787b86;font-size:12px;text-align:center;padding:20px 0">Aucune alerte active.</div>';
+    return;
+  }
+  list.innerHTML = customAlerts.map((a, i) => `
+    <div style="background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:10px;margin-bottom:8px;position:relative">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-weight:bold;font-size:12px;color:var(--text);margin-bottom:2px">${escapeHtml(a.symbol)}</div>
+          <div style="font-size:11px;color:#787b86">${getCondText(a)}</div>
+          <div style="font-size:11px;color:var(--text);margin-top:4px">${escapeHtml(a.msg)}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="toggleAlert(${i})" style="background:none;border:none;cursor:pointer;color:${a.active ? '#10B981' : '#787b86'};font-size:16px" title="${a.active ? 'Désactiver' : 'Activer'}">${a.active ? '⏸' : '▶'}</button>
+          <button onclick="removeAlert(${i})" style="background:none;border:none;cursor:pointer;color:var(--down);font-size:16px" title="Supprimer">🗑</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getCondText(a) {
+  if(a.type==='price_cross') return 'Croisement ' + a.val;
+  if(a.type==='price_greater') return 'Dépasse ' + a.val;
+  if(a.type==='price_less') return 'Sous ' + a.val;
+  return 'Alerte';
+}
+
+function toggleAlert(idx) {
+  customAlerts[idx].active = !customAlerts[idx].active;
+  saveAlerts();
+  renderAlertsList();
+}
+window.toggleAlert = toggleAlert;
+
+function removeAlert(idx) {
+  customAlerts.splice(idx, 1);
+  saveAlerts();
+  renderAlertsList();
+}
+window.removeAlert = removeAlert;
+
+function renderAlertsLog() {
+  const list = document.getElementById('alerts-log-list');
+  if (alertsLog.length === 0) {
+    list.innerHTML = '<div style="color:#787b86;font-size:12px;text-align:center;padding:20px 0">Le journal est vide.</div>';
+    return;
+  }
+  list.innerHTML = alertsLog.slice().reverse().map(l => `
+    <div style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#787b86;margin-bottom:4px">
+        <span>${escapeHtml(l.symbol)}</span>
+        <span>${new Date(l.time).toLocaleTimeString()}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text)">${escapeHtml(l.msg)}</div>
+    </div>
+  `).join('');
+}
+
+function clearAlertLog() {
+  alertsLog = [];
+  saveAlertsLog();
+  renderAlertsLog();
+}
+window.clearAlertLog = clearAlertLog;
+
+function triggerCustomAlert(a) {
+  if(typeof toast === 'function') toast(a.msg, '#38BDF8');
+  if(typeof playSnd === 'function') playSnd(3);
+  alertsLog.push({ time: Date.now(), symbol: a.symbol, msg: a.msg });
+  if (alertsLog.length > 50) alertsLog.shift();
+  saveAlertsLog();
+  
+  if (document.getElementById('alerts-log-view').style.display === 'block') {
+    renderAlertsLog();
+  }
+}
+
+let lastPriceForAlerts = 0;
+window.checkPriceAlerts = function(newPrice) {
+  if (!lastPriceForAlerts) {
+    lastPriceForAlerts = newPrice;
+    return;
+  }
+  const prev = lastPriceForAlerts;
+  lastPriceForAlerts = newPrice;
+  
+  for (let i = 0; i < customAlerts.length; i++) {
+    const a = customAlerts[i];
+    if (!a.active || a.symbol !== window.state?.symbol) continue;
+    
+    let triggered = false;
+    if (a.type === 'price_cross') {
+      if ((prev < a.val && newPrice >= a.val) || (prev > a.val && newPrice <= a.val)) triggered = true;
+    } else if (a.type === 'price_greater') {
+      if (prev <= a.val && newPrice > a.val) triggered = true;
+    } else if (a.type === 'price_less') {
+      if (prev >= a.val && newPrice < a.val) triggered = true;
+    }
+    
+    if (triggered) {
+      triggerCustomAlert(a);
+      a.active = false;
+      saveAlerts();
+      if (document.getElementById('alerts-active-view').style.display === 'block') {
+        renderAlertsList();
+      }
+    }
+  }
+};
+
+window.recordStratAlertInLog = function(msg, symbol) {
+  alertsLog.push({ time: Date.now(), symbol: symbol || window.state?.symbol || 'LUMEN', msg: msg });
+  if (alertsLog.length > 50) alertsLog.shift();
+  saveAlertsLog();
+  if (document.getElementById('alerts-log-view').style.display === 'block') {
+    renderAlertsLog();
+  }
+};
 </script>
 </body>
 </html>
