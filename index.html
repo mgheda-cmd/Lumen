@@ -400,7 +400,7 @@ body.chips-collapsed #chips-toggle{ transform:none; }
 
 #toast{
   position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
-  z-index:300;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;
+  z-index:999999;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;
 }
 .toast-item{
   background:var(--panel-2);border:1px solid var(--up);border-left:4px solid var(--up);
@@ -12144,7 +12144,7 @@ if(btnToolsMenu && toolsMenuEl){
   });
 }
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.ind-wrap')){
+  if(!e.target.closest('.ind-wrap') && !e.target.closest('.ind-menu') && !e.target.closest('#tools-menu')){
     menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');
     if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
     const sm=document.getElementById('sync-menu');
@@ -31225,7 +31225,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2520';
+  window.__LUMEN_BUILD = 'B-1708-2521';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
