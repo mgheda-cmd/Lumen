@@ -16508,12 +16508,18 @@ function alertNewPhoneSignals(sigs, d){
     }
   } catch(e){}
 
-  // Initialize without alerting on first run
+  /* Au premier passage on enregistre tout sans alerter, pour ne pas annoncer
+     d'un coup l'historique entier à l'ouverture de la page. */
   if (!window.__alertsInitialized) {
     window.__alertsInitialized = true;
+    const iForm = d.length - 1;
+    const tForm = d[iForm] ? d[iForm].t : null;
     for(const sig of sigs) {
       const sigIdx = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
       const sigTime = sig.t || (sigIdx != null && d[sigIdx] ? d[sigIdx].t : 0);
+      /* On n'inscrit pas le signal de la bougie en cours : il serait tenu
+         pour déjà vu et n'alerterait jamais une fois la bougie close. */
+      if(sigIdx === iForm || (tForm != null && sigTime === tForm)) continue;
       const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
       const sigTag = sig.tag || '';
       const source = sig.source || 'sig';
@@ -16529,7 +16535,22 @@ function alertNewPhoneSignals(sigs, d){
 
   const fresh = [];
 
+  /* La dernière bougie n'est pas close : son prix bouge à chaque tick, et la
+     stratégie peut y voir un signal qui disparaîtra à la clôture. Comme les
+     alertes tournent maintenant à chaque tick, cela produisait des
+     notifications sans pastille, ou des pastilles arrivant après coup.
+
+     On n'alerte donc que sur des bougies closes. Le signal de la bougie en
+     cours sera pris au tick suivant sa fermeture, au moment où la pastille
+     apparaît réellement à l'écran. */
+  const idxEnCours = d.length - 1;
+  const tEnCours = d[idxEnCours] ? d[idxEnCours].t : null;
+
   for(const sig of sigs) {
+    const iSig = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
+    const tSig = sig.t || (iSig != null && d[iSig] ? d[iSig].t : null);
+    if(iSig === idxEnCours || (tEnCours != null && tSig === tEnCours)) continue;
+
     const isDirect = (sig.tag === 'DIRECT');
     const isFull = (sig.tag === 'FULL');
     const isExit = (sig.type === 'SORTIE');
@@ -31260,7 +31281,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2525';
+  window.__LUMEN_BUILD = 'B-1708-2610';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
