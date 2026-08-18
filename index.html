@@ -22388,7 +22388,7 @@ async function runZZBacktest(skipFetch){
       for(const c0 of capitaux){
         if(c0 === capBase) continue;
         const rc = runSingleZZSim(v._d, v._map, v.tpVal, v.sl, c0, v.lev, feeRate, v.part);
-        if(rc && rc.tradesCount >= 30 && !rc.ruine && rc.losses > 0 && isFinite(rc.profitFactor) && rc.profitFactor < 90 && rc.profitFactor >= 1.0 && rc.netPnlPct > best.res.netPnlPct){
+        if(rc && rc.tradesCount >= 25 && !rc.ruine && rc.losses > 0 && isFinite(rc.profitFactor) && rc.profitFactor < 90 && rc.profitFactor >= 1.0 && rc.netPnlPct > best.res.netPnlPct){
           const subStab = evaluateStabForTop(Object.assign({}, v, { cap: c0, res: rc }));
           if(subStab.isStable){
             best = Object.assign({}, v, { cap: c0, res: rc, stabHtml: subStab.html });
@@ -22973,7 +22973,7 @@ function renderZZBtResultsUI(bestIdOverride){
           const cardBg = isCardDemoActive ? 'rgba(16,185,129,0.2)' : (isSelected ? 'rgba(255,215,0,0.15)' : 'var(--panel-2)');
 
           const isStrictCard = c.isStrict;
-          const isValidCard = c.res && c.res.tradesCount >= 30 && c.res.losses > 0 && isFinite(c.res.profitFactor) && c.res.profitFactor < 90 && c.isStable !== false;
+          const isValidCard = c.res && c.res.tradesCount >= 25 && c.res.losses > 0 && isFinite(c.res.profitFactor) && c.res.profitFactor < 90 && c.isStable !== false;
 
           return `
             <div style="background:${cardBg};border:${cardBorder};border-radius:10px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:${isCardDemoActive?'0 0 16px rgba(16,185,129,0.5)':(isSelected?'0 0 12px rgba(255,215,0,0.3)':'')};transition:all 0.2s ease">
@@ -23014,7 +23014,7 @@ function renderZZBtResultsUI(bestIdOverride){
                   <button type="button" disabled style="width:100%;background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.4);border-radius:7px;padding:7px 6px;font-size:10.5px;font-weight:700;cursor:not-allowed;opacity:0.8" title="Lancement désactivé : configuration non validée">
                     🚫 Direct Exchange Désactivé (Non Validée)
                   </button>
-                  <div style="font-size:9px;color:#FCA5A5;margin-top:2px;text-align:center">⚠️ Écartée : min 30 trades / PF non infini / stabilité 7-14-30j</div>
+                  <div style="font-size:9px;color:#FCA5A5;margin-top:2px;text-align:center">⚠️ Écartée : min 25 trades / PF non infini / stabilité 7-14-30j</div>
                 ` : !isStrictCard ? `
                   <button type="button" disabled style="width:100%;background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.4);border-radius:7px;padding:7px 6px;font-size:10.5px;font-weight:700;cursor:not-allowed;opacity:0.8" title="Lancement désactivé en mode Lookahead">
                     🚫 Direct Exchange Désactivé (Lookahead)
@@ -23048,7 +23048,7 @@ function renderZZBtResultsUI(bestIdOverride){
           const isLiveActiveSc = !!(window.__liveBotActive && window.__liveBotActive.active && window.__liveBotActive.mode === sc.id);
 
           const isStrictCard = isStrict;
-          const isValidCard = r && r.tradesCount >= 30 && r.losses > 0 && isFinite(r.profitFactor) && r.profitFactor < 90 && r.netPnlTotal > 0 && !r.ruine;
+          const isValidCard = r && r.tradesCount >= 25 && r.losses > 0 && isFinite(r.profitFactor) && r.profitFactor < 90 && r.netPnlTotal > 0 && !r.ruine;
 
           const cardBorder = isLiveActiveSc ? '2px solid #10B981' : (isDemoActiveSc ? '2px solid #00E5FF' : (isSelected ? '2px solid #00E5FF' : (isBest ? '1px dashed #FFD700' : '1px solid var(--line)')));
           const cardBg = isLiveActiveSc ? 'rgba(16,185,129,0.15)' : (isDemoActiveSc ? 'rgba(0,229,255,0.12)' : (isSelected ? 'rgba(0,229,255,0.12)' : 'var(--panel-2)'));
@@ -23335,7 +23335,7 @@ window.__zzCarte = function(v, k, utNom){
   const cardBgColor = liveActive ? 'rgba(16,185,129,0.12)' : (active ? 'rgba(34,211,238,0.08)' : 'var(--panel-2,#0F172A)');
   const cardShadow = liveActive ? 'box-shadow:0 0 15px rgba(16,185,129,0.35);' : '';
 
-  const isValidCard = r0 && r0.tradesCount >= 30 && r0.losses > 0 && isFinite(r0.profitFactor) && r0.profitFactor < 90 && v.isStable !== false;
+  const isValidCard = r0 && r0.tradesCount >= 25 && r0.losses > 0 && isFinite(r0.profitFactor) && r0.profitFactor < 90 && v.isStable !== false;
 
   return '<div style="border:2px solid ' + cardBorderColor + ';border-radius:8px;padding:8px;margin-bottom:6px;background:' + cardBgColor + ';' + cardShadow + '">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
@@ -27171,7 +27171,7 @@ window.__runBtInterneMM = async function(){
     const p2 = t2.reduce((a,t) => a + t.net, 0);
     const p3 = t3.reduce((a,t) => a + t.net, 0);
     const stable = (p1 > 0 && p2 > 0 && p3 > 0);
-    const conforme = (n >= 30 && pf >= 1 && pnl > 0 && stable);
+    const conforme = (n >= 25 && pf >= 1 && pnl > 0 && stable);
 
     const optNoms = {
       toutes: 'Toutes les options',
@@ -29458,7 +29458,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const bud  = BUDGETS[i % BUDGETS.length];
       const gain = c.r.netPnlPct * bud / 100;
       const wk   = c.weeks.map(w => w ? fmt(w.pf,2) : '—').join(' / ');
-      const conform = c.r.tradesCount >= 30 && isFinite(c.r.profitFactor) && c.r.profitFactor >= 1
+      const conform = c.r.tradesCount >= 25 && isFinite(c.r.profitFactor) && c.r.profitFactor >= 1
                       && c.weeks.length === 3 && c.weeks.every(w => w && w.pf >= 1);
       const liveOk  = conform && ctx.strict;
 
@@ -30179,7 +30179,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       + '<div style="margin-top:11px;font-size:11px;color:#7E8CA8;line-height:1.7">'
       + '<b>Alignées</b> : pastilles corrigées tombant sur la même bougie que l\'originale. Plus c\'est haut, moins le décalage pose problème.<br>'
       + '<b>Coût total</b> : somme des écarts de prix subis à l\'entrée, dans le sens défavorable. Négatif = perte.<br>'
-      + '<b>Configs PF ≥ 1</b> : combien de combinaisons dépassent le seuil de rentabilité, sur celles ayant au moins 30 trades.<br>'
+      + '<b>Configs PF ≥ 1</b> : combien de combinaisons dépassent le seuil de rentabilité, sur celles ayant au moins 25 trades.<br>'
       + 'La meilleure piste est celle qui maximise à la fois le taux d\'alignement et le nombre de configurations rentables.</div>';
 
     const cmpRes = document.getElementById('cmp3-res');
@@ -31637,7 +31637,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1855';
+  window.__LUMEN_BUILD = 'B-1808-1905';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -32175,7 +32175,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     /* Conditions minimales avant d'envisager du réel. Elles reprennent les
        seuils qu'on s'est fixés : échantillon suffisant, profit factor
        supérieur à 1, et tenue sur les trois tranches. */
-    const conforme = (trades.length >= 30) && (pf >= 1) && stable && (pnl > 0) && (nbLiq === 0);
+    const conforme = (trades.length >= 25) && (pf >= 1) && stable && (pnl > 0) && (nbLiq === 0);
     window.__btDernier = {
       conforme: conforme, manques: [], trades: trades.length, pf: pf, pnl: pnl, dd: dd, tp: tpVal,
       liq: nbLiq, capMin: capMin, capital: capital, ruine: ruine,
@@ -33018,16 +33018,15 @@ window.envoyerVersDemo = function(){
   try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
 
   // 4. Activer l'Auto-Trade Démo
+  paperAutoTrade = true;
   window.paperAutoTrade = true;
-  const autoTradeBtn = document.getElementById('paper-auto-trade');
-  if(autoTradeBtn){
-    autoTradeBtn.textContent = '🤖 Auto-Trade : ACTIF (' + labelStrat + ')';
-    autoTradeBtn.style.background = 'rgba(0, 230, 118, 0.25)';
-    autoTradeBtn.style.borderColor = '#00E676';
-    autoTradeBtn.style.color = '#00E676';
-  }
+  try { localStorage.setItem('lumen_paper_autotrade', '1'); } catch(e){}
 
-  // 5. Déplier le panneau Compte Démo
+  // 5. Fermer la modale du Backtest Apparié
+  const btaBack = document.getElementById('bta-back');
+  if(btaBack) btaBack.style.display = 'none';
+
+  // 6. Déplier le panneau Compte Démo
   const paperPanel = document.getElementById('paper-panel');
   if(paperPanel && !paperPanel.classList.contains('open')){
     paperPanel.classList.add('open');
@@ -33037,10 +33036,15 @@ window.envoyerVersDemo = function(){
 
   if(typeof window.syncPaperConfigFromUI === 'function') window.syncPaperConfigFromUI();
   if(typeof window.updatePaperIsolatedMarginUI === 'function') window.updatePaperIsolatedMarginUI();
-  if(typeof renderPaperStratCard === 'function') renderPaperStratCard();
-  if(typeof updatePaperUI === 'function') updatePaperUI();
+  if(typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
+  if(typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
   if(typeof updatePaper === 'function') updatePaper();
-  if(typeof toast === 'function') toast('🚀 Stratégie ' + labelStrat + ' appliquée avec succès sur votre Compte Démo !', '#00E676');
+  if(typeof saveConfig === 'function') saveConfig();
+
+  const stratCard = document.getElementById('paper-strat-card');
+  if(stratCard) stratCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  if(typeof toast === 'function') toast('🚀 Stratégie ' + labelStrat + ' activée avec succès en Démo !', '#00E676');
 };
 
 /* ================================================================
