@@ -26793,6 +26793,13 @@ function drawMMSignals(res, s, e, yOf, cw) {
 
       ctx.restore();
 
+      // 4. Projection de la ligne verticale jusqu'en bas du graphique (à travers tous les sous-panneaux)
+      if (ind.showVerticalLines !== false) {
+        if (!Array.isArray(window.__zzVerticales)) window.__zzVerticales = [];
+        const startY = isLong ? (by + bh) : anchorY;
+        window.__zzVerticales.push({ x: x, y: startY, col: color });
+      }
+
       if (typeof labelHits !== "undefined" && Array.isArray(labelHits)) {
         labelHits.push({ x: bx, y: by, w: bw, h: bh, key: "strat_mm" });
       }
@@ -31979,7 +31986,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2130';
+  window.__LUMEN_BUILD = 'B-1808-2305';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
