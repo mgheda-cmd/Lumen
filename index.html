@@ -1782,17 +1782,15 @@ footer{
           Exécute automatiquement sur votre page Web MEXC sans clés API au tarif manuel réduit (0.02%).
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <a href="javascript:(function(){const s=document.createElement('script');s.src='https://mgheda-cmd.github.io/Lumen/extension-mexc/content.js?_='+Date.now();document.head.appendChild(s);})();" class="btn" style="text-decoration:none;font-size:11px;padding:8px 12px;border:1px solid #10B981;color:#10B981;font-weight:800;background:rgba(16,185,129,0.15);border-radius:6px" title="Glissez ce bouton dans vos favoris, puis cliquez dessus sur votre page MEXC pour afficher le badge vert">
-          ⭐ Favori 1-Clic MEXC
+        <a href="https://futures.mexc.com/exchange/BTC_USDT" target="_blank" rel="noopener" onclick="localStorage.setItem('lumen_web_autotrader_ready','1'); if(typeof updateWebAutoTraderUI==='function') updateWebAutoTraderUI();" class="btn" style="text-decoration:none;font-size:11px;padding:8px 12px;border:1.5px solid #10B981;color:#10B981;font-weight:900;background:rgba(16,185,129,0.18);border-radius:6px;display:inline-flex;align-items:center;gap:6px">
+          🚀 1. Ouvrir Page MEXC
         </a>
-        <button onclick="window.ouvrirMexcEtScript(event)" class="btn" style="text-decoration:none;font-size:11px;padding:8px 12px;border:1px solid #38BDF8;color:#38BDF8;font-weight:800;background:rgba(56,189,248,0.12);border-radius:6px;cursor:pointer">
-          📥 Script Tampermonkey & Ouvrir MEXC
-        </button>
+        <a href="https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js" target="_blank" rel="noopener" class="btn" style="text-decoration:none;font-size:11px;padding:8px 12px;border:1px solid #38BDF8;color:#38BDF8;font-weight:800;background:rgba(56,189,248,0.12);border-radius:6px">
+          📥 2. Installer Script
+        </a>
         <button id="btn-toggle-web-autotrader" onclick="toggleWebAutoTrader()" style="background:#0F172A;color:#94A3B8;border:1.5px solid #64748B;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s">
           <span id="web-at-modal-dot">⚪</span> <span id="web-at-modal-txt">Actionner le Web Auto-Trader</span>
         </button>
-      </div>
     </div>
 
     <!-- Active Live Status Banner if active -->
@@ -31721,7 +31719,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1925';
+  window.__LUMEN_BUILD = 'B-1808-1930';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
