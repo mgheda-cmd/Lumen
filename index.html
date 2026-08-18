@@ -5601,24 +5601,20 @@ function restoreView(){
   let v=null;
   try{v=JSON.parse(localStorage.getItem(VIEW_KEY)||'null');}catch(e){}
   const d=state.data;
-  if(!v||v.k!==viewKey()||!d.length)return false;
-  const count=Math.max(20,Math.min(d.length,v.count||150));
-  const span=state.tf*60000;
-  let iR;
-  if(v.rightT<=d[d.length-1].t){
-    iR=idxOfTime(v.rightT);
-    if(iR==null)iR=d.length-1;
-  }else{
-    iR=(d.length-1)+Math.round((v.rightT-d[d.length-1].t)/span); // bord droit dans le futur
+  if(!d || !d.length) return false;
+  const count = (v && isFinite(v.count)) ? Math.max(20, Math.min(d.length, v.count)) : 150;
+  
+  // TOUJOURS afficher la dernière bougie en direct et le prix actuel par défaut
+  state.view = {
+    start: Math.max(0, d.length - count),
+    count: count
+  };
+  state.yScale = { auto: true, lo: 0, hi: 0 };
+  if (state.subScale) {
+    for (const k in state.subScale) {
+      if (state.subScale[k]) state.subScale[k].auto = true;
+    }
   }
-  let st = iR - count;
-  if(!isFinite(st) || st >= d.length) st = d.length - count;
-  state.view={start:st,count};
-  state.view.start=Math.max(-count*0.5,Math.min(d.length-count*0.5,state.view.start));
-  if(v.auto===false&&isFinite(v.lo)&&isFinite(v.hi)&&v.hi>v.lo)
-    state.yScale={auto:false,lo:v.lo,hi:v.hi};
-  else
-    state.yScale.auto=true;
   return true;
 }
 async function loadData(){
@@ -31829,7 +31825,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2042';
+  window.__LUMEN_BUILD = 'B-1808-2058';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
