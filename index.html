@@ -4921,6 +4921,11 @@ const state = {
 /* ---------- Portefeuille de trading démo ---------- */
 const paper={cash:100,bank:0,withdrawals:[],positions:[],history:[]};
 let paperUnit='coin';
+let paperAutoTrade = false;
+try {
+  paperAutoTrade = (localStorage.getItem('lumen_paper_autotrade') === '1');
+} catch(e){}
+window.paperAutoTrade = paperAutoTrade;
 
 /* ---------- Mémorisation de la configuration ---------- */
 const CFG_KEY='lumen-config-v1';
@@ -4928,7 +4933,7 @@ let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
 function currentConfig(){
   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
     ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, fullChart:state.fullChart, collapsedPanes:state.collapsedPanes, allSubsCollapsed:state.allSubsCollapsed, tripleKeep:state.tripleKeep, wantMarks:state.wantMarks, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
-    paper:{cash:paper.cash,bank:paper.bank||0,withdrawals:Array.isArray(paper.withdrawals)?paper.withdrawals.slice(0,100):[],positions:paper.positions,history:paper.history.slice(0,50)}};
+    paper:{cash:paper.cash,bank:paper.bank||0,withdrawals:Array.isArray(paper.withdrawals)?paper.withdrawals.slice(0,100):[],positions:paper.positions,history:paper.history.slice(0,50),autoTrade:!!(paperAutoTrade || window.paperAutoTrade)}};
 }
 function mergeConfig(c){
   if(!c)return;
@@ -4937,6 +4942,18 @@ function mergeConfig(c){
   if(['candles','line','area'].includes(c.type))state.type=c.type;
   if(c.market==='spot'||c.market==='perp')state.market=c.market;
   if(c.paperUnit==='usdt'||c.paperUnit==='coin')paperUnit=c.paperUnit;
+  if(c.paper){
+    if(typeof c.paper.autoTrade === 'boolean'){
+      paperAutoTrade = c.paper.autoTrade;
+      window.paperAutoTrade = c.paper.autoTrade;
+      try{ localStorage.setItem('lumen_paper_autotrade', paperAutoTrade ? '1' : '0'); }catch(e){}
+    } else {
+      try {
+        paperAutoTrade = (localStorage.getItem('lumen_paper_autotrade') === '1');
+        window.paperAutoTrade = paperAutoTrade;
+      } catch(e){}
+    }
+  }
   if(c.paper&&typeof c.paper.cash==='number'&&isFinite(c.paper.cash)){
     paper.cash=(c.paper.cash === 100000) ? 100 : c.paper.cash;
     paper.bank=typeof c.paper.bank==='number'&&isFinite(c.paper.bank)?c.paper.bank:0;
@@ -14310,9 +14327,10 @@ window.restaurerTradeVente = function() {
 };
 
 /* ---------- Auto-Trade sur Pastilles Directes (Achat Direct / Vente Directe) ---------- */
-let paperAutoTrade = false;
 try {
-  paperAutoTrade = localStorage.getItem('lumen_paper_autotrade') === '1';
+  if (typeof paperAutoTrade === 'undefined') {
+    window.paperAutoTrade = localStorage.getItem('lumen_paper_autotrade') === '1';
+  }
 } catch(e){}
 
 let autoTradeSeenSet = new Set();
@@ -14334,7 +14352,8 @@ function saveAutoTradeSeen(){
 function updateAutoTradeUI(){
   const btn = document.getElementById('paper-auto-trade');
   if(!btn) return;
-  if(paperAutoTrade){
+  const isAuto = (typeof paperAutoTrade !== 'undefined' && paperAutoTrade) || (typeof window.paperAutoTrade !== 'undefined' && window.paperAutoTrade);
+  if(isAuto){
     btn.style.background = 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)';
     btn.style.color = '#0F172A';
     btn.style.border = 'none';
@@ -14354,6 +14373,7 @@ let autoTradeLastExecutedSigId = null;
 
 function toggleAutoTrade(){
   paperAutoTrade = !paperAutoTrade;
+  window.paperAutoTrade = paperAutoTrade;
   try {
     localStorage.setItem('lumen_paper_autotrade', paperAutoTrade ? '1' : '0');
   } catch(e){}
@@ -14367,6 +14387,7 @@ function toggleAutoTrade(){
   } else {
     toast('🤖 Auto-Trade DÉSACTIVÉ', '#94A3B8');
   }
+  if(typeof saveConfig === 'function') saveConfig();
   updateAutoTradeUI();
 }
 window.toggleAutoTrade = toggleAutoTrade;
@@ -31598,7 +31619,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1845';
+  window.__LUMEN_BUILD = 'B-1808-1850';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
