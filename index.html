@@ -5316,7 +5316,7 @@ function applyTickPrice(px){
     scheduleRender();
   }
 }
-function applyKline(k){
+function applyKline(k, isLive=false){
   const d=state.data; if(!d.length)return;
   const bar={t:k.t,o:k.o,h:k.h,l:k.l,c:k.c,v:k.v,tbv:k.tbv};
   const last=d[d.length-1];
@@ -5325,7 +5325,7 @@ function applyKline(k){
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
   if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
-  if(typeof checkAllAlerts === 'function') checkAllAlerts();
+  if(isLive && typeof checkAllAlerts === 'function') checkAllAlerts();
   if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   scheduleRender();
 }
@@ -5338,7 +5338,7 @@ function startPolling(g){
       const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1`);
       if(g!==gen||!Array.isArray(rows)||!rows.length)return;
       const k=rows[0];
-      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]});
+      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true);
       lastTick=Date.now();
     }catch(e){/* nouvelle tentative au tick suivant */}
   },800);
@@ -5359,7 +5359,11 @@ async function resync(g){
   try{
     const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=3`);
     if(g!==gen||!Array.isArray(rows))return;
-    for(const k of rows)applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]});
+    for(let i=0; i<rows.length; i++){
+      const k=rows[i];
+      // Ne déclencher les alertes que pour la toute dernière bougie du resync
+      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, false);
+    }
     lastTick=Date.now();
   }catch(e){}
 }
@@ -5387,7 +5391,7 @@ function startStream(g){
         const raw=JSON.parse(ev.data);
         const m=raw.data||raw;
         if(m.k){
-          applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v,tbv:+m.k.V});
+          applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v,tbv:+m.k.V}, true);
           lastTick=Date.now();
         } else if(m.e==='aggTrade'||m.e==='trade'||m.p!=null){
           const px=+m.p;
