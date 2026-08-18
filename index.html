@@ -4903,7 +4903,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_mm:{on:true,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,showOpt6:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
+    strat_mm:{on:true,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
@@ -15527,6 +15527,11 @@ const SCHEMA={
     {k:'showOpt4',t:'bool',lab:"Afficher Pastille 🎯 Option 4 (Lissage Robuste 34)",def:true},
     {k:'showOpt5',t:'bool',lab:"Afficher Pastille 🚀 Option 5 (Validation par V)",def:true},
     {k:'showOpt6',t:'bool',lab:"Afficher Pastille 💎 Option 6 (Divergence & BOS Structure)",def:true},
+    {k:'opt6Tf',t:'choice',lab:"💎 Option 6 : Unité de Temps (BOS / Structure)",opts:[
+      {v:'chart',t:'UT du Graphique (Défaut)'},
+      {v:'1',t:'1m'},{v:'2',t:'2m'},{v:'3',t:'3m'},{v:'5',t:'5m'},
+      {v:'15',t:'15m'},{v:'30',t:'30m'},{v:'60',t:'1H'},{v:'240',t:'4H'}
+    ],def:'chart'},
     {k:'showBase',t:'bool',lab:"Afficher Pastille 🟢 Signal Base (Ligne Verte)",def:true},
     {k:'showLineOnPrice',t:'bool',lab:"Afficher la ligne de tendance sur le prix",def:true},
     {k:'showCreuxMarkers',t:'bool',lab:"Afficher les repères ▲ Creux et ▼ Sommets",def:true},
@@ -26409,7 +26414,10 @@ function computeMMSignals(d, ind) {
   // confirmée par la bascule de couleur de la ligne MM (sans dépendre des seuils extrêmes +/-75).
   // ==========================================
   let lastOpt6Dir = null;
-  const bosEvents = (typeof calc.bosOne === 'function') ? calc.bosOne(d, '', state.tf) : [];
+  const opt6TfVal = indMM.opt6Tf || 'chart';
+  const bosBars = (opt6TfVal !== 'chart' && typeof getMTFBars === 'function') ? (getMTFBars(+opt6TfVal) || d) : d;
+  const bosTfNum = (opt6TfVal !== 'chart') ? (+opt6TfVal || state.tf) : state.tf;
+  const bosEvents = (typeof calc.bosOne === 'function') ? calc.bosOne(bosBars, '', bosTfNum) : [];
 
   const divList = [];
   const pL = 5;
@@ -31930,7 +31938,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-2120';
+  window.__LUMEN_BUILD = 'B-1808-2125';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
