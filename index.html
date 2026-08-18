@@ -1782,15 +1782,15 @@ footer{
           Exécute automatiquement sur votre page Web MEXC sans clés API au tarif manuel réduit (0.02%).
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <a href="https://futures.mexc.com/exchange/BTC_USDT" target="_blank" rel="noopener" onclick="window.open('https://futures.mexc.com/exchange/BTC_USDT', '_blank'); localStorage.setItem('lumen_web_autotrader_ready','1'); if(typeof updateWebAutoTraderUI==='function') updateWebAutoTraderUI(); return false;" class="btn" style="text-decoration:none;font-size:11.5px;padding:8px 14px;border:1.5px solid #10B981;color:#FFFFFF;font-weight:900;background:linear-gradient(135deg, #10B981, #059669);border-radius:6px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 0 12px rgba(16,185,129,0.4)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <a href="https://futures.mexc.com/exchange/BTC_USDT" target="_blank" rel="noopener" onclick="window.open('https://futures.mexc.com/exchange/BTC_USDT', '_blank'); localStorage.setItem('lumen_web_autotrader_ready','1'); if(typeof updateWebAutoTraderUI==='function') updateWebAutoTraderUI(); return false;" class="btn" style="text-decoration:none;font-size:13.5px;padding:10px 18px;border:1.5px solid #38BDF8;color:#FFFFFF;font-weight:900;background:linear-gradient(135deg, #0284C7, #0369A1);border-radius:8px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 10px rgba(2,132,199,0.4)">
           🚀 1. Ouvrir Page MEXC
         </a>
-        <a href="https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js" target="_blank" rel="noopener" onclick="window.open('https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js', '_blank'); return false;" class="btn" style="text-decoration:none;font-size:11.5px;padding:8px 14px;border:1px solid #38BDF8;color:#38BDF8;font-weight:800;background:rgba(56,189,248,0.12);border-radius:6px;cursor:pointer">
+        <a href="https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js" target="_blank" rel="noopener" onclick="window.open('https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js', '_blank'); return false;" class="btn" style="text-decoration:none;font-size:13.5px;padding:10px 18px;border:1.5px solid #64748B;color:#FFFFFF;font-weight:800;background:linear-gradient(135deg, #334155, #1E293B);border-radius:8px;display:inline-flex;align-items:center;gap:8px;cursor:pointer">
           📥 2. Installer Script
         </a>
-        <button id="btn-toggle-web-autotrader" onclick="toggleWebAutoTrader()" style="background:#0F172A;color:#94A3B8;border:1.5px solid #64748B;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s">
-          <span id="web-at-modal-dot">⚪</span> <span id="web-at-modal-txt">Actionner le Web Auto-Trader</span>
+        <button id="btn-toggle-web-autotrader" onclick="toggleWebAutoTrader()" style="background:#1E293B;color:#F8FAFC;border:2px solid #64748B;border-radius:8px;padding:10px 20px;font-size:13.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all 0.2s">
+          <span id="web-at-modal-dot" style="font-size:15px">⚪</span> <span id="web-at-modal-txt">Actionner le Web Auto-Trader</span>
         </button>
       </div>
     </div>
@@ -24767,16 +24767,16 @@ window.updateWebAutoTraderUI = function() {
     if (txtModal) txtModal.textContent = 'ACTIONNÉ (Prêt à trader à 0.02%)';
   } else if (localStorage.getItem('lumen_web_autotrader_ready') === '1') {
     if (btnMenu) {
-      btnMenu.style.background = 'rgba(16,185,129,0.12)';
+      btnMenu.style.background = '#064E3B';
       btnMenu.style.borderColor = '#10B981';
-      btnMenu.style.color = '#10B981';
-      btnMenu.style.boxShadow = '0 0 10px rgba(16,185,129,0.3)';
+      btnMenu.style.color = '#FFFFFF';
+      btnMenu.style.boxShadow = '0 0 12px rgba(16,185,129,0.4)';
     }
     if (btnModal) {
-      btnModal.style.background = 'rgba(16,185,129,0.15)';
+      btnModal.style.background = '#064E3B';
       btnModal.style.borderColor = '#10B981';
-      btnModal.style.color = '#10B981';
-      btnModal.style.boxShadow = '0 0 12px rgba(16,185,129,0.35)';
+      btnModal.style.color = '#FFFFFF';
+      btnModal.style.boxShadow = '0 0 14px rgba(16,185,129,0.45)';
     }
     if (dotMenu) dotMenu.textContent = '🟢';
     if (txtMenu) txtMenu.textContent = 'Web Auto-Trader : PRÊT (En attente)';
@@ -24784,15 +24784,15 @@ window.updateWebAutoTraderUI = function() {
     if (txtModal) txtModal.textContent = 'PRÊT (Cliquez pour ACTIONNER)';
   } else {
     if (btnMenu) {
-      btnMenu.style.background = 'rgba(15,23,42,0.85)';
+      btnMenu.style.background = '#1E293B';
       btnMenu.style.borderColor = '#64748B';
-      btnMenu.style.color = '#94A3B8';
+      btnMenu.style.color = '#FFFFFF';
       btnMenu.style.boxShadow = 'none';
     }
     if (btnModal) {
-      btnModal.style.background = 'rgba(15,23,42,0.85)';
+      btnModal.style.background = '#1E293B';
       btnModal.style.borderColor = '#64748B';
-      btnModal.style.color = '#94A3B8';
+      btnModal.style.color = '#FFFFFF';
       btnModal.style.boxShadow = 'none';
     }
     if (dotMenu) dotMenu.textContent = '⚪';
@@ -31721,7 +31721,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1940';
+  window.__LUMEN_BUILD = 'B-1808-1945';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
