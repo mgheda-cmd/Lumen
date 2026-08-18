@@ -1786,9 +1786,9 @@ footer{
         <a href="javascript:(function(){const s=document.createElement('script');s.src='https://mgheda-cmd.github.io/Lumen/extension-mexc/content.js?_='+Date.now();document.head.appendChild(s);})();" class="btn" style="text-decoration:none;font-size:11px;padding:8px 12px;border:1px solid #10B981;color:#10B981;font-weight:800;background:rgba(16,185,129,0.15);border-radius:6px" title="Glissez ce bouton dans vos favoris, puis cliquez dessus sur votre page MEXC pour afficher le badge vert">
           ⭐ Favori 1-Clic MEXC
         </a>
-        <a href="https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js" target="_blank" rel="noopener" class="btn" style="text-decoration:none;font-size:11px;padding:8px 12px;border:1px solid #38BDF8;color:#38BDF8;font-weight:800;background:rgba(56,189,248,0.12);border-radius:6px">
-          📥 Script Tampermonkey
-        </a>
+        <button onclick="window.ouvrirMexcEtScript(event)" class="btn" style="text-decoration:none;font-size:11px;padding:8px 12px;border:1px solid #38BDF8;color:#38BDF8;font-weight:800;background:rgba(56,189,248,0.12);border-radius:6px;cursor:pointer">
+          📥 Script Tampermonkey & Ouvrir MEXC
+        </button>
         <button id="btn-toggle-web-autotrader" onclick="toggleWebAutoTrader()" style="background:#0F172A;color:#94A3B8;border:1.5px solid #64748B;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s">
           <span id="web-at-modal-dot">⚪</span> <span id="web-at-modal-txt">Actionner le Web Auto-Trader</span>
         </button>
@@ -24765,6 +24765,23 @@ window.updateWebAutoTraderUI = function() {
     if (txtMenu) txtMenu.textContent = 'WEB AUTO-TRADER : ACTIONNÉ (0.02%)';
     if (dotModal) dotModal.textContent = '🟢';
     if (txtModal) txtModal.textContent = 'ACTIONNÉ (Prêt à trader à 0.02%)';
+  } else if (localStorage.getItem('lumen_web_autotrader_ready') === '1') {
+    if (btnMenu) {
+      btnMenu.style.background = 'rgba(16,185,129,0.12)';
+      btnMenu.style.borderColor = '#10B981';
+      btnMenu.style.color = '#10B981';
+      btnMenu.style.boxShadow = '0 0 10px rgba(16,185,129,0.3)';
+    }
+    if (btnModal) {
+      btnModal.style.background = 'rgba(16,185,129,0.15)';
+      btnModal.style.borderColor = '#10B981';
+      btnModal.style.color = '#10B981';
+      btnModal.style.boxShadow = '0 0 12px rgba(16,185,129,0.35)';
+    }
+    if (dotMenu) dotMenu.textContent = '🟢';
+    if (txtMenu) txtMenu.textContent = 'Web Auto-Trader : PRÊT (En attente)';
+    if (dotModal) dotModal.textContent = '🟢';
+    if (txtModal) txtModal.textContent = 'PRÊT (Cliquez pour ACTIONNER)';
   } else {
     if (btnMenu) {
       btnMenu.style.background = 'rgba(15,23,42,0.85)';
@@ -24785,10 +24802,36 @@ window.updateWebAutoTraderUI = function() {
   }
 };
 
+window.ouvrirMexcEtScript = function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const rawSym = (state.symbol || 'BTCUSDT').toUpperCase();
+  const base = rawSym.replace('USDT', '') || 'BTC';
+  const mexcPair = `${base}_USDT`;
+  const mexcUrl = `https://futures.mexc.com/exchange/${mexcPair}`;
+  const scriptUrl = 'https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js';
+
+  // 1. Ouvrir le script pour installation/mise à jour Tampermonkey
+  window.open(scriptUrl, '_blank');
+
+  // 2. Ouvrir la page MEXC Futures correspondante
+  setTimeout(() => {
+    window.open(mexcUrl, '_blank');
+  }, 400);
+
+  // 3. Mettre l'indicateur en pastille verte d'attente (PRÊT)
+  localStorage.setItem('lumen_web_autotrader_ready', '1');
+  if (typeof window.updateWebAutoTraderUI === 'function') window.updateWebAutoTraderUI();
+
+  toast(`🚀 Page MEXC (${mexcPair}) & Script ouverts ! Le badge vert apparaît sur votre onglet MEXC. Cliquez sur "Actionner" pour démarrer le trading !`, '#10B981');
+};
+
 window.toggleWebAutoTrader = function() {
   const currentlyActive = window.isWebAutoTraderActive();
   const nextState = !currentlyActive;
   localStorage.setItem('lumen_web_autotrader_active', nextState ? '1' : '0');
+  if (nextState) {
+    localStorage.setItem('lumen_web_autotrader_ready', '1');
+  }
   window.updateWebAutoTraderUI();
 
   if (nextState) {
@@ -31660,7 +31703,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1808-1915';
+  window.__LUMEN_BUILD = 'B-1808-1920';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
