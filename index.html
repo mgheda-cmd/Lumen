@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<!-- Sur iPhone et iPad, les notifications web n'existent que si le site est
+     installé sur l'écran d'accueil, et Safari n'affiche « Sur l'écran
+     d'accueil » comme application que s'il trouve un manifeste. Sans lui, la
+     demande d'autorisation échouait silencieusement sur iOS. -->
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icone-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icone-512.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Lumen">
@@ -12868,15 +12875,42 @@ if(notifBtn && notifMenuEl){
   });
 
   document.getElementById('btn-req-notif-perm')?.addEventListener('click', ()=>{
+    /* Sur iPhone et iPad, l'objet Notification n'existe QUE si la page a été
+       installée sur l'écran d'accueil. Dans Safari, ce bouton semblait donc
+       ne rien faire du tout. On explique la marche à suivre au lieu de
+       rester muet, et on rappelle que ntfy et Telegram marchent sans rien
+       installer. */
+    const estApple = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const installee = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                      window.navigator.standalone === true;
+
     if(!('Notification' in window)){
-      toast('Les notifications push ne sont pas supportées par ce navigateur', '#F45B7D');
+      if(estApple && !installee){
+        toast("Sur iPhone et iPad : Partager, puis « Sur l'écran d'accueil »", '#FF9F1C');
+        alert("Notifications sur iPhone / iPad\n\n" +
+              "Apple ne les autorise que si Lumen est installé sur l'écran d'accueil.\n\n" +
+              "1. Bouton Partager, en bas de Safari\n" +
+              "2. « Sur l'écran d'accueil »\n" +
+              "3. Rouvrez Lumen depuis l'icône, pas depuis Safari\n" +
+              "4. Revenez ici et appuyez de nouveau sur ce bouton\n\n" +
+              "En attendant, ntfy et Telegram fonctionnent déjà, sans installation.");
+      } else {
+        toast('Les notifications push ne sont pas supportées par ce navigateur', '#F45B7D');
+      }
       return;
+    }
+    if(estApple && !installee){
+      toast("⚠ Ouvrez Lumen depuis l'icône de l'écran d'accueil : dans Safari, iOS refusera", '#FF9F1C');
     }
     Notification.requestPermission().then(permission => {
       updateNotifPermBadge();
       if(permission === 'granted'){
         toast('Notifications push autorisées !', '#00E5FF');
         triggerMobileNotification('Test Notification Push', 'Les notifications mobile sont actives !');
+        if (typeof window.testerNotificationNavigateur === 'function') {
+          window.testerNotificationNavigateur();
+        }
       } else {
         toast('Permission refusée par le navigateur', '#F45B7D');
       }
@@ -12973,11 +13007,10 @@ if(notifBtn && notifMenuEl){
     });
   });
 
-  document.getElementById('btn-req-notif-perm')?.addEventListener('click', ()=>{
-    if (typeof window.testerNotificationNavigateur === 'function') {
-      window.testerNotificationNavigateur();
-    }
-  });
+  /* Un second écouteur était attaché ici au même bouton : les deux
+     s'ajoutaient au lieu de se remplacer, et chaque appui déclenchait la
+     demande d'autorisation puis un test séparé. Fusionné dans l'écouteur
+     unique ci-dessus. */
 }
 
 /* ---------- Trading démo : ordres, PnL, historique ---------- */
@@ -31349,7 +31382,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1708-2910';
+  window.__LUMEN_BUILD = 'B-1808-0345';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
