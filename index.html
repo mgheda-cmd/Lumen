@@ -14730,41 +14730,7 @@ function checkAutoTrade(inputSignals){
       const baseMM = (state.indicators && state.indicators.strat_mm) || {};
       const mmData = computeMMSignals(d, baseMM);
       
-      // -- GESTION DES SORTIES (Priorité absolue pour débloquer les trades) --
-      if (existingPos && mmData) {
-        // Chercher s'il y a eu un sommet/creux APRÈS l'entrée
-        if (existingPos.side === 'long' && mmData.sommetsList) {
-          const validSommets = mmData.sommetsList.filter(s => s.t > posEntryTime);
-          if (validSommets.length > 0) {
-            exitTriggered = true;
-            exitReason = 'Sommet Extrême MM (Sortie Achat)';
-            sigT = validSommets[validSommets.length - 1].t;
-          }
-        } else if (existingPos.side === 'short' && mmData.creuxList) {
-          const validCreux = mmData.creuxList.filter(c => c.t > posEntryTime);
-          if (validCreux.length > 0) {
-            exitTriggered = true;
-            exitReason = 'Creux Extrême MM (Sortie Vente)';
-            sigT = validCreux[validCreux.length - 1].t;
-          }
-        }
-        
-        // Chercher une pastille de retournement APRÈS l'entrée
-        if (!exitTriggered && mmData.signals) {
-          const validReversals = mmData.signals.filter(s => s.t > posEntryTime && ((existingPos.side === 'long' && s.dir === -1) || (existingPos.side === 'short' && s.dir === 1)));
-          if (validReversals.length > 0) {
-            const revSig = validReversals[validReversals.length - 1];
-            exitTriggered = true;
-            exitReason = revSig.dir === -1 ? 'Pastille Vente MM (Retournement)' : 'Pastille Achat MM (Retournement)';
-            sigT = revSig.t;
-            if (revSig.dir === 1) buySignal = true;
-            else if (revSig.dir === -1) sellSignal = true;
-          }
-        }
-      }
-
-      // -- GESTION DES ENTRÉES (Uniquement si pas de position ou si inversion) --
-      if (mmData && mmData.signals && mmData.signals.length > 0) {
+      if (mmData && mmData.signals) {
         // Filtrage strict par le mode d'entrée de la stratégie active (Backtest synchrone)
         let candidateSignals = mmData.signals;
         const mEnt = (strat && strat.mEnt) ? strat.mEnt : (document.getElementById('paper-ent')?.value || 'mm_base');
@@ -14782,11 +14748,51 @@ function checkAutoTrade(inputSignals){
 
         // Filtrage par direction configurée dans la stratégie Démo
         const stratDir = (strat && (strat.dir || strat.dirF)) ? (strat.dir || strat.dirF) : (document.getElementById('paper-dir')?.value || 'both');
-        if (stratDir === 'long') candidateSignals = candidateSignals.filter(s => s.dir === 1);
-        else if (stratDir === 'short') candidateSignals = candidateSignals.filter(s => s.dir === -1);
+        let allowedSignals = candidateSignals;
+        if (stratDir === 'long') allowedSignals = candidateSignals.filter(s => s.dir === 1);
+        else if (stratDir === 'short') allowedSignals = candidateSignals.filter(s => s.dir === -1);
 
-        if (candidateSignals.length > 0) {
-          const lastSig = candidateSignals[candidateSignals.length - 1];
+        // -- GESTION DES SORTIES (Strictement alignée sur le Backtest) --
+        if (existingPos) {
+          const mSor = (strat && strat.mSor) ? strat.mSor : (document.getElementById('paper-sor')?.value || 'sommet_creux');
+          const exitOpp = (strat && strat.exitOpp) ? strat.exitOpp : 'toujours';
+
+          // 1. Sortie sur Sommet / Creux Extrême (Seuil >= +75 pour Long, <= -75 pour Short)
+          if (mSor === 'sommet_creux' || mSor === 'mm_sommet_creux' || mSor === 'base') {
+            if (existingPos.side === 'long' && mmData.sommetsList) {
+              const validSommets = mmData.sommetsList.filter(s => s.t > posEntryTime && (s.score == null || s.score >= 70));
+              if (validSommets.length > 0) {
+                exitTriggered = true;
+                exitReason = 'Sommet MM (+75)';
+                sigT = validSommets[validSommets.length - 1].t;
+              }
+            } else if (existingPos.side === 'short' && mmData.creuxList) {
+              const validCreux = mmData.creuxList.filter(c => c.t > posEntryTime && (c.score == null || c.score <= -70));
+              if (validCreux.length > 0) {
+                exitTriggered = true;
+                exitReason = 'Creux MM (-75)';
+                sigT = validCreux[validCreux.length - 1].t;
+              }
+            }
+          }
+
+          // 2. Sortie / Inversion sur Signal Opposé Validé de la stratégie
+          if (!exitTriggered && (exitOpp === 'toujours' || exitOpp === 'sans_sortie' || mSor === 'oppose')) {
+            const oppSigs = candidateSignals.filter(s => s.t > posEntryTime && ((existingPos.side === 'long' && s.dir === -1) || (existingPos.side === 'short' && s.dir === 1)));
+            if (oppSigs.length > 0) {
+              const oppSig = oppSigs[oppSigs.length - 1];
+              exitTriggered = true;
+              exitReason = oppSig.dir === -1 ? `Pastille Vente (${oppSig.badge || oppSig.optKey || 'Opposé'})` : `Pastille Achat (${oppSig.badge || oppSig.optKey || 'Opposé'})`;
+              sigT = oppSig.t;
+              if (oppSig.dir === 1) buySignal = true;
+              else if (oppSig.dir === -1) sellSignal = true;
+            }
+          }
+        }
+
+        // -- GESTION DES ENTRÉES --
+        if (!existingPos && allowedSignals.length > 0) {
+          const lastSig = allowedSignals[allowedSignals.length - 1];
           const sigIdx = (lastSig.t != null ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
 
           // Seuil de détection : bougie récente (dernière clôturée ou en cours)
@@ -32457,7 +32463,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0545';
+  window.__LUMEN_BUILD = 'B-1908-0600';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
