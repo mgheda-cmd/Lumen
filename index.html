@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-2115</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-2008-0035</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -33016,7 +33016,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-2115';
+  window.__LUMEN_BUILD = 'B-2008-0035';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -33626,7 +33626,25 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     };
 
     const c = v => v >= 0 ? '#10B981' : '#FF5252';
-    let h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-bottom:12px">';
+
+    // Bannière d'action directe : Compte Démo / Compte MEXC / Tracer sur le graphique (sticky en haut)
+    let h = '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:9px 12px;background:rgba(15,23,42,0.95);border:1px solid #334155;border-radius:10px;position:sticky;top:0;z-index:5">' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+      '<button onclick="window.envoyerVersDemo()" title="Transférer et exécuter automatiquement cette stratégie sur le Compte Démo (Paper Trading)" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#0F172A;border:none;border-radius:8px;padding:7px 14px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(0,230,118,0.35);display:inline-flex;align-items:center;gap:5px">🚀 Compte Démo</button>' +
+      '<button onclick="window.envoyerVersMexc()" title="Transférer les réglages vers le module MEXC Trading en Réel" style="background:rgba(0,229,255,0.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:5px">🟢 MEXC Réel</button>' +
+      '<button onclick="window.basculerMarquesBT()" style="background:rgba(56,189,248,.16);border:1px solid #38BDF8;color:#7DD3FC;border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:800;cursor:pointer">📍 Tracer</button>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:800">' +
+      '<span style="color:' + c(pnl) + '">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' $</span>' +
+      '<span style="color:' + (wr >= 50 ? '#10B981' : '#F59E0B') + '">' + wr.toFixed(1) + '%</span>' +
+      '<span style="color:' + (pf >= 1 ? '#10B981' : '#FF5252') + '">PF ' + (isFinite(pf) ? pf.toFixed(2) : '∞') + '</span>' +
+      '<span style="color:#CBD5E1">' + trades.length + 't</span>' +
+      (nbLiq ? '<span style="color:#FF5252">\u{1F480}' + nbLiq + '</span>' : '') +
+      '</div></div>';
+
+    // Résumé compact des statistiques (dans un details ouvert par défaut)
+    h += '<details open style="margin-bottom:10px"><summary style="cursor:pointer;font-size:12px;font-weight:800;color:#A78BFA;margin-bottom:8px;user-select:none">📊 Statistiques détaillées</summary>';
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-bottom:8px">';
     const carte = (lab, val, col) =>
       '<div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:8px 10px">' +
       '<div style="font-size:9.5px;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px">' + lab + '</div>' +
@@ -33691,16 +33709,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       h += carte('Tiers ' + (k+1), (isFinite(x.pf) ? x.pf.toFixed(2) : '∞') + ' · ' + x.n + 't',
                  (x.n >= 3 && x.pf >= 1) ? '#10B981' : '#FF5252');
     });
-    h += '</div>';
-
-    // Bannière d'action directe : Compte Démo / Compte MEXC / Tracer sur le graphique
-    h += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding:9px 12px;background:rgba(15,23,42,0.85);border:1px solid #334155;border-radius:10px">' +
-      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-      '<button onclick="window.envoyerVersDemo()" title="Transférer et exécuter automatiquement cette stratégie sur le Compte Démo (Paper Trading)" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#0F172A;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(0,230,118,0.35);display:inline-flex;align-items:center;gap:6px">🚀 Envoyer vers Compte Démo</button>' +
-      '<button onclick="window.envoyerVersMexc()" title="Transférer les réglages vers le module MEXC Trading en Réel" style="background:rgba(0,229,255,0.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px">🟢 Compte MEXC Réel</button>' +
-      '</div>' +
-      '<button onclick="window.basculerMarquesBT()" style="background:rgba(56,189,248,.16);border:1px solid #38BDF8;color:#7DD3FC;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer">📍 Tracer sur le graphique</button>' +
-      '</div>';
+    h += '</div></details>';
 
     if(nbLiq){
       h += '<div style="margin:0 0 8px;padding:8px 11px;border:1px solid #FF5252;border-radius:8px;' +
@@ -33710,6 +33719,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         'dans le tableau ci-dessous, sur fond rouge. La m\u00e8che a touch\u00e9 le prix de liquidation avant la sortie.' +
         '</div>';
     }
+
+    // Liste des trades (dans un details, fermé par défaut si > 10 trades)
+    const tradeListOpen = trades.length <= 10 ? ' open' : '';
+    h += '<details' + tradeListOpen + ' style="margin-bottom:10px"><summary style="cursor:pointer;font-size:12px;font-weight:800;color:#7DD3FC;margin-bottom:6px;user-select:none">📋 Liste des ' + trades.length + ' trades' + (trades.length > 10 ? ' (cliquer pour déplier)' : '') + '</summary>';
     h += '<div style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
       '<table style="width:100%;border-collapse:collapse;font-size:10.5px;font-family:\'IBM Plex Mono\',monospace">' +
       '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
@@ -33748,10 +33761,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       });
       h += '</div></details>';
     }
+    h += '</details>';
+
+    // Notes de bas (dans un details fermé par défaut)
     const jrs = (d.length * state.tf / 1440);
     const dDeb = new Date(d[0].t).toLocaleDateString('fr-FR');
     const dFin = new Date(d[d.length-1].t).toLocaleDateString('fr-FR');
-    h += '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
+    h += '<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:#94A3B8;user-select:none">ℹ️ Détails de la simulation (frais, direction, période…)</summary>' +
+      '<div style="margin-top:6px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
       'Frais : <b style="color:#CBD5E1">' + (fraisP * 100).toFixed(3) + ' % taker</b> à l\'entrée et à la sortie · ' +
         (trades.reduce((a,t) => a + t.frais, 0)).toFixed(2) + ' $ au total<br>' +
       'Direction : <b style="color:#CBD5E1">' +
@@ -33762,7 +33779,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       'Période : <b style="color:#CBD5E1">' + dDeb + ' au ' + dFin + '</b> · ' +
       d.length + ' bougies de ' + state.tf + 'm (' + jrs.toFixed(1) + ' jours)<br>' +
       ents.length + ' entrées trouvées · ' + sors.length + ' sorties disponibles · ' +
-      trades.length + ' appariées · ' + sansSortie.length + ' entrées sans sortie, exclues du calcul.</div>';
+      trades.length + ' appariées · ' + sansSortie.length + ' entrées sans sortie, exclues du calcul.</div></details>';
 
     const manques = [];
     if(trades.length < 30) manques.push('moins de 30 trades (' + trades.length + ')');
@@ -33772,21 +33789,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     window.__btDernier.manques = manques;
 
     if(conforme){
-      h += '<div style="margin-top:12px;padding:11px;border:1px solid #10B981;border-radius:9px;background:rgba(16,185,129,.08)">' +
-        '<div style="color:#10B981;font-weight:800;font-size:12px;margin-bottom:6px">✓ Configuration conforme aux critères</div>' +
-        '<div style="font-size:11px;color:#CBD5E1;line-height:1.6;margin-bottom:9px">' +
-        trades.length + ' trades · profit factor ' + pf.toFixed(2) + ' · stable sur les trois tiers · repli maximal ' + dd.toFixed(2) + ' $<br>' +
-        '<b style="color:#F59E0B">Ces chiffres restent une simulation. Le glissement et les frais réels ne sont pas modélisés à l\'identique.</b></div>' +
-        '<button onclick="window.envoyerVersMexc()" style="background:linear-gradient(135deg,#00E5FF,#0288D1);color:#0B1220;border:none;border-radius:8px;padding:9px 18px;font-weight:800;cursor:pointer">📤 Préparer cette stratégie dans le module MEXC</button></div>';
+      h += '<div style="margin-top:8px;padding:9px;border:1px solid #10B981;border-radius:9px;background:rgba(16,185,129,.08)">' +
+        '<div style="color:#10B981;font-weight:800;font-size:12px">✓ Configuration conforme — ' +
+        trades.length + 't · PF ' + pf.toFixed(2) + ' · repli ' + dd.toFixed(2) + ' $</div>' +
+        '<div style="font-size:10.5px;color:#F59E0B;margin-top:4px">Ces chiffres restent une simulation.</div></div>';
     } else {
-      /* Le bouton reste visible même hors critères : le masquer laissait
-         l'utilisateur sans savoir pourquoi. L'envoi demande alors une
-         confirmation explicite rappelant chaque point qui manque. */
-      h += '<div style="margin-top:12px;padding:11px;border:1px solid #F59E0B;border-radius:9px;background:rgba(245,158,11,.08)">' +
-        '<div style="color:#F59E0B;font-weight:800;font-size:12px;margin-bottom:5px">⚠ Configuration hors critères</div>' +
-        '<div style="font-size:11px;color:#CBD5E1;line-height:1.6;margin-bottom:9px">' + manques.join(' · ') + '</div>' +
-        '<button onclick="window.envoyerVersMexc()" style="background:transparent;border:1px solid #F59E0B;color:#FCD34D;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer">📤 Préparer quand même dans le module MEXC</button>' +
-        '</div>';
+      h += '<div style="margin-top:8px;padding:9px;border:1px solid #F59E0B;border-radius:9px;background:rgba(245,158,11,.08)">' +
+        '<div style="color:#F59E0B;font-weight:800;font-size:12px">⚠ Hors critères — ' + manques.join(' · ') + '</div></div>';
     }
 
     jour('terminé · ' + trades.length + ' trades');
