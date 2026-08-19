@@ -13192,6 +13192,27 @@ function getPaperFeeRate(){
   return 0.0004;
 }
 
+function fmtTimeFr(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '—';
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function fmtDurFr(t0, t1) {
+  if (!t0) return '';
+  const end = t1 || Date.now();
+  const diffSec = Math.max(0, Math.floor((end - t0) / 1000));
+  if (diffSec < 60) return `${diffSec}s`;
+  const m = Math.floor(diffSec / 60);
+  const s = diffSec % 60;
+  if (m < 60) return `${m}m ${s}s`;
+  const h = Math.floor(m / 60);
+  const remM = m % 60;
+  return `${h}h ${remM}m`;
+}
+
 function updatePaper(){
   const eqEl=document.getElementById('paper-equity');
   if(!eqEl)return;
@@ -13272,7 +13293,7 @@ function updatePaper(){
     } else {
       toast(`🎯 TAKE PROFIT déclenché sur ${baseAsset(p.sym)} à $${fmt(exitPx, 2)} ! PnL: +${fmtUsd(pnl-fee)}`, '#10B981');
     }
-    sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: exitPx, pnl: pnl - fee, qty: p.qty, reason: item.type === 'SL' ? '🛑 Stop Loss' : '🎯 Take Profit', capitalAfter: paper.cash });
+    sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: exitPx, pnl: pnl - fee, qty: p.qty, reason: item.type === 'SL' ? '🛑 Stop Loss' : '🎯 Take Profit', capitalAfter: paper.cash, t0: p.t, t: Date.now() });
     beep();
     saveConfig();
   }
@@ -13292,7 +13313,7 @@ function updatePaper(){
     paper.history = paper.history.slice(0, 50);
     paper.positions.splice(item.index, 1);
     toast(`💥 LIQUIDATION (${p.lev}x) sur ${baseAsset(p.sym)} à $${fmt(item.px, 2)} ! Perte totale de marge (-$${fmt(loss, 2)})`, '#FF495C');
-    sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: item.px, pnl: -loss, qty: p.qty, reason: '💥 Liquidation (Marge Épuisée)', isLiq: true, capitalAfter: paper.cash });
+    sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: item.px, pnl: -loss, qty: p.qty, reason: '💥 Liquidation (Marge Épuisée)', isLiq: true, capitalAfter: paper.cash, t0: p.t, t: Date.now() });
     saveConfig();
   }
 
@@ -13315,8 +13336,8 @@ function updatePaper(){
   }
 
   const bankTotEl = document.getElementById('paper-bank-total');
-  if (bankTotEl) bankTotEl.textContent = '$' + fmtUsd(paper.bank);
   const bankCntEl = document.getElementById('paper-bank-count');
+  if (bankTotEl) bankTotEl.textContent = '$' + fmtUsd(paper.bank);
   if (bankCntEl) bankCntEl.textContent = paper.withdrawals.length;
 
   const pnlEl=document.getElementById('paper-pnl');
@@ -13333,6 +13354,8 @@ function updatePaper(){
     const levStr=p.lev?`${p.lev}x`:'1x';
     const coin=baseAsset(p.sym);
     const px=livePrice(p.sym);
+    const entryTimeStr = fmtTimeFr(p.t);
+    const durStr = fmtDurFr(p.t);
 
     const partialsTag = (p.partials && p.partials > 0) ? `<span style="background:rgba(245,158,11,0.18);color:#F59E0B;border:1px solid rgba(245,158,11,0.4);padding:1px 5px;border-radius:4px;font-size:9.5px;font-weight:bold;margin-left:5px">✂️ ${p.partials} Partiel(s)</span>` : '';
     const liqPx = (p.lev && p.lev > 1) ? (p.side === 'long' ? p.entry * (1 - 0.95 / p.lev) : p.entry * (1 + 0.95 / p.lev)) : null;
@@ -13351,6 +13374,9 @@ function updatePaper(){
           <strong style="color:${p.side==='long'?'#10B981':'#F45B7D'}">${p.side==='long'?'▲ ACHAT':'▼ VENTE'}</strong>
           <span style="background:rgba(0,229,255,0.12);color:#00E5FF;border:1px solid rgba(0,229,255,0.35);padding:2px 7px;border-radius:4px;font-weight:bold;font-size:11px" title="Montant engagé exact dans ce trade en $ et Crypto">
             💰 Engagé : <strong style="color:#FFF">$${fmtUsd(notionalVal)}</strong> <span style="color:#00E5FF">(${qStr} ${coin})</span> <span style="color:var(--muted);font-size:10px">| Marge (${levStr}) : <b>$${fmtUsd(marginVal)}</b></span>
+          </span>
+          <span style="background:rgba(0,229,255,0.1);color:#00E5FF;border:1px solid rgba(0,229,255,0.3);padding:2px 6px;border-radius:4px;font-size:10.5px;font-weight:700" title="Heure exacte d'ouverture de la position">
+            ⏰ Entrée : <b>${entryTimeStr}</b> <span style="color:#A78BFA;font-weight:600">(${durStr})</span>
           </span>
           ${entriesTag}${partialsTag}
         </div>
@@ -13384,9 +13410,9 @@ function updatePaper(){
 
   refreshUnitUI();
 
-  // historique (5 derniers)
+  // historique (15 derniers avec heure d'entrée et de sortie)
   const hEl=document.getElementById('paper-hist');
-  hEl.innerHTML=paper.history.slice(0,5).map(h=>{
+  hEl.innerHTML=paper.history.slice(0,15).map(h=>{
     const col=h.pnl>=0?'#25D0A4':'#F45B7D';
     const tag = h.isLiq ? '💥 LIQ' : (h.reason ? h.reason : (h.isPartial ? `✂️ PART ${h.partPct||''}%` : (h.side==='long'?'▲ ACHAT':'▼ VENTE')));
     const soldeVal = h.capitalAfter != null ? fmtUsd(h.capitalAfter) : '—';
@@ -13397,10 +13423,16 @@ function updatePaper(){
     const hLev = h.lev || 1;
     const hLiqPx = (hLev > 1) ? (h.side === 'long' ? h.entry * (1 - 0.95 / hLev) : h.entry * (1 + 0.95 / hLev)) : null;
     const hLiqStr = hLiqPx ? `$${fmt(hLiqPx, hLiqPx >= 100 ? 2 : 4)}` : 'Sans (1x)';
+    const hEntryT = fmtTimeFr(h.t0 || h.t);
+    const hExitT = fmtTimeFr(h.t);
+    const hDur = (h.t0 && h.t) ? fmtDurFr(h.t0, h.t) : '';
 
-    return `<div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;font-size:10.5px;color:var(--muted);border-bottom:1px dashed rgba(255,255,255,0.06);flex-wrap:wrap;gap:6px">
+    return `<div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;font-size:10.5px;color:var(--muted);border-bottom:1px dashed rgba(255,255,255,0.06);flex-wrap:wrap;gap:6px">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span style="font-weight:bold">${tag} ${coin}</span>
+        <span style="background:rgba(0,229,255,0.12);color:#00E5FF;border:1px solid rgba(0,229,255,0.3);padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700" title="Heure d'entrée et heure de sortie de ce trade">
+          ⏰ Entrée: <b>${hEntryT}</b> ➔ 🏁 Sortie: <b>${hExitT}</b> ${hDur ? `<span style="color:#A78BFA;font-weight:800">(${hDur})</span>` : ''}
+        </span>
         <span style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:10px;color:var(--text)" title="Montant engagé en $ et Crypto">
           💰 Engagé: <b style="color:#00E5FF">$${fmtUsd(hNotional)}</b> (${hQtyStr} ${coin})
         </span>
@@ -13408,8 +13440,8 @@ function updatePaper(){
           💥 Liq: ${hLiqStr}
         </span>
       </div>
-      <span>$${fmt(h.entry,2)} → $${fmt(h.exit,2)}</span>
-      <span style="color:${col};font-weight:700">${(h.pnl>=0?'+':'')+fmtUsd(h.pnl)}</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-weight:600">$${fmt(h.entry, h.entry >= 100 ? 2 : 4)} → $${fmt(h.exit, h.exit >= 100 ? 2 : 4)}</span>
+      <span style="color:${col};font-weight:800;font-size:11.5px">${(h.pnl>=0?'+':'')+fmtUsd(h.pnl)}</span>
       <span style="color:#00E5FF;font-weight:800;background:rgba(0,229,255,0.1);padding:2px 6px;border-radius:4px;font-size:10px" title="Solde de votre compte à la clôture du trade">Solde: ${soldeVal}</span>
     </div>`;
   }).join('');
@@ -13505,6 +13537,7 @@ window.updateChartTradeHud = function() {
 
         <!-- Données clés : Entrée, Actuel & PnL -->
         <div style="display:flex;align-items:center;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+          <span style="color:#00E5FF;font-weight:700" title="Heure d'entrée exacte">⏰ ${fmtTimeFr(p.t)}</span>
           <span style="color:#94A3B8">Entrée: <strong style="color:#FFF">${entryStr}</strong></span>
           <span style="color:#94A3B8">Actuel: <strong style="color:${mainColor}">${currentPxStr}</strong></span>
           <span style="color:#94A3B8">PnL: <strong style="font-size:12px;color:${mainColor}">${pnlStr} ${pnlPctStr}</strong></span>
@@ -13962,7 +13995,7 @@ function closePos(i){
   paper.positions.splice(i,1);
   saveConfig(); updatePaper();
   toast(`Position fermée : PnL ${netPnl>=0?'+':''}${fmtUsd(netPnl)}`, netPnl>=0?'#10B981':'#F45B7D');
-  sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: p.qty, reason: 'Clôture de position', capitalAfter: paper.cash });
+  sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: p.qty, reason: 'Clôture de position', capitalAfter: paper.cash, t0: p.t, t: Date.now() });
 }
 window.closePos = closePos;
 
@@ -14040,7 +14073,7 @@ function closePartial(i, pctOrVal, unitMode){
   const qFmt = closeQty >= 1 ? closeQty.toFixed(3) : closeQty.toFixed(4);
   const pnlStr = netPnl >= 0 ? '+' + fmtUsd(netPnl) : fmtUsd(netPnl);
   toast(`✂️ Sortie partielle (${Math.round(fraction * 100)}%) sur ${coin} : -${qFmt} ${coin} @ $${fmt(px, 2)} | PnL ${pnlStr}`, netPnl >= 0 ? '#10B981' : '#F45B7D');
-  sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: closeQty, reason: `Fermeture Partielle (${Math.round(fraction * 100)}%)`, isPartial: true, partPct: Math.round(fraction * 100), capitalAfter: paper.cash });
+  sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: closeQty, reason: `Fermeture Partielle (${Math.round(fraction * 100)}%)`, isPartial: true, partPct: Math.round(fraction * 100), capitalAfter: paper.cash, t0: p.t, t: Date.now() });
   beep();
 }
 
@@ -16714,6 +16747,29 @@ function sendTelegramDemoExitNotification(data) {
     const exitPxStr = typeof fmt === 'function' ? `$${fmt(data.exitPx, data.exitPx >= 100 ? 2 : 4)}` : `$${data.exitPx}`;
     const reasonStr = data.reason ? escapeHtml(data.reason) : (data.isLiq ? 'Liquidation' : (data.isPartial ? `Fermeture Partielle (${data.partPct}%)` : 'Clôture de position'));
 
+    const pad = n => String(n).padStart(2, '0');
+    const fmtTs = (ts) => {
+      if (!ts) return null;
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return null;
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+    const t0Str = fmtTs(data.t0 || data.entryTime);
+    const t1Str = fmtTs(data.t || data.exitTime || Date.now());
+    let durStr = '';
+    const startTs = data.t0 || data.entryTime;
+    const endTs = data.t || data.exitTime || Date.now();
+    if (startTs && endTs) {
+      const diffSec = Math.max(0, Math.floor((endTs - startTs) / 1000));
+      if (diffSec < 60) durStr = `${diffSec}s`;
+      else {
+        const m = Math.floor(diffSec / 60);
+        const s = diffSec % 60;
+        if (m < 60) durStr = `${m}m ${s}s`;
+        else durStr = `${Math.floor(m/60)}h ${m%60}m`;
+      }
+    }
+
     const titleHeader = data.isPartial ? `✂️ <b>SORTIE PARTIELLE DÉMO</b>` : (data.isLiq ? `💥 <b>LIQUIDATION COMPTE DÉMO</b>` : (isWin ? `🎉 <b>SORTIE TRADE DÉMO (GAIN)</b>` : `🛑 <b>SORTIE TRADE DÉMO (PERTE)</b>`));
 
     const msg = `${titleHeader}
@@ -16721,6 +16777,9 @@ function sendTelegramDemoExitNotification(data) {
 <b>Paire :</b> #${escapeHtml(coin)}/USDT (${sideStr})
 <b>Stratégie :</b> ${escapeHtml(stratName)}
 <b>Motif :</b> ${reasonStr}
+──────────────────────────
+⏰ <b>Heure d'entrée :</b> <code>${t0Str || '—'}</code>
+🏁 <b>Heure de sortie :</b> <code>${t1Str || '—'}</code>${durStr ? ` (⏱️ <i>${durStr}</i>)` : ''}
 ──────────────────────────
 <b>Prix d'entrée :</b> <code>${entryPxStr}</code>
 <b>Prix de sortie :</b> <code>${exitPxStr}</code>
@@ -32205,7 +32264,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0335';
+  window.__LUMEN_BUILD = 'B-1908-0340';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
