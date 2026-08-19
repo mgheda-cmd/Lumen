@@ -16991,6 +16991,8 @@ function alertNewPhoneSignals(sigs, d){
 
     const sigIdx = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
     const sigTime = sig.t || (sigIdx != null && d[sigIdx] ? d[sigIdx].t : 0);
+    // Filtre strict : Ne jamais alerter sur une bougie ancienne (uniquement les 2 dernières bougies)
+    if(sigIdx != null && sigIdx < d.length - 3) continue;
     if(sigTime && (now - sigTime > maxAge)) continue;
 
     const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
@@ -17099,7 +17101,7 @@ function checkAllAlerts(){
   const allSignals = [];
   const d = state.data;
 
-  // 2. Signaux Stratégie MM Exclusivement (Base, Option 2, Sommets, Creux)
+  // 2. Signaux Stratégie MM Exclusivement (Base, Opt 1, Opt 2, Opt 6, Confluences, Sommets, Creux)
   try {
     const baseMM = (state.indicators && state.indicators.strat_mm) || {};
     const mmData = computeMMSignals(d, baseMM);
@@ -17109,15 +17111,27 @@ function checkAllAlerts(){
         if(isOpt2 && phoneCfg.mmOpt2Alerts === false) return;
         if(!isOpt2 && phoneCfg.mmBaseAlerts === false) return;
 
+        const optTitles = {
+          base: '🟢 MM Base',
+          opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
+          opt2: '⚡ Opt 2 (iMACD)',
+          opt3: '🛡️ Opt 3 (Cassure)',
+          opt4: '🎯 Opt 4 (Lissage)',
+          opt5: '🚀 Opt 5 (Rebond V)',
+          opt6: '💎 Opt 6 (BOS/DIV)',
+          confluence: (s.badge || '🏆 Confluence Élite')
+        };
+        const optTag = optTitles[s.optKey] || 'MM Base';
+
         allSignals.push({
           i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
           t: s.t,
           price: s.price,
           dir: s.dir,
           type: s.dir === 1 ? 'ACHAT' : 'VENTE',
-          tag: isOpt2 ? 'MM Option 2' : 'MM Base',
+          tag: optTag,
           source: 'strat_mm',
-          sourceName: isOpt2 ? 'Stratégie MM · Option 2' : 'Stratégie MM · Base'
+          sourceName: `Stratégie MM · ${optTag}`
         });
       });
 
@@ -32180,7 +32194,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0018';
+  window.__LUMEN_BUILD = 'B-1908-0130';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
