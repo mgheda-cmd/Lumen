@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-1935</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-1950</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -19058,15 +19058,17 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   const yLo10 = yOf(pMid0 - dev1), yLo11 = yOf(pMid1 - dev1);
 
   const estSecond = !!L.__second;
-  const upcol = estSecond ? (S('lrc','cLine2') || '#FF9F1C') : (S('lrc', 'upcol') || '#00FF00');
-  const dncol = estSecond ? (S('lrc','cBand2') || '#FF9F1C') : (S('lrc', 'dncol') || '#FF0000');
+  const rawUp = S('lrc', 'upcol') || '#00E5FF';
+  const rawDn = S('lrc', 'dncol') || '#F45B7D';
+  const upcol = estSecond ? (S('lrc','cLine2') || '#FF9F1C') : ((rawUp === '#00FF00') ? '#00E5FF' : rawUp);
+  const dncol = estSecond ? (S('lrc','cBand2') || '#FF9F1C') : ((rawDn === '#FF0000') ? '#F45B7D' : rawDn);
   const brokencol = estSecond ? (S('lrc','cLine2') || '#FF9F1C') : (S('lrc', 'brokencol') || '#3B82F6');
   const widt = estSecond ? Math.max(1, (S('lrc', 'widt') || 2) - 1) : (S('lrc', 'widt') || 2);
 
   const isUp = L.b > 0;
   const isDn = L.b < 0;
   const activeColor = isUp ? upcol : (isDn ? dncol : brokencol);
-  const fillUp = hexA(activeColor, 0.08);
+  const fillUp = hexA(activeColor, 0.07);
 
   const showBands = true;
   const showInnerBands = S('lrc', 'showInnerBands') !== false;
@@ -19082,7 +19084,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.clip();
   }
 
-  // 1. Remplissage du canal
+  // 1. Remplissage translucide du canal
   if (showFill && showBands) {
     ctx.beginPath();
     ctx.moveTo(x0, yUp20);
@@ -19094,14 +19096,27 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.fill();
   }
 
-  // 2. Affichage du canal brisé
+  // 2. Marqueur de début de canal (délimitation de la fenêtre)
+  if (x0 >= 0 && x0 <= W - AXIS_W) {
+    ctx.save();
+    ctx.strokeStyle = hexA(activeColor, 0.4);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(x0, yUp20);
+    ctx.lineTo(x0, yLo20);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. Affichage du canal brisé
   if (showBroken && L.brokenChannel) {
     const bk = L.brokenChannel;
     const bkY1 = yOf(bk.y1_ + (bk.type === 2 ? bk.dev * bk.devlen : -bk.dev * bk.devlen));
     const bkY2 = yOf(bk.y2_ + (bk.type === 2 ? bk.dev * bk.devlen : -bk.dev * bk.devlen));
     if (isFinite(bkY1) && isFinite(bkY2)) {
       ctx.strokeStyle = brokencol;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.8;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
       ctx.moveTo(x0, bkY1);
@@ -19111,7 +19126,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     }
   }
 
-  // 3. Niveaux de Fibonacci
+  // 4. Niveaux de Fibonacci
   if (showFibo) {
     const fibRatios = [0.236, 0.382, 0.618, 0.786];
     const rangeHeight = 2 * dev2;
@@ -19132,10 +19147,10 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.setLineDash([]);
   }
 
-  // 4. Bandes externes (2σ)
+  // 5. Bandes externes (2σ)
   ctx.lineWidth = widt;
   ctx.strokeStyle = activeColor;
-  ctx.setLineDash([6, 4]);
+  ctx.setLineDash([5, 4]);
 
   ctx.beginPath();
   ctx.moveTo(x0, yUp20); ctx.lineTo(x1, yUp21); ctx.stroke();
@@ -19143,11 +19158,11 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   ctx.moveTo(x0, yLo20); ctx.lineTo(x1, yLo21); ctx.stroke();
   ctx.setLineDash([]);
 
-  // 5. Bandes internes (1σ)
+  // 6. Bandes internes (1σ)
   if (showInnerBands) {
     ctx.lineWidth = Math.max(1, widt - 1);
-    ctx.strokeStyle = hexA(activeColor, 0.65);
-    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = hexA(activeColor, 0.55);
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(x0, yUp10); ctx.lineTo(x1, yUp11); ctx.stroke();
     ctx.beginPath();
@@ -19155,57 +19170,55 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
     ctx.setLineDash([]);
   }
 
-  // 6. Ligne médiane
-  ctx.lineWidth = widt + 0.5;
+  // 7. Ligne médiane
+  ctx.lineWidth = widt + 0.4;
   ctx.strokeStyle = activeColor;
   ctx.shadowColor = activeColor;
-  ctx.shadowBlur = 4;
+  ctx.shadowBlur = 3;
   ctx.beginPath();
   ctx.moveTo(x0, yMid0);
   ctx.lineTo(x1, yMid1);
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // Pastille d'unité de temps à gauche
-  {
+  // Pastille d'unité de temps à gauche (style sombre cohérent)
+  if (x0 < 80) {
     const tfChip = L.tf || (typeof tfLabel === 'function' ? tfLabel(mtfMinutes) : (mtfMinutes + 'm'));
     ctx.save();
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.setLineDash([]);
-    if ('filter' in ctx) ctx.filter = 'none';
-    ctx.font = 'bold 11px "IBM Plex Mono",monospace';
-    const cw2 = ctx.measureText(tfChip).width + 13, ch2 = 17;
-    const cbx = 6;
+    ctx.font = 'bold 10px "IBM Plex Mono",monospace';
+    const cw2 = ctx.measureText(tfChip).width + 12, ch2 = 18;
+    const cbx = 8;
     const pente = (x1 !== x0) ? (yMid1 - yMid0) / (x1 - x0) : 0;
     const yGauche = yMid0 + pente * (cbx - x0);
     const hautPan = (p && p.y != null) ? p.y : 0;
     const basPan  = (p && p.y != null && p.h != null) ? (p.y + p.h) : (typeof H !== 'undefined' ? H : 600);
-    const cby = Math.max(hautPan + 2, Math.min(basPan - ch2 - 2, yGauche - ch2 / 2));
-    ctx.beginPath();
-    ctx.rect(cbx, cby, cw2, ch2);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fill();
-    ctx.lineWidth = 1.6;
+    const cby = Math.max(hautPan + 4, Math.min(basPan - ch2 - 4, yGauche - ch2 / 2));
+    
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
     ctx.strokeStyle = activeColor;
+    ctx.lineWidth = 1.2;
+    roundRect(cbx, cby, cw2, ch2, 4);
+    ctx.fill();
     ctx.stroke();
-    ctx.closePath();
 
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = activeColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(tfChip, cbx + cw2 / 2, cby + ch2 / 2 + 0.5);
     ctx.restore();
   }
 
-  // 7. Badge de statistiques à droite
-  if (showStats && x1 >= 50 && x1 <= W - AXIS_W + 50) {
+  // 8. Badge de statistiques à droite
+  if (showStats && x1 >= 50 && x1 <= W - AXIS_W + 150) {
     const r2Pct = (L.r2 * 100).toFixed(1);
     const pctTxt = (L.pctChange >= 0 ? '+' : '') + L.pctChange.toFixed(2) + '%';
     const slopeIcon = isUp ? '↗' : isDn ? '↘' : '→';
     const tfTxt = L.tf ? ` (${L.tf})` : '';
-    const badgeTxt = `Régression Linéaire (${L.len})${tfTxt} ${slopeIcon} ${pctTxt} · R²: ${r2Pct}% · ±$${fmt(L.dev * (S('lrc', 'devlen') || 2.0))}`;
+    const badgeTxt = `Régression Linéaire (${L.len})${tfTxt} ${slopeIcon} ${pctTxt} · R² ${r2Pct}% · ±$${fmt(dev2)}`;
 
     ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
     const txtWidth = ctx.measureText(badgeTxt).width;
@@ -32623,7 +32636,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-1935';
+  window.__LUMEN_BUILD = 'B-1908-1950';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
