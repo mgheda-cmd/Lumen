@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-2030</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-2115</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -33016,7 +33016,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-2030';
+  window.__LUMEN_BUILD = 'B-1908-2115';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -33131,27 +33131,52 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     }).filter(Boolean);
   }
 
-  function sorties(filtre){
+  function sorties(filtre, modeEnt){
     const d = state.data || [];
 
     // Sortie sur Apparition d'un signal opposé MM (Achat MM ferme Vente, Vente MM ferme Achat)
     if(filtre === 'mm_sig_opp'){
-      const baseMM = (state.indicators && state.indicators.strat_mm) || {};
+      const baseMM = Object.assign({}, (state.indicators && state.indicators.strat_mm) || {});
+      if(modeEnt === 'mm_opt15m' || modeEnt === 'mm_15m') baseMM.confluenceFilter = 'opt15m';
+      else if(modeEnt === 'mm_opt1') baseMM.confluenceFilter = 'opt1';
+      else if(modeEnt === 'mm_opt2') baseMM.confluenceFilter = 'opt2';
+      else if(modeEnt === 'mm_opt3') baseMM.confluenceFilter = 'opt3';
+      else if(modeEnt === 'mm_opt4') baseMM.confluenceFilter = 'opt4';
+      else if(modeEnt === 'mm_opt5') baseMM.confluenceFilter = 'opt5';
+      else if(modeEnt === 'mm_opt6') baseMM.confluenceFilter = 'opt6';
+      else if(modeEnt === 'mm_base') baseMM.confluenceFilter = 'base';
+      else if(modeEnt === 'mm_conf_1_6') baseMM.confluenceFilter = 'conf_1_6';
+      else if(modeEnt === 'mm_conf_1_2_6') baseMM.confluenceFilter = 'conf_1_2_6';
+      else if(modeEnt === 'mm_all') baseMM.confluenceFilter = 'all';
+
       let mmData;
       try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
+      let sgList = (mmData && Array.isArray(mmData.signals)) ? mmData.signals.slice() : [];
+
+      if(modeEnt === 'mm_base') sgList = sgList.filter(x => x.optKey === 'base');
+      else if(modeEnt === 'mm_opt15m' || modeEnt === 'mm_15m') sgList = sgList.filter(x => x.optKey === 'opt15m' || x.is15m);
+      else if(modeEnt === 'mm_opt1') sgList = sgList.filter(x => x.optKey === 'opt1');
+      else if(modeEnt === 'mm_opt2') sgList = sgList.filter(x => x.optKey === 'opt2');
+      else if(modeEnt === 'mm_opt3') sgList = sgList.filter(x => x.optKey === 'opt3');
+      else if(modeEnt === 'mm_opt4') sgList = sgList.filter(x => x.optKey === 'opt4');
+      else if(modeEnt === 'mm_opt5') sgList = sgList.filter(x => x.optKey === 'opt5');
+      else if(modeEnt === 'mm_opt6') sgList = sgList.filter(x => x.optKey === 'opt6');
+
       const exits = [];
-      (mmData.signals || []).forEach(function(sg, k){
+      sgList.forEach(function(sg, k){
         const i = (sg.t != null && typeof idxOfTime === 'function') ? idxOfTime(sg.t) : sg.i;
         if(i != null && d[i]) {
+          const isSell = (sg.dir === -1);
+          const optLabel = (modeEnt === 'mm_opt15m' || modeEnt === 'mm_15m') ? ' 15M' : (sg.optKey === 'base' ? ' Base' : (sg.label ? (' ' + sg.label) : ' MM'));
           exits.push({
             i: i,
-            type: (sg.dir === -1) ? 'SORTIE_ACHAT' : 'SORTIE_VENTE',
-            dir: (sg.dir === -1) ? 1 : -1,
+            type: isSell ? 'SORTIE_ACHAT' : 'SORTIE_VENTE',
+            dir: isSell ? 1 : -1,
             isExit: true,
             price: sg.price || d[i].c,
             t: sg.t,
             div: false,
-            label: (sg.dir === -1 ? 'Signal Vente MM (Sortie Achat)' : 'Signal Achat MM (Sortie Vente)'),
+            label: isSell ? ('Signal Vente' + optLabel + ' (Sortie Achat)') : ('Signal Achat' + optLabel + ' (Sortie Vente)'),
             num: k + 1
           });
         }
@@ -33327,7 +33352,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     jour('calcul des entrées…');
     const ents = entrees(mEnt);
     jour(ents.length + ' entrées · calcul des sorties…');
-    const sors = sorties(mSor);
+    const sors = sorties(mSor, mEnt);
     jour(ents.length + ' entrées · ' + sors.length + ' sorties · appariement…');
 
 
@@ -33380,11 +33405,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       }
 
       let isOppExit = false;
-      if(exitOpp === 'toujours' && nextOpp && (!ex || nextOpp.i < ex.i)){
-        ex = { i: nextOpp.i, price: nextOpp.price, isOpp: true, num: nextOpp.num, div: false };
+      if(exitOpp === 'toujours' && nextOpp && (!ex || nextOpp.i <= ex.i)){
+        ex = { i: nextOpp.i, price: nextOpp.price, isOpp: true, num: nextOpp.num, div: false, label: nextOpp.trigger ? ('Signal Opposé : ' + nextOpp.trigger) : ('Entrée opposée #' + nextOpp.num) };
         isOppExit = true;
       } else if(exitOpp === 'sans_sortie' && !ex && nextOpp){
-        ex = { i: nextOpp.i, price: nextOpp.price, isOpp: true, num: nextOpp.num, div: false };
+        ex = { i: nextOpp.i, price: nextOpp.price, isOpp: true, num: nextOpp.num, div: false, label: nextOpp.trigger ? ('Signal Opposé : ' + nextOpp.trigger) : ('Entrée opposée #' + nextOpp.num) };
         isOppExit = true;
       }
 
@@ -33403,7 +33428,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       const pe = +en.price;
       let ps = +(ex.price || (d[ex.i] ? d[ex.i].c : pe));
       let iS = ex.i;
-      let motif = isOppExit ? ('Entrée opposée' + (ex.num != null ? ' #' + ex.num : '')) : (ex.div ? 'Divergence' : 'Seuil + pente');
+      let motif = (ex && ex.label) ? ex.label : (isOppExit ? ('Entrée opposée' + (ex.num != null ? ' #' + ex.num : '')) : (ex.div ? 'Divergence' : 'Seuil + pente'));
       if(!isFinite(pe) || !isFinite(ps) || pe <= 0) continue;
 
       /* Deux façons de dimensionner la position, comme sur MEXC :
