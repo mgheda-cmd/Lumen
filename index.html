@@ -967,6 +967,7 @@ footer{
       <div class="ind-item on" data-ind="smc_lite" id="item-smc_lite" style="background:var(--panel-2,#0F172A);border:1.5px solid #00FFFF;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,255,255,0.2)">
         <span class="dot" style="background:#00FFFF;box-shadow:0 0 6px #00FFFF;flex:none"></span>
         <span class="name">FluidTrades - SMC Lite <span class="desc">Supply/Demand & BOS</span></span>
+        <span class="srtf on" data-smcopt="showBos" title="Activer ou masquer les cassures et lignes BOS">🏷️ BOS</span>
         <span class="state">on</span>
       </div>
       <div class="ind-item on" data-ind="fvg_ranked" id="item-fvg_ranked" style="background:var(--panel-2,#0F172A);border:1.5px solid #1AD8C2;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(26,216,194,0.2)">
@@ -4943,7 +4944,7 @@ const state = {
     sha:{on:true,period:10,tf:'chart',mode:'lisse'},
     sha2:{on:false,period:10,tf:'15',mode:'lisse'},
     sha3:{on:false,period:10,tf:'60',mode:'lisse'},
-    smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showZigzag:false,showPaLabels:false,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
+    smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showZigzag:false,showPaLabels:false,showBos:true,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
     fvg_ranked:{on:true,maxZones:10,maxStored:50,volLength:20,trendLength:50,showBars:true,showBlockText:true,strengthTextSize:'auto',blockTextSize:'auto',cBull:'#1AD8C2',cBear:'#D81A66',tf:'chart'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:true,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
@@ -6753,8 +6754,11 @@ function getInd(key){
     if(key==='sr')state.cache[ck]=calc.sr(d);
     if(key==='lrc'){
       const mtf = (ind.tf && ind.tf !== 'chart' && +ind.tf !== state.tf) ? +ind.tf : null;
+      const periodVal = ind.period || 100;
+      const multVal = S('lrc', 'devlen') ?? S('lrc', 'mult') ?? 2.0;
+      const mult1Val = S('lrc', 'mult1') ?? 1.0;
       if (!mtf) {
-        const res = calc.lrc(d, ind.period, S('lrc', 'mult'), S('lrc', 'mult1'));
+        const res = calc.lrc(d, periodVal, multVal, mult1Val);
         if (res) {
           res.tf = tfLabel(state.tf);
           res.mtf = state.tf;
@@ -6765,7 +6769,7 @@ function getInd(key){
         if (!bars || !bars.length) {
           state.cache[ck] = null;
         } else {
-          const res = calc.lrc(bars, ind.period, S('lrc', 'mult'), S('lrc', 'mult1'));
+          const res = calc.lrc(bars, periodVal, multVal, mult1Val);
           if (res) {
             res.tf = tfLabel(mtf);
             res.mtf = mtf;
@@ -8941,41 +8945,44 @@ function drawSmcLite(data, s, e, yOf, cw, p) {
   }
 
   // 3. Draw BOS Lines
-  const allBos = (data.supplyBos || []).concat(data.demandBos || []);
-  if (allBos.length) {
-    ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
-    ctx.textAlign = 'center';
+  const showBos = S('smc_lite', 'showBos') !== false;
+  if (showBos) {
+    const allBos = (data.supplyBos || []).concat(data.demandBos || []);
+    if (allBos.length) {
+      ctx.font = 'bold 9.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
 
-    for (const b of allBos) {
-      let x0 = xOf(b.left);
-      if (b.tLeft != null) {
-        const zi = idxOfTime(b.tLeft);
-        if (zi != null) x0 = xOf(zi);
+      for (const b of allBos) {
+        let x0 = xOf(b.left);
+        if (b.tLeft != null) {
+          const zi = idxOfTime(b.tLeft);
+          if (zi != null) x0 = xOf(zi);
+        }
+        let x1 = xOf(b.right);
+        if (b.tRight != null) {
+          const zi = idxOfTime(b.tRight);
+          if (zi != null) x1 = xOf(zi);
+        }
+        const yMid = yOf(b.mid);
+
+        ctx.strokeStyle = hexA(cBos, 0.85);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x0, yMid);
+        ctx.lineTo(x1, yMid);
+        ctx.stroke();
+
+        // BOS Badge
+        const textW = ctx.measureText('BOS').width + 8;
+        const midX = (x0 + x1) / 2;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(midX - textW / 2, yMid - 7, textW, 14);
+        ctx.strokeStyle = cBos;
+        ctx.strokeRect(midX - textW / 2, yMid - 7, textW, 14);
+
+        ctx.fillStyle = cBos;
+        ctx.fillText('BOS', midX, yMid + 3.5);
       }
-      let x1 = xOf(b.right);
-      if (b.tRight != null) {
-        const zi = idxOfTime(b.tRight);
-        if (zi != null) x1 = xOf(zi);
-      }
-      const yMid = yOf(b.mid);
-
-      ctx.strokeStyle = hexA(cBos, 0.85);
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(x0, yMid);
-      ctx.lineTo(x1, yMid);
-      ctx.stroke();
-
-      // BOS Badge
-      const textW = ctx.measureText('BOS').width + 8;
-      const midX = (x0 + x1) / 2;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.fillRect(midX - textW / 2, yMid - 7, textW, 14);
-      ctx.strokeStyle = cBos;
-      ctx.strokeRect(midX - textW / 2, yMid - 7, textW, 14);
-
-      ctx.fillStyle = cBos;
-      ctx.fillText('BOS', midX, yMid + 3.5);
     }
   }
 
@@ -9140,9 +9147,11 @@ function drawBOS(evts,s,e,yOf,cw,p){
   for(const m of evts){
     if(state.data.length&&m.t<state.data[0].t)continue;
     const i=idxOfTime(m.t); if(i==null||i>e-1)continue;
-    const jf=idxOfTime(m.fromT); if(jf==null)continue;
-    const x=xOf(i), xf=xOf(jf), y=yOf(m.lvl);
-    if(x<-60||x>W-AXIS_W||xf>W-AXIS_W)continue;
+    let jf = (m.fromT != null) ? idxOfTime(m.fromT) : null;
+    const x = xOf(i);
+    const xf = (jf != null) ? xOf(jf) : Math.max(0, x - 120);
+    const y = yOf(m.lvl);
+    if(x<-60||x>W-AXIS_W)continue;
     const col=m.up?cU:cD;
     // niveau cassé
     ctx.strokeStyle=hexA(col,.85);ctx.lineWidth=m.kind==='CHoCH'?1.6:1.1;
@@ -12513,6 +12522,10 @@ function syncMenu(){
     const opt = el.dataset.fvgopt;
     if(state.indicators.fvg) el.classList.toggle('on', !!state.indicators.fvg[opt]);
   });
+  document.querySelectorAll('.srtf[data-smcopt]').forEach(el=>{
+    const opt = el.dataset.smcopt;
+    if(state.indicators.smc_lite) el.classList.toggle('on', state.indicators.smc_lite[opt] !== false);
+  });
   document.querySelectorAll('.srtf[data-tripleflag]').forEach(el=>{
   const f = el.dataset.tripleflag;
   if(state.indicators.signal_triple) el.classList.toggle('on', !!state.indicators.signal_triple[f]);
@@ -12545,6 +12558,19 @@ document.querySelectorAll('.ind-item .srtf[data-tf]:not(.mtf)').forEach(el=>{
     const t=state.indicators[key].tfs; t[tf]=!t[tf];
     el.classList.toggle('on',t[tf]);
     onTfChip(key,tf,t[tf]);
+  });
+});
+document.querySelectorAll('.srtf[data-smcopt]').forEach(el=>{
+  const opt = el.dataset.smcopt;
+  if(state.indicators.smc_lite) el.classList.toggle('on', state.indicators.smc_lite[opt] !== false);
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(state.indicators.smc_lite){
+      const cur = state.indicators.smc_lite[opt] !== false;
+      state.indicators.smc_lite[opt] = !cur;
+      el.classList.toggle('on', !cur);
+      state.cache={}; saveConfig(); syncMenu(); render();
+    }
   });
 });
 document.querySelectorAll('.srtf[data-bosopt]').forEach(el=>{
@@ -15400,6 +15426,7 @@ const SCHEMA={
     {k:'boxWidth',t:'num',lab:'Largeur zone (Supply/Demand Box Width)',min:1,max:10,step:0.5,def:2.5,ind:1},
     {k:'showZigzag',t:'bool',lab:'Afficher Zig Zag',def:false},
     {k:'showPaLabels',t:'bool',lab:'Afficher étiquettes Price Action (HH/LH/HL/LL)',def:false},
+    {k:'showBos',t:'bool',lab:'Afficher les lignes et étiquettes BOS',def:true},
     {k:'cSupply',t:'col',lab:'Couleur Supply Zone',def:'#E2E8F0'},
     {k:'cSupplyOutline',t:'col',lab:'Contour Supply Zone',def:'#A0AEC0'},
     {k:'cDemand',t:'col',lab:'Couleur Demand Zone',def:'#00E5FF'},
@@ -18921,6 +18948,11 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   const showFibo = S('lrc', 'showfibo') === true;
 
   ctx.save();
+  if (p && p.y != null) {
+    ctx.beginPath();
+    ctx.rect(0, p.y, W - AXIS_W, p.h);
+    ctx.clip();
+  }
 
   // 1. Remplissage du canal
   if (showFill && showBands) {
@@ -32463,7 +32495,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0600';
+  window.__LUMEN_BUILD = 'B-1908-1615';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
