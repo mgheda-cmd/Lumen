@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-2000</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-2030</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -2729,9 +2729,13 @@ footer{
         <select id="paper-ent" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
           <option value="mm_all" selected>🔥 Stratégie MM — Toutes Options actives</option>
           <option value="mm_base">🟢 Stratégie MM — Base</option>
+          <option value="mm_opt15m">🕒 Stratégie MM — Option 15M (Base 15 Minutes)</option>
           <option value="mm_opt6">💎 Stratégie MM — Option 6 (BOS / DIV)</option>
           <option value="mm_opt1">🔷 Stratégie MM — Option 1 (KK 2ᵉ UT)</option>
           <option value="mm_opt2">⚡ Stratégie MM — Option 2 (iMACD)</option>
+          <option value="mm_opt3">🛡️ Stratégie MM — Option 3 (Cassure)</option>
+          <option value="mm_opt4">🎯 Stratégie MM — Option 4 (Lissage)</option>
+          <option value="mm_opt5">🚀 Stratégie MM — Option 5 (Rebond V)</option>
           <option value="mm_conf_1_6">✨ Stratégie MM — Confluence Élite (Opt 1 + 6)</option>
           <option value="mm_conf_1_2_6">🏆 Stratégie MM — Triple Confluence (1 + 2 + 6)</option>
           <option value="zz">Z.Z. classiques</option>
@@ -14171,6 +14175,9 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
     const mEntLabels = {
       base: '🟢 Signal Base (Ligne MM)',
       mm_base: '🟢 Signal Base (Ligne MM)',
+      opt15m: '🕒 Opt 15M (Base 15 Minutes)',
+      mm_opt15m: '🕒 Opt 15M (Base 15 Minutes)',
+      mm_15m: '🕒 Opt 15M (Base 15 Minutes)',
       opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
       mm_opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
       opt2: '⚡ Opt 2 (iMACD)',
@@ -15040,6 +15047,7 @@ function checkAutoTrade(inputSignals){
         candidateSignals = mmData.signals;
         const mEnt = (strat && strat.mEnt) ? strat.mEnt : (document.getElementById('paper-ent')?.value || 'mm_all');
         if (mEnt === 'mm_base' || mEnt === 'base') candidateSignals = candidateSignals.filter(s => s.optKey === 'base');
+        else if (mEnt === 'mm_opt15m' || mEnt === 'mm_15m' || mEnt === 'opt15m' || mEnt === '15m') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt15m' || s.is15m);
         else if (mEnt === 'mm_opt1' || mEnt === 'opt1') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt1');
         else if (mEnt === 'mm_opt2' || mEnt === 'opt2') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt2');
         else if (mEnt === 'mm_opt3' || mEnt === 'opt3') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt3');
@@ -33008,7 +33016,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-2000';
+  window.__LUMEN_BUILD = 'B-1908-2030';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -33063,8 +33071,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       else if(mode === 'mm_conf_1_2') baseMM.confluenceFilter = 'conf_1_2';
       else if(mode === 'mm_conf_2_6') baseMM.confluenceFilter = 'conf_2_6';
       else if(mode === 'mm_conf_1_2_6') baseMM.confluenceFilter = 'conf_1_2_6';
+      else if(mode === 'mm_opt15m' || mode === 'mm_15m') baseMM.confluenceFilter = 'opt15m';
       else if(mode === 'mm_opt1') baseMM.confluenceFilter = 'opt1';
       else if(mode === 'mm_opt2') baseMM.confluenceFilter = 'opt2';
+      else if(mode === 'mm_opt3') baseMM.confluenceFilter = 'opt3';
+      else if(mode === 'mm_opt4') baseMM.confluenceFilter = 'opt4';
+      else if(mode === 'mm_opt5') baseMM.confluenceFilter = 'opt5';
       else if(mode === 'mm_opt6') baseMM.confluenceFilter = 'opt6';
       else if(mode === 'mm_base') baseMM.confluenceFilter = 'base';
       else if(mode === 'mm_all') baseMM.confluenceFilter = 'all';
@@ -33074,8 +33086,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       let sg = (mmData && Array.isArray(mmData.signals)) ? mmData.signals.slice() : [];
 
       if(mode === 'mm_base') sg = sg.filter(x => x.optKey === 'base');
+      else if(mode === 'mm_opt15m' || mode === 'mm_15m') sg = sg.filter(x => x.optKey === 'opt15m' || x.is15m);
       else if(mode === 'mm_opt1') sg = sg.filter(x => x.optKey === 'opt1');
       else if(mode === 'mm_opt2') sg = sg.filter(x => x.optKey === 'opt2');
+      else if(mode === 'mm_opt3') sg = sg.filter(x => x.optKey === 'opt3');
+      else if(mode === 'mm_opt4') sg = sg.filter(x => x.optKey === 'opt4');
+      else if(mode === 'mm_opt5') sg = sg.filter(x => x.optKey === 'opt5');
       else if(mode === 'mm_opt6') sg = sg.filter(x => x.optKey === 'opt6');
 
       let last = 0;
@@ -33489,9 +33505,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
       const motifEnt = en.trigger || (
         mEnt === 'mm_base' ? 'MM Base' :
+        mEnt === 'mm_opt15m' ? 'MM Option 15M' :
         mEnt === 'mm_opt6' ? 'MM Option 6 (BOS/DIV)' :
         mEnt === 'mm_opt1' ? 'MM Option 1 (KK 2ᵉ UT)' :
         mEnt === 'mm_opt2' ? 'MM Option 2 (iMACD)' :
+        mEnt === 'mm_opt3' ? 'MM Option 3 (Cassure)' :
+        mEnt === 'mm_opt4' ? 'MM Option 4 (Lissage)' :
+        mEnt === 'mm_opt5' ? 'MM Option 5 (Rebond V)' :
         mEnt === 'mm_conf_1_6' ? 'Confluence Élite (1+6)' :
         mEnt === 'mm_conf_1_2_6' ? 'Triple Confluence' :
         mEnt === 'mm_all' ? 'MM Toutes Options' : 'Signal Z.Z.'
@@ -34065,9 +34085,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:end;margin-bottom:12px">' +
       '<label style="font-size:11px;color:#94A3B8">Entrées<br><select id="bta-ent" style="' + sel + '">' +
         '<option value="mm_base" selected>🟢 Stratégie MM — Base</option>' +
+        '<option value="mm_opt15m">🕒 Stratégie MM — Option 15M (Base 15 Minutes)</option>' +
         '<option value="mm_opt6">💎 Stratégie MM — Option 6 (BOS / DIV)</option>' +
         '<option value="mm_opt1">🔷 Stratégie MM — Option 1 (KK 2ᵉ UT)</option>' +
         '<option value="mm_opt2">⚡ Stratégie MM — Option 2 (iMACD)</option>' +
+        '<option value="mm_opt3">🛡️ Stratégie MM — Option 3 (Cassure)</option>' +
+        '<option value="mm_opt4">🎯 Stratégie MM — Option 4 (Lissage)</option>' +
+        '<option value="mm_opt5">🚀 Stratégie MM — Option 5 (Rebond V)</option>' +
         '<option value="mm_conf_1_6">✨ Stratégie MM — Confluence Élite (Opt 1 + 6)</option>' +
         '<option value="mm_conf_1_2_6">🏆 Stratégie MM — Triple Confluence (1 + 2 + 6)</option>' +
         '<option value="mm_all">🔥 Stratégie MM — Toutes Options actives</option>' +
@@ -34345,9 +34369,13 @@ window.envoyerVersDemo = function(){
 
   const entNom = (
     r.mEnt === 'mm_base' ? 'MM Base' :
+    r.mEnt === 'mm_opt15m' ? 'MM Option 15M' :
     r.mEnt === 'mm_opt6' ? 'MM Option 6 (BOS/DIV)' :
     r.mEnt === 'mm_opt1' ? 'MM Option 1 (KK 2ᵉ UT)' :
     r.mEnt === 'mm_opt2' ? 'MM Option 2 (iMACD)' :
+    r.mEnt === 'mm_opt3' ? 'MM Option 3 (Cassure)' :
+    r.mEnt === 'mm_opt4' ? 'MM Option 4 (Lissage)' :
+    r.mEnt === 'mm_opt5' ? 'MM Option 5 (Rebond V)' :
     r.mEnt === 'mm_conf_1_6' ? 'Confluence Élite (1+6)' :
     r.mEnt === 'mm_conf_1_2_6' ? 'Triple Confluence' :
     r.mEnt === 'mm_all' ? 'MM Toutes Options' : 'Signal Z.Z.'
@@ -34862,6 +34890,12 @@ window.envoyerVersMexc = function(){
       { ent: 'mm_base', sor: 'div',        entNom: '🟢 MM Base', sorNom: 'KK bis (Divergences)' },
       { ent: 'mm_base', sor: 'seuil',      entNom: '🟢 MM Base', sorNom: 'KK bis (Seuil)' },
 
+      { ent: 'mm_opt15m', sor: 'mm_sig_opp', entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_opt15m', sor: 'mm_opp',     entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_opt15m', sor: 'tout',       entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_opt15m', sor: 'div',        entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_opt15m', sor: 'seuil',      entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'KK bis (Seuil)' },
+
       { ent: 'mm_opt6', sor: 'mm_sig_opp', entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'Signal opposé MM' },
       { ent: 'mm_opt6', sor: 'mm_opp',     entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'Sommet/Creux MM' },
       { ent: 'mm_opt6', sor: 'tout',       entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'KK bis (Toutes)' },
@@ -35237,6 +35271,12 @@ window.balayerMM_MTF = async function(){
     { ent: 'mm_base', sor: 'tout',       entNom: '🟢 MM Base', sorNom: 'KK bis (Toutes)' },
     { ent: 'mm_base', sor: 'div',        entNom: '🟢 MM Base', sorNom: 'KK bis (Divergences)' },
     { ent: 'mm_base', sor: 'seuil',      entNom: '🟢 MM Base', sorNom: 'KK bis (Seuil)' },
+
+    { ent: 'mm_opt15m', sor: 'mm_sig_opp', entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'Signal opposé MM' },
+    { ent: 'mm_opt15m', sor: 'mm_opp',     entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'Sommet/Creux MM' },
+    { ent: 'mm_opt15m', sor: 'tout',       entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'KK bis (Toutes)' },
+    { ent: 'mm_opt15m', sor: 'div',        entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'KK bis (Divergences)' },
+    { ent: 'mm_opt15m', sor: 'seuil',      entNom: '🕒 MM Option 15M (Base 15m)', sorNom: 'KK bis (Seuil)' },
 
     { ent: 'mm_opt6', sor: 'mm_sig_opp', entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'Signal opposé MM' },
     { ent: 'mm_opt6', sor: 'mm_opp',     entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'Sommet/Creux MM' },
