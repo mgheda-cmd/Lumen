@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-1950</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-1955</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -4973,7 +4973,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_mm:{on:true,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
+    strat_mm:{on:true,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
@@ -15846,6 +15846,7 @@ const SCHEMA={
       {v:'opt6',t:'💎 Option 6 uniquement (BOS/DIV)'},
       {v:'opt1',t:'🔷 Option 1 uniquement (2ᵉ UT)'},
       {v:'opt2',t:'⚡ Option 2 uniquement (iMACD)'},
+      {v:'opt15m',t:'🕒 Option 15M uniquement (Signal Base 15 Minutes)'},
       {v:'base',t:'🟢 Signal Base uniquement'}
     ],def:'all'},
     {k:'oscThreshold',t:'num',lab:"Seuil extrême Long sous (ex: -75)",min:-95,max:-10,def:-75,ind:1},
@@ -15854,6 +15855,7 @@ const SCHEMA={
     {k:'alternateSignals',t:'bool',lab:"Alternance stricte (1 Long ➔ 1 Short ➔ 1 Long)",def:true},
     {k:'showBadges',t:'bool',lab:"Afficher les pastilles d'entrée",def:true},
     {k:'showVerticalLines',t:'bool',lab:"Afficher les lignes verticales de projection",def:true},
+    {k:'show15m',t:'bool',lab:"--- 🕒 OPTION 15M (Base sur 15 Minutes) : Afficher Pastille ---",def:true},
 
     {k:'showOpt1',t:'bool',lab:"--- 🔷 OPTION 1 (KK bis 2ᵉ UT) : Afficher Pastille ---",def:true},
     {k:'opt1Tf',t:'choice',lab:"Option 1 — Unité de Temps (2ᵉ UT)",opts:[
@@ -26947,6 +26949,188 @@ function computeMMSignals(d, ind) {
     }
   }
 
+  // ==========================================
+  // ÉTAPE 4 : OPTION 15M — SIGNAL BASE CALCULÉ SUR L'UNITÉ DE TEMPS 15 MINUTES
+  // Mêmes conditions que la pastille de base (Creux < -75 / Sommet > +75 puis retournement de ligne MM)
+  // mais calculé sur les bougies 15m et projeté sur le graphique avec la mention "15 MINUTES" en grand
+  // ==========================================
+  const show15m = indMM.show15m !== false;
+  if (show15m) {
+    const bars15 = (typeof getMTFBars === 'function') ? (getMTFBars(15) || (+state.tf === 15 ? d : null)) : (+state.tf === 15 ? d : null);
+    if (bars15 && bars15.length >= 10) {
+      const two15 = calc.twoIndicator(bars15, {
+        src: indKK.src || "close",
+        mode: indKK.mode || "Trend Strength",
+        filter: indKK.filter || "PhiSmoother",
+        phase: indKK.phase != null ? indKK.phase : 3.7,
+        spacing: indKK.spacing != null ? indKK.spacing : 3,
+        ssLen: 21, sigLen: 20
+      });
+      const net15 = two15.net || [];
+      const sig15 = two15.signal || [];
+      const dir15 = new Array(bars15.length).fill(0);
+      for (let j = 0; j < bars15.length; j++) {
+        if (net15[j] != null && sig15[j] != null) {
+          dir15[j] = net15[j] > sig15[j] ? 1 : -1;
+        }
+      }
+
+      const episodes15 = [];
+      let inLow15 = false, curCreux15 = null;
+      for (let j = 1; j < bars15.length; j++) {
+        const netCur = net15[j];
+        if (netCur == null) continue;
+        if (netCur <= lowerThreshold) {
+          if (!inLow15) {
+            inLow15 = true;
+            curCreux15 = { type: "CREUX", idx: j, price: bars15[j].l, t: bars15[j].t, score: netCur, high: bars15[j].h, startIdx: j };
+          } else {
+            if (!curCreux15 || bars15[j].l < curCreux15.price || netCur < curCreux15.score) {
+              curCreux15 = {
+                type: "CREUX",
+                idx: j,
+                price: Math.min(bars15[j].l, curCreux15 ? curCreux15.price : bars15[j].l),
+                t: bars15[j].t,
+                score: Math.min(netCur, curCreux15 ? curCreux15.score : netCur),
+                high: Math.max(bars15[j].h, curCreux15 ? curCreux15.high : bars15[j].h),
+                startIdx: curCreux15 ? curCreux15.startIdx : j
+              };
+            }
+          }
+        } else {
+          if (inLow15) {
+            inLow15 = false;
+            if (curCreux15 && curCreux15.score <= lowerThreshold) episodes15.push(curCreux15);
+            curCreux15 = null;
+          }
+        }
+      }
+      if (inLow15 && curCreux15 && curCreux15.score <= lowerThreshold) episodes15.push(curCreux15);
+
+      if (allowShorts) {
+        let inHigh15 = false, curSommet15 = null;
+        for (let j = 1; j < bars15.length; j++) {
+          const netCur = net15[j];
+          if (netCur == null) continue;
+          if (netCur >= upperThreshold) {
+            if (!inHigh15) {
+              inHigh15 = true;
+              curSommet15 = { type: "SOMMET", idx: j, price: bars15[j].h, t: bars15[j].t, score: netCur, low: bars15[j].l, startIdx: j };
+            } else {
+              if (!curSommet15 || bars15[j].h > curSommet15.price || netCur > curSommet15.score) {
+                curSommet15 = {
+                  type: "SOMMET",
+                  idx: j,
+                  price: Math.max(bars15[j].h, curSommet15 ? curSommet15.price : bars15[j].h),
+                  t: bars15[j].t,
+                  score: Math.max(netCur, curSommet15 ? curSommet15.score : netCur),
+                  low: Math.min(bars15[j].l, curSommet15 ? curSommet15.low : bars15[j].l),
+                  startIdx: curSommet15 ? curSommet15.startIdx : j
+                };
+              }
+            }
+          } else {
+            if (inHigh15) {
+              inHigh15 = false;
+              if (curSommet15 && curSommet15.score >= upperThreshold) episodes15.push(curSommet15);
+              curSommet15 = null;
+            }
+          }
+        }
+        if (inHigh15 && curSommet15 && curSommet15.score >= upperThreshold) episodes15.push(curSommet15);
+      }
+
+      episodes15.sort((a, b) => a.idx - b.idx);
+
+      let lastState15 = null;
+      for (let epIdx = 0; epIdx < episodes15.length; epIdx++) {
+        const ep = episodes15[epIdx];
+        const nextOppositeEp = episodes15.slice(epIdx + 1).find(e => e.type !== ep.type);
+        const maxScan15 = nextOppositeEp ? nextOppositeEp.idx : Math.min(bars15.length, ep.idx + 60);
+
+        if (ep.type === "CREUX") {
+          let idxBase15 = -1;
+          for (let j = ep.idx; j < maxScan15; j++) {
+            if (dir15[j] === 1 && (j === 0 || dir15[j - 1] === -1)) {
+              if (net15[j] != null && net15[j] <= maxLongLevel) {
+                idxBase15 = j;
+              }
+              break;
+            }
+          }
+          if (idxBase15 !== -1) {
+            const canTrigger = !alternateSignals || (lastState15 !== "LONG");
+            if (canTrigger) {
+              const sigT = bars15[idxBase15].t;
+              const chartI = (typeof idxOfTime === 'function') ? idxOfTime(sigT) : null;
+              if (chartI != null && chartI >= 0 && chartI < d.length) {
+                const lvl15 = (net15[idxBase15] != null) ? (net15[idxBase15] > 0 ? `+${net15[idxBase15].toFixed(0)}` : `${net15[idxBase15].toFixed(0)}`) : '';
+                signals.push({
+                  i: chartI,
+                  t: sigT,
+                  dir: 1,
+                  type: "ACHAT",
+                  optKey: "opt15m",
+                  is15m: true,
+                  price: d[chartI].c,
+                  low: d[chartI].l,
+                  high: d[chartI].h,
+                  score: ep.score,
+                  triggerLevel: net15[idxBase15],
+                  label: `ACHAT 15 MIN (Niv: ${lvl15})`,
+                  badge: `🕒 ACHAT 15 MIN · BASE (${lvl15})`,
+                  sub: `15 MIN @ $${fmt(d[chartI].c, 1)} · Niv: ${lvl15}`,
+                  color: "#00E676",
+                  bgFill: "rgba(6, 32, 20, 0.95)"
+                });
+                lastState15 = "LONG";
+              }
+            }
+          }
+        } else if (ep.type === "SOMMET" && allowShorts) {
+          let idxBase15 = -1;
+          for (let j = ep.idx; j < maxScan15; j++) {
+            if (dir15[j] === -1 && (j === 0 || dir15[j - 1] === 1)) {
+              if (net15[j] != null && net15[j] >= minShortLevel) {
+                idxBase15 = j;
+              }
+              break;
+            }
+          }
+          if (idxBase15 !== -1) {
+            const canTrigger = !alternateSignals || (lastState15 !== "SHORT");
+            if (canTrigger) {
+              const sigT = bars15[idxBase15].t;
+              const chartI = (typeof idxOfTime === 'function') ? idxOfTime(sigT) : null;
+              if (chartI != null && chartI >= 0 && chartI < d.length) {
+                const lvl15 = (net15[idxBase15] != null) ? (net15[idxBase15] > 0 ? `+${net15[idxBase15].toFixed(0)}` : `${net15[idxBase15].toFixed(0)}`) : '';
+                signals.push({
+                  i: chartI,
+                  t: sigT,
+                  dir: -1,
+                  type: "VENTE",
+                  optKey: "opt15m",
+                  is15m: true,
+                  price: d[chartI].c,
+                  low: d[chartI].l,
+                  high: d[chartI].h,
+                  score: ep.score,
+                  triggerLevel: net15[idxBase15],
+                  label: `VENTE 15 MIN (Niv: ${lvl15})`,
+                  badge: `🕒 VENTE 15 MIN · BASE (${lvl15})`,
+                  sub: `15 MIN @ $${fmt(d[chartI].c, 1)} · Niv: ${lvl15}`,
+                  color: "#FF3366",
+                  bgFill: "rgba(38, 8, 16, 0.95)"
+                });
+                lastState15 = "SHORT";
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   creuxList.sort((a, b) => a.i - b.i);
   sommetsList.sort((a, b) => a.i - b.i);
   signals.sort((a, b) => a.i - b.i);
@@ -27089,6 +27273,7 @@ function drawMMSignals(res, s, e, yOf, cw) {
           if (sig.optKey === 'opt4' && ind.showOpt4 === false) return false;
           if (sig.optKey === 'opt5' && ind.showOpt5 === false) return false;
           if (sig.optKey === 'opt6' && ind.showOpt6 === false) return false;
+          if (sig.optKey === 'opt15m' && ind.show15m === false) return false;
           if (sig.optKey === 'base' && ind.showBase === false) return false;
         }
         return true;
@@ -27103,6 +27288,7 @@ function drawMMSignals(res, s, e, yOf, cw) {
       if (x < -220 || x > W - AXIS_W + 220) continue;
 
       const isLong = (sig.dir === 1 || sig.type === "ACHAT" || sig.type === "LONG");
+      const is15m = !!(sig.is15m || sig.optKey === 'opt15m');
       const baseCandle = state.data[i];
       if (!baseCandle) continue;
 
@@ -27110,8 +27296,8 @@ function drawMMSignals(res, s, e, yOf, cw) {
       const bgFill = sig.bgFill || (isLong ? "rgba(6, 32, 20, 0.95)" : "rgba(38, 8, 16, 0.95)");
       const anchorY = isLong ? yOf(baseCandle.l) : yOf(baseCandle.h);
 
-      const bw = 148;
-      const bh = 46;
+      const bw = is15m ? 154 : 148;
+      const bh = is15m ? 54 : 46;
       const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
 
       let by;
@@ -27199,10 +27385,10 @@ function drawMMSignals(res, s, e, yOf, cw) {
 
       // Fond de pastille avec lueur
       ctx.shadowColor = color;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = is15m ? 12 : 8;
       ctx.fillStyle = bgFill;
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.6;
+      ctx.lineWidth = is15m ? 2.0 : 1.6;
       ctx.beginPath();
       if (typeof ctx.roundRect === "function") {
         ctx.roundRect(bx, by, bw, bh, 6);
@@ -27220,51 +27406,89 @@ function drawMMSignals(res, s, e, yOf, cw) {
         timeTag = `[${fmtTime(sigCandleTime)}] `;
       }
 
-      // --- RENDU COMPACT SUR 3 LIGNES (FORMAT PLUS CARRÉ) ---
-      // Ligne 1 : Heure + Mot-clé ACHAT (Vert) ou VENTE (Rouge)
-      ctx.font = 'bold 10px "IBM Plex Sans", -apple-system, sans-serif';
-      ctx.textBaseline = "top";
-      const dirTxt = isLong ? "ACHAT" : "VENTE";
-      const dirColor = isLong ? "#00E676" : "#FF3366";
+      if (is15m) {
+        // --- PASTILLE 15 MINUTES (NOTE 15M EN GRAND, HEURE ET MONTANT EN PETIT) ---
+        // Ligne 1 : Heure [14:30] en petit + Sens ACHAT/VENTE
+        ctx.font = 'bold 9.5px "IBM Plex Sans", -apple-system, sans-serif';
+        ctx.textBaseline = "top";
+        const dirTxt = isLong ? "ACHAT" : "VENTE";
+        const dirColor = isLong ? "#00E676" : "#FF3366";
 
-      const wTime = timeTag ? ctx.measureText(timeTag).width : 0;
-      const wDir = ctx.measureText(dirTxt).width;
-      const totalL1W = wTime + wDir;
-      let startL1X = bx + (bw - totalL1W) / 2;
+        const wTime = timeTag ? ctx.measureText(timeTag).width : 0;
+        const wDir = ctx.measureText(dirTxt).width;
+        const totalL1W = wTime + wDir;
+        let startL1X = bx + (bw - totalL1W) / 2;
 
-      ctx.textAlign = "left";
-      if (timeTag) {
+        ctx.textAlign = "left";
+        if (timeTag) {
+          ctx.fillStyle = "#94A3B8";
+          ctx.fillText(timeTag, startL1X, by + 4);
+          startL1X += wTime;
+        }
+        ctx.fillStyle = dirColor;
+        ctx.fillText(dirTxt, startL1X, by + 4);
+
+        // Ligne 2 : "15 MINUTES" EN GRAND BIEN DISTINCTIF (14px Bold)
+        ctx.font = '900 14px "IBM Plex Sans", -apple-system, sans-serif';
+        ctx.textAlign = "center";
         ctx.fillStyle = color;
-        ctx.fillText(timeTag, startL1X, by + 4);
-        startL1X += wTime;
+        ctx.fillText("🕒 15 MINUTES", bx + bw / 2, by + 18);
+
+        // Ligne 3 : Montant / Prix d'achat en petit
+        const priceStr = `$${fmt(sig.price, 1)}`;
+        const lvlStr = (sig.triggerLevel != null) ? (sig.triggerLevel > 0 ? `+${sig.triggerLevel.toFixed(0)}` : `${sig.triggerLevel.toFixed(0)}`) : '';
+        const subTxt = lvlStr ? `${priceStr} · Niv: ${lvlStr}` : priceStr;
+        ctx.font = '8.5px "IBM Plex Mono", monospace';
+        ctx.fillStyle = "#CBD5E1";
+        ctx.fillText(subTxt, bx + bw / 2, by + 37);
+      } else {
+        // --- RENDU STANDARD SUR 3 LIGNES (FORMAT PLUS CARRÉ) ---
+        // Ligne 1 : Heure + Mot-clé ACHAT (Vert) ou VENTE (Rouge)
+        ctx.font = 'bold 10px "IBM Plex Sans", -apple-system, sans-serif';
+        ctx.textBaseline = "top";
+        const dirTxt = isLong ? "ACHAT" : "VENTE";
+        const dirColor = isLong ? "#00E676" : "#FF3366";
+
+        const wTime = timeTag ? ctx.measureText(timeTag).width : 0;
+        const wDir = ctx.measureText(dirTxt).width;
+        const totalL1W = wTime + wDir;
+        let startL1X = bx + (bw - totalL1W) / 2;
+
+        ctx.textAlign = "left";
+        if (timeTag) {
+          ctx.fillStyle = color;
+          ctx.fillText(timeTag, startL1X, by + 4);
+          startL1X += wTime;
+        }
+        ctx.fillStyle = dirColor;
+        ctx.fillText(dirTxt, startL1X, by + 4);
+
+        // Ligne 2 : Nom court de l'Option avec son icône thématique (Couleur d'origine)
+        const optLabels = {
+          base: '🟢 Signal Base',
+          opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
+          opt2: '⚡ Opt 2 (iMACD)',
+          opt3: '🛡️ Opt 3 (Cassure)',
+          opt4: '🎯 Opt 4 (Lissage)',
+          opt5: '🚀 Opt 5 (Rebond V)',
+          opt6: '💎 Opt 6 (BOS/DIV)',
+          opt15m: '🕒 15 MINUTES',
+          confluence: (sig.label || '🏆 Confluence Élite')
+        };
+        const optName = optLabels[sig.optKey] || (sig.label || '🟢 Entrée');
+        ctx.font = 'bold 9px "IBM Plex Sans", -apple-system, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillStyle = color;
+        ctx.fillText(optName, bx + bw / 2, by + 18);
+
+        // Ligne 3 : Prix d'entrée & Niveau de déclenchement (Police claire et nette)
+        const priceStr = `$${fmt(sig.price, 1)}`;
+        const lvlStr = (sig.triggerLevel != null) ? (sig.triggerLevel > 0 ? `+${sig.triggerLevel.toFixed(0)}` : `${sig.triggerLevel.toFixed(0)}`) : '';
+        const subTxt = lvlStr ? `${priceStr} · Niv: ${lvlStr}` : priceStr;
+        ctx.font = '8.5px "IBM Plex Mono", monospace';
+        ctx.fillStyle = "#CBD5E1";
+        ctx.fillText(subTxt, bx + bw / 2, by + 31);
       }
-      ctx.fillStyle = dirColor;
-      ctx.fillText(dirTxt, startL1X, by + 4);
-
-      // Ligne 2 : Nom court de l'Option avec son icône thématique (Couleur d'origine)
-      const optLabels = {
-        base: '🟢 Signal Base',
-        opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
-        opt2: '⚡ Opt 2 (iMACD)',
-        opt3: '🛡️ Opt 3 (Cassure)',
-        opt4: '🎯 Opt 4 (Lissage)',
-        opt5: '🚀 Opt 5 (Rebond V)',
-        opt6: '💎 Opt 6 (BOS/DIV)',
-        confluence: (sig.label || '🏆 Confluence Élite')
-      };
-      const optName = optLabels[sig.optKey] || (sig.label || '🟢 Entrée');
-      ctx.font = 'bold 9px "IBM Plex Sans", -apple-system, sans-serif';
-      ctx.textAlign = "center";
-      ctx.fillStyle = color;
-      ctx.fillText(optName, bx + bw / 2, by + 18);
-
-      // Ligne 3 : Prix d'entrée & Niveau de déclenchement (Police claire et nette)
-      const priceStr = `$${fmt(sig.price, 1)}`;
-      const lvlStr = (sig.triggerLevel != null) ? (sig.triggerLevel > 0 ? `+${sig.triggerLevel.toFixed(0)}` : `${sig.triggerLevel.toFixed(0)}`) : '';
-      const subTxt = lvlStr ? `${priceStr} · Niv: ${lvlStr}` : priceStr;
-      ctx.font = '8.5px "IBM Plex Mono", monospace';
-      ctx.fillStyle = "#CBD5E1";
-      ctx.fillText(subTxt, bx + bw / 2, by + 31);
 
       ctx.restore();
 
@@ -32636,7 +32860,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-1950';
+  window.__LUMEN_BUILD = 'B-1908-1955';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
