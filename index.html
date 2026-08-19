@@ -32199,7 +32199,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0155';
+  window.__LUMEN_BUILD = 'B-1908-0245';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -32246,6 +32246,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
     // Stratégie MM : Base, Option 1, Option 2, Option 6, Confluences, Tout
     if(mode && mode.startsWith('mm_')){
+      const ck = '__mm_ent_' + mode + '_' + (state.tf || 1) + '_' + d.length + '_' + (d[d.length-1] ? d[d.length-1].t : 0);
+      if(state.cache && state.cache[ck]) return state.cache[ck];
+
       const baseMM = Object.assign({}, (state.indicators && state.indicators.strat_mm) || {});
       if(mode === 'mm_conf_1_6') baseMM.confluenceFilter = 'conf_1_6';
       else if(mode === 'mm_conf_1_2') baseMM.confluenceFilter = 'conf_1_2';
@@ -32268,7 +32271,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
       let last = 0;
       sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
-      return sg.map(function(x, idx){
+      const res = sg.map(function(x, idx){
         const i = (x.t != null && typeof idxOfTime === 'function') ? idxOfTime(x.t) : x.i;
         return (i != null) ? {
           i: i,
@@ -32280,6 +32283,10 @@ function updateActiveBacktestSignals(tradesList, stratName) {
           trigger: x.label || x.badge || (x.dir === 1 ? 'ACHAT MM' : 'VENTE MM')
         } : null;
       }).filter(Boolean);
+
+      if(!state.cache) state.cache = {};
+      state.cache[ck] = res;
+      return res;
     }
 
     const base = (state.indicators && state.indicators.strat_zz) || {};
@@ -34029,6 +34036,14 @@ window.envoyerVersMexc = function(){
     const avEnt = selEnt ? selEnt.value : 'mm_base';
     const avSor = selSor ? selSor.value : 'mm_opp';
 
+    // 1. Pré-chargement unique de l'historique si nécessaire
+    const jours = +((document.getElementById('bta-jours') || {}).value || 7);
+    const besoin = Math.min(30000, Math.ceil(jours * 24 * 60 / (state.tf || 1)));
+    if((state.data || []).length < besoin * 0.95){
+      if(info) info.innerHTML = '<span style="color:#00E5FF">Chargement préalable de l\'historique…</span>';
+      if(typeof window.chargerHistorique === 'function') await window.chargerHistorique(jours);
+    }
+
     const mmConfigs = [
       { ent: 'mm_base', sor: 'mm_sig_opp', entNom: '🟢 MM Base', sorNom: 'Signal opposé MM' },
       { ent: 'mm_base', sor: 'mm_opp',     entNom: '🟢 MM Base', sorNom: 'Sommet/Creux MM' },
@@ -34076,14 +34091,21 @@ window.envoyerVersMexc = function(){
     const res = [];
     for(let k = 0; k < mmConfigs.length; k++){
       const cfg = mmConfigs[k];
-      if(info) info.innerHTML = '<span style="color:#00E676">Balayage MM ' + (k+1) + ' / ' +
-        mmConfigs.length + ' · ' + cfg.entNom + ' × ' + cfg.sorNom + '…</span>';
+      const pct = Math.round(((k + 1) / mmConfigs.length) * 100);
+      if(info){
+        info.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
+          '<div style="flex:1;background:#1E293B;height:7px;border-radius:4px;overflow:hidden">' +
+            '<div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#00E676,#38BDF8);border-radius:4px;transition:width .08s ease"></div>' +
+          '</div>' +
+          '<span style="font-size:11px;font-weight:800;color:#00E676;font-family:\'IBM Plex Mono\',monospace">' + pct + '%</span>' +
+          '<span style="font-size:11px;color:#94A3B8">' + cfg.entNom + ' × ' + cfg.sorNom + '</span>' +
+        '</div>';
+      }
       
       if(selEnt) selEnt.value = cfg.ent;
       if(selSor) selSor.value = cfg.sor;
-      state.cache = {};
 
-      await new Promise(r => setTimeout(r, 20));
+      await new Promise(r => setTimeout(r, 4));
       try{
         await window.__runBtInterne();
         const r = window.__btDernier;
@@ -34104,7 +34126,6 @@ window.envoyerVersMexc = function(){
     // Restauration des sélections
     if(selEnt) selEnt.value = avEnt;
     if(selSor) selSor.value = avSor;
-    state.cache = {};
 
     res.forEach(function(x){
       const rap = (x.dd > 0) ? (x.pnl / x.dd) : (x.pnl > 0 ? 3 : 0);
@@ -34433,22 +34454,29 @@ window.balayerMM_MTF = async function(){
   let count = 0;
   const total = mmConfigs.length * UTS.length;
 
-  for(let k = 0; k < mmConfigs.length; k++){
-    const cfg = mmConfigs[k];
-    if(selEnt) selEnt.value = cfg.ent;
-    if(selSor) selSor.value = cfg.sor;
-      
-    for(let t = 0; t < UTS.length; t++){
-      count++;
-      const tf = UTS[t];
-      if(info) info.innerHTML = '<span style="color:#F59E0B">Balayage MM MTF ' + count + ' / ' +
-        total + ' · ' + tf + 'm ' + cfg.entNom + ' × ' + cfg.sorNom + '…</span>';
-      
-      state.indicators.strat_mm.tf = tf;
-      state.indicators.strat_mm.opt2Tf = tf;
-      state.cache = {};
+  for(let t = 0; t < UTS.length; t++){
+    const tf = UTS[t];
+    state.indicators.strat_mm.tf = tf;
+    state.indicators.strat_mm.opt2Tf = tf;
 
-      await new Promise(r => setTimeout(r, 12));
+    for(let k = 0; k < mmConfigs.length; k++){
+      const cfg = mmConfigs[k];
+      count++;
+      const pct = Math.round((count / total) * 100);
+      if(info){
+        info.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
+          '<div style="flex:1;background:#1E293B;height:7px;border-radius:4px;overflow:hidden">' +
+            '<div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#F59E0B,#00E676);border-radius:4px;transition:width .08s ease"></div>' +
+          '</div>' +
+          '<span style="font-size:11px;font-weight:800;color:#F59E0B;font-family:\'IBM Plex Mono\',monospace">' + pct + '%</span>' +
+          '<span style="font-size:11px;color:#94A3B8">' + tf + 'm · ' + cfg.entNom + ' × ' + cfg.sorNom + '</span>' +
+        '</div>';
+      }
+
+      if(selEnt) selEnt.value = cfg.ent;
+      if(selSor) selSor.value = cfg.sor;
+
+      await new Promise(r => setTimeout(r, 4));
       try{
         await window.__runBtInterne();
         const r = window.__btDernier;
@@ -34472,7 +34500,6 @@ window.balayerMM_MTF = async function(){
   if(selSor) selSor.value = avSor;
   state.indicators.strat_mm.tf = avTf;
   state.indicators.strat_mm.opt2Tf = avTf2;
-  state.cache = {};
 
   res.forEach(function(x){
     const rap = (x.dd > 0) ? (x.pnl / x.dd) : (x.pnl > 0 ? 3 : 0);
