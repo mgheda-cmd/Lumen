@@ -1334,6 +1334,8 @@ footer{
           <option value="7">7 jours</option>
           <option value="14">14 jours</option>
           <option value="30" selected>30 jours</option>
+          <option value="60">60 jours</option>
+          <option value="90">90 jours</option>
         </select>
       </label>
       <label>Capital Initial ($)
@@ -27395,7 +27397,9 @@ window.openBtMM = function(){
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="btm-jours" style="' + sel + '">' +
         '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
         '<option value="14">2 semaines</option><option value="22">22 jours</option>' +
-        '<option value="30">1 mois</option></select></label>' +
+        '<option value="30">1 mois (30 j)</option>' +
+        '<option value="60">2 mois (60 j)</option>' +
+        '<option value="90">3 mois (90 j)</option></select></label>' +
       '<button onclick="window.chargerHistoriqueBTMM()" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtMM()" style="background:linear-gradient(135deg,#10B981,#059669);color:#FFFFFF;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer;box-shadow:0 0 10px rgba(16,185,129,.35)">▶ Lancer</button>' +
       '<button onclick="window.balayerMM()" title="Balayer toutes les options MM et unités de temps pour identifier le meilleur rendement" style="background:linear-gradient(135deg,rgba(0,229,255,.2),rgba(16,185,129,.25));border:1.5px solid #10B981;color:#10B981;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer">🔎 Balayer Options MM</button>' +
@@ -30204,6 +30208,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
                 <option value="14">14 jours</option>
                 <option value="22" selected>22 jours</option>
                 <option value="30">30 jours</option>
+                <option value="60">60 jours</option>
+                <option value="90">90 jours</option>
               </select>
             </label>
           </div>
@@ -32199,7 +32205,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0330';
+  window.__LUMEN_BUILD = 'B-1908-0335';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -33032,8 +33038,8 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     }, 150);
   };
   window.chargerHistorique = async function(jours, force){
-    const info = document.getElementById('bta-charge');
-    const besoin = Math.min(30000, Math.ceil(jours * 24 * 60 / state.tf));
+    const info = document.getElementById('bta-charge') || document.getElementById('btm-charge');
+    const besoin = Math.min(120000, Math.ceil(jours * 24 * 60 / state.tf));
     if (force) {
       state.data = [];
       window.__btFreeze = false;
@@ -33304,7 +33310,9 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<label style="font-size:11px;color:#94A3B8">Période<br><select id="bta-jours" style="' + sel + '">' +
         '<option value="1">1 jour</option><option value="7" selected>1 semaine</option>' +
         '<option value="14">2 semaines</option><option value="22">22 jours</option>' +
-        '<option value="30">1 mois</option></select></label>' +
+        '<option value="30">1 mois (30 j)</option>' +
+        '<option value="60">2 mois (60 j)</option>' +
+        '<option value="90">3 mois (90 j)</option></select></label>' +
       '<button onclick="window.chargerHistorique(+document.getElementById(\'bta-jours\').value, true)" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">⬇ Charger</button>' +
       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
       '<button onclick="window.envoyerVersDemo()" title="Transférer et exécuter automatiquement cette stratégie sur le Compte Démo" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#0F172A;border:none;border-radius:8px;padding:8px 15px;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(0,230,118,0.35)">🚀 Compte Démo</button>' +
