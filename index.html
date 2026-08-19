@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-1955</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-2000</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -4952,7 +4952,7 @@ const state = {
     lrc:{on:true,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF',tf2:'off',cLine2:'#FF9F1C',cBand2:'#FF9F1C',fill2:false},
     sr:{on:true,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
-    bos:{on:true,after1529:false,cBull:'#25D0A4',cBear:'#F45B7D',tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
+    bos:{on:true,after1529:false,showBOS:true,showCHoCH:true,showMSS:true,showLevelPrice:true,showSwingOrigin:true,cBull:'#25D0A4',cBear:'#F45B7D',tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
     rev:{on:false},
     volume:{on:true},
     rsi:{on:true,period:14,tf:'chart'},
@@ -9176,66 +9176,208 @@ function drawOBMTF(zones,s,e,yOf,cw,p){
 function drawBOS(evts,s,e,yOf,cw,p){
   if(!evts || !Array.isArray(evts) || !evts.length) return;
   if(!p || p.y == null || typeof yOf !== 'function') return;
-  const cU=S('bos','cBull') || '#25D0A4', cD=S('bos','cBear') || '#F45B7D';
-  ctx.save();ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
-  const used=[];                                   // évite les étiquettes superposées
-  // option : repérer la 1ère cassure (toute UT) juste après chaque 15:29 Londres
-  const afterSet=new Set();
-  if(state.indicators.bos && state.indicators.bos.after1529){
-    computeSessZones(15*60+29);
-    const sess=(state.sessZones||[]).map(z=>z.t0).sort((a,b)=>a-b);
-    const evSorted=evts.slice().sort((a,b)=>a.t-b.t);
-    for(let k=0;k<sess.length;k++){
-      const t0=sess[k], t1=(k+1<sess.length)?sess[k+1]:Infinity;
-      const first=evSorted.find(m=>m.t>=t0&&m.t<t1);   // 1ère cassure de la session
-      if(first)afterSet.add(first.t+'|'+first.tf+'|'+first.lvl);
+
+  const ind = state.indicators.bos || {};
+  const showBOS = ind.showBOS !== false;
+  const showCHoCH = ind.showCHoCH !== false;
+  const showMSS = ind.showMSS !== false;
+  const showPrice = ind.showLevelPrice !== false;
+  const showOrigin = ind.showSwingOrigin !== false;
+
+  const cU = S('bos','cBull') || '#25D0A4';
+  const cD = S('bos','cBear') || '#F45B7D';
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, p.y, W - AXIS_W, p.h);
+  ctx.clip();
+
+  const used = []; // Pour anti-collision intelligente
+
+  // Option : repérer la 1ère cassure (toute UT) juste après chaque 15:29 Londres
+  const afterSet = new Set();
+  if(ind.after1529){
+    computeSessZones(15 * 60 + 29);
+    const sess = (state.sessZones || []).map(z => z.t0).sort((a,b) => a - b);
+    const evSorted = evts.slice().sort((a,b) => a.t - b.t);
+    for(let k = 0; k < sess.length; k++){
+      const t0 = sess[k], t1 = (k + 1 < sess.length) ? sess[k+1] : Infinity;
+      const first = evSorted.find(m => m.t >= t0 && m.t < t1);
+      if(first) afterSet.add(first.t + '|' + first.tf + '|' + first.lvl);
     }
   }
+
   for(const m of evts){
-    if(state.data.length&&m.t<state.data[0].t)continue;
-    const i=idxOfTime(m.t); if(i==null||i>e-1)continue;
-    let jf = (m.fromT != null) ? idxOfTime(m.fromT) : null;
+    if(state.data.length && m.t < state.data[0].t) continue;
+    if(m.kind === 'BOS' && !showBOS) continue;
+    if(m.kind === 'CHoCH' && !showCHoCH) continue;
+    if(m.mss && !showMSS && !showBOS && !showCHoCH) continue;
+
+    const i = idxOfTime(m.t);
+    if(i == null || i > e + 1) continue;
+
+    const jf = (m.fromT != null) ? idxOfTime(m.fromT) : null;
     const x = xOf(i);
-    const xf = (jf != null) ? xOf(jf) : Math.max(0, x - 120);
+    const xf = (jf != null) ? xOf(jf) : Math.max(0, x - 100);
     const y = yOf(m.lvl);
-    if(x<-60||x>W-AXIS_W)continue;
-    const col=m.up?cU:cD;
-    // niveau cassé
-    ctx.strokeStyle=hexA(col,.85);ctx.lineWidth=m.kind==='CHoCH'?1.6:1.1;
-    ctx.setLineDash(m.kind==='CHoCH'?[]:[5,3]);
-    ctx.beginPath();ctx.moveTo(Math.max(xf,0),y+.5);ctx.lineTo(x,y+.5);ctx.stroke();
-    ctx.setLineDash([]);
-    // marqueur de cassure
-    ctx.fillStyle=col;ctx.beginPath();
-    if(m.up){ctx.moveTo(x,y-8);ctx.lineTo(x-5,y);ctx.lineTo(x+5,y);}
-    else{ctx.moveTo(x,y+8);ctx.lineTo(x-5,y);ctx.lineTo(x+5,y);}
-    ctx.closePath();ctx.fill();
-    // marqueur spécial "après 15:29"
-    if(afterSet.has(m.t+'|'+m.tf+'|'+m.lvl)){
-      ctx.fillStyle='#FFD166';ctx.font='13px system-ui';ctx.textAlign='center';
-      ctx.fillText('★', x, m.up?y-16:y+22); ctx.textAlign='left';
-      ctx.strokeStyle='#FFD166';ctx.lineWidth=1.5;ctx.setLineDash([2,2]);
-      ctx.beginPath();ctx.moveTo(x,p.y);ctx.lineTo(x,p.y+p.h);ctx.stroke();ctx.setLineDash([]);
+
+    if(x < -60 || (xf > W - AXIS_W && x > W - AXIS_W)) continue;
+    if(y < p.y - 30 || y > p.y + p.h + 30) continue;
+
+    const isCHoCH = (m.kind === 'CHoCH');
+    const isMSS = !!m.mss;
+    const isUp = !!m.up;
+
+    // Définition de la couleur
+    let col = isUp ? cU : cD;
+    if(isCHoCH){
+      // Teinte néon rehaussée pour les CHoCH (Retournement majeur)
+      col = isUp ? '#00E5FF' : '#FF3366';
     }
-    // étiquette : type + UT (+ MSS)
-    const base=m.kind+' '+m.tf+(m.mss?' · MSS':'');
-    const f=fitLabel([base,m.kind+' '+m.tf,m.kind,m.tf],150,14,true);
-    if(!f)continue;
-    let ly=y+(m.up?-11:f.fs+9);
-    while(used.some(u=>Math.abs(u.y-ly)<f.fs+2&&Math.abs(u.x-x)<130)){ly+=m.up?-(f.fs+3):(f.fs+3);}
-    used.push({x,y:ly});
-    // étiquette placée À GAUCHE du point de cassure, sur un fond opaque
-    const tw=ctx.measureText(f.t).width;
-    let xr=x-9;                                  // bord droit du texte
-    if(xr-tw-6<0)xr=Math.min(tw+15,W-AXIS_W-4);  // recalage si l'on sort à gauche
-    const bx=xr-tw-5, by=ly-f.fs-2, bw2=tw+10, bh=f.fs+7;
-    ctx.fillStyle='rgba(10,17,31,.82)';
-    ctx.fillRect(bx,by,bw2,bh);
-    ctx.strokeStyle=hexA(col,m.mss?.85:.45);ctx.lineWidth=m.mss?1.4:1;
-    ctx.strokeRect(bx+.5,by+.5,bw2-1,bh-1);
-    ctx.textAlign='right';ctx.fillStyle=col;
-    ctx.fillText(f.t,xr,ly);
-    ctx.textAlign='left';
+
+    const startX = Math.max(0, Math.min(W - AXIS_W, xf));
+    const endX = Math.max(0, Math.min(W - AXIS_W, x));
+    const lineLen = endX - startX;
+
+    // 1. Point d'ancrage sur le sommet/creux d'origine (Swing Pivot)
+    if(showOrigin && jf != null && xf >= -10 && xf <= W - AXIS_W + 10){
+      ctx.save();
+      ctx.fillStyle = col;
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.arc(xf, y + 0.5, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 2. Tracé de la ligne de niveau cassé
+    ctx.save();
+    ctx.strokeStyle = hexA(col, isCHoCH ? 0.92 : 0.75);
+    ctx.lineWidth = isCHoCH ? 1.8 : (isMSS ? 1.5 : 1.2);
+    if(isCHoCH){
+      ctx.setLineDash([]); // Ligne pleine pour CHoCH
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 3;
+    } else if(isMSS){
+      ctx.setLineDash([7, 3]); // Tirets longs pour MSS
+    } else {
+      ctx.setLineDash([4, 3]); // Pointillés pour BOS
+    }
+    ctx.beginPath();
+    ctx.moveTo(startX, y + 0.5);
+    ctx.lineTo(endX, y + 0.5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // 3. Marqueur flèche triangulaire au point de franchissement
+    if(endX >= 0 && endX <= W - AXIS_W){
+      ctx.save();
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      if(isUp){
+        ctx.moveTo(endX, y - 6);
+        ctx.lineTo(endX - 4, y + 1);
+        ctx.lineTo(endX + 4, y + 1);
+      } else {
+        ctx.moveTo(endX, y + 6);
+        ctx.lineTo(endX - 4, y - 1);
+        ctx.lineTo(endX + 4, y - 1);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 4. Marqueur spécial "après 15:29" (Session Londres/NY)
+    if(afterSet.has(m.t + '|' + m.tf + '|' + m.lvl)){
+      ctx.save();
+      ctx.fillStyle = '#FFD166';
+      ctx.font = 'bold 12px "IBM Plex Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('★ 15:29', endX, isUp ? y - 18 : y + 24);
+      ctx.strokeStyle = '#FFD166';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(endX, p.y);
+      ctx.lineTo(endX, p.y + p.h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // 5. Badge Glassmorphism (SMC Pill Label)
+    const icon = isCHoCH ? '⟲ ' : (isMSS ? '★ ' : '▶ ');
+    const tagKind = isMSS ? 'MSS' : m.kind;
+    const tfTxt = m.tf || '';
+    const pxTxt = (showPrice && m.lvl != null && typeof fmt === 'function') ? ` · $${fmt(m.lvl, 1)}` : '';
+    const labelFull = `${icon}${tagKind} ${tfTxt}${pxTxt}`.trim();
+    const labelShort = `${icon}${tagKind} ${tfTxt}`.trim();
+    const labelMini = `${tagKind}`;
+
+    ctx.font = 'bold 9.5px "IBM Plex Sans", -apple-system, sans-serif';
+    let textToDraw = labelFull;
+    let tw = ctx.measureText(textToDraw).width;
+
+    if(lineLen > 0 && tw + 16 > lineLen && lineLen < 85){
+      textToDraw = labelShort;
+      tw = ctx.measureText(textToDraw).width;
+    }
+    if(tw + 12 > Math.max(lineLen, 50) && lineLen < 45){
+      textToDraw = labelMini;
+      tw = ctx.measureText(textToDraw).width;
+    }
+
+    const badgeW = tw + 12;
+    const badgeH = 18;
+
+    // Positionnement X : Centré sur le segment si assez long, sinon calé à gauche de la cassure
+    let badgeX;
+    if(lineLen >= badgeW + 8){
+      badgeX = startX + (lineLen - badgeW) / 2;
+    } else {
+      badgeX = Math.max(4, Math.min(W - AXIS_W - badgeW - 4, endX - badgeW - 6));
+    }
+
+    // Positionnement Y avec anti-collision
+    let badgeY = isUp ? (y - badgeH - 3) : (y + 3);
+
+    // Ajustement anti-collision avec les autres étiquettes
+    let attempts = 0;
+    while(used.some(u => Math.abs(u.y - badgeY) < badgeH + 2 && Math.abs(u.x - badgeX) < badgeW + 4) && attempts < 5){
+      badgeY += isUp ? -(badgeH + 3) : (badgeH + 3);
+      attempts++;
+    }
+    used.push({ x: badgeX, y: badgeY });
+
+    // Rendu de la pilule Glassmorphism
+    ctx.save();
+    ctx.shadowColor = col;
+    ctx.shadowBlur = (isCHoCH || isMSS) ? 6 : 3;
+    ctx.fillStyle = isCHoCH ? 'rgba(10, 22, 38, 0.94)' : (isUp ? 'rgba(6, 26, 20, 0.94)' : 'rgba(32, 10, 18, 0.94)');
+    ctx.strokeStyle = col;
+    ctx.lineWidth = (isCHoCH || isMSS) ? 1.4 : 1.0;
+
+    ctx.beginPath();
+    if(typeof ctx.roundRect === 'function'){
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+    } else {
+      ctx.rect(badgeX, badgeY, badgeW, badgeH);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Texte du badge
+    ctx.font = 'bold 9.5px "IBM Plex Sans", -apple-system, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = isCHoCH ? '#FFFFFF' : col;
+    ctx.fillText(textToDraw, badgeX + badgeW / 2, badgeY + badgeH / 2);
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -15996,8 +16138,14 @@ const SCHEMA={
     {k:'cNeg',t:'col',lab:'Négatif (cadre violet)',def:'#9B37D7'},
   ]},
   bos:{title:'Structure BOS / CHoCH / MSS',fields:[
-    {k:'cBull',t:'col',lab:'Cassure haussière',def:'#25D0A4'},
-    {k:'cBear',t:'col',lab:'Cassure baissière',def:'#F45B7D'},
+    {k:'showBOS',t:'bool',lab:'Afficher les cassures de tendance (BOS)',def:true},
+    {k:'showCHoCH',t:'bool',lab:'Afficher les retournements de structure (CHoCH)',def:true},
+    {k:'showMSS',t:'bool',lab:'Afficher les déplacements majeurs (MSS)',def:true},
+    {k:'showLevelPrice',t:'bool',lab:'Afficher le prix du niveau cassé sur le badge',def:true},
+    {k:'showSwingOrigin',t:'bool',lab:'Afficher le point d\'ancrage d\'origine (Swing Pivot)',def:true},
+    {k:'cBull',t:'col',lab:'Structure Haussière (Bullish)',def:'#25D0A4'},
+    {k:'cBear',t:'col',lab:'Structure Baissière (Bearish)',def:'#F45B7D'},
+    {k:'after1529',t:'bool',lab:'Repérer la 1ère cassure après 15:29 (Session)',def:false}
   ]},
   ob:{title:'Order Blocks',fields:[
     {k:'alert',t:'bool',lab:'Alerte à la formation d\'un nouvel Order Block',def:true},
@@ -32860,7 +33008,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-1955';
+  window.__LUMEN_BUILD = 'B-1908-2000';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
