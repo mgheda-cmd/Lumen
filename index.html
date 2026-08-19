@@ -7735,8 +7735,10 @@ function render(){
   drawWantMarks(s, e, yOf);
   if(vis('strat_delta')) drawDeltaSignals(getInd('strat_delta'), s, e, yOf, cw);
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf, cw);
-  if(vis('strat_zz2')) drawZZ2Signals(getInd('strat_zz2'), s, e, yOf, cw);
-  if(vis('strat_mm')){ try{ drawMMSignals(getInd('strat_mm'), s, e, yOf, cw); }catch(e){} }
+  if(vis('strat_mm') || (window.activeDemoStrategy && window.activeDemoStrategy.active)){
+    try{ drawMMSignals(getInd('strat_mm'), s, e, yOf, cw); }catch(e){}
+  }
+  try{ if(typeof drawDemoPositionsOnChart === 'function') drawDemoPositionsOnChart(s, e, yOf, cw); }catch(e){}
   if(window.__btMarks && typeof window.drawMarquesBT === 'function') window.drawMarquesBT(s, e, yOf);
   // Couche supplémentaire : pastilles corrigées (mode strict). Les originales sont conservées.
   if(vis('strat_zz') && window.__zzShowCorrected && typeof window.drawZZCorrected === 'function') window.drawZZCorrected(s, e, yOf, cw);
@@ -14713,14 +14715,36 @@ function checkAutoTrade(inputSignals){
 
       // -- GESTION DES ENTRÉES (Uniquement si pas de position ou si inversion) --
       if (mmData && mmData.signals && mmData.signals.length > 0) {
-        const lastSig = mmData.signals[mmData.signals.length - 1];
-        const sigIdx = (lastSig.t != null ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
+        // Filtrage strict par le mode d'entrée de la stratégie active (Backtest synchrone)
+        let candidateSignals = mmData.signals;
+        const mEnt = (strat && strat.mEnt) ? strat.mEnt : (document.getElementById('paper-ent')?.value || 'mm_base');
+        if (mEnt === 'mm_base' || mEnt === 'base') {
+          candidateSignals = candidateSignals.filter(s => s.optKey === 'base');
+        } else if (mEnt === 'mm_opt1' || mEnt === 'opt1') {
+          candidateSignals = candidateSignals.filter(s => s.optKey === 'opt1');
+        } else if (mEnt === 'mm_opt2' || mEnt === 'opt2') {
+          candidateSignals = candidateSignals.filter(s => s.optKey === 'opt2');
+        } else if (mEnt === 'mm_opt6' || mEnt === 'opt6') {
+          candidateSignals = candidateSignals.filter(s => s.optKey === 'opt6');
+        } else if (mEnt === 'mm_conf_1_6') {
+          candidateSignals = candidateSignals.filter(s => s.optKey === 'confluence' || s.isConf16);
+        }
 
-        // Grâce à un seuil tolérant (lastIdx - 3), on accepte les signaux ratés par de courtes déconnexions
-        if (sigIdx != null && sigIdx >= lastIdx - 3) {
-          if (!sigT || lastSig.t > sigT) sigT = lastSig.t;
-          if (lastSig.dir === 1) buySignal = true;
-          else if (lastSig.dir === -1) sellSignal = true;
+        // Filtrage par direction configurée dans la stratégie Démo
+        const stratDir = (strat && (strat.dir || strat.dirF)) ? (strat.dir || strat.dirF) : (document.getElementById('paper-dir')?.value || 'both');
+        if (stratDir === 'long') candidateSignals = candidateSignals.filter(s => s.dir === 1);
+        else if (stratDir === 'short') candidateSignals = candidateSignals.filter(s => s.dir === -1);
+
+        if (candidateSignals.length > 0) {
+          const lastSig = candidateSignals[candidateSignals.length - 1];
+          const sigIdx = (lastSig.t != null ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
+
+          // Seuil de détection : bougie récente (dernière clôturée ou en cours)
+          if (sigIdx != null && sigIdx >= lastIdx - 2) {
+            if (!sigT || lastSig.t > sigT) sigT = lastSig.t;
+            if (lastSig.dir === 1) buySignal = true;
+            else if (lastSig.dir === -1) sellSignal = true;
+          }
         }
       }
     } catch(e){}
@@ -27081,6 +27105,124 @@ function drawMMSignals(res, s, e, yOf, cw) {
   }
 }
 
+function drawDemoPositionsOnChart(s, e, yOf, cw) {
+  if (typeof paper === 'undefined' || !Array.isArray(paper.positions) || paper.positions.length === 0) return;
+  const d = state.data;
+  if (!d || !d.length) return;
+
+  for (const p of paper.positions) {
+    if (p.sym && state.symbol && p.sym !== state.symbol) continue;
+    const isLong = p.side === 'long';
+    const entryPx = p.entry;
+    if (!entryPx || !isFinite(entryPx)) continue;
+
+    const y = yOf(entryPx);
+    const col = isLong ? '#00E676' : '#FF3366';
+    const curPx = (typeof livePrice === 'function' ? livePrice(p.sym) : null) || d[d.length - 1].c;
+    const pnl = (isLong ? (curPx - entryPx) : (entryPx - curPx)) * p.qty;
+    const margin = p.margin || (p.qty * entryPx / (p.lev || 1));
+    const pnlPct = margin > 0 ? (pnl / margin) * 100 : 0;
+    const pnlSign = pnl >= 0 ? '+' : '';
+
+    ctx.save();
+
+    // 1. Ligne horizontale pointillée du prix d'entrée
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W - AXIS_W, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 2. Pilule sur l'axe droit avec PnL
+    const tagText = `${isLong ? '▲ LONG' : '▼ SHORT'} ${p.lev ? p.lev + 'x' : '1x'} : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} (${pnlSign}${pnl.toFixed(2)}$)`;
+    ctx.font = 'bold 10px "IBM Plex Mono", monospace';
+    const tw = ctx.measureText(tagText).width;
+    const th = 20;
+    const tx = W - AXIS_W - tw - 14;
+    const ty = Math.max(6, Math.min(H - th - 6, y - th / 2));
+
+    ctx.fillStyle = isLong ? 'rgba(6, 36, 20, 0.95)' : 'rgba(44, 8, 16, 0.95)';
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(tx, ty, tw + 8, th, 4);
+    else ctx.rect(tx, ty, tw + 8, th);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = col;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tagText, tx + 4, ty + th / 2);
+
+    // 3. Pastille sur la bougie d'entrée si visible
+    let candleIdx = (p.t != null && typeof idxOfTime === 'function') ? idxOfTime(p.t) : null;
+    if (candleIdx == null || candleIdx < 0) candleIdx = d.length - 1;
+    if (candleIdx >= s - 1 && candleIdx <= e + 1) {
+      const cx = xOf(candleIdx);
+      const candle = d[candleIdx];
+      const anchorY = candle ? (isLong ? yOf(candle.l) : yOf(candle.h)) : y;
+      const bText = `🤖 DÉMO ${isLong ? 'LONG' : 'SHORT'} [${fmtTimeFr(p.t)}] $${fmt(entryPx, entryPx >= 100 ? 2 : 4)}`;
+      ctx.font = 'bold 9.5px "IBM Plex Sans", sans-serif';
+      const btw = ctx.measureText(bText).width + 12;
+      const bth = 22;
+      const btx = Math.max(4, Math.min(W - AXIS_W - btw - 4, cx - btw / 2));
+      const bty = isLong ? Math.min(H - bth - 28, anchorY + 14) : Math.max(6, anchorY - bth - 14);
+
+      ctx.fillStyle = isLong ? 'rgba(0, 230, 118, 0.22)' : 'rgba(255, 51, 102, 0.22)';
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') ctx.roundRect(btx, bty, btw, bth, 5);
+      else ctx.rect(btx, bty, btw, bth);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(bText, btx + 6, bty + bth / 2);
+
+      // Trait liant la bougie à la pastille
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(cx, anchorY);
+      ctx.lineTo(cx, isLong ? bty : bty + bth);
+      ctx.stroke();
+    }
+
+    // 4. Ligne SL / TP si définis
+    if (p.sl && p.sl > 0) {
+      const sly = yOf(p.sl);
+      ctx.strokeStyle = '#FF5252';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(0, sly);
+      ctx.lineTo(W - AXIS_W, sly);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if (p.tp && p.tp > 0) {
+      const tpy = yOf(p.tp);
+      ctx.strokeStyle = '#00E676';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(0, tpy);
+      ctx.lineTo(W - AXIS_W, tpy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
+  }
+}
+
 function entreesMM(optFiltre, customTf) {
     const d = state.data || [];
     if (!d || !d.length) return [];
@@ -32264,7 +32406,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0340';
+  window.__LUMEN_BUILD = 'B-1908-0345';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
