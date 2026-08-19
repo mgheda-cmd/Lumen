@@ -5403,14 +5403,11 @@ function applyTickPrice(px){
     lastTick = Date.now();
     if(typeof checkPriceAlerts === 'function') checkPriceAlerts(px);
     const now = Date.now();
-    // Throttle intelligent des recalculs lourds (300ms) pour libérer 95% du CPU et rendre le drag/zoom ultra-fluide à 60 FPS
-    if(now - _lastHeavyTickTime > 300){
+    if(now - _lastHeavyTickTime > 400){
       _lastHeavyTickTime = now;
-      state.cache = {};
       updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
       if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
-      if(typeof checkAllAlerts === 'function') checkAllAlerts();
       if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
     }
     scheduleRender();
@@ -7540,7 +7537,6 @@ function render(){
   // Badges et étiquettes pour Stratégie EMA 9 / Heikin Ashi 5 min (design capsule distinctif)
   if(visB('signal_ema_ha')){
     const sigs = getInd('signal_ema_ha');
-    if(typeof checkAllAlerts === 'function') checkAllAlerts();
     const fmtP = v => (v == null || isNaN(v)) ? '' : (v >= 1000 ? v.toFixed(1) : v.toFixed(2));
     const lastCandleIdx = state.data ? state.data.length - 1 : -1;
     for(const g of sigs){
@@ -8824,8 +8820,6 @@ function drawPrice(p,s,e,cw,sharedXStack){
       }
     }
   }
-
-  if(typeof checkAllAlerts === 'function') checkAllAlerts();
 }
 
 function drawSmcLite(data, s, e, yOf, cw, p) {
@@ -32205,7 +32199,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0320';
+  window.__LUMEN_BUILD = 'B-1908-0330';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
