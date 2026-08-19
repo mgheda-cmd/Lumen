@@ -5410,6 +5410,7 @@ function applyTickPrice(px){
       updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
       if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+      if(typeof checkAllAlerts === 'function') checkAllAlerts();
       if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
     }
     scheduleRender();
@@ -7735,7 +7736,8 @@ function render(){
   drawWantMarks(s, e, yOf);
   if(vis('strat_delta')) drawDeltaSignals(getInd('strat_delta'), s, e, yOf, cw);
   if(vis('strat_zz')) drawZZSignals(getInd('strat_zz'), s, e, yOf, cw);
-  if(vis('strat_mm') || (window.activeDemoStrategy && window.activeDemoStrategy.active)){
+  if(vis('strat_zz2')) drawZZ2Signals(getInd('strat_zz2'), s, e, yOf, cw);
+  if(vis('strat_mm')){
     try{ drawMMSignals(getInd('strat_mm'), s, e, yOf, cw); }catch(e){}
   }
   try{ if(typeof drawDemoPositionsOnChart === 'function') drawDemoPositionsOnChart(s, e, yOf, cw); }catch(e){}
@@ -11172,9 +11174,8 @@ function drawKKBisSub(p, s, e, cw, cle) {
     ctx.restore();
   }
 
-  /* Pastilles d'ENTRÉE ACHAT : creux sous le seuil bas, puis passage de la
-     ligne au-dessus de son signal. Posées sous la courbe, en vert, pour ne
-     pas se confondre avec les sorties qui sont au-dessus. */
+  /* Pastilles d'ENTRÉE ACHAT : creux sous le seuil bas (-75), positionnées À L'OPPOSÉ
+     au niveau du seuil haut (+75) pour laisser toute la courbe du bas 100% dégagée. */
   if (S(K,'showEntries') !== false && Array.isArray(res.entries)) {
     for (const en of res.entries) {
       if (en.i == null || en.i < s || en.i > e) continue;
@@ -11188,16 +11189,22 @@ function drawKKBisSub(p, s, e, cw, cle) {
       ctx.save();
       ctx.font = 'bold 9px "IBM Plex Mono",monospace';
       const bw = ctx.measureText(txt).width + 12, bh = 15;
-      const by = cy + 8;
+      
+      // Positionnée À L'OPPOSÉ : au niveau du seuil haut (+75)
+      const topOppositeY = yOf(isVolB ? uL : Math.min(100, uL));
+      const by = topOppositeY + 2;
       const bx = Math.max(2, Math.min(W - AXIS_W - bw - 2, cx - bw / 2));
 
+      // Ligne en pointillés reliant le creux (-75) à la pastille tout en haut (+75)
       ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([2, 2]);
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, by); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, by + bh); ctx.stroke();
       ctx.setLineDash([]);
 
+      // Point d'ancrage sur le creux en bas
       ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = col; ctx.fill();
 
+      // Pastille en haut (+75)
       ctx.fillStyle = 'rgba(6,32,24,0.94)';
       ctx.strokeStyle = col; ctx.lineWidth = 1.4;
       if (typeof roundRect === 'function') roundRect(bx, by, bw, bh, 4);
@@ -13286,7 +13293,8 @@ function updatePaper(){
       notional: p.notional || (p.qty * p.entry), margin: p.margin || (p.qty * p.entry / (p.lev || 1)),
       t: Date.now(), t0: p.t,
       reason: item.type === 'SL' ? '🛑 SL' : '🎯 TP',
-      capitalAfter: paper.cash
+      capitalAfter: paper.cash,
+      triggerSignal: p.triggerSignal
     });
     paper.history = paper.history.slice(0, 50);
     paper.positions.splice(item.index, 1);
@@ -13310,7 +13318,8 @@ function updatePaper(){
       sym: p.sym, side: p.side, entry: p.entry, exit: item.px, pnl: -loss, qty: p.qty,
       notional: p.notional || (p.qty * p.entry), margin: loss,
       t: Date.now(), t0: p.t, isLiq: true,
-      capitalAfter: paper.cash
+      capitalAfter: paper.cash,
+      triggerSignal: p.triggerSignal
     });
     paper.history = paper.history.slice(0, 50);
     paper.positions.splice(item.index, 1);
@@ -13359,6 +13368,9 @@ function updatePaper(){
     const entryTimeStr = fmtTimeFr(p.t);
     const durStr = fmtDurFr(p.t);
 
+    const trigName = p.triggerSignal || (window.activeDemoStrategy?.modeLabel || '');
+    const trigTag = trigName ? `<span style="background:rgba(56,189,248,0.15);color:#38BDF8;border:1px solid rgba(56,189,248,0.4);padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700" title="Cause / Signal déclencheur exact de ce trade">🎯 ${trigName}</span>` : '';
+
     const partialsTag = (p.partials && p.partials > 0) ? `<span style="background:rgba(245,158,11,0.18);color:#F59E0B;border:1px solid rgba(245,158,11,0.4);padding:1px 5px;border-radius:4px;font-size:9.5px;font-weight:bold;margin-left:5px">✂️ ${p.partials} Partiel(s)</span>` : '';
     const liqPx = (p.lev && p.lev > 1) ? (p.side === 'long' ? p.entry * (1 - 0.95 / p.lev) : p.entry * (1 + 0.95 / p.lev)) : null;
     const isDangerLiq = (px && liqPx && (p.side === 'long' ? px <= liqPx * 1.002 : px >= liqPx * 0.998));
@@ -13374,6 +13386,7 @@ function updatePaper(){
       <div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <strong style="color:${p.side==='long'?'#10B981':'#F45B7D'}">${p.side==='long'?'▲ ACHAT':'▼ VENTE'}</strong>
+          ${trigTag}
           <span style="background:rgba(0,229,255,0.12);color:#00E5FF;border:1px solid rgba(0,229,255,0.35);padding:2px 7px;border-radius:4px;font-weight:bold;font-size:11px" title="Montant engagé exact dans ce trade en $ et Crypto">
             💰 Engagé : <strong style="color:#FFF">$${fmtUsd(notionalVal)}</strong> <span style="color:#00E5FF">(${qStr} ${coin})</span> <span style="color:var(--muted);font-size:10px">| Marge (${levStr}) : <b>$${fmtUsd(marginVal)}</b></span>
           </span>
@@ -13416,7 +13429,8 @@ function updatePaper(){
   const hEl=document.getElementById('paper-hist');
   hEl.innerHTML=paper.history.slice(0,15).map(h=>{
     const col=h.pnl>=0?'#25D0A4':'#F45B7D';
-    const tag = h.isLiq ? '💥 LIQ' : (h.reason ? h.reason : (h.isPartial ? `✂️ PART ${h.partPct||''}%` : (h.side==='long'?'▲ ACHAT':'▼ VENTE')));
+    const isLong = h.side === 'long';
+    const sideBadge = `<span style="font-weight:bold;color:${isLong?'#00E676':'#FF3366'}">${isLong?'▲ ACHAT':'▼ VENTE'} ${baseAsset(h.sym)}</span>`;
     const soldeVal = h.capitalAfter != null ? fmtUsd(h.capitalAfter) : '—';
     const coin = baseAsset(h.sym);
     const hQty = h.qty || 0;
@@ -13428,10 +13442,16 @@ function updatePaper(){
     const hEntryT = fmtTimeFr(h.t0 || h.t);
     const hExitT = fmtTimeFr(h.t);
     const hDur = (h.t0 && h.t) ? fmtDurFr(h.t0, h.t) : '';
+    const hTrigName = h.triggerSignal || h.modeLabel || '';
+    const hTrigTag = hTrigName ? `<span style="background:rgba(56,189,248,0.12);color:#38BDF8;border:1px solid rgba(56,189,248,0.3);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700" title="Cause / Signal d'entrée exact">🎯 Entrée: ${hTrigName}</span>` : '';
+    const hExitReason = h.exitReason || h.reason || (h.isLiq ? '💥 Liquidation' : (h.isPartial ? `✂️ Partielle ${h.partPct||''}%` : 'Sortie Stratégie'));
+    const hExitTag = `<span style="background:rgba(244,91,125,0.12);color:#F45B7D;border:1px solid rgba(244,91,125,0.3);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700" title="Motif précis de clôture / sortie du trade">🏁 Sortie: ${hExitReason}</span>`;
 
     return `<div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;font-size:10.5px;color:var(--muted);border-bottom:1px dashed rgba(255,255,255,0.06);flex-wrap:wrap;gap:6px">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <span style="font-weight:bold">${tag} ${coin}</span>
+        ${sideBadge}
+        ${hTrigTag}
+        ${hExitTag}
         <span style="background:rgba(0,229,255,0.12);color:#00E5FF;border:1px solid rgba(0,229,255,0.3);padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700" title="Heure d'entrée et heure de sortie de ce trade">
           ⏰ Entrée: <b>${hEntryT}</b> ➔ 🏁 Sortie: <b>${hExitT}</b> ${hDur ? `<span style="color:#A78BFA;font-weight:800">(${hDur})</span>` : ''}
         </span>
@@ -13825,7 +13845,7 @@ function refreshUnitUI(){
   }
 }
 
-function openTrade(side, targetPosIdx, customVal, customLev){
+function openTrade(side, targetPosIdx, customVal, customLev, customSigName, candleTs){
   try {
     const amtEl=document.getElementById('paper-amt');
     const val = (customVal != null && customVal > 0) ? customVal : parseFloat(amtEl?.value||'0');
@@ -13925,8 +13945,33 @@ function openTrade(side, targetPosIdx, customVal, customLev){
     sendTelegramDemoEntryNotification(p, true);
   } else {
     // NOUVELLE POSITION
+    const lastBar = (state.data && state.data.length) ? state.data[state.data.length - 1] : null;
+    const mEnt = (window.activeDemoStrategy && window.activeDemoStrategy.mEnt) ? window.activeDemoStrategy.mEnt : (document.getElementById('paper-ent')?.value || 'manual');
+    const mEntLabels = {
+      base: '🟢 Signal Base (Ligne MM)',
+      mm_base: '🟢 Signal Base (Ligne MM)',
+      opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
+      mm_opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
+      opt2: '⚡ Opt 2 (iMACD)',
+      mm_opt2: '⚡ Opt 2 (iMACD)',
+      opt3: '🛡️ Opt 3 (Cassure)',
+      mm_opt3: '🛡️ Opt 3 (Cassure)',
+      opt4: '🎯 Opt 4 (Lissage)',
+      mm_opt4: '🎯 Opt 4 (Lissage)',
+      opt5: '🚀 Opt 5 (Rebond V)',
+      mm_opt5: '🚀 Opt 5 (Rebond V)',
+      opt6: '💎 Opt 6 (BOS/DIV)',
+      mm_opt6: '💎 Opt 6 (BOS/DIV)',
+      confluence: '🏆 Confluence Élite',
+      mm_conf_1_6: '💎 Confluence Élite (1+6)',
+      manual: '✋ Ordre Manuel'
+    };
+    const resolvedTrigger = customSigName || mEntLabels[mEnt] || (window.activeDemoStrategy?.modeLabel || '✋ Ordre Manuel');
+
     const newPos = {
       sym: state.symbol, side, qty, entry: px, margin, lev, notional, entries: 1, sl, tp, t: Date.now(),
+      candleTime: candleTs || (lastBar ? lastBar.t : Date.now()),
+      triggerSignal: resolvedTrigger,
       mmode, bonusApplied
     };
     paper.positions.push(newPos);
@@ -13972,7 +14017,7 @@ function openTrade(side, targetPosIdx, customVal, customLev){
 }
 window.openTrade = openTrade;
 
-function closePos(i){
+function closePos(i, customReason){
   const p=paper.positions[i];
   if(!p)return;
   const px=livePrice(p.sym);
@@ -13988,16 +14033,21 @@ function closePos(i){
     paper.lastWinPnl = 0;
   }
 
+  const exitReasonStr = customReason || p.exitReason || 'Clôture de position';
+
   paper.history.unshift({
     sym:p.sym, side:p.side, entry:p.entry, exit:px, pnl:netPnl, qty:p.qty,
     notional: p.notional || (p.qty * p.entry), margin: p.margin || (p.qty * p.entry / (p.lev || 1)), lev: p.lev || 1,
-    t:Date.now(), t0:p.t, capitalAfter:paper.cash, mmode: p.mmode, bonusApplied: p.bonusApplied
+    t:Date.now(), t0:p.t, capitalAfter:paper.cash, mmode: p.mmode, bonusApplied: p.bonusApplied,
+    triggerSignal: p.triggerSignal,
+    exitReason: exitReasonStr,
+    reason: exitReasonStr
   });
   paper.history=paper.history.slice(0,50);
   paper.positions.splice(i,1);
   saveConfig(); updatePaper();
-  toast(`Position fermée : PnL ${netPnl>=0?'+':''}${fmtUsd(netPnl)}`, netPnl>=0?'#10B981':'#F45B7D');
-  sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: p.qty, reason: 'Clôture de position', capitalAfter: paper.cash, t0: p.t, t: Date.now() });
+  toast(`Position fermée : PnL ${netPnl>=0?'+':''}${fmtUsd(netPnl)} (${exitReasonStr})`, netPnl>=0?'#10B981':'#F45B7D');
+  sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: p.qty, reason: exitReasonStr, capitalAfter: paper.cash, t0: p.t, t: Date.now() });
 }
 window.closePos = closePos;
 
@@ -14782,7 +14832,7 @@ function checkAutoTrade(inputSignals){
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
 
-        closePos(0);
+        closePos(0, exitReason);
         toast(`🤖 [Auto-Trade Stratégie] Clôture ${existingPos.side === 'long' ? 'LONG' : 'SHORT'} (${exitReason}) @ $${fmt(px, 2)}`, '#00E5FF');
         try { beep(); } catch(e){}
 
@@ -14830,9 +14880,16 @@ function checkAutoTrade(inputSignals){
   // 3. Si aucune position n'est ouverte, vérifier les signaux d'entrée
   if (!existingPos) {
     const isBase = (strat?.unite === 'BASE' || strat?.unite === 'BTC' || paperUnit === 'coin');
-    const stratAmt = isBase ? (strat?.marge || 0.02) : (strat?.marge || strat?.capital || 100);
-    const stratLev = strat?.lev || 200;
-    const displayAmtStr = isBase ? `${stratAmt} BTC` : `$${stratAmt}`;
+    const optLabels = {
+      base: '🟢 Signal Base (Ligne MM)',
+      opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
+      opt2: '⚡ Opt 2 (iMACD)',
+      opt3: '🛡️ Opt 3 (Cassure)',
+      opt4: '🎯 Opt 4 (Lissage)',
+      opt5: '🚀 Opt 5 (Rebond V)',
+      opt6: '💎 Opt 6 (BOS/DIV)',
+      confluence: '🏆 Confluence Élite'
+    };
 
     if (buySignal) {
       const sigId = `${state.symbol}|${state.tf}|${sigT}|buy`;
@@ -14842,15 +14899,18 @@ function checkAutoTrade(inputSignals){
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
 
-        openTrade('long', null, stratAmt, stratLev);
+        const trigName = (candidateSignals && candidateSignals.length) ? (optLabels[candidateSignals[candidateSignals.length - 1]?.optKey] || candidateSignals[candidateSignals.length - 1]?.label || strat?.modeLabel || 'Signal MM') : (strat?.modeLabel || 'Signal Stratégie');
+        const trigTs = sigT || (d[d.length - 1] ? d[d.length - 1].t : Date.now());
+
+        openTrade('long', null, stratAmt, stratLev, trigName, trigTs);
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
-        const modeLabel = strat?.modeLabel || 'Stratégie Achat';
+        const modeLabel = trigName || strat?.modeLabel || 'Stratégie Achat';
         toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre ACHAT (LONG) (${displayAmtStr} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#10B981');
         try { beep(); } catch(e){}
 
         if (typeof sendTelegramNotification === 'function') {
-          sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] NOUVEL ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>\n• Mode : <b>${modeLabel}</b>`, 'mexc');
+          sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] NOUVEL ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>\n• Signal : <b>${modeLabel}</b>`, 'mexc');
         }
 
         // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
@@ -14898,15 +14958,18 @@ function checkAutoTrade(inputSignals){
         autoTradeSeenSet.add(sigId);
         saveAutoTradeSeen();
 
-        openTrade('short', null, stratAmt, stratLev);
+        const trigName = (candidateSignals && candidateSignals.length) ? (optLabels[candidateSignals[candidateSignals.length - 1]?.optKey] || candidateSignals[candidateSignals.length - 1]?.label || strat?.modeLabel || 'Signal MM') : (strat?.modeLabel || 'Signal Stratégie');
+        const trigTs = sigT || (d[d.length - 1] ? d[d.length - 1].t : Date.now());
+
+        openTrade('short', null, stratAmt, stratLev, trigName, trigTs);
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
-        const modeLabel = strat?.modeLabel || 'Stratégie Vente';
+        const modeLabel = trigName || strat?.modeLabel || 'Stratégie Vente';
         toast(`🤖 [Auto-Trade] Signal ${modeLabel} ! Ordre VENTE (SHORT) (${displayAmtStr} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
         try { beep(); } catch(e){}
 
         if (typeof sendTelegramNotification === 'function') {
-          sendTelegramNotification(`🔴 <b>[Lumen Auto-Trade] NOUVELLE VENTE (SHORT)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>\n• Mode : <b>${modeLabel}</b>`, 'mexc');
+          sendTelegramNotification(`🔴 <b>[Lumen Auto-Trade] NOUVELLE VENTE (SHORT)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>\n• Signal : <b>${modeLabel}</b>`, 'mexc');
         }
 
         // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
@@ -17008,9 +17071,9 @@ function alertNewPhoneSignals(sigs, d){
 
   const key = state.symbol + '|' + state.market + '|' + state.tf;
   const now = Date.now();
-  const lastCandleIdx = d.length - 1;
   const tfMin = (typeof state !== 'undefined' && state.tf) ? +state.tf : 5;
-  const maxAge = Math.max(tfMin * 60 * 1000 * 3, 20 * 60 * 1000); // 3 bougies récentes max (ou 20 min)
+  // Fenêtre de validité généreuse de 45 minutes (ou 20 bougies) pour capter toute confirmation BOS / Pivot / MTF
+  const maxAge = Math.max(tfMin * 60 * 1000 * 20, 45 * 60 * 1000);
 
   let seenSet = new Set();
   try {
@@ -17022,47 +17085,37 @@ function alertNewPhoneSignals(sigs, d){
     }
   } catch(e){}
 
-  /* Au premier passage on enregistre tout sans alerter, pour ne pas annoncer
-     d'un coup l'historique entier à l'ouverture de la page. */
+  /* Au premier passage à l'ouverture de la page, on enregistre les signaux anciens
+     mais on préserve la possibilité d'alerter sur les signaux apparus il y a moins de 5 minutes */
   if (!window.__alertsInitialized) {
     window.__alertsInitialized = true;
-    const iForm = d.length - 1;
-    const tForm = d[iForm] ? d[iForm].t : null;
     for(const sig of sigs) {
-      const sigIdx = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
+      const sigIdx = (sig.t != null && typeof idxOfTime === 'function' ? idxOfTime(sig.t) : null) ?? sig.i;
       const sigTime = sig.t || (sigIdx != null && d[sigIdx] ? d[sigIdx].t : 0);
-      /* On n'inscrit pas le signal de la bougie en cours : il serait tenu
-         pour déjà vu et n'alerterait jamais une fois la bougie close. */
-      if(sigIdx === iForm || (tForm != null && sigTime === tForm)) continue;
-      const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
-      const sigTag = sig.tag || '';
-      const source = sig.source || 'sig';
-      const id = `${key}|${source}|${sigTime || sigIdx}|${sigType}|${sigTag}|${sig.dir}`;
-      seenSet.add(id);
+      // Si le signal a plus de 5 minutes, on le marque comme vu pour éviter le spam initial
+      if (sigTime && (now - sigTime > 5 * 60 * 1000)) {
+        const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
+        const sigTag = sig.tag || '';
+        const source = sig.source || 'sig';
+        const id = `${key}|${source}|${sigTime || sigIdx}|${sigType}|${sigTag}|${sig.dir}`;
+        seenSet.add(id);
+      }
     }
     try {
       const arr = [...seenSet].slice(-500);
       localStorage.setItem(SIGNAL_ALERT_KEY, JSON.stringify(arr));
     } catch(e){}
-    return;
   }
 
   const fresh = [];
-
-  /* La dernière bougie n'est pas close : son prix bouge à chaque tick, et la
-     stratégie peut y voir un signal qui disparaîtra à la clôture. Comme les
-     alertes tournent maintenant à chaque tick, cela produisait des
-     notifications sans pastille, ou des pastilles arrivant après coup.
-
-     On n'alerte donc que sur des bougies closes. Le signal de la bougie en
-     cours sera pris au tick suivant sa fermeture, au moment où la pastille
-     apparaît réellement à l'écran. */
   const idxEnCours = d.length - 1;
   const tEnCours = d[idxEnCours] ? d[idxEnCours].t : null;
 
   for(const sig of sigs) {
-    const iSig = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
+    const iSig = (sig.t != null && typeof idxOfTime === 'function' ? idxOfTime(sig.t) : null) ?? sig.i;
     const tSig = sig.t || (iSig != null && d[iSig] ? d[iSig].t : null);
+    
+    // On n'alerte que sur des signaux confirmés (on ignore la bougie non-clôturée en cours de fluctuation)
     if(iSig === idxEnCours || (tEnCours != null && tSig === tEnCours)) continue;
 
     const isDirect = (sig.tag === 'DIRECT');
@@ -17071,12 +17124,13 @@ function alertNewPhoneSignals(sigs, d){
 
     if(isDirect && !cfg.directAlerts) continue;
     if(isFull && !cfg.fullAlerts) continue;
-    if(isExit && !cfg.exitAlerts) continue;
+    if(isExit && cfg.exitAlerts === false && !sig.tag.includes('MM')) continue;
 
-    const sigIdx = (sig.t != null ? idxOfTime(sig.t) : null) ?? sig.i;
+    const sigIdx = (sig.t != null && typeof idxOfTime === 'function' ? idxOfTime(sig.t) : null) ?? sig.i;
     const sigTime = sig.t || (sigIdx != null && d[sigIdx] ? d[sigIdx].t : 0);
-    // Filtre strict : Ne jamais alerter sur une bougie ancienne (uniquement les 2 dernières bougies)
-    if(sigIdx != null && sigIdx < d.length - 3) continue;
+    
+    // Lookback permissif de 15 bougies (permet aux signaux Opt 6 BOS/DIV et MTF d'être captés sans faute)
+    if(sigIdx != null && sigIdx < d.length - 15) continue;
     if(sigTime && (now - sigTime > maxAge)) continue;
 
     const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
@@ -17117,10 +17171,10 @@ function alertNewPhoneSignals(sigs, d){
       body = `${isSommet ? 'Sommet extrême atteint (Sortie Achat/Résistance)' : 'Creux extrême atteint (Sortie Vente/Support)'} sur #${symbolClean}/USDT à ${price}`;
     } else if(sig.type === 'PREAVIS') {
       const achat = (sig.dir === 1);
-      title = `\u23F3 PR\u00c9AVIS ${achat ? 'ACHAT' : 'VENTE'} (${symbolClean})`;
-      body = `Le score entre en zone ${achat ? 'basse' : 'haute'} (${sig.niveau}) sur #${symbolClean}/USDT \u00e0 ${price}. `
+      title = `⏳ PRÉAVIS ${achat ? 'ACHAT' : 'VENTE'} (${symbolClean})`;
+      body = `Le score entre en zone ${achat ? 'basse' : 'haute'} (${sig.niveau}) sur #${symbolClean}/USDT à ${price}. `
            + `Un ${achat ? 'creux' : 'sommet'} se forme : ${achat ? 'achat' : 'vente'} probable dans les prochaines bougies. `
-           + `Rien \u00e0 faire pour l'instant, l'entr\u00e9e sera signal\u00e9e s\u00e9par\u00e9ment.`;
+           + `Rien à faire pour l'instant, l'entrée sera signalée séparément.`;
     } else if(sig.type === 'SORTIE_OPPOSE') {
       const isAchatOppose = (sig.dir === 1);
       const ico = '🔄';
@@ -17134,11 +17188,7 @@ function alertNewPhoneSignals(sigs, d){
   }
 }
 
-/* Témoin de vie de la surveillance. Sur iPhone, iOS suspend le JavaScript
-   dès que l'application passe en arrière-plan : plus rien n'est calculé, donc
-   plus aucune notification. Impossible de distinguer « application endormie »
-   de « aucun signal depuis » sans cette trace. On note donc l'heure du dernier
-   passage, ce qui répond à la question d'un coup d'oeil. */
+/* Témoin de vie de la surveillance. */
 window.__derniereVeille = 0;
 window.__veilleCompteur = 0;
 
@@ -17176,24 +17226,27 @@ function checkAllAlerts(){
   if(!state.data || !state.data.length) return;
   majTemoinVeille();
 
-  // Note: checkAutoTrade() est déjà appelé via applyKline/tick loop
-  // On ne le re-déclenche pas ici pour éviter un double-appel par bougie.
-
   const phoneCfg = getPhoneNotifConfig();
   if(!phoneCfg.enabled) return;
 
   const allSignals = [];
   const d = state.data;
 
-  // 2. Signaux Stratégie MM Exclusivement (Base, Opt 1, Opt 2, Opt 6, Confluences, Sommets, Creux)
+  // Signaux Stratégie MM (Base, Opt 1, Opt 2, Opt 3, Opt 4, Opt 5, Opt 6, Confluences, Sommets, Creux)
   try {
     const baseMM = (state.indicators && state.indicators.strat_mm) || {};
     const mmData = computeMMSignals(d, baseMM);
     if(mmData){
       (mmData.signals || []).forEach(s => {
         const isOpt2 = (s.optKey === 'opt2');
+        const isOpt6 = (s.optKey === 'opt6');
+        const isOpt1 = (s.optKey === 'opt1');
+        const isBase = (s.optKey === 'base');
+
         if(isOpt2 && phoneCfg.mmOpt2Alerts === false) return;
-        if(!isOpt2 && phoneCfg.mmBaseAlerts === false) return;
+        if(isOpt6 && phoneCfg.mmOpt6Alerts === false) return;
+        if(isOpt1 && phoneCfg.mmOpt1Alerts === false) return;
+        if(isBase && phoneCfg.mmBaseAlerts === false) return;
 
         const optTitles = {
           base: '🟢 MM Base',
@@ -17208,7 +17261,7 @@ function checkAllAlerts(){
         const optTag = optTitles[s.optKey] || 'MM Base';
 
         allSignals.push({
-          i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
+          i: (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i,
           t: s.t,
           price: s.price,
           dir: s.dir,
@@ -17219,22 +17272,13 @@ function checkAllAlerts(){
         });
       });
 
-      /* PRÉAVIS : le score vient d'entrer en zone extrême. C'est le début
-         de l'épisode qui formera le creux ou le sommet, donc le plus tôt
-         qu'on puisse prévenir sans rien deviner. L'entrée elle-même viendra
-         plus tard, quand la ligne virera de couleur.
-
-         On ne signale que le franchissement, pas le maintien : sans ça,
-         une longue zone basse enverrait une alerte à chaque bougie. */
+      /* PRÉAVIS : le score vient d'entrer en zone extrême. */
       if(phoneCfg.mmPreavisAlerts !== false){
         const netP = mmData.net || [];
         const sBas = (state.indicators.kk_bis2 && state.indicators.kk_bis2.lower != null)
                      ? +state.indicators.kk_bis2.lower : -75;
         const sHaut = (state.indicators.kk_bis2 && state.indicators.kk_bis2.upper != null)
                       ? +state.indicators.kk_bis2.upper : 75;
-        /* CORRECTIF : on ne scanne QUE les 4 dernières bougies.
-           Autrement, une entrée en zone extrême ancienne (ex: -87 il y a 2h)
-           était détectée à chaque tick et envoyait un PRÉAVIS fantôme. */
         const pStart = Math.max(1, netP.length - 4);
         for(let q = pStart; q < netP.length; q++){
           const av = netP[q-1], ap = netP[q];
@@ -17264,7 +17308,7 @@ function checkAllAlerts(){
       if(phoneCfg.mmPivotsAlerts !== false){
         (mmData.sommetsList || []).forEach(s => {
           allSignals.push({
-            i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
+            i: (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i,
             t: s.t,
             price: s.price,
             dir: -1,
@@ -17277,7 +17321,7 @@ function checkAllAlerts(){
         });
         (mmData.creuxList || []).forEach(c => {
           allSignals.push({
-            i: (c.t != null ? idxOfTime(c.t) : null) ?? c.i,
+            i: (c.t != null && typeof idxOfTime === 'function' ? idxOfTime(c.t) : null) ?? c.i,
             t: c.t,
             price: c.price,
             dir: 1,
@@ -17292,60 +17336,18 @@ function checkAllAlerts(){
     }
   } catch(e){}
 
-  /*
-  // 3. Signaux Stratégie Delta (Pastilles)
-  try {
-    if (state.indicators && state.indicators.strat_delta && state.indicators.strat_delta.on) {
-      const deltaSigs = calc.strat_delta(d, state.indicators.strat_delta);
-      if (deltaSigs && deltaSigs.length) {
-        const endIdx = d.length - 1;
-        const startIdx = Math.max(0, endIdx - 5);
-        for (let i = startIdx; i <= endIdx; i++) {
-          if (deltaSigs[i] !== 0) {
-            allSignals.push({
-              i: i,
-              t: d[i].t,
-              price: d[i].c,
-              dir: deltaSigs[i],
-              type: deltaSigs[i] === 1 ? 'ACHAT' : 'VENTE',
-              tag: 'DELTA EN BOMBE',
-              source: 'strat_delta',
-              sourceName: 'Stratégie Delta Pastilles'
-            });
-          }
-        }
-      }
-    }
-  } catch(e){}
-
-  // 4. Signaux Stratégie Z.Z.
-  try {
-    if (state.indicators && state.indicators.strat_zz && state.indicators.strat_zz.on) {
-      const ind = state.indicators.strat_zz;
-      const zzSigs = computeZZSignals(d, ind);
-      if (zzSigs && Array.isArray(zzSigs)) {
-        zzSigs.forEach(s => {
-          if (!s.isExit && !s.pending) {
-            allSignals.push({
-              i: (s.t != null ? idxOfTime(s.t) : null) ?? s.i,
-              t: s.t,
-              price: s.price,
-              dir: s.dir,
-              type: s.dir === 1 ? 'ACHAT' : 'VENTE',
-              tag: 'Z.Z. CONFLUENCE',
-              source: 'strat_zz',
-              sourceName: 'Stratégie Z.Z.'
-            });
-          }
-        });
-      }
-    }
-  } catch(e){}
-  */
-
   if(allSignals.length > 0){
     alertNewPhoneSignals(allSignals, state.data);
   }
+}
+
+// Surveillance active garantie en arrière-plan (Heartbeat toutes les 2.5 secondes)
+if(!window.__checkAlertsPeriodicInterval) {
+  window.__checkAlertsPeriodicInterval = setInterval(() => {
+    try {
+      if(typeof checkAllAlerts === 'function') checkAllAlerts();
+    } catch(e){}
+  }, 2500);
 }
 
 window.testerNotificationNavigateur = function() {
@@ -26133,6 +26135,7 @@ function computeMMSignals(d, ind) {
 
     if (ep.type === "CREUX") {
       const cIdx = ep.idx;
+      const scanStartCreux = (ep.startIdx != null) ? ep.startIdx : cIdx;
       const cP = ep.price;
       const cScore = ep.score;
       const cHigh = ep.high;
@@ -26142,7 +26145,7 @@ function computeMMSignals(d, ind) {
 
       // --- OPTION BASE : Premier passage au Vert de la MM 21 ---
       let idxBase = -1;
-      for (let j = cIdx; j < maxScanIdx; j++) {
+      for (let j = scanStartCreux; j < maxScanIdx; j++) {
         if (dir[j] === 1 && (j === 0 || dir[j - 1] === -1)) {
           if (net[j] != null && net[j] <= maxLongLevel) {
             idxBase = j;
@@ -26181,7 +26184,7 @@ function computeMMSignals(d, ind) {
 
       // --- OPTION 1 : KK bis 2ᵉ UT ---
       let idxOpt1 = -1;
-      for (let j = cIdx; j < maxScanIdx; j++) {
+      for (let j = scanStartCreux; j < maxScanIdx; j++) {
         const n2 = net2[j], s2 = sig2[j], n2Prev = net2[j - 1], s2Prev = sig2[j - 1];
         const n1 = net[j], n1Prev = net[j - 1];
         const cross2 = (n2 != null && s2 != null && n2 > s2 && (n2Prev == null || s2Prev == null || n2Prev <= s2Prev));
@@ -26223,10 +26226,6 @@ function computeMMSignals(d, ind) {
       }
 
       // --- OPTION 2 : Filtre Confluence Impulse MACD (Instantané au signal de base) ---
-      // Au moment précis où les conditions de base sont réunies (idxBase) :
-      // On regarde si l'iMACD est vert à cet instant précis.
-      // S'il est vert -> on déclenche Option 2 (au même index idxBase).
-      // S'il n'est pas vert -> on ne déclenche RIEN, on attend le prochain cycle (aucun déclenchement décalé ultérieur).
       if (idxBase !== -1) {
         const colVal = impCol[idxBase];
         const isImpGreen = (colVal === 0 || colVal === 1);
@@ -26264,7 +26263,7 @@ function computeMMSignals(d, ind) {
 
       // --- OPTION 3 : Cassure High du Creux ---
       let idxOpt3 = -1;
-      for (let j = cIdx + 1; j < maxScanIdx; j++) {
+      for (let j = scanStartCreux + 1; j < maxScanIdx; j++) {
         if (d[j].c > cHigh || d[j].h > cHigh) {
           if (net[j] != null && net[j] <= maxLongLevel) {
             idxOpt3 = j;
@@ -26303,7 +26302,7 @@ function computeMMSignals(d, ind) {
 
       // --- OPTION 4 : Lissage Robuste 34/28 ---
       let idxOpt4 = -1;
-      for (let j = cIdx; j < maxScanIdx; j++) {
+      for (let j = scanStartCreux; j < maxScanIdx; j++) {
         const nR = netRob[j], sR = sigRob[j], nRPrev = netRob[j - 1], sRPrev = sigRob[j - 1];
         if (nR != null && sR != null && nR > sR && (nRPrev == null || sRPrev == null || nRPrev <= sRPrev)) {
           if (net[j] != null && net[j] <= maxLongLevel) {
@@ -26346,7 +26345,7 @@ function computeMMSignals(d, ind) {
       if (idxBase !== -1) {
         idxOpt5 = idxBase;
       } else {
-        for (let j = cIdx; j < maxScanIdx; j++) {
+        for (let j = scanStartCreux; j < maxScanIdx; j++) {
           const deltaScore = (net[j] != null && cScore != null) ? (net[j] - cScore) : 0;
           const barsSince = j - cIdx;
           const isVRebound = (dir[j] === 1 && (j === 0 || dir[j-1] === -1)) ||
@@ -26393,6 +26392,7 @@ function computeMMSignals(d, ind) {
 
     } else if (ep.type === "SOMMET" && allowShorts) {
       const sIdx = ep.idx;
+      const scanStartSommet = (ep.startIdx != null) ? ep.startIdx : sIdx;
       const sP = ep.price;
       const sScore = ep.score;
       const sLow = ep.low;
@@ -26402,7 +26402,7 @@ function computeMMSignals(d, ind) {
 
       // --- OPTION BASE : Premier passage au Rouge de la MM 21 ---
       let idxBase = -1;
-      for (let j = sIdx; j < maxScanIdx; j++) {
+      for (let j = scanStartSommet; j < maxScanIdx; j++) {
         if (dir[j] === -1 && (j === 0 || dir[j - 1] === 1)) {
           if (net[j] != null && net[j] >= minShortLevel) {
             idxBase = j;
@@ -26441,7 +26441,7 @@ function computeMMSignals(d, ind) {
 
       // --- OPTION 1 : KK bis 2ᵉ UT Short ---
       let idxOpt1 = -1;
-      for (let j = sIdx; j < maxScanIdx; j++) {
+      for (let j = scanStartSommet; j < maxScanIdx; j++) {
         const n2 = net2[j], s2 = sig2[j], n2Prev = net2[j - 1], s2Prev = sig2[j - 1];
         const n1 = net[j], n1Prev = net[j - 1];
         const cross2 = (n2 != null && s2 != null && n2 <= s2 && (n2Prev == null || s2Prev == null || n2Prev > s2Prev));
@@ -26483,10 +26483,6 @@ function computeMMSignals(d, ind) {
       }
 
       // --- OPTION 2 : Filtre Confluence Impulse MACD Short (Instantané au signal de base) ---
-      // Au moment précis où les conditions de base sont réunies (idxBase) :
-      // On regarde si l'iMACD est rouge/orange à cet instant précis.
-      // S'il est rouge/orange -> on déclenche Option 2 Short (au même index idxBase).
-      // S'il n'est pas rouge/orange -> on ne déclenche RIEN, on attend le prochain cycle (aucun déclenchement décalé ultérieur).
       if (idxBase !== -1) {
         const colVal = impCol[idxBase];
         const isImpRed = (colVal === 2 || colVal === 3);
@@ -26524,7 +26520,7 @@ function computeMMSignals(d, ind) {
 
       // --- OPTION 3 : Cassure Low du Sommet ---
       let idxOpt3 = -1;
-      for (let j = sIdx + 1; j < maxScanIdx; j++) {
+      for (let j = scanStartSommet + 1; j < maxScanIdx; j++) {
         if (d[j].c < sLow || d[j].l < sLow) {
           if (net[j] != null && net[j] >= minShortLevel) {
             idxOpt3 = j;
@@ -26563,7 +26559,7 @@ function computeMMSignals(d, ind) {
 
       // --- OPTION 4 : Lissage Robuste 34/28 ---
       let idxOpt4 = -1;
-      for (let j = sIdx; j < maxScanIdx; j++) {
+      for (let j = scanStartSommet; j < maxScanIdx; j++) {
         const nR = netRob[j], sR = sigRob[j], nRPrev = netRob[j - 1], sRPrev = sigRob[j - 1];
         if (nR != null && sR != null && nR <= sR && (nRPrev == null || sRPrev == null || nRPrev > sRPrev)) {
           if (net[j] != null && net[j] >= minShortLevel) {
@@ -26606,7 +26602,7 @@ function computeMMSignals(d, ind) {
       if (idxBase !== -1) {
         idxOpt5 = idxBase;
       } else {
-        for (let j = sIdx; j < maxScanIdx; j++) {
+        for (let j = scanStartSommet; j < maxScanIdx; j++) {
           const deltaScore = (sScore != null && net[j] != null) ? (sScore - net[j]) : 0;
           const barsSince = j - sIdx;
           const isVDump = (dir[j] === -1 && (j === 0 || dir[j-1] === 1)) ||
@@ -26941,16 +26937,18 @@ function drawMMSignals(res, s, e, yOf, cw) {
 
       let by;
       if (isLong) {
-        // EN-DESSOUS DU GRAPHIQUE
-        by = anchorY + 24;
+        // EN-DESSOUS DU GRAPHIQUE (Bien dégagé des bougies à 85px)
+        by = anchorY + 85;
         if (typeof placeBadge === "function") {
           by = placeBadge(bx, bw, by, bh, 1);
         }
       } else {
-        // AU-DESSUS DU GRAPHIQUE
-        const targetAboveY = anchorY - bh - 24;
+        // AU-DESSUS DU GRAPHIQUE (Bien dégagé des bougies à 85px)
+        const targetAboveY = anchorY - bh - 85;
         by = Math.max(6, targetAboveY);
-        if (typeof _badgeRects !== "undefined" && Array.isArray(_badgeRects)) {
+        if (typeof placeBadge === "function") {
+          by = placeBadge(bx, bw, by, bh, -1);
+        } else if (typeof _badgeRects !== "undefined" && Array.isArray(_badgeRects)) {
           let testY = by, n = 0;
           const hit = (cy) => _badgeRects.find(q =>
             bx < q.x + q.w + 4 && bx + bw + 4 > q.x && cy < q.y + q.h + 4 && cy + bh + 4 > q.y
@@ -27137,7 +27135,7 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
     ctx.setLineDash([]);
 
     // 2. Pilule sur l'axe droit avec PnL
-    const tagText = `${isLong ? '▲ LONG' : '▼ SHORT'} ${p.lev ? p.lev + 'x' : '1x'} : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} (${pnlSign}${pnl.toFixed(2)}$)`;
+    const tagText = `${isLong ? '▲ DÉMO LONG' : '▼ DÉMO SHORT'} ${p.lev ? p.lev + 'x' : '1x'} : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} (${pnlSign}${pnl.toFixed(2)}$)`;
     ctx.font = 'bold 10px "IBM Plex Mono", monospace';
     const tw = ctx.measureText(tagText).width;
     const th = 20;
@@ -27158,41 +27156,94 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
     ctx.textBaseline = 'middle';
     ctx.fillText(tagText, tx + 4, ty + th / 2);
 
-    // 3. Pastille sur la bougie d'entrée si visible
-    let candleIdx = (p.t != null && typeof idxOfTime === 'function') ? idxOfTime(p.t) : null;
+    // 3. Pastille détaillée sur la bougie d'entrée (Éloignée des bougies et avec écriture noire sur vert fluo)
+    let candleIdx = (p.candleTime != null && typeof idxOfTime === 'function') ? idxOfTime(p.candleTime) : null;
+    if (candleIdx == null && p.t != null && typeof idxOfTime === 'function') candleIdx = idxOfTime(p.t);
     if (candleIdx == null || candleIdx < 0) candleIdx = d.length - 1;
-    if (candleIdx >= s - 1 && candleIdx <= e + 1) {
+
+    if (candleIdx >= s - 2 && candleIdx <= e + 2) {
       const cx = xOf(candleIdx);
       const candle = d[candleIdx];
       const anchorY = candle ? (isLong ? yOf(candle.l) : yOf(candle.h)) : y;
-      const bText = `🤖 DÉMO ${isLong ? 'LONG' : 'SHORT'} [${fmtTimeFr(p.t)}] $${fmt(entryPx, entryPx >= 100 ? 2 : 4)}`;
-      ctx.font = 'bold 9.5px "IBM Plex Sans", sans-serif';
-      const btw = ctx.measureText(bText).width + 12;
-      const bth = 22;
-      const btx = Math.max(4, Math.min(W - AXIS_W - btw - 4, cx - btw / 2));
-      const bty = isLong ? Math.min(H - bth - 28, anchorY + 14) : Math.max(6, anchorY - bth - 14);
 
-      ctx.fillStyle = isLong ? 'rgba(0, 230, 118, 0.22)' : 'rgba(255, 51, 102, 0.22)';
-      ctx.strokeStyle = col;
-      ctx.lineWidth = 1.6;
+      const trigLabel = p.triggerSignal || (window.activeDemoStrategy?.modeLabel || 'Signal Stratégie');
+      const timeStr = typeof fmtTimeFr === 'function' ? fmtTimeFr(p.t || p.candleTime) : new Date(p.t || Date.now()).toLocaleTimeString();
+      const elapsedStr = typeof fmtDurFr === 'function' ? fmtDurFr(p.t) : '';
+
+      const l1Text = `🤖 DÉMO ${isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} ${p.lev ? p.lev + 'x' : '1x'}`;
+      const l2Text = `⏰ ${timeStr}${elapsedStr ? ' · ⏱️ ' + elapsedStr : ''}`;
+      const l3Text = `🎯 Cause : ${trigLabel}`;
+      const l4Text = `📍 Entrée : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} · PnL : ${pnlSign}${pnl.toFixed(2)}$`;
+
+      ctx.font = 'bold 9.5px "IBM Plex Sans", sans-serif';
+      const w1 = ctx.measureText(l1Text).width;
+      const w2 = ctx.measureText(l2Text).width;
+      const w3 = ctx.measureText(l3Text).width;
+      const w4 = ctx.measureText(l4Text).width;
+      const bw = Math.max(162, Math.max(w1, w2, w3, w4) + 18);
+      const bh = 58;
+
+      const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, cx - bw / 2));
+      // Éloignement accru (90px) pour laisser les bougies totalement libres
+      let by = isLong ? (anchorY + 90) : (anchorY - bh - 90);
+      if (typeof placeBadge === 'function') {
+        by = placeBadge(bx, bw, by, bh, isLong ? 1 : -1);
+      } else {
+        by = isLong ? Math.min(H - bh - 24, by) : Math.max(6, by);
+      }
+
+      // Fond de pastille avec lueur : Vert fluo plein (#00E676) pour LONG, Rose fluo pour SHORT
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = isLong ? '#00E676' : '#FF3366';
+      ctx.strokeStyle = isLong ? '#059669' : '#DC2626';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      if (typeof ctx.roundRect === 'function') ctx.roundRect(btx, bty, btw, bth, 5);
-      else ctx.rect(btx, bty, btw, bth);
+      if (typeof ctx.roundRect === 'function') ctx.roundRect(bx, by, bw, bh, 6);
+      else ctx.rect(bx, by, bw, bh);
       ctx.fill();
       ctx.stroke();
-
-      ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(bText, btx + 6, bty + bth / 2);
+      ctx.shadowBlur = 0;
 
       // Trait liant la bougie à la pastille
       ctx.strokeStyle = col;
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 2]);
       ctx.beginPath();
       ctx.moveTo(cx, anchorY);
-      ctx.lineTo(cx, isLong ? bty : bty + bth);
+      ctx.lineTo(cx, isLong ? by : (by + bh));
       ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Point lumineux sur l'ancre de la bougie
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(cx, anchorY, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Contenu texte : ÉCRITURE EN NOIR SUR VERT FLUO (LONG) pour un contraste et une lisibilité parfaite
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+
+      // L1 : Titre Démo
+      ctx.font = '900 10px "IBM Plex Sans", -apple-system, sans-serif';
+      ctx.fillStyle = isLong ? '#000000' : '#FFFFFF';
+      ctx.fillText(l1Text, bx + 8, by + 5);
+
+      // L2 : Horodatage
+      ctx.font = 'bold 8.5px "IBM Plex Mono", monospace';
+      ctx.fillStyle = isLong ? '#0F172A' : '#FFFFFF';
+      ctx.fillText(l2Text, bx + 8, by + 18);
+
+      // L3 : Cause / Signal déclencheur
+      ctx.font = '800 9.5px "IBM Plex Sans", sans-serif';
+      ctx.fillStyle = isLong ? '#000000' : '#FFFFFF';
+      ctx.fillText(l3Text, bx + 8, by + 31);
+
+      // L4 : Prix & PnL
+      ctx.font = 'bold 8.5px "IBM Plex Mono", monospace';
+      ctx.fillStyle = isLong ? '#0F172A' : '#FFFFFF';
+      ctx.fillText(l4Text, bx + 8, by + 44);
     }
 
     // 4. Ligne SL / TP si définis
@@ -32406,7 +32457,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0345';
+  window.__LUMEN_BUILD = 'B-1908-0545';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
