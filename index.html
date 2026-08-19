@@ -4951,7 +4951,7 @@ const state = {
     lrc:{on:false,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF',tf2:'off',cLine2:'#FF9F1C',cBand2:'#FF9F1C',fill2:false},
     sr:{on:true,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
-    bos:{on:false,after1529:false,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
+    bos:{on:false,after1529:false,cBull:'#25D0A4',cBear:'#F45B7D',tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
     rev:{on:false},
     volume:{on:true},
     rsi:{on:true,period:14,tf:'chart'},
@@ -6654,7 +6654,10 @@ function getInd(key){
     }
     if(key==='fvg')state.cache[ck]=mtfCollect2(ind.tfs,(b,n)=>calc.fvgOne(b,n));
     if(key==='ob')state.cache[ck]=mtfCollect2(ind.tfs,(b,n,t)=>calc.obOne(b,n,t));
-    if(key==='bos')state.cache[ck]=mtfCollect2(ind.tfs,(b,n,t)=>calc.bosOne(b,n,t));
+    if(key==='bos'){
+      const tfs = (ind && ind.tfs) ? ind.tfs : {'1':true,'3':true,'5':true,'15':true,'60':true,'240':true};
+      state.cache[ck]=mtfCollect2(tfs,(b,n,t)=>calc.bosOne(b,n,t));
+    }
     if(key==='rangeDet'){
       const period=ind.period||14, thresh=ind.threshold!=null?ind.threshold:50;
       const tf1 = ind.tf1 || ind.tf || 'chart';
@@ -9129,12 +9132,14 @@ function drawOBMTF(zones,s,e,yOf,cw,p){
   ctx.restore();
 }
 function drawBOS(evts,s,e,yOf,cw,p){
-  const cU=S('bos','cBull'), cD=S('bos','cBear');
+  if(!evts || !Array.isArray(evts) || !evts.length) return;
+  if(!p || p.y == null || typeof yOf !== 'function') return;
+  const cU=S('bos','cBull') || '#25D0A4', cD=S('bos','cBear') || '#F45B7D';
   ctx.save();ctx.beginPath();ctx.rect(0,p.y,W-AXIS_W,p.h);ctx.clip();
   const used=[];                                   // évite les étiquettes superposées
   // option : repérer la 1ère cassure (toute UT) juste après chaque 15:29 Londres
   const afterSet=new Set();
-  if(state.indicators.bos.after1529){
+  if(state.indicators.bos && state.indicators.bos.after1529){
     computeSessZones(15*60+29);
     const sess=(state.sessZones||[]).map(z=>z.t0).sort((a,b)=>a-b);
     const evSorted=evts.slice().sort((a,b)=>a.t-b.t);
@@ -18872,7 +18877,7 @@ function drawMasterStrategy(signals, s, e, yOf) {
 }
 
 function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
-  if (!L || !d || !d.length || !isFinite(L.a) || !isFinite(L.b)) return;
+  if (!L || !d || !d.length || !isFinite(L.a) || !isFinite(L.b) || typeof yOf !== 'function') return;
 
   const isMtf = !!(L.mtf && L.mtf !== state.tf && L.htfBars && L.htfBars.length);
   const mtfMinutes = L.mtf || state.tf;
@@ -18897,6 +18902,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
 
   const x0 = xOf(iStart);
   const x1 = xOf(iEnd);
+  if (!isFinite(x0) || !isFinite(x1)) return;
 
   // Calcul du prix le long de la droite de régression
   const priceAt = idx => {
@@ -18911,7 +18917,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
         const lastD = d[d.length - 1];
         t = lastD ? (lastD.t + (idx - (d.length - 1)) * state.tf * 60000) : 0;
       }
-      const tStart = L.tStart || d[iStart].t;
+      const tStart = L.tStart || (d[iStart] ? d[iStart].t : 0);
       const k_eff = (t - tStart) / mtfMs;
       return L.a + L.b * k_eff;
     }
@@ -18924,6 +18930,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   if (!isFinite(pMid0) || !isFinite(pMid1)) return;
 
   const yMid0 = yOf(pMid0), yMid1 = yOf(pMid1);
+  if (!isFinite(yMid0) || !isFinite(yMid1)) return;
   const yUp20 = yOf(pMid0 + dev2), yUp21 = yOf(pMid1 + dev2);
   const yLo20 = yOf(pMid0 - dev2), yLo21 = yOf(pMid1 - dev2);
   const yUp10 = yOf(pMid0 + dev1), yUp11 = yOf(pMid1 + dev1);
