@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-1750</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-1830</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -703,11 +703,11 @@ footer{
         <input type="number" min="2" max="400" value="9" aria-label="Période EMA 3">
         <span class="state">off</span>
       </div>
-      <div class="ind-item" data-ind="lrc">
-        <span class="dot" style="background:#9BE6FF"></span>
-        <span class="name">Régression linéaire <span class="desc">Canal</span></span>
+      <div class="ind-item on" data-ind="lrc" id="item-lrc" style="background:var(--panel-2,#0F172A);border:1.5px solid #00E5FF;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,229,255,0.15)">
+        <span class="dot" style="background:#00E5FF;box-shadow:0 0 6px #00E5FF;flex:none"></span>
+        <span class="name">Régression linéaire <span class="desc">Canal (Linear Regression)</span></span>
         <input type="number" min="5" max="500" value="100" aria-label="Longueur du canal">
-        <span class="state">off</span>
+        <span class="state">on</span>
       </div>
       <div class="ind-item" data-ind="emacloud">
         <span class="dot" style="background:#3DDC97"></span>
@@ -999,8 +999,8 @@ footer{
         <span class="srtf on" data-tf="240">4H</span>
         <span class="state">off</span>
       </div>
-      <div class="ind-item" data-ind="bos">
-        <span class="dot" style="background:#FFD166"></span>
+      <div class="ind-item on" data-ind="bos" id="item-bos" style="background:var(--panel-2,#0F172A);border:1.5px solid #FFD166;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(255,209,102,0.2)">
+        <span class="dot" style="background:#FFD166;box-shadow:0 0 6px #FFD166;flex:none"></span>
         <span class="name">Structure BOS / CHoCH <span class="desc">MSS multi-UT</span></span>
         <span class="srtf on" data-tf="1">1m</span>
         <span class="srtf on" data-tf="3">3m</span>
@@ -1009,7 +1009,7 @@ footer{
         <span class="srtf on" data-tf="60">1H</span>
         <span class="srtf on" data-tf="240">4H</span>
         <span class="srtf" data-bosopt="after1529" title="Marquer la 1ère cassure après 15:29 Londres">★15:29</span>
-        <span class="state">off</span>
+        <span class="state">on</span>
       </div>
       <div class="ind-item" data-ind="sr">
         <span class="dot" style="background:#A8B8D8"></span>
@@ -4949,10 +4949,10 @@ const state = {
     fvg_ranked:{on:true,maxZones:10,maxStored:50,volLength:20,trendLength:50,showBars:true,showBlockText:true,strengthTextSize:'auto',blockTextSize:'auto',cBull:'#1AD8C2',cBear:'#D81A66',tf:'chart'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:true,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
-    lrc:{on:false,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF',tf2:'off',cLine2:'#FF9F1C',cBand2:'#FF9F1C',fill2:false},
+    lrc:{on:true,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF',tf2:'off',cLine2:'#FF9F1C',cBand2:'#FF9F1C',fill2:false},
     sr:{on:true,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
-    bos:{on:false,after1529:false,cBull:'#25D0A4',cBear:'#F45B7D',tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
+    bos:{on:true,after1529:false,cBull:'#25D0A4',cBear:'#F45B7D',tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
     rev:{on:false},
     volume:{on:true},
     rsi:{on:true,period:14,tf:'chart'},
@@ -5105,7 +5105,7 @@ function mergeConfig(c){
     }
   } else {
     // Si aucune configuration sauvegardée n'existe dans le navigateur, activer la stratégie par défaut
-    const stratKeys=['signal','signal_inv','signal_ema_ha','almasd','sha','fvg','ob','sr','emacloud','ema','ema2','volume','rsi','macd','rangeDet','rangeDet2','exhaustion'];
+    const stratKeys=['signal','signal_inv','signal_ema_ha','almasd','sha','fvg','ob','sr','bos','lrc','smc_lite','emacloud','ema','ema2','volume','rsi','macd','rangeDet','rangeDet2','exhaustion'];
     stratKeys.forEach(k=>{
       if(state.indicators[k]){
         state.indicators[k].on=true;
@@ -5127,7 +5127,7 @@ function ensureTFsAll(){
   if(state.indicators.sr&&state.indicators.sr.on)ensureSR();
 }
 function enableStrategyIndicators(){
-  const stratKeys=['signal','signal_inv','almasd','sha','fvg','ob','sr','emacloud','ema','ema2','volume','rsi','macd','rangeDet','rangeDet2','exhaustion'];
+  const stratKeys=['signal','signal_inv','almasd','sha','fvg','ob','sr','bos','lrc','smc_lite','emacloud','ema','ema2','volume','rsi','macd','rangeDet','rangeDet2','exhaustion'];
   stratKeys.forEach(k=>{
     if(state.indicators[k]){
       state.indicators[k].on=true;
@@ -5157,6 +5157,15 @@ const FACTORY_INDICATORS = JSON.parse(JSON.stringify(state.indicators));
 
 function loadConfig(){
   try{mergeConfig(JSON.parse(localStorage.getItem(CFG_KEY)||'null'));}catch(e){}
+  // Activation garantie des nouveaux indicateurs clés (BOS/CHoCH MSS, Linear Regression Channel) lors des mises à jour
+  try{
+    const lastB = localStorage.getItem('lumen_b_ind_v3');
+    if(lastB !== window.__LUMEN_BUILD){
+      if(state.indicators.bos) state.indicators.bos.on = true;
+      if(state.indicators.lrc) state.indicators.lrc.on = true;
+      localStorage.setItem('lumen_b_ind_v3', window.__LUMEN_BUILD);
+    }
+  }catch(e){}
 }
 function applyConfigToUI(){
   symBtn.textContent=labelOf(state.symbol)+' ▾';
@@ -32583,7 +32592,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-1750';
+  window.__LUMEN_BUILD = 'B-1908-1830';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
