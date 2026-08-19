@@ -2724,7 +2724,12 @@ footer{
       <label style="font-size:11px;color:#94A3B8">Entrées<br>
         <select id="paper-ent" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
           <option value="mm_base" selected>🟢 Stratégie MM — Base</option>
+          <option value="mm_opt6">💎 Stratégie MM — Option 6 (BOS / DIV)</option>
+          <option value="mm_opt1">🔷 Stratégie MM — Option 1 (KK 2ᵉ UT)</option>
           <option value="mm_opt2">⚡ Stratégie MM — Option 2 (iMACD)</option>
+          <option value="mm_conf_1_6">✨ Stratégie MM — Confluence Élite (Opt 1 + 6)</option>
+          <option value="mm_conf_1_2_6">🏆 Stratégie MM — Triple Confluence (1 + 2 + 6)</option>
+          <option value="mm_all">🔥 Stratégie MM — Toutes Options actives</option>
           <option value="zz">Z.Z. classiques</option>
           <option value="nouveau">Nouvelles conditions</option>
           <option value="sansRosc">Sans Range Oscillator</option>
@@ -32194,7 +32199,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-0130';
+  window.__LUMEN_BUILD = 'B-1908-0145';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -32239,22 +32244,27 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const d = state.data || [];
     if(!d.length) return [];
 
-    // Stratégie MM : Base ou Option 2 (iMACD)
-    if(mode === 'mm_base' || mode === 'mm_opt2'){
-      const baseMM = (state.indicators && state.indicators.strat_mm) || {};
+    // Stratégie MM : Base, Option 1, Option 2, Option 6, Confluences, Tout
+    if(mode && mode.startsWith('mm_')){
+      const baseMM = Object.assign({}, (state.indicators && state.indicators.strat_mm) || {});
+      if(mode === 'mm_conf_1_6') baseMM.confluenceFilter = 'conf_1_6';
+      else if(mode === 'mm_conf_1_2') baseMM.confluenceFilter = 'conf_1_2';
+      else if(mode === 'mm_conf_2_6') baseMM.confluenceFilter = 'conf_2_6';
+      else if(mode === 'mm_conf_1_2_6') baseMM.confluenceFilter = 'conf_1_2_6';
+      else if(mode === 'mm_opt1') baseMM.confluenceFilter = 'opt1';
+      else if(mode === 'mm_opt2') baseMM.confluenceFilter = 'opt2';
+      else if(mode === 'mm_opt6') baseMM.confluenceFilter = 'opt6';
+      else if(mode === 'mm_base') baseMM.confluenceFilter = 'base';
+      else if(mode === 'mm_all') baseMM.confluenceFilter = 'all';
+
       let mmData;
       try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
       let sg = (mmData && Array.isArray(mmData.signals)) ? mmData.signals.slice() : [];
 
-      /* Vérifié en simulant le direct : les pastilles apparaissent sur leur
-         propre bougie, sans retard, et sur 48 signaux suivis aucun ne
-         disparaît ni ne se déplace. Un décalage à la confirmation du creux
-         avait été posé ici, sur un raisonnement erroné : en direct l'épisode
-         est refermé à la dernière bougie connue, le creux provisoire suffit,
-         et le signal reste valable ensuite. Retiré après vérification. */
-
       if(mode === 'mm_base') sg = sg.filter(x => x.optKey === 'base');
+      else if(mode === 'mm_opt1') sg = sg.filter(x => x.optKey === 'opt1');
       else if(mode === 'mm_opt2') sg = sg.filter(x => x.optKey === 'opt2');
+      else if(mode === 'mm_opt6') sg = sg.filter(x => x.optKey === 'opt6');
 
       let last = 0;
       sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
@@ -32661,7 +32671,15 @@ function updateActiveBacktestSignals(tradesList, stratName) {
         if(capCourant <= 0){ capCourant = 0; ruine = true; }
       }
 
-      const motifEnt = en.trigger || (mEnt === 'mm_base' ? 'MM Base' : mEnt === 'mm_opt2' ? 'MM Option 2 (iMACD)' : 'Signal Z.Z.');
+      const motifEnt = en.trigger || (
+        mEnt === 'mm_base' ? 'MM Base' :
+        mEnt === 'mm_opt6' ? 'MM Option 6 (BOS/DIV)' :
+        mEnt === 'mm_opt1' ? 'MM Option 1 (KK 2ᵉ UT)' :
+        mEnt === 'mm_opt2' ? 'MM Option 2 (iMACD)' :
+        mEnt === 'mm_conf_1_6' ? 'Confluence Élite (1+6)' :
+        mEnt === 'mm_conf_1_2_6' ? 'Triple Confluence' :
+        mEnt === 'mm_all' ? 'MM Toutes Options' : 'Signal Z.Z.'
+      );
       trades.push({
         tradeNum: trades.length + 1,
         num: en.num != null ? en.num : (trades.length + 1),
@@ -33231,7 +33249,12 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:end;margin-bottom:12px">' +
       '<label style="font-size:11px;color:#94A3B8">Entrées<br><select id="bta-ent" style="' + sel + '">' +
         '<option value="mm_base" selected>🟢 Stratégie MM — Base</option>' +
+        '<option value="mm_opt6">💎 Stratégie MM — Option 6 (BOS / DIV)</option>' +
+        '<option value="mm_opt1">🔷 Stratégie MM — Option 1 (KK 2ᵉ UT)</option>' +
         '<option value="mm_opt2">⚡ Stratégie MM — Option 2 (iMACD)</option>' +
+        '<option value="mm_conf_1_6">✨ Stratégie MM — Confluence Élite (Opt 1 + 6)</option>' +
+        '<option value="mm_conf_1_2_6">🏆 Stratégie MM — Triple Confluence (1 + 2 + 6)</option>' +
+        '<option value="mm_all">🔥 Stratégie MM — Toutes Options actives</option>' +
         '<option value="zz">Z.Z. classiques</option>' +
         '<option value="nouveau">Nouvelles conditions</option>' +
         '<option value="sansRosc">Sans Range Oscillator</option></select></label>' +
@@ -33502,7 +33525,15 @@ window.envoyerVersDemo = function(){
     return;
   }
 
-  const entNom = (r.mEnt === 'mm_base') ? 'MM Base' : (r.mEnt === 'mm_opt2') ? 'MM Option 2 (iMACD)' : 'Signal Z.Z.';
+  const entNom = (
+    r.mEnt === 'mm_base' ? 'MM Base' :
+    r.mEnt === 'mm_opt6' ? 'MM Option 6 (BOS/DIV)' :
+    r.mEnt === 'mm_opt1' ? 'MM Option 1 (KK 2ᵉ UT)' :
+    r.mEnt === 'mm_opt2' ? 'MM Option 2 (iMACD)' :
+    r.mEnt === 'mm_conf_1_6' ? 'Confluence Élite (1+6)' :
+    r.mEnt === 'mm_conf_1_2_6' ? 'Triple Confluence' :
+    r.mEnt === 'mm_all' ? 'MM Toutes Options' : 'Signal Z.Z.'
+  );
   const sorNom = (r.mSor === 'mm_sig_opp') ? 'Signal opposé MM' : (r.mSor === 'mm_opp') ? 'Sommet/Creux MM' : (r.mSor === 'div') ? 'Divergences kk bis' : (r.mSor === 'seuil') ? 'Seuil kk bis' : 'Toutes kk bis';
   const labelStrat = entNom + ' × ' + sorNom;
 
@@ -33969,16 +34000,47 @@ window.envoyerVersMexc = function(){
     const avSor = selSor ? selSor.value : 'mm_opp';
 
     const mmConfigs = [
-      { ent: 'mm_base', sor: 'mm_sig_opp', entNom: 'MM Base', sorNom: 'Signal opposé MM' },
-      { ent: 'mm_base', sor: 'mm_opp',     entNom: 'MM Base', sorNom: 'Sommet/Creux MM' },
-      { ent: 'mm_base', sor: 'tout',       entNom: 'MM Base', sorNom: 'KK bis (Toutes)' },
-      { ent: 'mm_base', sor: 'div',        entNom: 'MM Base', sorNom: 'KK bis (Divergences)' },
-      { ent: 'mm_base', sor: 'seuil',      entNom: 'MM Base', sorNom: 'KK bis (Seuil)' },
-      { ent: 'mm_opt2', sor: 'mm_sig_opp', entNom: 'MM Option 2 (iMACD)', sorNom: 'Signal opposé MM' },
-      { ent: 'mm_opt2', sor: 'mm_opp',     entNom: 'MM Option 2 (iMACD)', sorNom: 'Sommet/Creux MM' },
-      { ent: 'mm_opt2', sor: 'tout',       entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Toutes)' },
-      { ent: 'mm_opt2', sor: 'div',        entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Divergences)' },
-      { ent: 'mm_opt2', sor: 'seuil',      entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Seuil)' }
+      { ent: 'mm_base', sor: 'mm_sig_opp', entNom: '🟢 MM Base', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_base', sor: 'mm_opp',     entNom: '🟢 MM Base', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_base', sor: 'tout',       entNom: '🟢 MM Base', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_base', sor: 'div',        entNom: '🟢 MM Base', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_base', sor: 'seuil',      entNom: '🟢 MM Base', sorNom: 'KK bis (Seuil)' },
+
+      { ent: 'mm_opt6', sor: 'mm_sig_opp', entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_opt6', sor: 'mm_opp',     entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_opt6', sor: 'tout',       entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_opt6', sor: 'div',        entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_opt6', sor: 'seuil',      entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'KK bis (Seuil)' },
+
+      { ent: 'mm_opt1', sor: 'mm_sig_opp', entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_opt1', sor: 'mm_opp',     entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_opt1', sor: 'tout',       entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_opt1', sor: 'div',        entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_opt1', sor: 'seuil',      entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'KK bis (Seuil)' },
+
+      { ent: 'mm_opt2', sor: 'mm_sig_opp', entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_opt2', sor: 'mm_opp',     entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_opt2', sor: 'tout',       entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_opt2', sor: 'div',        entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_opt2', sor: 'seuil',      entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'KK bis (Seuil)' },
+
+      { ent: 'mm_conf_1_6', sor: 'mm_sig_opp', entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_conf_1_6', sor: 'mm_opp',     entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_conf_1_6', sor: 'tout',       entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_conf_1_6', sor: 'div',        entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_conf_1_6', sor: 'seuil',      entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'KK bis (Seuil)' },
+
+      { ent: 'mm_conf_1_2_6', sor: 'mm_sig_opp', entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_conf_1_2_6', sor: 'mm_opp',     entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_conf_1_2_6', sor: 'tout',       entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_conf_1_2_6', sor: 'div',        entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_conf_1_2_6', sor: 'seuil',      entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'KK bis (Seuil)' },
+
+      { ent: 'mm_all', sor: 'mm_sig_opp', entNom: '🔥 MM Toutes Options', sorNom: 'Signal opposé MM' },
+      { ent: 'mm_all', sor: 'mm_opp',     entNom: '🔥 MM Toutes Options', sorNom: 'Sommet/Creux MM' },
+      { ent: 'mm_all', sor: 'tout',       entNom: '🔥 MM Toutes Options', sorNom: 'KK bis (Toutes)' },
+      { ent: 'mm_all', sor: 'div',        entNom: '🔥 MM Toutes Options', sorNom: 'KK bis (Divergences)' },
+      { ent: 'mm_all', sor: 'seuil',      entNom: '🔥 MM Toutes Options', sorNom: 'KK bis (Seuil)' }
     ];
 
     const res = [];
@@ -34332,16 +34394,47 @@ window.balayerMM_MTF = async function(){
   const avTf2 = state.indicators.strat_mm.opt2Tf;
 
   const mmConfigs = [
-    { ent: 'mm_base', sor: 'mm_sig_opp', entNom: 'MM Base', sorNom: 'Signal opposé MM' },
-    { ent: 'mm_base', sor: 'mm_opp',     entNom: 'MM Base', sorNom: 'Sommet/Creux MM' },
-    { ent: 'mm_base', sor: 'tout',       entNom: 'MM Base', sorNom: 'KK bis (Toutes)' },
-    { ent: 'mm_base', sor: 'div',        entNom: 'MM Base', sorNom: 'KK bis (Divergences)' },
-    { ent: 'mm_base', sor: 'seuil',      entNom: 'MM Base', sorNom: 'KK bis (Seuil)' },
-    { ent: 'mm_opt2', sor: 'mm_sig_opp', entNom: 'MM Option 2 (iMACD)', sorNom: 'Signal opposé MM' },
-    { ent: 'mm_opt2', sor: 'mm_opp',     entNom: 'MM Option 2 (iMACD)', sorNom: 'Sommet/Creux MM' },
-    { ent: 'mm_opt2', sor: 'tout',       entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Toutes)' },
-    { ent: 'mm_opt2', sor: 'div',        entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Divergences)' },
-    { ent: 'mm_opt2', sor: 'seuil',      entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Seuil)' }
+    { ent: 'mm_base', sor: 'mm_sig_opp', entNom: '🟢 MM Base', sorNom: 'Signal opposé MM' },
+    { ent: 'mm_base', sor: 'mm_opp',     entNom: '🟢 MM Base', sorNom: 'Sommet/Creux MM' },
+    { ent: 'mm_base', sor: 'tout',       entNom: '🟢 MM Base', sorNom: 'KK bis (Toutes)' },
+    { ent: 'mm_base', sor: 'div',        entNom: '🟢 MM Base', sorNom: 'KK bis (Divergences)' },
+    { ent: 'mm_base', sor: 'seuil',      entNom: '🟢 MM Base', sorNom: 'KK bis (Seuil)' },
+
+    { ent: 'mm_opt6', sor: 'mm_sig_opp', entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'Signal opposé MM' },
+    { ent: 'mm_opt6', sor: 'mm_opp',     entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'Sommet/Creux MM' },
+    { ent: 'mm_opt6', sor: 'tout',       entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'KK bis (Toutes)' },
+    { ent: 'mm_opt6', sor: 'div',        entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'KK bis (Divergences)' },
+    { ent: 'mm_opt6', sor: 'seuil',      entNom: '💎 MM Option 6 (BOS/DIV)', sorNom: 'KK bis (Seuil)' },
+
+    { ent: 'mm_opt1', sor: 'mm_sig_opp', entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'Signal opposé MM' },
+    { ent: 'mm_opt1', sor: 'mm_opp',     entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'Sommet/Creux MM' },
+    { ent: 'mm_opt1', sor: 'tout',       entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'KK bis (Toutes)' },
+    { ent: 'mm_opt1', sor: 'div',        entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'KK bis (Divergences)' },
+    { ent: 'mm_opt1', sor: 'seuil',      entNom: '🔷 MM Option 1 (KK 2ᵉ UT)', sorNom: 'KK bis (Seuil)' },
+
+    { ent: 'mm_opt2', sor: 'mm_sig_opp', entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'Signal opposé MM' },
+    { ent: 'mm_opt2', sor: 'mm_opp',     entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'Sommet/Creux MM' },
+    { ent: 'mm_opt2', sor: 'tout',       entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'KK bis (Toutes)' },
+    { ent: 'mm_opt2', sor: 'div',        entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'KK bis (Divergences)' },
+    { ent: 'mm_opt2', sor: 'seuil',      entNom: '⚡ MM Option 2 (iMACD)', sorNom: 'KK bis (Seuil)' },
+
+    { ent: 'mm_conf_1_6', sor: 'mm_sig_opp', entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'Signal opposé MM' },
+    { ent: 'mm_conf_1_6', sor: 'mm_opp',     entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'Sommet/Creux MM' },
+    { ent: 'mm_conf_1_6', sor: 'tout',       entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'KK bis (Toutes)' },
+    { ent: 'mm_conf_1_6', sor: 'div',        entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'KK bis (Divergences)' },
+    { ent: 'mm_conf_1_6', sor: 'seuil',      entNom: '✨ Confluence (Opt 1 + 6)', sorNom: 'KK bis (Seuil)' },
+
+    { ent: 'mm_conf_1_2_6', sor: 'mm_sig_opp', entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'Signal opposé MM' },
+    { ent: 'mm_conf_1_2_6', sor: 'mm_opp',     entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'Sommet/Creux MM' },
+    { ent: 'mm_conf_1_2_6', sor: 'tout',       entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'KK bis (Toutes)' },
+    { ent: 'mm_conf_1_2_6', sor: 'div',        entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'KK bis (Divergences)' },
+    { ent: 'mm_conf_1_2_6', sor: 'seuil',      entNom: '🏆 Triple Confluence (1+2+6)', sorNom: 'KK bis (Seuil)' },
+
+    { ent: 'mm_all', sor: 'mm_sig_opp', entNom: '🔥 MM Toutes Options', sorNom: 'Signal opposé MM' },
+    { ent: 'mm_all', sor: 'mm_opp',     entNom: '🔥 MM Toutes Options', sorNom: 'Sommet/Creux MM' },
+    { ent: 'mm_all', sor: 'tout',       entNom: '🔥 MM Toutes Options', sorNom: 'KK bis (Toutes)' },
+    { ent: 'mm_all', sor: 'div',        entNom: '🔥 MM Toutes Options', sorNom: 'KK bis (Divergences)' },
+    { ent: 'mm_all', sor: 'seuil',      entNom: '🔥 MM Toutes Options', sorNom: 'KK bis (Seuil)' }
   ];
   
   const UTS = ['1','2','3','5','15','30','60'];
