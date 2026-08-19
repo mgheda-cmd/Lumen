@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1808-2350</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1908-1750</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -967,6 +967,7 @@ footer{
       <div class="ind-item on" data-ind="smc_lite" id="item-smc_lite" style="background:var(--panel-2,#0F172A);border:1.5px solid #00FFFF;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,255,255,0.2)">
         <span class="dot" style="background:#00FFFF;box-shadow:0 0 6px #00FFFF;flex:none"></span>
         <span class="name">FluidTrades - SMC Lite <span class="desc">Supply/Demand & BOS</span></span>
+        <span class="srtf on" data-smcopt="showBoxes" title="Activer ou masquer les boîtes et zones Supply / Demand">📦 Boîtes</span>
         <span class="srtf on" data-smcopt="showBos" title="Activer ou masquer les cassures et lignes BOS">🏷️ BOS</span>
         <span class="state">on</span>
       </div>
@@ -2726,13 +2727,13 @@ footer{
       <!-- 1. Entrées -->
       <label style="font-size:11px;color:#94A3B8">Entrées<br>
         <select id="paper-ent" onchange="window.syncPaperConfigFromUI()" style="background:#0B1220;border:1px solid #334155;color:#E2E8F0;border-radius:6px;padding:5px 7px;font-size:11px;font-weight:700">
-          <option value="mm_base" selected>🟢 Stratégie MM — Base</option>
+          <option value="mm_all" selected>🔥 Stratégie MM — Toutes Options actives</option>
+          <option value="mm_base">🟢 Stratégie MM — Base</option>
           <option value="mm_opt6">💎 Stratégie MM — Option 6 (BOS / DIV)</option>
           <option value="mm_opt1">🔷 Stratégie MM — Option 1 (KK 2ᵉ UT)</option>
           <option value="mm_opt2">⚡ Stratégie MM — Option 2 (iMACD)</option>
           <option value="mm_conf_1_6">✨ Stratégie MM — Confluence Élite (Opt 1 + 6)</option>
           <option value="mm_conf_1_2_6">🏆 Stratégie MM — Triple Confluence (1 + 2 + 6)</option>
-          <option value="mm_all">🔥 Stratégie MM — Toutes Options actives</option>
           <option value="zz">Z.Z. classiques</option>
           <option value="nouveau">Nouvelles conditions</option>
           <option value="sansRosc">Sans Range Oscillator</option>
@@ -3440,7 +3441,7 @@ const calc = {
         trend=-1;lastL=null;
       }
     }
-    return out.slice(-40);
+    return out.slice(-250);
   },
   smcLite(d, ind) {
     if (!d || !d.length) return { supplyBoxes: [], demandBoxes: [], supplyBos: [], demandBos: [], paLabels: [], zigzagPoints: [] };
@@ -4944,7 +4945,7 @@ const state = {
     sha:{on:true,period:10,tf:'chart',mode:'lisse'},
     sha2:{on:false,period:10,tf:'15',mode:'lisse'},
     sha3:{on:false,period:10,tf:'60',mode:'lisse'},
-    smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showZigzag:false,showPaLabels:false,showBos:true,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
+    smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showBoxes:true,showZigzag:false,showPaLabels:false,showBos:true,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
     fvg_ranked:{on:true,maxZones:10,maxStored:50,volLength:20,trendLength:50,showBars:true,showBlockText:true,strengthTextSize:'auto',blockTextSize:'auto',cBull:'#1AD8C2',cBear:'#D81A66',tf:'chart'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:true,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
@@ -8858,7 +8859,8 @@ function drawSmcLite(data, s, e, yOf, cw, p) {
   ctx.clip();
 
   // 1. Draw Supply Boxes
-  if (data.supplyBoxes && data.supplyBoxes.length) {
+  const showBoxes = S('smc_lite', 'showBoxes') !== false;
+  if (showBoxes && data.supplyBoxes && data.supplyBoxes.length) {
     for (const box of data.supplyBoxes) {
       let x0 = xOf(box.left);
       if (box.tLeft != null) {
@@ -8903,7 +8905,7 @@ function drawSmcLite(data, s, e, yOf, cw, p) {
   }
 
   // 2. Draw Demand Boxes
-  if (data.demandBoxes && data.demandBoxes.length) {
+  if (showBoxes && data.demandBoxes && data.demandBoxes.length) {
     for (const box of data.demandBoxes) {
       let x0 = xOf(box.left);
       if (box.tLeft != null) {
@@ -12498,6 +12500,12 @@ function syncMenu(){
       item.classList.toggle('on',on);
       const stEl=item.querySelector('.state');
       if(stEl)stEl.textContent=on?'on':'off';
+      if(state.indicators[ind].tfs){
+        item.querySelectorAll('.srtf[data-tf]:not(.mtf)').forEach(tfChip=>{
+          const tfVal = tfChip.dataset.tf;
+          tfChip.classList.toggle('on', !!state.indicators[ind].tfs[tfVal]);
+        });
+      }
     }
   });
   try{ document.querySelectorAll('.srtf[data-kktoggle]').forEach(el=>{
@@ -14848,12 +14856,17 @@ function checkAutoTrade(inputSignals){
       const mmData = typeof computeMMSignals === 'function' ? computeMMSignals(d, baseMM) : null;
       if (mmData && mmData.signals) {
         candidateSignals = mmData.signals;
-        const mEnt = (strat && strat.mEnt) ? strat.mEnt : (document.getElementById('paper-ent')?.value || 'mm_base');
+        const mEnt = (strat && strat.mEnt) ? strat.mEnt : (document.getElementById('paper-ent')?.value || 'mm_all');
         if (mEnt === 'mm_base' || mEnt === 'base') candidateSignals = candidateSignals.filter(s => s.optKey === 'base');
         else if (mEnt === 'mm_opt1' || mEnt === 'opt1') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt1');
         else if (mEnt === 'mm_opt2' || mEnt === 'opt2') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt2');
+        else if (mEnt === 'mm_opt3' || mEnt === 'opt3') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt3');
+        else if (mEnt === 'mm_opt4' || mEnt === 'opt4') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt4');
+        else if (mEnt === 'mm_opt5' || mEnt === 'opt5') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt5');
         else if (mEnt === 'mm_opt6' || mEnt === 'opt6') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt6');
-        else if (mEnt === 'mm_conf_1_6') candidateSignals = candidateSignals.filter(s => s.optKey === 'confluence' || s.isConf16);
+        else if (mEnt === 'mm_conf_1_6') candidateSignals = candidateSignals.filter(s => s.optKey === 'confluence' || s.isConf16 || s.optKey === 'conf_1_6');
+        else if (mEnt === 'mm_conf_1_2_6') candidateSignals = candidateSignals.filter(s => s.optKey === 'confluence' || s.isConf126 || s.optKey === 'conf_1_2_6');
+        // Si mm_all ou tout autre valeur, on accepte tous les signaux MM actifs affichés sur le graphique
 
         const stratDir = (strat && (strat.dir || strat.dirF)) ? (strat.dir || strat.dirF) : (document.getElementById('paper-dir')?.value || 'both');
         let allowedSignals = candidateSignals;
@@ -14896,7 +14909,7 @@ function checkAutoTrade(inputSignals){
         if (!existingPos && allowedSignals.length > 0) {
           const lastSig = allowedSignals[allowedSignals.length - 1];
           const sigIdx = (lastSig.t != null ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
-          if (sigIdx != null && sigIdx >= lastIdx - 2) {
+          if (sigIdx != null && sigIdx >= lastIdx - 3) {
             if (!sigT || lastSig.t > sigT) sigT = lastSig.t;
             if (lastSig.dir === 1) buySignal = true;
             else if (lastSig.dir === -1) sellSignal = true;
@@ -15496,6 +15509,7 @@ const SCHEMA={
     {k:'swingLen',t:'num',lab:'Longueur Swing (Swing High/Low Length)',min:1,max:50,def:10,ind:1},
     {k:'keepHist',t:'num',lab:'Historique conservé (History To Keep)',min:5,max:50,def:20,ind:1},
     {k:'boxWidth',t:'num',lab:'Largeur zone (Supply/Demand Box Width)',min:1,max:10,step:0.5,def:2.5,ind:1},
+    {k:'showBoxes',t:'bool',lab:'Afficher les boîtes Supply / Demand (Zones)',def:true},
     {k:'showZigzag',t:'bool',lab:'Afficher Zig Zag',def:false},
     {k:'showPaLabels',t:'bool',lab:'Afficher étiquettes Price Action (HH/LH/HL/LL)',def:false},
     {k:'showBos',t:'bool',lab:'Afficher les lignes et étiquettes BOS',def:true},
@@ -32569,7 +32583,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-1908-1710';
+  window.__LUMEN_BUILD = 'B-1908-1750';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
