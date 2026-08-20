@@ -10212,8 +10212,13 @@ function drawRSI(p,s,e,cw,K){
   const i=hoverIndex()??state.data.length-1;
   subLabel(p,'RSI '+state.indicators[K].period+indSubTfLabel(K), arr[i]!=null?arr[i].toFixed(1):'—', CR);
 }
-function drawVolDelta(p,s,e,cw){
-  const v=getInd('vol_delta');
+function drawVolDelta(p,s,e,cw, K){
+  /* Cette fonction lisait « vol_delta » en dur : dupliquer l'indicateur
+     donnait un panneau qui affichait les données du premier et dont
+     les réglages ne servaient à rien. Elle reçoit maintenant sa clé,
+     comme drawRSI et drawImp le font déjà. */
+  K = K || (p && p.key) || 'vol_delta';
+  const v=getInd(K);
   let mx=0, mn=0;
   for(let i=s;i<e;i++){
     if(v[i]){
@@ -10222,7 +10227,7 @@ function drawVolDelta(p,s,e,cw){
     }
   }
   mx=Math.max(Math.abs(mx), Math.abs(mn)) || 1;
-  const yOf=subYOf(p,'vol_delta',-mx,mx,false);
+  const yOf=subYOf(p,K,-mx,mx,false);
   const y0line=yOf(0);
   ctx.strokeStyle='rgba(74,88,120,.5)';ctx.beginPath();ctx.moveTo(0,y0line+.5);ctx.lineTo(W-AXIS_W,y0line+.5);ctx.stroke();
   const bw=Math.max(1,cw*0.7);
@@ -10237,29 +10242,34 @@ function drawVolDelta(p,s,e,cw){
   const i=hoverIndex()??state.data.length-1;
   subLabel(p,'Volume Delta', v[i]?'Delta: '+fmtCompact(v[i].delta)+' | CVD: '+fmtCompact(v[i].cvd):'—', '#00E5FF');
 }
-function drawMACD(p,s,e,cw){
-  const m=getInd('macd');
+function drawMACD(p,s,e,cw, K){
+  /* Cette fonction lisait « macd » en dur : dupliquer l'indicateur
+     donnait un panneau qui affichait les données du premier et dont
+     les réglages ne servaient à rien. Elle reçoit maintenant sa clé,
+     comme drawRSI et drawImp le font déjà. */
+  K = K || (p && p.key) || 'macd';
+  const m=getInd(K);
   let mx=0;for(let i=s;i<e;i++){for(const v of [m.line[i],m.sig[i],m.hist[i]]) if(v!=null)mx=Math.max(mx,Math.abs(v));}
   mx=mx||1;
-  const yOf=subYOf(p,'macd',-mx,mx,false);
+  const yOf=subYOf(p,K,-mx,mx,false);
   const y0line=yOf(0);
-  if(S('macd','showZero')!==false){
+  if(S(K,'showZero')!==false){
     ctx.strokeStyle='rgba(74,88,120,.5)';ctx.beginPath();ctx.moveTo(0,y0line+.5);ctx.lineTo(W-AXIS_W,y0line+.5);ctx.stroke();
   }
   const bw=Math.max(1,cw*0.5);
-  if(S('macd','showHist'))for(let i=s;i<e;i++){
+  if(S(K,'showHist'))for(let i=s;i<e;i++){
     if(m.hist[i]==null)continue;
     const x=xOf(i),y=yOf(m.hist[i]),y0=y0line;
-    ctx.fillStyle=hexA(m.hist[i]>=0?S('macd','cUp'):S('macd','cDown'),.55);
+    ctx.fillStyle=hexA(m.hist[i]>=0?S(K,'cUp'):S(K,'cDown'),.55);
     ctx.fillRect(x-bw/2,Math.min(y,y0),bw,Math.abs(y-y0)||1);
   }
-  if(S('macd','showLine'))plotLine(m.line,s,e,yOf,S('macd','cLine'),1.3);
-  if(S('macd','showSig'))plotLine(m.sig,s,e,yOf,S('macd','cSig'),1.3);
+  if(S(K,'showLine'))plotLine(m.line,s,e,yOf,S(K,'cLine'),1.3);
+  if(S(K,'showSig'))plotLine(m.sig,s,e,yOf,S(K,'cSig'),1.3);
   const i=hoverIndex()??state.data.length-1;
-  const tfl=state.indicators.macd.tf;
+  const tfl=state.indicators[K].tf;
   const tfName=(tfl&&tfl!=='chart')?({'15':'15m','60':'1H','240':'4H'}[tfl]||''):'';
   subLabel(p,'MACD 12/26/9'+(tfName?' · '+tfName:''),
-    m.line[i]!=null?m.line[i].toFixed(2):'—', S('macd','cLine'));
+    m.line[i]!=null?m.line[i].toFixed(2):'—', S(K,'cLine'));
 }
 const IMP_COLORS=['#7CE38B','#1B8F72','#F2C14E','#F45B7D']; // lime, vert, orange, rouge
 function drawImp(p,s,e,cw,K){
@@ -10542,12 +10552,17 @@ function drawSqzMom(p, s, e, cw, key) {
 
   subLabel(p, fullTxt, '', '#00E676');
 }
-function drawStoch(p,s,e,cw){
-  const st=getInd('stoch');
-  const yOf=subYOf(p,'stoch',0,100,true);
+function drawStoch(p,s,e,cw, K){
+  /* Cette fonction lisait « stoch » en dur : dupliquer l'indicateur
+     donnait un panneau qui affichait les données du premier et dont
+     les réglages ne servaient à rien. Elle reçoit maintenant sa clé,
+     comme drawRSI et drawImp le font déjà. */
+  K = K || (p && p.key) || 'stoch';
+  const st=getInd(K);
+  const yOf=subYOf(p,K,0,100,true);
   p.isRsi=true;
-  const CK=S('stoch','cK'),CD=S('stoch','cD');
-  if(S('stoch','showZone')){
+  const CK=S(K,'cK'),CD=S(K,'cD');
+  if(S(K,'showZone')){
     ctx.fillStyle=hexA(CK,.07);
     ctx.fillRect(0,yOf(80),W-AXIS_W,yOf(20)-yOf(80));
   }
@@ -10561,20 +10576,25 @@ function drawStoch(p,s,e,cw){
   plotLine(st.k,s,e,yOf,CK,1.4);
   plotLine(st.d,s,e,yOf,hexA(CD,.6),1.1);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'Stoch '+state.indicators.stoch.period+indSubTfLabel('stoch'),
+  subLabel(p,'Stoch '+state.indicators[K].period+indSubTfLabel('stoch'),
     st.k[i]!=null?st.k[i].toFixed(1):'—', CK);
 }
-function drawATR(p,s,e,cw){
-  const a=getInd('atr');
+function drawATR(p,s,e,cw, K){
+  /* Cette fonction lisait « atr » en dur : dupliquer l'indicateur
+     donnait un panneau qui affichait les données du premier et dont
+     les réglages ne servaient à rien. Elle reçoit maintenant sa clé,
+     comme drawRSI et drawImp le font déjà. */
+  K = K || (p && p.key) || 'atr';
+  const a=getInd(K);
   let lo=Infinity,hi=-Infinity;
   for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}
   if(!isFinite(lo)){lo=0;hi=1;}
   const pad=(hi-lo)*0.15||1;lo-=pad;hi+=pad;
-  const yOf=subYOf(p,'atr',lo,hi,false);
-  const CA=S('atr','cLine');
+  const yOf=subYOf(p,K,lo,hi,false);
+  const CA=S(K,'cLine');
   plotLine(a,s,e,yOf,CA,1.4);
   const i=hoverIndex()??state.data.length-1;
-  subLabel(p,'ATR '+state.indicators.atr.period+indSubTfLabel('atr'), a[i]!=null?fmt(a[i]):'—', CA);
+  subLabel(p,'ATR '+state.indicators[K].period+indSubTfLabel('atr'), a[i]!=null?fmt(a[i]):'—', CA);
 }
 
 function drawRangeDetOverlay(data,s,e,yOf,cw,p){
@@ -10682,19 +10702,24 @@ function drawRangeDetOverlay(data,s,e,yOf,cw,p){
   ctx.restore();
 }
 
-function drawRangeDetSub(p,s,e,cw){
-  const data=getInd('rangeDet');
+function drawRangeDetSub(p,s,e,cw, K){
+  /* Cette fonction lisait « rangeDet » en dur : dupliquer l'indicateur
+     donnait un panneau qui affichait les données du premier et dont
+     les réglages ne servaient à rien. Elle reçoit maintenant sa clé,
+     comme drawRSI et drawImp le font déjà. */
+  K = K || (p && p.key) || 'rangeDet';
+  const data=getInd(K);
   if(!data)return;
   const rd1=data.tf1||data;
   const rd2=data.tf2;
   if(!rd1||!rd1.chop)return;
 
-  const ind=state.indicators.rangeDet||{};
+  const ind=state.indicators[K]||{};
   const thresh=ind.threshold||50;
   const cRange='#6366F1';
   const cTrend='#3B82F6';
 
-  const yOf=subYOf(p,'rangeDet',0,100,true);
+  const yOf=subYOf(p,K,0,100,true);
   const yThresh=yOf(thresh);
 
   // Ligne de Seuil 50%
@@ -10896,19 +10921,24 @@ function drawRangeDet2Overlay(data,s,e,yOf,cw,p){
   ctx.restore();
 }
 
-function drawRangeDet2Sub(p,s,e,cw){
-  const data=getInd('rangeDet2');
+function drawRangeDet2Sub(p,s,e,cw, K){
+  /* Cette fonction lisait « rangeDet2 » en dur : dupliquer l'indicateur
+     donnait un panneau qui affichait les données du premier et dont
+     les réglages ne servaient à rien. Elle reçoit maintenant sa clé,
+     comme drawRSI et drawImp le font déjà. */
+  K = K || (p && p.key) || 'rangeDet2';
+  const data=getInd(K);
   if(!data)return;
   const rd1=data.tf1||data;
   const rd2=data.tf2;
   if(!rd1||!rd1.adx)return;
 
-  const ind=state.indicators.rangeDet2||{};
+  const ind=state.indicators[K]||{};
   const thresh=ind.threshold||25;
   const cRange='#EC4899';
   const cTrend='#06B6D4';
 
-  const yOf=subYOf(p,'rangeDet2',0,60,true);
+  const yOf=subYOf(p,K,0,60,true);
   const yThresh=yOf(thresh);
 
   ctx.strokeStyle='rgba(255, 255, 255, 0.4)';
@@ -11002,19 +11032,24 @@ function drawRangeDet2Sub(p,s,e,cw){
   const labelCol = isRangeNow1 ? cRange : cTrend;
   subLabel(p,fullTxt,'',labelCol);
 }
-function drawTwoIndSub(p, s, e, cw) {
-  const res = getInd('two_ind');
+function drawTwoIndSub(p, s, e, cw, K) {
+  /* Cette fonction lisait « two_ind » en dur : dupliquer l'indicateur
+     donnait un panneau qui affichait les données du premier et dont
+     les réglages ne servaient à rien. Elle reçoit maintenant sa clé,
+     comme drawRSI et drawImp le font déjà. */
+  K = K || (p && p.key) || 'two_ind';
+  const res = getInd(K);
   if (!res || !res.net) return;
 
-  const isVol = (S('two_ind','mode') === 'Volatility');
+  const isVol = (S(K,'mode') === 'Volatility');
   const rg = isVol ? volAutoRange(res, s, e) : {lo: -100, hi: 100};
-  const yOf = subYOf(p, 'two_ind', rg.lo, rg.hi, true, isVol);
-  const cGold = S('two_ind','cGold') || S('two_ind','cUp') || '#FFCC00';
-  const cPurp = S('two_ind','cPurp') || S('two_ind','cDown') || '#5500CC';
-  const cSig = S('two_ind','cSig') || '#9598A1';
-  const upper = S('two_ind','upper') ?? 64;
-  const lower = S('two_ind','lower') ?? -64;
-  const fillBg = S('two_ind','fillBg') !== false;
+  const yOf = subYOf(p, K, rg.lo, rg.hi, true, isVol);
+  const cGold = S(K,'cGold') || S(K,'cUp') || '#FFCC00';
+  const cPurp = S(K,'cPurp') || S(K,'cDown') || '#5500CC';
+  const cSig = S(K,'cSig') || '#9598A1';
+  const upper = S(K,'upper') ?? 64;
+  const lower = S(K,'lower') ?? -64;
+  const fillBg = S(K,'fillBg') !== false;
 
   ctx.save();
   TwoIndicator.drawOscillator(ctx, {
@@ -11031,8 +11066,8 @@ function drawTwoIndSub(p, s, e, cw) {
     upper: upper,
     lower: lower,
     autoScale: isVol,
-    fillBg: fillBg && !isVol, fillAlpha: (typeof S==='function' ? S('two_ind','fillAlpha') : 85),
-    showZero: S('two_ind','showZero') !== false,
+    fillBg: fillBg && !isVol, fillAlpha: (typeof S==='function' ? S(K,'fillAlpha') : 85),
+    showZero: S(K,'showZero') !== false,
     colors: { cGold: cGold, cPurp: cPurp, cSig: cSig, up: cGold, down: cPurp, signal: cSig }
   });
   ctx.restore();
@@ -11068,7 +11103,7 @@ function drawTwoIndSub(p, s, e, cw) {
   const curNetStr = curNetVal != null ? curNetVal.toFixed(dec) : '—';
   const curSigStr = (res.signal && res.signal[hoverI] != null) ? res.signal[hoverI].toFixed(dec) : '—';
   const valCol = curNetVal != null ? (curNetVal >= 0 ? cGold : cPurp) : '#94A3B8';
-  const tf = state.indicators.two_ind?.tf;
+  const tf = state.indicators[K]?.tf;
   const activeTf = (!tf || tf === 'chart') ? state.tf : tf;
   const tfTag = ({'1':'1m','2':'2m','3':'3m','5':'5m','15':'15m','20':'20m','30':'30m','60':'1H','240':'4H','1440':'1J'}[activeTf] || (activeTf + 'm'));
 
@@ -33016,7 +33051,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2008-0035';
+  window.__LUMEN_BUILD = 'B-2008-0210';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
