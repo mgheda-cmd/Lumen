@@ -27120,7 +27120,21 @@ function computeMMSignals(d, ind) {
     const minBarIdx = Math.max(0, j - lookbackBars);
 
     if (isUpFlip) {
-      const recentBosUp = bosEvents.find(b => b.up && b.t >= d[minBarIdx].t && b.t <= jTime);
+      /* find() renvoie le PREMIER élément trouvé, et bosEvents est trié du plus
+         ancien au plus récent : le code retenait donc la plus vieille cassure
+         de la fenêtre de 25 bougies, pas la plus récente.
+
+         Conséquence observée à l'écran : une cassure baissière vingt bougies
+         plus tôt, un BOS haussier depuis qui l'annule, et la vente partait
+         quand même — le dernier BOS était positif et la pastille disait
+         vendre.
+
+         On prend maintenant la DERNIÈRE cassure de la fenêtre, quel que soit
+         son sens, et on n'accepte le signal que si elle va dans le sens
+         voulu. Une cassure opposée survenue depuis invalide la précédente. */
+      const fenetreUp = bosEvents.filter(b => b.t >= d[minBarIdx].t && b.t <= jTime);
+      const derniereUp = fenetreUp.length ? fenetreUp[fenetreUp.length - 1] : null;
+      const recentBosUp = (derniereUp && derniereUp.up) ? derniereUp : null;
       const recentTroughs = divList.filter(v => v.type === 'trough' && v.i >= j - 50 && v.i <= j);
       let hasBullDiv = false;
       if (recentTroughs.length >= 2) {
@@ -27160,7 +27174,9 @@ function computeMMSignals(d, ind) {
         }
       }
     } else if (isDownFlip && allowShorts) {
-      const recentBosDown = bosEvents.find(b => !b.up && b.t >= d[minBarIdx].t && b.t <= jTime);
+      const fenetreDn = bosEvents.filter(b => b.t >= d[minBarIdx].t && b.t <= jTime);
+      const derniereDn = fenetreDn.length ? fenetreDn[fenetreDn.length - 1] : null;
+      const recentBosDown = (derniereDn && !derniereDn.up) ? derniereDn : null;
       const recentPeaks = divList.filter(v => v.type === 'peak' && v.i >= j - 50 && v.i <= j);
       let hasBearDiv = false;
       if (recentPeaks.length >= 2) {
@@ -33113,7 +33129,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2008-0620';
+  window.__LUMEN_BUILD = 'B-2008-0745';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
