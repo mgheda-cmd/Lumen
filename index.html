@@ -27762,7 +27762,14 @@ function drawMMSignals(res, s, e, yOf, cw) {
           opt15m: '🕒 15 MINUTES',
           confluence: (sig.label || '🏆 Confluence Élite')
         };
-        const optName = optLabels[sig.optKey] || (sig.label || '🟢 Entrée');
+        /* La raison réelle du déclenchement — BOS, CHoCH, CHoCH MSS, DIV —
+           n'apparaissait nulle part : la ligne affichait le nom générique de
+           l'option. Impossible, en regardant une pastille, de savoir d'où
+           elle venait. On la colle au nom quand elle existe. */
+        let optName = optLabels[sig.optKey] || (sig.label || '🟢 Entrée');
+        if (sig.reason) {
+          optName = optName.replace(/\s*\([^)]*\)\s*$/, '') + ' · ' + sig.reason;
+        }
         ctx.font = 'bold 9px "IBM Plex Sans", -apple-system, sans-serif';
         ctx.textAlign = "center";
         ctx.fillStyle = color;
@@ -33147,7 +33154,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2008-0910';
+  window.__LUMEN_BUILD = 'B-2008-1015';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
