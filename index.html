@@ -4286,6 +4286,16 @@ const calc = {
     const noSqz = new Array(N).fill(true);
     const x = new Float64Array(N);
 
+    /* Ajout Squeeze Pro : l'intensité de la compression, mesurée par le
+       rapport entre la largeur des Bollinger et celle des Keltner. Plus il
+       est petit, plus les bandes sont serrées.
+         niveau 1 : rapport >= 0,8   compression légère
+         niveau 2 : entre 0,5 et 0,8 compression marquée
+         niveau 3 : < 0,5            compression extrême
+       Les bandes sont déjà calculées ici : le coût est nul. */
+    const ratio = new Float64Array(N).fill(1);
+    const niveau = new Uint8Array(N);
+
     const N_kc = lengthKC;
     const kMean = (N_kc - 1) / 2;
     const sxx = (N_kc * (N_kc * N_kc - 1)) / 12;
@@ -4302,6 +4312,10 @@ const calc = {
         sqzOn[i] = on;
         sqzOff[i] = off;
         noSqz[i] = (!on) && (!off);
+
+        const largBB = uBB - lBB, largKC = uKC - lKC;
+        ratio[i] = largKC > 0 ? largBB / largKC : 1;
+        niveau[i] = on ? (ratio[i] < 0.5 ? 3 : ratio[i] < 0.8 ? 2 : 1) : 0;
 
         let hh = -Infinity, ll = Infinity;
         for(let k = i - lengthKC + 1; k <= i; k++){
@@ -4340,7 +4354,45 @@ const calc = {
       }
     }
 
-    return { val, sqzOn, sqzOff, noSqz, colorKey };
+    /* Statistiques des compressions passées : combien, quelle durée, quelle
+       part est sortie à la hausse, et quelle amplitude en multiples d'ATR
+       dans les dix bougies qui suivent la détente. Calculées seulement si on
+       les demande — c'est une boucle de plus sur toute la série. */
+    let stats = null;
+    if (opt.showStats === true) {
+      /* 200 bougies, le défaut du Pine, ne contiennent aucune compression complète
+         en 1 minute : mesuré 0 événement sur 200, 29 sur 6 000. La fenêtre part
+         donc de 2 000 pour que la statistique dise quelque chose. */
+      const fenetre = +opt.statsLookback || 2000;
+      const debut = Math.max(0, N - fenetre);
+      const events = [];
+      let duree = 0;
+      for (let i = debut; i < N; i++) {
+        if (sqzOn[i]) duree++;
+        else {
+          if (i > 0 && sqzOn[i-1] && duree > 0) {
+            // amplitude maximale atteinte dans les dix bougies suivantes
+            let ampli = 0;
+            const fin = Math.min(N - 1, i + 10);
+            for (let k = i; k <= fin; k++) ampli = Math.max(ampli, Math.abs(closes[k] - closes[i]));
+            const atr = kcRangeMa[i] > 0 ? kcRangeMa[i] : 0;
+            events.push({ duree, haussier: (val[i] != null && val[i] > 0), ampli: atr > 0 ? ampli / atr : 0 });
+          }
+          duree = 0;
+        }
+      }
+      const n = events.length;
+      stats = {
+        nombre: n,
+        dureeMoy: n ? events.reduce((a,b)=>a+b.duree,0)/n : 0,
+        partHaussiere: n ? 100*events.filter(e=>e.haussier).length/n : 0,
+        ampliMoy: n ? events.reduce((a,b)=>a+b.ampli,0)/n : 0,
+        fenetre
+      };
+    }
+
+    return { val, sqzOn, sqzOff, noSqz, colorKey,
+             ratio: Array.from(ratio), niveau: Array.from(niveau), stats };
   },
   stoch(d,p){const K=new Array(d.length).fill(null);
     for(let i=p-1;i<d.length;i++){
@@ -5278,7 +5330,7 @@ const state = {
       oneSignalPerWave:true,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
       showScore:true,showContrarian:true,showDivergence:true,showWaves:true,showFlow:true,
       cBull:'#06A22F',cBear:'#CF1717',showOscillator:true},
-    sqz_mom:{on:true,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true,c1Up:'#00E676',c1UpDn:'#00897B',c1Dn:'#FF5252',c1DnUp:'#B71C1C',c2Up:'#00E5FF',c2UpDn:'#0288D1',c2Dn:'#FF9F1C',c2DnUp:'#B36200',c2Line:'#00E5FF'},
+    sqz_mom:{on:true,showSqzLevels:true,showStats:false,statsLookback:2000,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true,c1Up:'#00E676',c1UpDn:'#00897B',c1Dn:'#FF5252',c1DnUp:'#B71C1C',c2Up:'#00E5FF',c2UpDn:'#0288D1',c2Dn:'#FF9F1C',c2DnUp:'#B36200',c2Line:'#00E5FF'},
     imp:{on:false,period:34,tf:'chart'},
     imp2:{on:false,period:34,tf:'60'},
     stoch:{on:false,period:14,tf:'chart'},
@@ -10925,7 +10977,13 @@ function drawSqzMom(p, s, e, cw, key) {
       // TF1 Dot
       const on1 = res1.sqzOn && res1.sqzOn[i];
       const off1 = res1.sqzOff && res1.sqzOff[i];
-      const dotCol1 = on1 ? '#FF5252' : (off1 ? '#808080' : '#2196F3');
+      /* Sans les niveaux, on garde la couleur d'origine. Avec, le rouge
+         uniforme est remplacé par une échelle : jaune, orange, rouge. */
+      let dotCol1 = on1 ? '#FF5252' : (off1 ? '#808080' : '#2196F3');
+      if (showSqzLevels && on1 && res1.niveau) {
+        const nv = res1.niveau[i];
+        dotCol1 = nv === 3 ? '#FF5252' : nv === 2 ? '#F7931A' : '#FFD700';
+      }
       const yDot1 = hasTF2 ? y0 - 3.5 : y0;
 
       ctx.fillStyle = dotCol1;
@@ -10984,7 +11042,25 @@ function drawSqzMom(p, s, e, cw, key) {
     fullTxt += ` | UT2 (${tf2Label}): ${v2Str} [${sqz2Str}]`;
   }
 
-  subLabel(p, fullTxt, '', '#00E676');
+  /* Ajouts Squeeze Pro, chacun sous son propre interrupteur : l'intensité
+     de la compression en cours, et les statistiques de la période. */
+  let txtPro = '';
+  if (ind.showSqzLevels !== false && res1 && res1.niveau) {
+    const nv = res1.niveau[e];
+    if (nv === 3)      txtPro += ' · compression EXTRÊME (n3)';
+    else if (nv === 2) txtPro += ' · compression marquée (n2)';
+    else if (nv === 1) txtPro += ' · compression légère (n1)';
+    if (nv > 0 && res1.ratio && res1.ratio[e] != null)
+      txtPro += ' ' + res1.ratio[e].toFixed(2) + 'x';
+  }
+  if (ind.showStats === true && res1 && res1.stats && res1.stats.nombre > 0) {
+    const st = res1.stats;
+    txtPro += ' · ' + st.nombre + ' compressions / ' + st.fenetre +
+              ' · durée ' + st.dureeMoy.toFixed(1) +
+              ' · ' + Math.round(st.partHaussiere) + ' % haussières' +
+              ' · ampleur ' + st.ampliMoy.toFixed(1) + ' ATR';
+  }
+  subLabel(p, fullTxt + txtPro, '', '#00E676');
 }
 function drawStoch(p,s,e,cw, K){
   /* Cette fonction lisait « stoch » en dur : dupliquer l'indicateur
@@ -16266,7 +16342,7 @@ const SCHEMA={
     {k:'cDown',t:'col',lab:'Baissier (orange)',def:'#FF9D42'},
     {k:'showZero',t:'bool',lab:'Ligne zéro / Axe 0',def:true},
   ]},
-  sqz_mom:{title:'Squeeze Momentum Indicator [LazyBear] Multi-TF',fields:[
+  sqz_mom:{title:'Squeeze Momentum Indicator [LazyBear] Multi-TF',fields:[{k:'showSqzLevels',t:'bool',lab:'Ajout Pro — intensité de la compression (n1/n2/n3)',def:true},{k:'showStats',t:'bool',lab:'Ajout Pro — statistiques des compressions',def:false},{k:'statsLookback',t:'num',lab:'Ajout Pro — fenêtre des statistiques (bougies)',def:2000},
     {k:'tf1',t:'choice',lab:'Unité de Temps 1 (UT1)',opts:[{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'chart'},
     {k:'tf2',t:'choice',lab:'Unité de Temps 2 (UT2 - Optionnelle)',opts:[{v:'off',t:'Désactivée'},{v:'chart',t:'Graphique (UT)'},{v:'1',t:'1m'},{v:'3',t:'3m'},{v:'5',t:'5m'},{v:'15',t:'15m'},{v:'60',t:'1H'},{v:'240',t:'4H'}],def:'off'},
     {k:'c1Up',t:'col',lab:'UT1 — hausse qui accélère',def:'#00E676'},
@@ -33613,7 +33689,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2008-1210';
+  window.__LUMEN_BUILD = 'B-2008-1330';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
