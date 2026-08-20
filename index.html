@@ -2360,6 +2360,14 @@ footer{
             <input type="checkbox" id="notif-type-mm-pivots" checked>
             <span style="font-weight:700;color:#FCD34D">🏔️ Sorties MM (Sommets ≥ +75 & Creux ≤ -75)</span>
           </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="notif-type-mm-preavis" checked>
+            <span style="font-weight:700;color:#38BDF8">⏳ Préavis — le score entre en zone extrême</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="notif-type-exits">
+            <span style="font-weight:700;color:#94A3B8">🚪 Sorties de position</span>
+          </label>
         </div>
         <div style="font-size:10px;color:#94A3B8;margin-top:6px;line-height:1.3;border-top:1px solid rgba(255,255,255,0.06);padding-top:5px">
           💡 Toutes les alertes secondaires non-MM (confluences génériques, order blocks, anciens indicateurs) sont définitivement coupées.
@@ -13172,6 +13180,8 @@ function loadPhoneNotifUI(){
     document.getElementById('notif-ntfy-link').href = 'https://ntfy.sh/' + (cfg.ntfyTopic || 'lumen_mm_alerts');
   const elMmPreavis = document.getElementById('notif-type-mm-preavis');
   if(elMmPreavis) elMmPreavis.checked = cfg.mmPreavisAlerts !== false;
+  const elExits = document.getElementById('notif-type-exits');
+  if(elExits) elExits.checked = cfg.exitAlerts === true;
   if(document.getElementById('notif-tg-token')) document.getElementById('notif-tg-token').value = cfg.telegramToken || '';
   if(document.getElementById('notif-tg-chatid')) document.getElementById('notif-tg-chatid').value = cfg.telegramChatId || '';
   if(document.getElementById('notif-wa-provider')) document.getElementById('notif-wa-provider').value = cfg.waProvider || 'callmebot';
@@ -13200,6 +13210,9 @@ function savePhoneNotifUI(){
     sound: document.getElementById('notif-sound')?.checked ?? true,
     vibrate: document.getElementById('notif-vibrate')?.checked ?? true,
     mexcOnly: false,
+    /* exitAlerts manquait aussi : troisième réglage effacé par cette même
+       fonction, qui réécrit la configuration entière. */
+    exitAlerts: document.getElementById('notif-type-exits')?.checked ?? false,
     /* Deux réglages manquaient ici : cette fonction réécrit la configuration
        entière, si bien que le canal ntfy et les préavis étaient effacés dès
        qu'on touchait n'importe quel autre réglage. Sur iPhone, c'était la
@@ -33051,7 +33064,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2008-0210';
+  window.__LUMEN_BUILD = 'B-2008-0340';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
