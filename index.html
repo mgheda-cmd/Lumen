@@ -5346,7 +5346,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_mm:{on:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
+    strat_mm:{on:true,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
@@ -16538,7 +16538,7 @@ const SCHEMA={
     {k:'impTf',t:'num',lab:'UT Impulse MACD (minutes)',min:1,max:240,ind:1},
     {k:'impPeriod',t:'num',lab:'Période Impulse MACD',min:5,max:200,ind:1}
   ]},
-  strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[{k:'showOpt15mZone',t:'bool',lab:'Option 15M — variante sortie de zone',def:true},{k:'opt6IgnoreMss',t:'bool',lab:'Option 6 — ignorer les cassures marquées MSS',def:false},{k:'resetSurStructure',t:'bool',lab:'Remettre le cycle à zéro sur CHoCH (mesuré perdant sur 1 semaine BTC)',def:false},
+  strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[{k:'showRenforts',t:'bool',lab:'Afficher les renforts grisés (entrées du même sens, numérotées)',def:true},{k:'showOpt15mZone',t:'bool',lab:'Option 15M — variante sortie de zone',def:true},{k:'opt6IgnoreMss',t:'bool',lab:'Option 6 — ignorer les cassures marquées MSS',def:false},{k:'resetSurStructure',t:'bool',lab:'Remettre le cycle à zéro sur CHoCH (mesuré perdant sur 1 semaine BTC)',def:false},
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
     {k:'confluenceFilter',t:'choice',lab:"🎯 MODE CONFLUENCE & FILTRAGE",opts:[
       {v:'all',t:'Toutes les options actives'},
@@ -18177,6 +18177,11 @@ function checkAllAlerts(){
       });
 
       /* PRÉAVIS : le score vient d'entrer en zone extrême. */
+      /* Même règle pour les notifications : un renfort ne réveille personne. */
+      for(let q = allSignals.length - 1; q >= 0; q--){
+        if(allSignals[q] && allSignals[q].renfort > 0) allSignals.splice(q, 1);
+      }
+
       if(phoneCfg.mmPreavisAlerts !== false){
         const netP = mmData.net || [];
         const sBas = (state.indicators.kk_bis2 && state.indicators.kk_bis2.lower != null)
@@ -27042,6 +27047,10 @@ function computeMMSignals(d, ind) {
   // Chaque pastille (Base, Opt 1, Opt 2, Opt 3, Opt 4) a son propre état (LONG / SHORT).
   // Aucune pastille ne bloque les autres.
   // ==========================================
+  /* Compteur de renforts par option : remis à zéro dès qu'une vraie entrée
+     passe, donc il repart de 1 après chaque pastille opposée. */
+  const cptRenf = { base:0, opt1:0, opt2:0, opt3:0, opt4:0, opt5:0, opt6:0, opt15m:0, opt15m2:0 };
+
   const lastState = {
     base: null,
     opt1: null,
@@ -27127,7 +27136,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxBase !== -1) {
-        const canTriggerBase = !alternateSignals || (lastState.base !== "LONG");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfBase = alternateSignals && (lastState.base === "LONG");
+          const canTriggerBase = true;
         if (canTriggerBase) {
           const lvlBase = (net[idxBase] != null) ? (net[idxBase] > 0 ? `+${net[idxBase].toFixed(0)}` : `${net[idxBase].toFixed(0)}`) : cScoreVal;
           signals.push({
@@ -27136,6 +27149,11 @@ function computeMMSignals(d, ind) {
             dir: 1,
             type: "ACHAT",
             optKey: "base",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfBase ? (++cptRenf.base) : 0,
             price: d[idxBase].c,
             low: d[idxBase].l,
             high: d[idxBase].h,
@@ -27150,7 +27168,7 @@ function computeMMSignals(d, ind) {
             color: "#00E676",
             bgFill: "rgba(6, 32, 20, 0.95)"
           });
-          lastState.base = "LONG";
+          if (!renfBase) { lastState.base = "LONG"; cptRenf.base = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27170,7 +27188,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxOpt1 !== -1) {
-        const canTriggerOpt1 = !alternateSignals || (lastState.opt1 !== "LONG");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt1 = alternateSignals && (lastState.opt1 === "LONG");
+          const canTriggerOpt1 = true;
         if (canTriggerOpt1) {
           const lvlOpt1 = (net[idxOpt1] != null) ? (net[idxOpt1] > 0 ? `+${net[idxOpt1].toFixed(0)}` : `${net[idxOpt1].toFixed(0)}`) : cScoreVal;
           signals.push({
@@ -27179,6 +27201,11 @@ function computeMMSignals(d, ind) {
             dir: 1,
             type: "ACHAT",
             optKey: "opt1",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfOpt1 ? (++cptRenf.opt1) : 0,
             price: d[idxOpt1].c,
             low: d[idxOpt1].l,
             high: d[idxOpt1].h,
@@ -27193,7 +27220,7 @@ function computeMMSignals(d, ind) {
             color: "#6366F1",
             bgFill: "rgba(22, 27, 72, 0.95)"
           });
-          lastState.opt1 = "LONG";
+          if (!renfOpt1) { lastState.opt1 = "LONG"; cptRenf.opt1 = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27203,7 +27230,11 @@ function computeMMSignals(d, ind) {
         const colVal = impCol[idxBase];
         const isImpGreen = (colVal === 0 || colVal === 1);
         if (isImpGreen) {
-          const canTriggerOpt2 = !alternateSignals || (lastState.opt2 !== "LONG");
+          /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt2 = alternateSignals && (lastState.opt2 === "LONG");
+          const canTriggerOpt2 = true;
           if (canTriggerOpt2) {
             const opt2ColNameLong = (colVal === 0) ? "Vert Vif" : "Vert";
             const opt2PosLong = (impMd[idxBase] != null && impMd[idxBase] <= 0) ? " (<0)" : " (>0)";
@@ -27214,6 +27245,11 @@ function computeMMSignals(d, ind) {
               dir: 1,
               type: "ACHAT",
               optKey: "opt2",
+              /* Renfort : même signal, mais une position du même sens est déjà
+
+                 ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+              renfort: renfOpt2 ? (++cptRenf.opt2) : 0,
               price: d[idxBase].c,
               low: d[idxBase].l,
               high: d[idxBase].h,
@@ -27228,7 +27264,7 @@ function computeMMSignals(d, ind) {
               color: "#C084FC",
               bgFill: "rgba(35, 12, 48, 0.95)"
             });
-            lastState.opt2 = "LONG";
+            if (!renfOpt2) { lastState.opt2 = "LONG"; cptRenf.opt2 = 0; }
             hasAnySignalInEp = true;
           }
         }
@@ -27245,7 +27281,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxOpt3 !== -1) {
-        const canTriggerOpt3 = !alternateSignals || (lastState.opt3 !== "LONG");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt3 = alternateSignals && (lastState.opt3 === "LONG");
+          const canTriggerOpt3 = true;
         if (canTriggerOpt3) {
           const lvlOpt3 = (net[idxOpt3] != null) ? (net[idxOpt3] > 0 ? `+${net[idxOpt3].toFixed(0)}` : `${net[idxOpt3].toFixed(0)}`) : cScoreVal;
           signals.push({
@@ -27254,6 +27294,11 @@ function computeMMSignals(d, ind) {
             dir: 1,
             type: "ACHAT",
             optKey: "opt3",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfOpt3 ? (++cptRenf.opt3) : 0,
             price: d[idxOpt3].c,
             low: d[idxOpt3].l,
             high: d[idxOpt3].h,
@@ -27268,7 +27313,7 @@ function computeMMSignals(d, ind) {
             color: "#F59E0B",
             bgFill: "rgba(42, 26, 4, 0.95)"
           });
-          lastState.opt3 = "LONG";
+          if (!renfOpt3) { lastState.opt3 = "LONG"; cptRenf.opt3 = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27285,7 +27330,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxOpt4 !== -1) {
-        const canTriggerOpt4 = !alternateSignals || (lastState.opt4 !== "LONG");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt4 = alternateSignals && (lastState.opt4 === "LONG");
+          const canTriggerOpt4 = true;
         if (canTriggerOpt4) {
           const lvlOpt4 = (net[idxOpt4] != null) ? (net[idxOpt4] > 0 ? `+${net[idxOpt4].toFixed(0)}` : `${net[idxOpt4].toFixed(0)}`) : cScoreVal;
           signals.push({
@@ -27294,6 +27343,11 @@ function computeMMSignals(d, ind) {
             dir: 1,
             type: "ACHAT",
             optKey: "opt4",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfOpt4 ? (++cptRenf.opt4) : 0,
             price: d[idxOpt4].c,
             low: d[idxOpt4].l,
             high: d[idxOpt4].h,
@@ -27308,7 +27362,7 @@ function computeMMSignals(d, ind) {
             color: "#10B981",
             bgFill: "rgba(6, 36, 26, 0.95)"
           });
-          lastState.opt4 = "LONG";
+          if (!renfOpt4) { lastState.opt4 = "LONG"; cptRenf.opt4 = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27331,7 +27385,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxOpt5 !== -1) {
-        const canTriggerOpt5 = !alternateSignals || (lastState.opt5 !== "LONG");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt5 = alternateSignals && (lastState.opt5 === "LONG");
+          const canTriggerOpt5 = true;
         if (canTriggerOpt5) {
           const lvlOpt5 = (net[idxOpt5] != null) ? (net[idxOpt5] > 0 ? `+${net[idxOpt5].toFixed(0)}` : `${net[idxOpt5].toFixed(0)}`) : cScoreVal;
           signals.push({
@@ -27340,6 +27398,11 @@ function computeMMSignals(d, ind) {
             dir: 1,
             type: "ACHAT",
             optKey: "opt5",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfOpt5 ? (++cptRenf.opt5) : 0,
             price: d[idxOpt5].c,
             low: d[idxOpt5].l,
             high: d[idxOpt5].h,
@@ -27354,7 +27417,7 @@ function computeMMSignals(d, ind) {
             color: "#FACC15",
             bgFill: "rgba(45, 34, 4, 0.95)"
           });
-          lastState.opt5 = "LONG";
+          if (!renfOpt5) { lastState.opt5 = "LONG"; cptRenf.opt5 = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27384,7 +27447,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxBase !== -1) {
-        const canTriggerBase = !alternateSignals || (lastState.base !== "SHORT");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfBase = alternateSignals && (lastState.base === "SHORT");
+          const canTriggerBase = true;
         if (canTriggerBase) {
           const lvlBase = (net[idxBase] != null) ? (net[idxBase] > 0 ? `+${net[idxBase].toFixed(0)}` : `${net[idxBase].toFixed(0)}`) : sScoreVal;
           signals.push({
@@ -27393,6 +27460,11 @@ function computeMMSignals(d, ind) {
             dir: -1,
             type: "VENTE",
             optKey: "base",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfBase ? (++cptRenf.base) : 0,
             price: d[idxBase].c,
             low: d[idxBase].l,
             high: d[idxBase].h,
@@ -27407,7 +27479,7 @@ function computeMMSignals(d, ind) {
             color: "#FF3366",
             bgFill: "rgba(38, 8, 16, 0.95)"
           });
-          lastState.base = "SHORT";
+          if (!renfBase) { lastState.base = "SHORT"; cptRenf.base = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27427,7 +27499,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxOpt1 !== -1) {
-        const canTriggerOpt1 = !alternateSignals || (lastState.opt1 !== "SHORT");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt1 = alternateSignals && (lastState.opt1 === "SHORT");
+          const canTriggerOpt1 = true;
         if (canTriggerOpt1) {
           const lvlOpt1 = (net[idxOpt1] != null) ? (net[idxOpt1] > 0 ? `+${net[idxOpt1].toFixed(0)}` : `${net[idxOpt1].toFixed(0)}`) : sScoreVal;
           signals.push({
@@ -27436,6 +27512,11 @@ function computeMMSignals(d, ind) {
             dir: -1,
             type: "VENTE",
             optKey: "opt1",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfOpt1 ? (++cptRenf.opt1) : 0,
             price: d[idxOpt1].c,
             low: d[idxOpt1].l,
             high: d[idxOpt1].h,
@@ -27450,7 +27531,7 @@ function computeMMSignals(d, ind) {
             color: "#6366F1",
             bgFill: "rgba(22, 27, 72, 0.95)"
           });
-          lastState.opt1 = "SHORT";
+          if (!renfOpt1) { lastState.opt1 = "SHORT"; cptRenf.opt1 = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27460,7 +27541,11 @@ function computeMMSignals(d, ind) {
         const colVal = impCol[idxBase];
         const isImpRed = (colVal === 2 || colVal === 3);
         if (isImpRed) {
-          const canTriggerOpt2 = !alternateSignals || (lastState.opt2 !== "SHORT");
+          /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt2 = alternateSignals && (lastState.opt2 === "SHORT");
+          const canTriggerOpt2 = true;
           if (canTriggerOpt2) {
             const opt2ColNameShort = (colVal === 2) ? "Orange" : "Rouge";
             const opt2PosShort = (impMd[idxBase] != null && impMd[idxBase] >= 0) ? " (>0)" : " (<0)";
@@ -27471,6 +27556,11 @@ function computeMMSignals(d, ind) {
               dir: -1,
               type: "VENTE",
               optKey: "opt2",
+              /* Renfort : même signal, mais une position du même sens est déjà
+
+                 ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+              renfort: renfOpt2 ? (++cptRenf.opt2) : 0,
               price: d[idxBase].c,
               low: d[idxBase].l,
               high: d[idxBase].h,
@@ -27485,7 +27575,7 @@ function computeMMSignals(d, ind) {
               color: "#C084FC",
               bgFill: "rgba(35, 12, 48, 0.95)"
             });
-            lastState.opt2 = "SHORT";
+            if (!renfOpt2) { lastState.opt2 = "SHORT"; cptRenf.opt2 = 0; }
             hasAnySignalInEp = true;
           }
         }
@@ -27502,7 +27592,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxOpt3 !== -1) {
-        const canTriggerOpt3 = !alternateSignals || (lastState.opt3 !== "SHORT");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt3 = alternateSignals && (lastState.opt3 === "SHORT");
+          const canTriggerOpt3 = true;
         if (canTriggerOpt3) {
           const lvlOpt3 = (net[idxOpt3] != null) ? (net[idxOpt3] > 0 ? `+${net[idxOpt3].toFixed(0)}` : `${net[idxOpt3].toFixed(0)}`) : sScoreVal;
           signals.push({
@@ -27511,6 +27605,11 @@ function computeMMSignals(d, ind) {
             dir: -1,
             type: "VENTE",
             optKey: "opt3",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfOpt3 ? (++cptRenf.opt3) : 0,
             price: d[idxOpt3].c,
             low: d[idxOpt3].l,
             high: d[idxOpt3].h,
@@ -27525,7 +27624,7 @@ function computeMMSignals(d, ind) {
             color: "#F59E0B",
             bgFill: "rgba(42, 26, 4, 0.95)"
           });
-          lastState.opt3 = "SHORT";
+          if (!renfOpt3) { lastState.opt3 = "SHORT"; cptRenf.opt3 = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27542,7 +27641,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxOpt4 !== -1) {
-        const canTriggerOpt4 = !alternateSignals || (lastState.opt4 !== "SHORT");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt4 = alternateSignals && (lastState.opt4 === "SHORT");
+          const canTriggerOpt4 = true;
         if (canTriggerOpt4) {
           const lvlOpt4 = (net[idxOpt4] != null) ? (net[idxOpt4] > 0 ? `+${net[idxOpt4].toFixed(0)}` : `${net[idxOpt4].toFixed(0)}`) : sScoreVal;
           signals.push({
@@ -27551,6 +27654,11 @@ function computeMMSignals(d, ind) {
             dir: -1,
             type: "VENTE",
             optKey: "opt4",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfOpt4 ? (++cptRenf.opt4) : 0,
             price: d[idxOpt4].c,
             low: d[idxOpt4].l,
             high: d[idxOpt4].h,
@@ -27565,7 +27673,7 @@ function computeMMSignals(d, ind) {
             color: "#10B981",
             bgFill: "rgba(6, 36, 26, 0.95)"
           });
-          lastState.opt4 = "SHORT";
+          if (!renfOpt4) { lastState.opt4 = "SHORT"; cptRenf.opt4 = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -27588,7 +27696,11 @@ function computeMMSignals(d, ind) {
         }
       }
       if (idxOpt5 !== -1) {
-        const canTriggerOpt5 = !alternateSignals || (lastState.opt5 !== "SHORT");
+        /* Le signal est émis même quand l'alternance le refuse : il devient
+             un RENFORT, numéroté et grisé, à vous de juger sur le moment.
+             Il ne met pas à jour lastState, donc il ne consomme pas le tour. */
+          const renfOpt5 = alternateSignals && (lastState.opt5 === "SHORT");
+          const canTriggerOpt5 = true;
         if (canTriggerOpt5) {
           const lvlOpt5 = (net[idxOpt5] != null) ? (net[idxOpt5] > 0 ? `+${net[idxOpt5].toFixed(0)}` : `${net[idxOpt5].toFixed(0)}`) : sScoreVal;
           signals.push({
@@ -27597,6 +27709,11 @@ function computeMMSignals(d, ind) {
             dir: -1,
             type: "VENTE",
             optKey: "opt5",
+            /* Renfort : même signal, mais une position du même sens est déjà
+
+               ouverte. Numéroté depuis la dernière vraie entrée, grisé. */
+
+            renfort: renfOpt5 ? (++cptRenf.opt5) : 0,
             price: d[idxOpt5].c,
             low: d[idxOpt5].l,
             high: d[idxOpt5].h,
@@ -27611,7 +27728,7 @@ function computeMMSignals(d, ind) {
             color: "#FACC15",
             bgFill: "rgba(45, 34, 4, 0.95)"
           });
-          lastState.opt5 = "SHORT";
+          if (!renfOpt5) { lastState.opt5 = "SHORT"; cptRenf.opt5 = 0; }
           hasAnySignalInEp = true;
         }
       }
@@ -28183,8 +28300,14 @@ function drawMMSignals(res, s, e, yOf, cw) {
       const baseCandle = state.data[i];
       if (!baseCandle) continue;
 
-      const color = sig.color || (isLong ? cBuy : cSell);
-      const bgFill = sig.bgFill || (isLong ? "rgba(6, 32, 20, 0.95)" : "rgba(38, 8, 16, 0.95)");
+      /* Les renforts sont gris, sans exception : la couleur est réservée aux
+         consignes. On garde une nuance selon le sens pour rester lisible. */
+      const cRenfort = (sig.renfort || 0) > 0;
+      if (cRenfort && S('strat_mm','showRenforts') === false) continue;
+      const color = cRenfort ? (isLong ? '#94A3B8' : '#8B93A3')
+                             : (sig.color || (isLong ? cBuy : cSell));
+      const bgFill = cRenfort ? 'rgba(30, 36, 46, 0.92)'
+                              : (sig.bgFill || (isLong ? "rgba(6, 32, 20, 0.95)" : "rgba(38, 8, 16, 0.95)"));
       const anchorY = isLong ? yOf(baseCandle.l) : yOf(baseCandle.h);
 
       const bw = is15m ? 154 : 148;
@@ -28375,6 +28498,11 @@ function drawMMSignals(res, s, e, yOf, cw) {
         if (sig.reason) {
           optName = optName.replace(/\s*\([^)]*\)\s*$/, '') + ' · ' + sig.reason;
         }
+        /* Renfort : le nom porte son rang depuis la dernière vraie entrée,
+           « Opt 6 n2 ». Tout passe en gris pour qu'on ne le confonde jamais
+           avec une consigne : celle-ci reste la pastille colorée. */
+        const estRenfort = (sig.renfort || 0) > 0;
+        if (estRenfort) optName = optName + ' n' + sig.renfort;
         ctx.font = 'bold 9px "IBM Plex Sans", -apple-system, sans-serif';
         ctx.textAlign = "center";
         ctx.fillStyle = color;
@@ -33759,7 +33887,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2008-1520';
+  window.__LUMEN_BUILD = 'B-2008-1720';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -33826,7 +33954,11 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
       let mmData;
       try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
-      let sg = (mmData && Array.isArray(mmData.signals)) ? mmData.signals.slice() : [];
+      /* Les renforts sont des repères visuels, pas des consignes : ils
+         n'entrent jamais dans le backtest, sinon on mesurerait des positions
+         empilées que l'alternance interdit justement. */
+      let sg = (mmData && Array.isArray(mmData.signals))
+               ? mmData.signals.filter(x => !(x.renfort > 0)) : [];
 
       if(mode === 'mm_base') sg = sg.filter(x => x.optKey === 'base');
       else if(mode === 'mm_opt15m' || mode === 'mm_15m') sg = sg.filter(x => x.optKey === 'opt15m' || x.is15m);
