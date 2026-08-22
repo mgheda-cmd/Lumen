@@ -6155,6 +6155,10 @@ async function loadData(){
     state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
     state.view={start:state.data.length-150,count:150};
     restoreView();
+    /* Le cache peut contenir des indicateurs calculés sur d'autres données —
+       après un balayage, un changement de paire ou un rechargement. Le vider
+       ici garantit que ce qu'on dessine correspond aux bougies affichées. */
+    state.cache = {};
     updateHeader(); render();
     startStream(g);
     ensureSR();
@@ -33960,7 +33964,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2108-0710';
+  window.__LUMEN_BUILD = 'B-2208-2010';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -35991,12 +35995,43 @@ window.majPanneauStrat = function(){
 window.lancerBalayageStrat = async function(force){
   const el = document.getElementById('panneau-strat');
   if(el) el.innerHTML = '<div style="font-size:10.5px;color:#00E5FF">Balayage en cours\u2026</div>';
+
+  /* Le balayage charge son propre historique pour mesurer les combinaisons.
+     Sans précaution, il laissait ces données et les signaux calculés dessus
+     dans l'état : le graphique se retrouvait avec des pastilles d'une autre
+     époque et une échelle incohérente — vu à l'écran, des pastilles à 63 000
+     sur un axe à 77 000.
+
+     On photographie donc l'état avant, on le remet après, on vide le cache
+     pour forcer un recalcul sur les vraies données, et on revient aux
+     dernières bougies. */
+  const avant = {
+    data: state.data,
+    view: state.view ? Object.assign({}, state.view) : null,
+    symbol: state.symbol,
+    tf: state.tf
+  };
+
   try{
     if(typeof window.balayerMM === 'function') await window.balayerMM();
   }catch(e){
     if(el) el.innerHTML = '<div style="font-size:10.5px;color:#F45B7D">Balayage impossible.</div>';
-    return;
   }
+
+  /* Remise en place, que le balayage ait réussi ou non. */
+  if(avant.data && avant.data.length){
+    state.data = avant.data;
+    state.symbol = avant.symbol;
+    state.tf = avant.tf;
+    if(avant.view) state.view = avant.view;
+  }
+  state.cache = {};
+  state.yScale = { auto: true, lo: 0, hi: 0 };
+  if(state.subScale){
+    for(const k in state.subScale){ if(state.subScale[k]) state.subScale[k].auto = true; }
+  }
+  if(typeof window.scrollToLatestCandles === 'function') window.scrollToLatestCandles();
+  else if(typeof render === 'function') render();
   const best = choisirMeilleureStrat(window.__balayageMM);
   if(best){
     const d = new Date();
