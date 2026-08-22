@@ -17461,7 +17461,10 @@ function alertNewOB(zones){
 
   const key = state.symbol + '|' + state.market;
   const now = Date.now();
-  const maxAge = Math.max((state.tf || 1) * 60 * 1000 * 5, 20 * 60 * 1000);
+  /* L'âge maximum accompagnait la fenêtre de 15 bougies : vingt minutes ne
+     laissaient pas passer un signal vieux de soixante bougies. Aligné sur la
+     nouvelle fenêtre, sans descendre sous deux heures. */
+  const maxAge = Math.max((state.tf || 1) * 60 * 1000 * 120, 2 * 60 * 60 * 1000);
 
   let seenSet = new Set();
   try {
@@ -18045,8 +18048,16 @@ function alertNewPhoneSignals(sigs, d){
     const sigIdx = (sig.t != null && typeof idxOfTime === 'function' ? idxOfTime(sig.t) : null) ?? sig.i;
     const sigTime = sig.t || (sigIdx != null && d[sigIdx] ? d[sigIdx].t : 0);
     
-    // Lookback permissif de 15 bougies (permet aux signaux Opt 6 BOS/DIV et MTF d'être captés sans faute)
-    if(sigIdx != null && sigIdx < d.length - 15) continue;
+    /* La fenêtre était de 15 bougies. Or une pastille MM apparaît avec 7
+       bougies de retard médian, et jusqu'à plusieurs dizaines : le temps que
+       l'épisode se referme et que la direction se retourne. Mesuré sur
+       8 600 bougies : les derniers signaux étaient à 59, 60 et 84 bougies de
+       la fin, donc AUCUN ne passait. C'était la cause du silence total.
+
+       Portée à 120 bougies. Le doublon est déjà empêché par l'ensemble des
+       signaux déjà vus, pas par cette fenêtre : l'élargir ne crée pas de
+       répétition, elle rattrape seulement ce qui était perdu. */
+    if(sigIdx != null && sigIdx < d.length - 120) continue;
     if(sigTime && (now - sigTime > maxAge)) continue;
 
     const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
@@ -33899,7 +33910,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2008-1845';
+  window.__LUMEN_BUILD = 'B-2108-0110';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
