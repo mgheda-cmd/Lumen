@@ -28165,6 +28165,33 @@ function computeMMSignals(d, ind) {
   creuxList.sort((a, b) => a.i - b.i);
   sommetsList.sort((a, b) => a.i - b.i);
   signals.sort((a, b) => a.i - b.i);
+
+  /* ---------- CLASSEMENT GLOBAL CONSIGNE / RENFORT ----------
+     Chaque option appliquait son alternance dans son coin, si bien que deux
+     options pouvaient produire deux entrées du même sens à la suite — c'est
+     ce qui donnait deux pastilles « 15 MINUTES » d'affilée, l'originale et
+     la variante sortie de zone, toutes deux colorées.
+
+     On reclasse ici toutes options confondues : dans un sens donné, la
+     PREMIÈRE entrée est la consigne, toutes les suivantes deviennent des
+     renforts gris numérotés 1, 2, 3. Le compteur repart de zéro dès qu'une
+     entrée du sens opposé passe.
+
+     Les rangs posés plus haut par option sont écrasés : c'est ce classement
+     global qui fait foi. */
+  {
+    let sensCourant = 0, rang = 0;
+    for (const sg of signals) {
+      if (!sg || !sg.dir) continue;
+      if (sg.dir !== sensCourant) {
+        sensCourant = sg.dir;      // premier du sens : c'est la consigne
+        rang = 0;
+        sg.renfort = 0;
+      } else {
+        sg.renfort = ++rang;       // les suivants sont des renforts
+      }
+    }
+  }
   const resOut = {
     signals,
     line,
@@ -33910,7 +33937,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2108-0110';
+  window.__LUMEN_BUILD = 'B-2108-0230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -33977,11 +34004,15 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
       let mmData;
       try{ mmData = computeMMSignals(d, baseMM); }catch(e){ return []; }
-      /* Les renforts sont des repères visuels, pas des consignes : ils
-         n'entrent jamais dans le backtest, sinon on mesurerait des positions
-         empilées que l'alternance interdit justement. */
-      let sg = (mmData && Array.isArray(mmData.signals))
-               ? mmData.signals.filter(x => !(x.renfort > 0)) : [];
+      /* Le rang consigne/renfort est un classement GLOBAL, toutes options
+         confondues : il sert à l'affichage, pour qu'une seule pastille par
+         sens soit colorée. L'appliquer ici serait faux — choisir « MM Base »
+         perdrait les signaux Base survenus après un signal d'une autre
+         option, alors qu'on veut justement mesurer Base seule.
+
+         On prend donc tous les signaux, on filtre sur l'option demandée, et
+         l'alternance est réappliquée juste après sur cette option seule. */
+      let sg = (mmData && Array.isArray(mmData.signals)) ? mmData.signals.slice() : [];
 
       if(mode === 'mm_base') sg = sg.filter(x => x.optKey === 'base');
       else if(mode === 'mm_opt15m' || mode === 'mm_15m') sg = sg.filter(x => x.optKey === 'opt15m' || x.is15m);
@@ -34000,7 +34031,14 @@ function updateActiveBacktestSignals(tradesList, stratName) {
 
          On ne filtre donc plus quand la remise à zéro est active. Sinon on
          garde l'alternance, par sécurité contre les positions simultanées. */
-      if(baseMM.resetSurStructure === false){
+      /* Alternance sur l'option retenue, toujours : sans elle, les entrées du
+         même sens de cette option passeraient toutes, et on mesurerait des
+         positions empilées.
+
+         Une exception : quand la remise à zéro sur CHoCH est active, la
+         stratégie sait lever son alternance à bon escient, et refiltrer ici
+         l'annulerait. */
+      if(baseMM.resetSurStructure !== true){
         let last = 0;
         sg = sg.filter(function(x){ if(x.dir === last) return false; last = x.dir; return true; });
       }
