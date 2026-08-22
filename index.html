@@ -5366,7 +5366,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_mm:{on:true,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
+    strat_mm:{on:true,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
@@ -8174,7 +8174,7 @@ function render(){
         const pnlPctVal = g.pnlPct || 0;
         const pnlStr = (pnlVal >= 0 ? '+' : '') + fmtP(pnlVal) + ' $ (' + (pnlPctVal >= 0 ? '+' : '') + pnlPctVal.toFixed(2) + '%)';
         ctx.fillStyle = pnlVal >= 0 ? '#00E676' : '#FF5252';
-        ctx.fillText('PnL: ' + pnlStr, xTag, by + 31);
+        ctx.fillText('PnL: ' + pnlStr, xTag, by + 31 * kT);
         ctx.textAlign = 'left';
       }
     }
@@ -16567,7 +16567,7 @@ const SCHEMA={
     {k:'impTf',t:'num',lab:'UT Impulse MACD (minutes)',min:1,max:240,ind:1},
     {k:'impPeriod',t:'num',lab:'Période Impulse MACD',min:5,max:200,ind:1}
   ]},
-  strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[{k:'showRenforts',t:'bool',lab:'Afficher les renforts grisés (entrées du même sens, numérotées)',def:true},{k:'showOpt15mZone',t:'bool',lab:'Option 15M — variante sortie de zone',def:true},{k:'opt6IgnoreMss',t:'bool',lab:'Option 6 — ignorer les cassures marquées MSS',def:false},{k:'resetSurStructure',t:'bool',lab:'Remettre le cycle à zéro sur CHoCH (mesuré perdant sur 1 semaine BTC)',def:false},
+  strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[{k:'pastillesCompactes',t:'bool',lab:'Pastilles compactes (mêmes informations, un tiers plus petites)',def:false},{k:'showRenforts',t:'bool',lab:'Afficher les renforts grisés (entrées du même sens, numérotées)',def:true},{k:'showOpt15mZone',t:'bool',lab:'Option 15M — variante sortie de zone',def:true},{k:'opt6IgnoreMss',t:'bool',lab:'Option 6 — ignorer les cassures marquées MSS',def:false},{k:'resetSurStructure',t:'bool',lab:'Remettre le cycle à zéro sur CHoCH (mesuré perdant sur 1 semaine BTC)',def:false},
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
     {k:'confluenceFilter',t:'choice',lab:"🎯 MODE CONFLUENCE & FILTRAGE",opts:[
       {v:'all',t:'Toutes les options actives'},
@@ -28377,8 +28377,14 @@ function drawMMSignals(res, s, e, yOf, cw) {
                               : (sig.bgFill || (isLong ? "rgba(6, 32, 20, 0.95)" : "rgba(38, 8, 16, 0.95)"));
       const anchorY = isLong ? yOf(baseCandle.l) : yOf(baseCandle.h);
 
-      const bw = is15m ? 154 : 148;
-      const bh = is15m ? 54 : 46;
+      /* Taille des pastilles. « Compacte » réduit d'un tiers la boîte et les
+         polices, en gardant exactement les mêmes informations : heure, sens,
+         nom de l'option, raison, prix et niveau. Les renforts, plus nombreux
+         et moins importants, sont réduits davantage. */
+      const modeCompact = S('strat_mm','pastillesCompactes') === true;
+      const kT = modeCompact ? (cRenfort ? 0.60 : 0.70) : (cRenfort ? 0.85 : 1);
+      const bw = Math.round((is15m ? 154 : 148) * kT);
+      const bh = Math.round((is15m ? 54 : 46) * kT);
       const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
 
       let by;
@@ -28490,7 +28496,7 @@ function drawMMSignals(res, s, e, yOf, cw) {
       if (is15m) {
         // --- PASTILLE 15 MINUTES (NOTE 15M EN GRAND, HEURE ET MONTANT EN PETIT) ---
         // Ligne 1 : Heure [14:30] en petit + Sens ACHAT/VENTE
-        ctx.font = 'bold 9.5px "IBM Plex Sans", -apple-system, sans-serif';
+        ctx.font = 'bold ' + (9.5 * kT).toFixed(1) + 'px "IBM Plex Sans", -apple-system, sans-serif';
         ctx.textBaseline = "top";
         const dirTxt = isLong ? "ACHAT" : "VENTE";
         const dirColor = isLong ? "#00E676" : "#FF3366";
@@ -28503,29 +28509,29 @@ function drawMMSignals(res, s, e, yOf, cw) {
         ctx.textAlign = "left";
         if (timeTag) {
           ctx.fillStyle = "#94A3B8";
-          ctx.fillText(timeTag, startL1X, by + 4);
+          ctx.fillText(timeTag, startL1X, by + 4 * kT);
           startL1X += wTime;
         }
         ctx.fillStyle = dirColor;
-        ctx.fillText(dirTxt, startL1X, by + 4);
+        ctx.fillText(dirTxt, startL1X, by + 4 * kT);
 
         // Ligne 2 : "15 MINUTES" EN GRAND BIEN DISTINCTIF (14px Bold)
-        ctx.font = '900 14px "IBM Plex Sans", -apple-system, sans-serif';
+        ctx.font = '900 ' + (14 * kT).toFixed(1) + 'px "IBM Plex Sans", -apple-system, sans-serif';
         ctx.textAlign = "center";
         ctx.fillStyle = color;
-        ctx.fillText("🕒 15 MINUTES", bx + bw / 2, by + 18);
+        ctx.fillText("🕒 15 MINUTES", bx + bw / 2, by + 18 * kT);
 
         // Ligne 3 : Montant / Prix d'achat en petit
         const priceStr = `$${fmt(sig.price, 1)}`;
         const lvlStr = (sig.triggerLevel != null) ? (sig.triggerLevel > 0 ? `+${sig.triggerLevel.toFixed(0)}` : `${sig.triggerLevel.toFixed(0)}`) : '';
         const subTxt = lvlStr ? `${priceStr} · Niv: ${lvlStr}` : priceStr;
-        ctx.font = '8.5px "IBM Plex Mono", monospace';
+        ctx.font = (8.5 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
         ctx.fillStyle = "#CBD5E1";
         ctx.fillText(subTxt, bx + bw / 2, by + 37);
       } else {
         // --- RENDU STANDARD SUR 3 LIGNES (FORMAT PLUS CARRÉ) ---
         // Ligne 1 : Heure + Mot-clé ACHAT (Vert) ou VENTE (Rouge)
-        ctx.font = 'bold 10px "IBM Plex Sans", -apple-system, sans-serif';
+        ctx.font = 'bold ' + (10 * kT).toFixed(1) + 'px "IBM Plex Sans", -apple-system, sans-serif';
         ctx.textBaseline = "top";
         const dirTxt = isLong ? "ACHAT" : "VENTE";
         const dirColor = isLong ? "#00E676" : "#FF3366";
@@ -28538,11 +28544,11 @@ function drawMMSignals(res, s, e, yOf, cw) {
         ctx.textAlign = "left";
         if (timeTag) {
           ctx.fillStyle = color;
-          ctx.fillText(timeTag, startL1X, by + 4);
+          ctx.fillText(timeTag, startL1X, by + 4 * kT);
           startL1X += wTime;
         }
         ctx.fillStyle = dirColor;
-        ctx.fillText(dirTxt, startL1X, by + 4);
+        ctx.fillText(dirTxt, startL1X, by + 4 * kT);
 
         // Ligne 2 : Nom court de l'Option avec son icône thématique (Couleur d'origine)
         const optLabels = {
@@ -28570,18 +28576,18 @@ function drawMMSignals(res, s, e, yOf, cw) {
            avec une consigne : celle-ci reste la pastille colorée. */
         const estRenfort = (sig.renfort || 0) > 0;
         if (estRenfort) optName = optName + ' n' + sig.renfort;
-        ctx.font = 'bold 9px "IBM Plex Sans", -apple-system, sans-serif';
+        ctx.font = 'bold ' + (9 * kT).toFixed(1) + 'px "IBM Plex Sans", -apple-system, sans-serif';
         ctx.textAlign = "center";
         ctx.fillStyle = color;
-        ctx.fillText(optName, bx + bw / 2, by + 18);
+        ctx.fillText(optName, bx + bw / 2, by + 18 * kT);
 
         // Ligne 3 : Prix d'entrée & Niveau de déclenchement (Police claire et nette)
         const priceStr = `$${fmt(sig.price, 1)}`;
         const lvlStr = (sig.triggerLevel != null) ? (sig.triggerLevel > 0 ? `+${sig.triggerLevel.toFixed(0)}` : `${sig.triggerLevel.toFixed(0)}`) : '';
         const subTxt = lvlStr ? `${priceStr} · Niv: ${lvlStr}` : priceStr;
-        ctx.font = '8.5px "IBM Plex Mono", monospace';
+        ctx.font = (8.5 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
         ctx.fillStyle = "#CBD5E1";
-        ctx.fillText(subTxt, bx + bw / 2, by + 31);
+        ctx.fillText(subTxt, bx + bw / 2, by + 31 * kT);
       }
 
       ctx.restore();
@@ -28730,12 +28736,12 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       // L2 : Horodatage
       ctx.font = 'bold 8.5px "IBM Plex Mono", monospace';
       ctx.fillStyle = isLong ? '#0F172A' : '#FFFFFF';
-      ctx.fillText(l2Text, bx + 8, by + 18);
+      ctx.fillText(l2Text, bx + 8, by + 18 * kT);
 
       // L3 : Cause / Signal déclencheur
       ctx.font = '800 9.5px "IBM Plex Sans", sans-serif';
       ctx.fillStyle = isLong ? '#000000' : '#FFFFFF';
-      ctx.fillText(l3Text, bx + 8, by + 31);
+      ctx.fillText(l3Text, bx + 8, by + 31 * kT);
 
       // L4 : Prix & PnL
       ctx.font = 'bold 8.5px "IBM Plex Mono", monospace';
@@ -30887,7 +30893,7 @@ function drawZZ2Signals(signals, s, e, yOf, cw) {
       ctx.fillText(txt, pbx + pbw/2, pby + 10);
       ctx.fillStyle = '#FCD34D';
       ctx.font = '8px "IBM Plex Mono",monospace';
-      ctx.fillText(sub, pbx + pbw/2, pby + 18);
+      ctx.fillText(sub, pbx + pbw/2, pby + 18 * kT);
       ctx.textAlign = 'left';
       ctx.globalAlpha = 1;
       ctx.restore();
@@ -31172,7 +31178,7 @@ function drawZZSignals(signals, s, e, yOf, cw) {
       ctx.fillText(txt, pbx + pbw/2, pby + 10);
       ctx.fillStyle = '#FCD34D';
       ctx.font = '8px "IBM Plex Mono",monospace';
-      ctx.fillText(sub, pbx + pbw/2, pby + 18);
+      ctx.fillText(sub, pbx + pbw/2, pby + 18 * kT);
       ctx.textAlign = 'left';
       ctx.globalAlpha = 1;
       ctx.restore();
@@ -33503,7 +33509,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       ctx.fillText(txt, bx + bw/2, by + 10);
       ctx.fillStyle = '#7E8CA8';
       ctx.font = '8px "IBM Plex Mono",monospace';
-      ctx.fillText(sub, bx + bw/2, by + 18);
+      ctx.fillText(sub, bx + bw/2, by + 18 * kT);
       ctx.textAlign = 'left';
       ctx.restore();
     }
@@ -33954,7 +33960,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2108-0510';
+  window.__LUMEN_BUILD = 'B-2108-0605';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
