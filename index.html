@@ -33960,7 +33960,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2108-0605';
+  window.__LUMEN_BUILD = 'B-2108-0710';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -35905,6 +35905,19 @@ function choisirMeilleureStrat(res){
    autant qu'elle soit contrôlable. */
 window.__choisirMeilleureStrat = choisirMeilleureStrat;
 
+/* Deuxième sélection : le meilleur PnL brut, sans pondération. Mêmes
+   exclusions de base — pas de liquidation, au moins vingt trades — mais le
+   classement prudent n'entre pas en compte. C'est le pari rentable, à
+   comparer avec le pari sûr. */
+function choisirMeilleurPnl(res){
+  if(!Array.isArray(res) || !res.length) return null;
+  const valables = res.filter(x => x && !x.err && x.trades >= 20 && !(x.liq > 0));
+  const pool = valables.length ? valables : res.filter(x => x && !x.err);
+  if(!pool.length) return null;
+  return pool.slice().sort((a,b) => (b.pnl||0) - (a.pnl||0))[0];
+}
+window.__choisirMeilleurPnl = choisirMeilleurPnl;
+
 window.majPanneauStrat = function(){
   const el = document.getElementById('panneau-strat');
   if(!el) return;
@@ -35914,6 +35927,7 @@ window.majPanneauStrat = function(){
     return;
   }
   const best = choisirMeilleureStrat(res);
+  const gros = choisirMeilleurPnl(res);
   if(!best){
     el.innerHTML = '<div style="font-size:10.5px;color:#FF9F1C">Aucune combinaison exploitable.</div>';
     return;
@@ -35922,9 +35936,29 @@ window.majPanneauStrat = function(){
   const col = (best.pnl >= 0) ? '#10B981' : '#F45B7D';
   const histo = lireHistoStrat();
 
+  /* La seconde ligne n'a d'intérêt que si elle diffère de la première :
+     quand la plus sûre est aussi la plus rentable, l'afficher deux fois
+     n'apprendrait rien. */
+  const memeQueBest = gros && best && gros.entNom === best.entNom && gros.sorNom === best.sorNom;
+  const blocGros = (gros && !memeQueBest)
+    ? '<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:5px">' +
+        '<div style="font-size:9.5px;color:#94A3B8;font-weight:700">⚡ Meilleur PnL</div>' +
+        '<div style="font-size:10.5px;font-weight:700;color:var(--text);line-height:1.25">' +
+          gros.entNom + '<span style="color:#94A3B8;font-weight:600"> → ' + gros.sorNom + '</span></div>' +
+        '<div style="display:flex;gap:8px;font-size:10px;font-family:\'IBM Plex Mono\',monospace;margin-top:2px">' +
+          '<span style="color:' + (gros.pnl>=0?'#10B981':'#F45B7D') + ';font-weight:700">' +
+            (gros.pnl>=0?'+':'') + gros.pnl.toFixed(0) + ' $</span>' +
+          '<span style="color:#94A3B8">PF ' + (isFinite(gros.pf)?gros.pf.toFixed(2):'∞') + '</span>' +
+          '<span style="color:#94A3B8">' + gros.trades + ' tr.</span>' +
+          '<span style="color:#64748B">note ' + (gros.note||0).toFixed(1) + '</span>' +
+        '</div></div>'
+    : (memeQueBest
+        ? '<div style="margin-top:5px;font-size:9.5px;color:#10B981">⚡ C\'est aussi le meilleur PnL du balayage.</div>'
+        : '');
+
   el.innerHTML =
     '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
-      '<span style="font-weight:800;font-size:11px;color:var(--text)">\u2605 Stratégie du moment</span>' +
+      '<span style="font-weight:800;font-size:11px;color:var(--text)">\u2605 La plus sûre</span>' +
       '<button id="strat-rebalayer" title="Relancer le balayage" style="margin-left:auto;background:none;border:1px solid var(--line);border-radius:5px;color:#94A3B8;font-size:9.5px;padding:1px 5px;cursor:pointer">\u21bb</button>' +
       '<button id="strat-basculer" title="Voir l\'historique" style="background:none;border:1px solid var(--line);border-radius:5px;color:#94A3B8;font-size:9.5px;padding:1px 5px;cursor:pointer">\u22ef</button>' +
     '</div>' +
@@ -35938,6 +35972,7 @@ window.majPanneauStrat = function(){
     '</div>' +
     '<div style="font-size:9.5px;color:#64748B;margin-top:3px">note prudente ' +
       (best.note||0).toFixed(1) + ' \u00b7 repli ' + (best.dd||0).toFixed(0) + ' $</div>' +
+    blocGros +
     (window.__stratHistoOuvert && histo.length
       ? '<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:5px;font-size:9.5px;color:#94A3B8;line-height:1.5">' +
         histo.slice().reverse().map(function(h){
