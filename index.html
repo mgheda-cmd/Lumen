@@ -2511,6 +2511,14 @@ footer{
   <div id="chips"></div>
   <button id="btn-float-latest-candles" onclick="scrollToLatestCandles()" title="Aller aux bougies les plus récentes (temps réel)" style="position:absolute;bottom:30px;right:75px;z-index:25;background:rgba(15,23,42,0.92);border:1px solid #00E5FF;color:#00E5FF;border-radius:20px;padding:6px 14px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.6);transition:all 0.2s">⏭️ Dernières bougies</button>
   <canvas id="chart"></canvas>
+  <!-- Meilleure stratégie du moment, en haut à droite du graphique. Compact
+       par défaut : trois lignes, l'historique ne s'ouvre que sur demande. -->
+  <div id="panneau-strat" style="position:absolute;top:8px;right:12px;z-index:40;
+       background:var(--panel-2);border:1px solid var(--line);border-radius:9px;
+       padding:7px 9px;min-width:186px;max-width:260px;
+       box-shadow:0 4px 14px rgba(0,0,0,.28);pointer-events:auto">
+    <div style="font-size:10.5px;color:#94A3B8">Balayage en attente…</div>
+  </div>
 </div>
 
 <div id="zoom-back">
@@ -8577,6 +8585,15 @@ function render(){
   /* Pendant un glissement, on ne touche pas au tableau : la mémoire évite
      déjà le recalcul, mais reconstruire le HTML à chaque image reste inutile.
      Un rafraîchissement est programmé pour la fin du geste. */
+  /* Premier balayage automatique, une seule fois, dès qu'il y a de quoi
+     calculer. Différé pour ne pas retarder le premier affichage. */
+  if(!window.__stratLancee && (state.data||[]).length > 500){
+    window.__stratLancee = true;
+    setTimeout(function(){
+      if(typeof window.lancerBalayageStrat === 'function') window.lancerBalayageStrat();
+    }, 2500);
+  }
+
   if(typeof updateMmsBoTable === 'function' && typeof mmsBoHudVisible !== 'undefined' && mmsBoHudVisible){
     if(state.dragging){
       clearTimeout(window.__mmsBoDiffere);
@@ -33937,7 +33954,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2108-0230';
+  window.__LUMEN_BUILD = 'B-2108-0420';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -35843,7 +35860,115 @@ window.envoyerVersMexc = function(){
   /* ================================================================
      BALAYAGE STRATÉGIE MM — Base, Options & Confluences vs Sorties
      ================================================================ */
-  window.balayerMM = async function(){
+  
+/* ============ MEILLEURE STRATÉGIE DU MOMENT ============
+   Panneau en haut à droite du graphique. Il lance le balayage MM à
+   l'ouverture, puis affiche la combinaison à retenir.
+
+   Le choix ne se fait pas au meilleur PnL : on prend les TROIS premières
+   au classement prudent — celui qui pondère le rapport gain/repli, le profit
+   factor, le nombre de trades et la tenue sur les trois tiers — puis parmi
+   ces trois, celle qui rapporte le plus. Moins de PnL, plus de sécurité.
+
+   Les choix des dernières ouvertures sont conservés, pour voir si la même
+   combinaison revient ou si elle change à chaque session.
+   ======================================================== */
+
+const LUMEN_HISTO_STRAT = 'lumen_histo_meilleure_strat';
+
+function lireHistoStrat(){
+  try{ return JSON.parse(localStorage.getItem(LUMEN_HISTO_STRAT) || '[]') || []; }
+  catch(e){ return []; }
+}
+function ecrireHistoStrat(l){
+  try{ localStorage.setItem(LUMEN_HISTO_STRAT, JSON.stringify(l.slice(-5))); }catch(e){}
+}
+
+function choisirMeilleureStrat(res){
+  if(!Array.isArray(res) || !res.length) return null;
+  /* On écarte d'abord ce qui n'est pas exploitable : trop peu de trades, ou
+     une liquidation, qui disqualifie quoi qu'en dise le score. */
+  const valables = res.filter(x => x && !x.err && x.trades >= 10 && !(x.liq > 0));
+  const pool = valables.length ? valables : res.filter(x => x && !x.err);
+  if(!pool.length) return null;
+  const troisPremieres = pool.slice().sort((a,b) => (b.note||0) - (a.note||0)).slice(0,3);
+  return troisPremieres.slice().sort((a,b) => (b.pnl||0) - (a.pnl||0))[0];
+}
+
+/* Exposée pour pouvoir la vérifier au banc d'essai : c'est elle qui décide,
+   autant qu'elle soit contrôlable. */
+window.__choisirMeilleureStrat = choisirMeilleureStrat;
+
+window.majPanneauStrat = function(){
+  const el = document.getElementById('panneau-strat');
+  if(!el) return;
+  const res = window.__balayageMM;
+  if(!Array.isArray(res) || !res.length){
+    el.innerHTML = '<div style="font-size:10.5px;color:#94A3B8">Balayage en attente…</div>';
+    return;
+  }
+  const best = choisirMeilleureStrat(res);
+  if(!best){
+    el.innerHTML = '<div style="font-size:10.5px;color:#FF9F1C">Aucune combinaison exploitable.</div>';
+    return;
+  }
+  const pf = isFinite(best.pf) ? best.pf.toFixed(2) : '∞';
+  const col = (best.pnl >= 0) ? '#10B981' : '#F45B7D';
+  const histo = lireHistoStrat();
+
+  el.innerHTML =
+    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
+      '<span style="font-weight:800;font-size:11px;color:var(--text)">\u2605 Stratégie du moment</span>' +
+      '<button id="strat-rebalayer" title="Relancer le balayage" style="margin-left:auto;background:none;border:1px solid var(--line);border-radius:5px;color:#94A3B8;font-size:9.5px;padding:1px 5px;cursor:pointer">\u21bb</button>' +
+      '<button id="strat-basculer" title="Voir l\'historique" style="background:none;border:1px solid var(--line);border-radius:5px;color:#94A3B8;font-size:9.5px;padding:1px 5px;cursor:pointer">\u22ef</button>' +
+    '</div>' +
+    '<div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.3">' +
+      best.entNom + '<br><span style="color:#94A3B8;font-weight:600">sortie : ' + best.sorNom + '</span></div>' +
+    '<div style="display:flex;gap:8px;margin-top:4px;font-size:10.5px;font-family:\'IBM Plex Mono\',monospace">' +
+      '<span style="color:' + col + ';font-weight:700">' + (best.pnl>=0?'+':'') + best.pnl.toFixed(0) + ' $</span>' +
+      '<span style="color:#94A3B8">PF ' + pf + '</span>' +
+      '<span style="color:#94A3B8">' + best.trades + ' tr.</span>' +
+      '<span style="color:#94A3B8">' + (best.wr||0).toFixed(0) + ' %</span>' +
+    '</div>' +
+    '<div style="font-size:9.5px;color:#64748B;margin-top:3px">note prudente ' +
+      (best.note||0).toFixed(1) + ' \u00b7 repli ' + (best.dd||0).toFixed(0) + ' $</div>' +
+    (window.__stratHistoOuvert && histo.length
+      ? '<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:5px;font-size:9.5px;color:#94A3B8;line-height:1.5">' +
+        histo.slice().reverse().map(function(h){
+          return '<div>' + h.quand + ' \u00b7 ' + h.ent + ' \u2192 ' + h.sor +
+                 ' <span style="color:' + (h.pnl>=0?'#10B981':'#F45B7D') + '">' +
+                 (h.pnl>=0?'+':'') + Math.round(h.pnl) + ' $</span></div>';
+        }).join('') + '</div>'
+      : '');
+
+  const bR = document.getElementById('strat-rebalayer');
+  if(bR) bR.onclick = function(){ if(typeof window.balayerMM === 'function') window.lancerBalayageStrat(true); };
+  const bH = document.getElementById('strat-basculer');
+  if(bH) bH.onclick = function(){ window.__stratHistoOuvert = !window.__stratHistoOuvert; window.majPanneauStrat(); };
+};
+
+window.lancerBalayageStrat = async function(force){
+  const el = document.getElementById('panneau-strat');
+  if(el) el.innerHTML = '<div style="font-size:10.5px;color:#00E5FF">Balayage en cours\u2026</div>';
+  try{
+    if(typeof window.balayerMM === 'function') await window.balayerMM();
+  }catch(e){
+    if(el) el.innerHTML = '<div style="font-size:10.5px;color:#F45B7D">Balayage impossible.</div>';
+    return;
+  }
+  const best = choisirMeilleureStrat(window.__balayageMM);
+  if(best){
+    const d = new Date();
+    const p = n => String(n).padStart(2,'0');
+    const h = lireHistoStrat();
+    h.push({ quand: p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes()),
+             ent: best.entNom, sor: best.sorNom, pnl: best.pnl, pf: best.pf, trades: best.trades });
+    ecrireHistoStrat(h);
+  }
+  window.majPanneauStrat();
+};
+
+window.balayerMM = async function(){
     const box = document.getElementById('bta-res');
     const info = document.getElementById('bta-charge');
     if(!state.indicators || !state.indicators.strat_mm){
