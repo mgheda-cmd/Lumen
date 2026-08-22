@@ -3512,7 +3512,19 @@ const calc = {
         trend=-1;lastL=null;
       }
     }
-    return out.slice(-250);
+    /* Le plafond était à 250 cassures, soit environ 3 000 bougies en 1 minute.
+       Au-delà, les cassures anciennes tombaient, et avec elles les pastilles
+       de l'option 6 qui s'appuyaient dessus : mesuré 86 pastilles effacées
+       sur 6 202, toutes de l'option 6, à 2 100-2 600 bougies d'âge.
+
+       Sans conséquence en direct — la pastille apparaît au bon moment et ne
+       s'efface que très loin derrière — mais un backtest sur plus de 3 000
+       bougies en perdait une partie sans le dire.
+
+       Porté à 1 500, ce qui couvre environ 18 000 bougies. Le calcul complet
+       coûte 144 ms sur 21 000 bougies, la troncature n'y change rien : elle
+       n'intervient qu'au retour. */
+    return out.slice(-1500);
   },
   smcLite(d, ind) {
     if (!d || !d.length) return { supplyBoxes: [], demandBoxes: [], supplyBos: [], demandBos: [], paLabels: [], zigzagPoints: [] };
@@ -33887,7 +33899,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2008-1720';
+  window.__LUMEN_BUILD = 'B-2008-1845';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
