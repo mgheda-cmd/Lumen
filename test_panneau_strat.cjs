@@ -42,9 +42,9 @@ t('   ignore le gros PnL mal note', window.__choisirMeilleureStrat(jeu).entNom!=
 
 const avecLiq=jeu.concat([{entNom:'E',sorNom:'x',note:10,pnl:500,pf:2,trades:40,wr:65,dd:10,liq:2}]);
 t('ecarte une combinaison liquidee', window.__choisirMeilleureStrat(avecLiq).entNom!=='E', window.__choisirMeilleureStrat(avecLiq).entNom);
-const peu=[{entNom:'F',sorNom:'x',note:10,pnl:80,pf:2,trades:4,wr:70,dd:5,liq:0},
+const peu=[{entNom:'F',sorNom:'x',note:10,pnl:80,pf:2,trades:12,wr:70,dd:5,liq:0},
            {entNom:'G',sorNom:'x',note:6,pnl:60,pf:1.2,trades:25,wr:55,dd:10,liq:0}];
-t('ecarte les echantillons trop courts', window.__choisirMeilleureStrat(peu).entNom==='G', window.__choisirMeilleureStrat(peu).entNom);
+t('ecarte les echantillons sous 20 trades', window.__choisirMeilleureStrat(peu).entNom==='G', window.__choisirMeilleureStrat(peu).entNom+' (F a 12 trades ecartee)');
 t('aucune combinaison : ne plante pas', window.__choisirMeilleureStrat([])===null && window.__choisirMeilleureStrat(null)===null);
 
 console.log('\n== Affichage et historique ==');

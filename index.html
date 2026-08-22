@@ -23285,8 +23285,8 @@ async function runZZBacktest(skipFetch){
       slList.forEach(sVal => {
         levList.forEach(lVal => {
           const res = runSingleZZSim(dTF, sigMapTF, sc.tp, sVal, capital, lVal, feeRate, riskPctVal);
-          // A1: Min 30 trades
-          if (!res || !res.tradesCount || res.tradesCount < 30) return;
+          // A1: Min 20 trades
+          if (!res || !res.tradesCount || res.tradesCount < 20) return;
           // A2: Rejet PF infini / ruine / netPnl <= 0
           if (res.ruine || res.netPnlTotal <= 0) return;
           if (!res.losses || res.losses === 0 || !isFinite(res.profitFactor) || res.profitFactor >= 90 || res.profitFactor < 1.0) return;
@@ -23501,8 +23501,8 @@ async function runZZBacktest(skipFetch){
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
         + '<span style="font-weight:800;color:#FFD700;font-size:13px">🏆 TOP ' + top.length + ' PROPOSITIONS — classé par le gain</span>'
         + '<button type="button" onclick="window.__zzTop5Refaire=1;runZZBacktest(true)" style="background:rgba(251,191,36,0.15);border:1px solid #FBBF24;color:#FBBF24;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer">🔄 Recalculer</button></div>'
-        + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Filtres stricts : min 30 trades, PF non infini, stabilité 7/14/30j (PF ≥ 1.0) & déduplication unique par configuration.</div>'
-        + (cartes || '<div style="color:var(--muted);font-size:11px;padding:12px;background:var(--panel-2,#0F172A);border-radius:8px;border:1px solid var(--line);margin-top:8px">⚠️ Aucune configuration ne respecte l\'ensemble des critères de fiabilité (minimum 30 trades, Profit Factor non infini et PF ≥ 1,0 sur 7, 14 et 30 jours).</div>')
+        + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Filtres stricts : min 20 trades, PF non infini, stabilité 7/14/30j (PF ≥ 1.0) & déduplication unique par configuration.</div>'
+        + (cartes || '<div style="color:var(--muted);font-size:11px;padding:12px;background:var(--panel-2,#0F172A);border-radius:8px;border:1px solid var(--line);margin-top:8px">⚠️ Aucune configuration ne respecte l\'ensemble des critères de fiabilité (minimum 20 trades, Profit Factor non infini et PF ≥ 1,0 sur 7, 14 et 30 jours).</div>')
         + stabHtml
         + (window.__zzSensi || '')
         + (typeof window.__renderAuditSection === 'function' ? window.__renderAuditSection() : '')
@@ -23592,8 +23592,8 @@ async function runZZBacktest(skipFetch){
           for(const lev of levList){
             for(const pp of parts){
               const r0 = runSingleZZSim(dTF, mapTF, tp, sl, capBase, lev, feeRate, pp);
-              // A1. Filtre 30 trades minimum obligatoire
-              if(!r0 || !r0.tradesCount || r0.tradesCount < 30) continue;
+              // A1. Filtre 20 trades minimum obligatoire
+              if(!r0 || !r0.tradesCount || r0.tradesCount < 20) continue;
               // A2. Écarte Profit Factor infini (losses === 0 ou PF >= 90) et non rentable / ruiné
               if(r0.ruine || r0.netPnlTotal <= 0) continue;
               if(!r0.losses || r0.losses === 0 || !isFinite(r0.profitFactor) || r0.profitFactor >= 90 || r0.profitFactor < 1.0) continue;
@@ -24208,7 +24208,7 @@ function renderZZBtResultsUI(bestIdOverride){
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
         ${top5Combos.length === 0 ? `
           <div style="color:#FCA5A5;font-size:11px;padding:12px;background:var(--panel-2,#0F172A);border-radius:8px;border:1px solid rgba(239,68,68,0.4);grid-column:1/-1">
-            ⚠️ Aucune configuration en Timeframe ${{1:'1m',3:'3m',5:'5m',15:'15m',60:'1h',240:'4h'}[activeTfVal]} ne respecte l'ensemble des critères de fiabilité (minimum 30 trades, Profit Factor non infini, PF ≥ 1,0 et stabilité 7, 14 et 30 jours).
+            ⚠️ Aucune configuration en Timeframe ${{1:'1m',3:'3m',5:'5m',15:'15m',60:'1h',240:'4h'}[activeTfVal]} ne respecte l'ensemble des critères de fiabilité (minimum 20 trades, Profit Factor non infini, PF ≥ 1,0 et stabilité 7, 14 et 30 jours).
           </div>
         ` : top5Combos.map((c) => {
           const isSelected = (c.scId === activeZZBtScenario && Number(c.slVal) === Number(slPtsVal) && Number(c.lev) === Number(levVal));
@@ -24338,7 +24338,7 @@ function renderZZBtResultsUI(bestIdOverride){
                   <button type="button" disabled style="width:100%;background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:6px 5px;font-size:10px;font-weight:700;cursor:not-allowed;opacity:0.8" title="Lancement désactivé : configuration non validée">
                     🚫 Direct Exchange Désactivé (Non Validée)
                   </button>
-                  <div style="font-size:9px;color:#FCA5A5;margin-top:2px;text-align:center">⚠️ Écartée : <30 trades (${r?.tradesCount||0} tr) / PF non infini / non ruinée</div>
+                  <div style="font-size:9px;color:#FCA5A5;margin-top:2px;text-align:center">⚠️ Écartée : <20 trades (${r?.tradesCount||0} tr) / PF non infini / non ruinée</div>
                 ` : !isStrictCard ? `
                   <button type="button" disabled style="width:100%;background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:6px 5px;font-size:10px;font-weight:700;cursor:not-allowed;opacity:0.8" title="Lancement désactivé en mode Lookahead">
                     🚫 Direct Exchange Désactivé (Lookahead)
@@ -24655,7 +24655,7 @@ window.__zzCarte = function(v, k, utNom){
     + (liveActive 
         ? '<button type="button" onclick="window.openLiveExchangeModal(&quot;' + v.scId + '&quot;,' + (v.sl||0) + ',' + v.lev + ')" style="width:100%;margin-top:5px;background:linear-gradient(135deg,#10B981,#059669);color:#FFF;border:1px solid #10B981;border-radius:5px;padding:6px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 0 12px rgba(16,185,129,0.5)" title="Trading en argent réel en cours pour ce scénario — Cliquez pour gérer ou stopper">🔴 ARGENT RÉEL EN DIRECT (ACTIF) — Clic pour gérer / stopper</button>'
         : !isValidCard
-            ? '<button type="button" disabled style="width:100%;margin-top:5px;background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.4);border-radius:5px;padding:6px;font-size:11px;font-weight:700;cursor:not-allowed;opacity:0.8" title="Lancement désactivé : configuration non validée">🚫 Direct Exchange Désactivé (Non Validée)</button><div style="font-size:9.5px;color:#FCA5A5;margin-top:3px;text-align:center">⚠️ Écartée : min 30 trades / PF non infini / stabilité 7-14-30j non validée.</div>'
+            ? '<button type="button" disabled style="width:100%;margin-top:5px;background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.4);border-radius:5px;padding:6px;font-size:11px;font-weight:700;cursor:not-allowed;opacity:0.8" title="Lancement désactivé : configuration non validée">🚫 Direct Exchange Désactivé (Non Validée)</button><div style="font-size:9.5px;color:#FCA5A5;margin-top:3px;text-align:center">⚠️ Écartée : min 20 trades / PF non infini / stabilité 7-14-30j non validée.</div>'
             : !isStrictCard
                 ? '<button type="button" disabled style="width:100%;margin-top:5px;background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.4);border-radius:5px;padding:6px;font-size:11px;font-weight:700;cursor:not-allowed;opacity:0.8" title="Lancement désactivé en mode Lookahead">🚫 Direct Exchange Désactivé (Mode Lookahead)</button><div style="font-size:9.5px;color:#FCA5A5;margin-top:3px;text-align:center">⚠️ Résultat fictif avec biais d\'anticipation. Activez le "Mode strict" pour le trading réel.</div>'
                 : '<button type="button" onclick="window.openLiveExchangeModal(&quot;' + v.scId + '&quot;,' + (v.sl||0) + ',' + v.lev + ')" style="width:100%;margin-top:5px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0F172A;border:none;border-radius:5px;padding:6px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 3px 10px rgba(255,215,0,0.35);transition:all 0.2s ease" title="Lancer cette proposition exacte en argent réel sur votre exchange">🚀 Lancer en direct sur mon exchange en argent réel</button>'
@@ -31543,7 +31543,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
    Objectif : une seule action (un bouton), peu de variables,
    un Top 10 déjà filtré. Toutes les règles strictes sont
    appliquées ici en dur, elles ne sont pas optionnelles :
-     - minimum 30 trades
+     - minimum 20 trades
      - profit factor fini et >= 1.0
      - pas de compte ruiné
      - stabilité sur 3 semaines SEPAREES (non emboîtées)
@@ -31749,7 +31749,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
           <div style="color:#FF5252;font-weight:700;margin-bottom:6px">Aucune configuration ne passe les filtres.</div>
           <div style="color:#CBD5E1;font-size:12px;line-height:1.6">
             Sur ${ctx.nCandles} bougies (${ctx.days} j), aucune combinaison n'atteint simultanément
-            30 trades, un profit factor supérieur à 1 et une tenue sur les trois semaines séparées.<br>
+            20 trades, un profit factor supérieur à 1 et une tenue sur les trois semaines séparées.<br>
             Mode testé : ${modeTxt}.<br><br>
             C'est un résultat valide, pas une erreur.
           </div>
@@ -31760,7 +31760,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     let html = `
       <div style="margin-bottom:10px;font-size:12px;color:#7AA2FF">
         ${modeTxt} · ${ctx.nCandles} bougies (${ctx.days} j) · part engagée 10 % · frais 0,02 %/ordre<br>
-        <span style="color:#25D0A4">Filtres appliqués : ≥30 trades · PF fini ≥ 1,0 · non ruiné · stable sur 3 semaines séparées · dédupliqué</span>
+        <span style="color:#25D0A4">Filtres appliqués : ≥20 trades · PF fini ≥ 1,0 · non ruiné · stable sur 3 semaines séparées · dédupliqué</span>
       </div>
       <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -31820,7 +31820,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const counts = {};
     rejected.forEach(x => { counts[x.why] = (counts[x.why]||0) + 1; });
     const labels = {
-      trades:'moins de 30 trades', ruine:'compte ruiné', pf_inf:'PF infini',
+      trades:'moins de 20 trades', ruine:'compte ruiné', pf_inf:'PF infini',
       pf:'PF global < 1,00', pnl:'PnL ≤ 0', semaine:'a échoué sur une semaine'
     };
     const repart = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])
@@ -32450,7 +32450,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
           step++;
           if(step%25===0){ btn.textContent='⏳ '+V.k+' — '+step+' tests…'; await new Promise(r=>setTimeout(r,0)); }
           const r = runSingleZZSim(dTF, map, tp.tp, sl, CAP, lev, FEE, RISK);
-          if(!r || r.tradesCount<30 || r.ruine || !r.losses) continue;
+          if(!r || r.tradesCount<20 || r.ruine || !r.losses) continue;
           if(!isFinite(r.profitFactor) || r.profitFactor>=90) continue;
           nTot++;
           if(r.profitFactor<1) continue;
@@ -33954,7 +33954,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2108-0420';
+  window.__LUMEN_BUILD = 'B-2108-0510';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -34745,7 +34745,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       trades.length + ' appariées · ' + sansSortie.length + ' entrées sans sortie, exclues du calcul.</div></details>';
 
     const manques = [];
-    if(trades.length < 30) manques.push('moins de 30 trades (' + trades.length + ')');
+    if(trades.length < 20) manques.push('moins de 20 trades (' + trades.length + ')');
     if(!(pf >= 1))         manques.push('profit factor sous 1');
     if(!stable)            manques.push('ne tient pas sur les trois tiers');
     if(!(pnl > 0))         manques.push('PnL négatif');
@@ -35888,7 +35888,7 @@ function choisirMeilleureStrat(res){
   if(!Array.isArray(res) || !res.length) return null;
   /* On écarte d'abord ce qui n'est pas exploitable : trop peu de trades, ou
      une liquidation, qui disqualifie quoi qu'en dise le score. */
-  const valables = res.filter(x => x && !x.err && x.trades >= 10 && !(x.liq > 0));
+  const valables = res.filter(x => x && !x.err && x.trades >= 20 && !(x.liq > 0));
   const pool = valables.length ? valables : res.filter(x => x && !x.err);
   if(!pool.length) return null;
   const troisPremieres = pool.slice().sort((a,b) => (b.note||0) - (a.note||0)).slice(0,3);
