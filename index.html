@@ -18003,6 +18003,11 @@ ${escapeHtml(body)}
 }
 
 function alertNewPhoneSignals(sigs, d){
+  /* Diagnostic : on compte à chaque étape pour savoir où les signaux se
+     perdent. Sans ça, « je ne reçois rien » n'a qu'une seule réponse
+     possible : essayer au hasard. Affiché dans le panneau des notifications. */
+  const diag = { total: (sigs||[]).length, fenetre:0, deja:0, neufs:0, envoyes:0 };
+  window.__diagAlertes = diag;
   const cfg = getPhoneNotifConfig();
   if(!cfg.enabled || !sigs || !sigs.length) return;
 
@@ -18079,6 +18084,7 @@ function alertNewPhoneSignals(sigs, d){
        signaux déjà vus, pas par cette fenêtre : l'élargir ne crée pas de
        répétition, elle rattrape seulement ce qui était perdu. */
     if(sigIdx != null && sigIdx < d.length - 120) continue;
+    diag.fenetre++;
     if(sigTime && (now - sigTime > maxAge)) continue;
 
     const sigType = sig.type || (sig.dir === 1 ? 'ACHAT' : 'VENTE');
@@ -18086,8 +18092,10 @@ function alertNewPhoneSignals(sigs, d){
     const source = sig.source || 'sig';
     const id = `${key}|${source}|${sigTime || sigIdx}|${sigType}|${sigTag}|${sig.dir}`;
 
+    if(seenSet.has(id)) diag.deja++;
     if(!seenSet.has(id)) {
       seenSet.add(id);
+      diag.neufs++;
       fresh.push({ ...sig, type: sigType, tag: sigTag, time: sigTime, idx: sigIdx });
     }
   }
@@ -18098,6 +18106,8 @@ function alertNewPhoneSignals(sigs, d){
   } catch(e){}
 
   if(!fresh.length) return;
+  diag.envoyes = fresh.length;
+  window.__derniereAlerte = Date.now();
 
   for(const sig of fresh) {
     const symbolClean = state.symbol.replace('USDT', '');
@@ -18147,10 +18157,15 @@ function majTemoinVeille(){
   if(!el) return;
   const d = new Date(window.__derniereVeille);
   const p = n => String(n).padStart(2, '0');
-  el.textContent = 'Surveillance active \u2014 dernier contrôle à ' +
-    p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) +
-    ' (' + window.__veilleCompteur + ' depuis l\'ouverture)';
-  el.style.color = '#10B981';
+  const g = window.__diagAlertes || {};
+  const der = window.__derniereAlerte
+    ? (function(){ const x = new Date(window.__derniereAlerte);
+        return p(x.getHours()) + ':' + p(x.getMinutes()); })()
+    : 'aucune';
+  el.textContent = 'Contrôle ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) +
+    ' \u00b7 ' + (g.total || 0) + ' signaux \u00b7 ' + (g.fenetre || 0) + ' dans la fenêtre \u00b7 ' +
+    (g.deja || 0) + ' déjà vus \u00b7 ' + (g.neufs || 0) + ' neufs \u00b7 dernière alerte : ' + der;
+  el.style.color = window.__derniereAlerte ? '#10B981' : ((g.fenetre > 0) ? '#FF9F1C' : '#94A3B8');
 }
 
 /* Si plus rien ne passe pendant deux minutes, la surveillance dort. */
@@ -33964,7 +33979,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2208-2010';
+  window.__LUMEN_BUILD = 'B-2208-2140';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
