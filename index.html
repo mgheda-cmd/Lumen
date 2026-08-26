@@ -5369,7 +5369,7 @@ const state = {
     fmc:{on:false,tf:'chart',lenCore:14,smoothCore:5,lenBal:14,smoothBal:7,maMethod:'EMA',
       scaleCore:7,lenFlow:25,smoothFlow:10,forceCandle:false,trendLen:50,trendMult:1.5,
       knnK:5,knnWindow:400,obLevel:70,osLevel:30,pivotLength:2,scoreThresh:80,
-      oneSignalPerWave:true,srcCore:'close',flowHeightScale:0.5,flowExtremeLevel:15,waveBaseTransp:60,useDynamicLevels:true,levelLineWidth:3,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
+      oneSignalPerWave:true,srcCore:'close',flowHeightScale:0.5,flowExtremeLevel:15,waveBaseTransp:60,centerGradTransp:60,coreBalTransp:30,useDynamicLevels:true,levelLineWidth:3,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
       showScore:true,showContrarian:true,showDivergence:true,showWaves:true,showFlow:true,
       cBull:'#06A22F',cBear:'#CF1717',showOscillator:true},
     sqz_mom:{on:true,showSqzLevels:true,showStats:false,statsLookback:2000,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true,c1Up:'#00E676',c1UpDn:'#00897B',c1Dn:'#FF5252',c1DnUp:'#B71C1C',c2Up:'#00E5FF',c2UpDn:'#0288D1',c2Dn:'#FF9F1C',c2DnUp:'#B36200',c2Line:'#00E5FF'},
@@ -10905,10 +10905,15 @@ function drawFmcSub(p, s, e, cw, cle) {
   }
 
   /* 2. Dégradé du noyau vers la ligne médiane. */
+  /* Le Pine exprime des TRANSPARENCES : centerGradTransp 60 signifie 40 %
+     d'opacité, coreBalTransp 30 signifie 70 %. J'avais mis 18 % dans les deux
+     cas, d'où des aplats bien plus pâles qu'à l'écran d'origine. */
+  const tCentre = (S(K,'centerGradTransp') != null) ? +S(K,'centerGradTransp') : 60;
+  const tCoreBal = (S(K,'coreBalTransp') != null) ? +S(K,'coreBalTransp') : 30;
   const hautPart = r.core.map(v => (v != null && v > 50) ? v : null);
   const basPart  = r.core.map(v => (v != null && v < 50) ? v : null);
-  aire(hautPart, 50, cBull, .18);
-  aire(basPart,  50, cBear, .18);
+  aire(hautPart, 50, cBull, (100 - tCentre) / 100);
+  aire(basPart,  50, cBear, (100 - tCentre) / 100);
 
   /* 3. Zones et ligne médiane. La transparence suit la distance du noyau. */
   const dyn = (lvl, col, versHaut) => {
@@ -10945,7 +10950,7 @@ function drawFmcSub(p, s, e, cw, cle) {
 
   /* 5. Remplissage entre noyau et balance, puis les deux lignes. */
   const colLigne = (r.core[der] >= r.bal[der]) ? cBull : cBear;
-  ctx.fillStyle = hexA(colLigne, .18);
+  ctx.fillStyle = hexA(colLigne, (100 - tCoreBal) / 100);
   ctx.beginPath();
   let ouv = false;
   for (let i = s; i <= e; i++) {
@@ -10978,6 +10983,28 @@ function drawFmcSub(p, s, e, cw, cle) {
     for (const g of (r.contraShort||[])) if (g.i>=s && g.i<=e) forme(xOf(g.i), yOf(ob+6), 'tri', hexA(cBear,.75), false);
   }
   if (S(K,'showDivergence') !== false) {
+    /* Le Pine trace un point sur CHAQUE pivot du noyau, coloré seulement
+       quand il porte une divergence, presque transparent sinon. C'est le
+       semis de petits cercles visible à l'écran d'origine. */
+    const pivots = new Map();
+    for (const g of (r.divBull||[])) pivots.set(g.i, cBull);
+    for (const g of (r.divBear||[])) pivots.set(g.i, cBear);
+    const pl = Math.max(1, +S(K,'pivotLength') || 2);
+    for (let i = Math.max(s, pl); i <= Math.min(e, r.core.length - 1 - pl); i++) {
+      let bas = true, haut = true;
+      for (let q = 1; q <= pl; q++) {
+        if (r.core[i] >= r.core[i-q] || r.core[i] >= r.core[i+q]) bas = false;
+        if (r.core[i] <= r.core[i-q] || r.core[i] <= r.core[i+q]) haut = false;
+      }
+      if (!bas && !haut) continue;
+      const col = pivots.get(i);
+      ctx.beginPath();
+      ctx.arc(xOf(i), yOf(r.core[i]), col ? 3 : 2, 0, Math.PI * 2);
+      ctx.strokeStyle = col ? col : hexA('#8B98A5', .45);
+      ctx.lineWidth = col ? 2 : 1;
+      ctx.stroke();
+    }
+
     ctx.font = 'bold 8px "IBM Plex Sans", sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (const [liste, col, txt, dy] of [[r.divBull, cBull, 'Div \u25b2', 9], [r.divBear, cBear, 'Div \u25bc', -9]]) {
@@ -16954,7 +16981,7 @@ const SCHEMA={
     {k:'showContrarian',t:'bool',lab:'Afficher les signaux contrariens',def:true},
     {k:'showWaves',t:'bool',lab:'Afficher la tension noyau/balance',def:true},
     {k:'showFlow',t:'bool',lab:'Afficher la pression de flux',def:true},
-    {k:'showOscillator',t:'bool',lab:'Afficher le panneau',def:true},{k:'srcCore',t:'choice',lab:'Source',opts:[{v:'close',t:'Clôture'},{v:'open',t:'Ouverture'},{v:'high',t:'Haut'},{v:'low',t:'Bas'},{v:'hl2',t:'hl2'},{v:'hlc3',t:'hlc3'}]},{k:'flowHeightScale',t:'num',lab:'Flux — hauteur de la vague',def:0.5},{k:'flowExtremeLevel',t:'num',lab:'Flux — seuil extrême',def:15},{k:'waveBaseTransp',t:'num',lab:'Tension — transparence de base',def:60},{k:'useDynamicLevels',t:'bool',lab:'Zones à transparence dynamique',def:true},{k:'levelLineWidth',t:'num',lab:'Épaisseur des zones',def:3},{k:'showDivergence',t:'bool',lab:'Afficher les divergences',def:true},
+    {k:'showOscillator',t:'bool',lab:'Afficher le panneau',def:true},{k:'srcCore',t:'choice',lab:'Source',opts:[{v:'close',t:'Clôture'},{v:'open',t:'Ouverture'},{v:'high',t:'Haut'},{v:'low',t:'Bas'},{v:'hl2',t:'hl2'},{v:'hlc3',t:'hlc3'}]},{k:'flowHeightScale',t:'num',lab:'Flux — hauteur de la vague',def:0.5},{k:'flowExtremeLevel',t:'num',lab:'Flux — seuil extrême',def:15},{k:'waveBaseTransp',t:'num',lab:'Tension — transparence de base',def:60},{k:'useDynamicLevels',t:'bool',lab:'Zones à transparence dynamique',def:true},{k:'levelLineWidth',t:'num',lab:'Épaisseur des zones',def:3},{k:'showDivergence',t:'bool',lab:'Afficher les divergences',def:true},{k:'centerGradTransp',t:'num',lab:'Transparence du dégradé vers 50',def:60},{k:'coreBalTransp',t:'num',lab:'Transparence entre noyau et balance',def:30},
     {k:'cBull',t:'col',lab:'Couleur haussière',def:'#06A22F'},
     {k:'cBear',t:'col',lab:'Couleur baissière',def:'#CF1717'}
   ]},
@@ -34090,7 +34117,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2208-2320';
+  window.__LUMEN_BUILD = 'B-2608-0140';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
