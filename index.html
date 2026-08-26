@@ -4013,11 +4013,19 @@ const calc = {
      Le score compte les modules qui vont dans le sens de la bougie en cours,
      pondérés. Au-delà du seuil, il produit un signal.
      ================================================= */
+  /* Portage fidèle du Pine « Flow Momentum Composite » de Uncle_the_shooter.
+     Chaque module suit la source ligne à ligne. Les écarts de mon premier
+     portage sont corrigés, notamment l'étiquetage du KNN : le Pine associe
+     les caractéristiques d'une bougie au mouvement de la SUIVANTE, ce qui lui
+     permet de prédire. Ma version les associait au mouvement déjà survenu,
+     et ne prédisait donc rien. */
   fmc(d, opt = {}) {
     const vide = { core:[], bal:[], flow:[], trend:[], knn:[], score:[], dir:[],
+                   tension:[], waveHist:[], matchCount:[], baroPct:[],
+                   flowBull:[], flowBear:[], flowBullNorm:[], flowBearNorm:[],
                    buys:[], sells:[], contraLong:[], contraShort:[],
-                   divBull:[], divBear:[], tension:[] };
-    if (!d || d.length < 30) return vide;
+                   divBull:[], divBear:[], strengthening:[] };
+    if (!d || d.length < 5) return vide;
 
     const N = d.length;
     const lenCore   = +opt.lenCore   || 14;
@@ -4026,7 +4034,7 @@ const calc = {
     const smBal     = +opt.smoothBal || 7;
     const lenFlow   = +opt.lenFlow   || 25;
     const smFlow    = +opt.smoothFlow|| 10;
-    const scaleCore = opt.scaleCore != null ? +opt.scaleCore : 7.0;
+    const scale     = opt.scaleCore != null ? +opt.scaleCore : 7.0;
     const trendLen  = +opt.trendLen  || 50;
     const trendMult = opt.trendMult != null ? +opt.trendMult : 1.5;
     const knnK      = +opt.knnK      || 5;
@@ -4036,209 +4044,222 @@ const calc = {
     const pivotLen  = +opt.pivotLength || 2;
     const seuil     = opt.scoreThresh != null ? +opt.scoreThresh : 80;
     const unParVague = opt.oneSignalPerWave !== false;
+    const hauteurFlux = opt.flowHeightScale != null ? +opt.flowHeightScale : 0.5;
+    const fluxExtreme = opt.flowExtremeLevel != null ? +opt.flowExtremeLevel : 15.0;
     const W = { mom:+opt.wMom||20, flow:+opt.wFlow||20, trend:+opt.wTrend||20,
                 knn:+opt.wKnn||20, wave:+opt.wWave||20 };
+    const MULT_VAGUE = 2.0;
 
-    const c = new Float64Array(N), h = new Float64Array(N), l = new Float64Array(N), o = new Float64Array(N);
-    const v = new Float64Array(N);
+    const c = new Float64Array(N), h = new Float64Array(N),
+          l = new Float64Array(N), o = new Float64Array(N), v = new Float64Array(N);
     for (let i = 0; i < N; i++) { c[i]=+d[i].c; h[i]=+d[i].h; l[i]=+d[i].l; o[i]=+d[i].o; v[i]=+(d[i].v||0); }
 
-    const ema = (src, n) => {
-      const out = new Float64Array(N); const k = 2/(n+1);
-      let acc = src[0];
-      for (let i=0;i<N;i++){ acc = i? src[i]*k + acc*(1-k) : src[0]; out[i]=acc; }
-      return out;
-    };
-    const rma = (src, n) => {
-      const out = new Float64Array(N); let acc = src[0];
-      for (let i=0;i<N;i++){ acc = i? (acc*(n-1)+src[i])/n : src[0]; out[i]=acc; }
-      return out;
-    };
-    const sma = (src, n) => {
-      const out = new Float64Array(N); let som=0;
-      for (let i=0;i<N;i++){ som+=src[i]; if(i>=n) som-=src[i-n]; out[i]= som/Math.min(i+1,n); }
-      return out;
-    };
+    /* srcCore : le Pine permet de choisir la série. */
+    const src = (function(){
+      const q = opt.srcCore || 'close';
+      if (q === 'open') return o;
+      if (q === 'high') return h;
+      if (q === 'low')  return l;
+      if (q === 'hl2'){ const a=new Float64Array(N); for(let i=0;i<N;i++) a[i]=(h[i]+l[i])/2; return a; }
+      if (q === 'hlc3'){ const a=new Float64Array(N); for(let i=0;i<N;i++) a[i]=(h[i]+l[i]+c[i])/3; return a; }
+      return c;
+    })();
+
+    const ema = (x,n)=>{ const r=new Float64Array(N), k=2/(n+1); let a=x[0];
+      for(let i=0;i<N;i++){ a = i? x[i]*k + a*(1-k) : x[0]; r[i]=a; } return r; };
+    const rma = (x,n)=>{ const r=new Float64Array(N); let a=x[0];
+      for(let i=0;i<N;i++){ a = i? (a*(n-1)+x[i])/n : x[0]; r[i]=a; } return r; };
+    const sma = (x,n)=>{ const r=new Float64Array(N); let som=0;
+      for(let i=0;i<N;i++){ som+=x[i]; if(i>=n) som-=x[i-n]; r[i]=som/Math.min(i+1,n); } return r; };
     const meth = opt.maMethod || 'EMA';
-    const moy = (src, n) => meth==='SMA'? sma(src,n) : meth==='RMA'? rma(src,n) : ema(src,n);
+    const moy = (x,n)=> meth==='SMA'? sma(x,n) : meth==='RMA'? rma(x,n) : ema(x,n);
+    const borne = (x,a,b)=> Math.max(a, Math.min(b, x));
 
-    // ATR de Wilder
     const tr = new Float64Array(N);
-    for (let i=0;i<N;i++){
-      tr[i] = i? Math.max(h[i]-l[i], Math.abs(h[i]-c[i-1]), Math.abs(l[i]-c[i-1])) : (h[i]-l[i]);
-    }
-    const atrC = rma(tr, lenCore), atrB = rma(tr, lenBal), atrT = rma(tr, trendLen);
+    for (let i=0;i<N;i++)
+      tr[i] = i ? Math.max(h[i]-l[i], Math.abs(h[i]-c[i-1]), Math.abs(l[i]-c[i-1])) : (h[i]-l[i]);
+    const atrCore = rma(tr, lenCore), atrBal = rma(tr, lenBal), atrTr = rma(tr, trendLen);
 
-    /* Momentum : la variation sur len bougies, divisée par l'ATR, recentrée
-       sur 50 et bornée à 0-100. scaleCore règle la vitesse de saturation. */
+    /* f_coreEngine : variation sur len bougies rapportée à l'ATR, recentrée
+       sur 50, bornée, puis lissée. */
     const noyau = (len, sm, atr) => {
       const brut = new Float64Array(N);
       for (let i=0;i<N;i++){
-        const p = i>=len ? c[i-len] : c[0];
-        const a = atr[i] > 0 ? atr[i] : 0;
-        const nd = a>0 ? (c[i]-p)/a : 0;
-        brut[i] = Math.max(0, Math.min(100, 50 + nd*scaleCore));
+        const p = i>=len ? src[i-len] : src[0];
+        const a = atr[i];
+        const nd = a>0 ? (src[i]-p)/a : 0;
+        brut[i] = borne(50 + nd*scale, 0, 100);
       }
       return moy(brut, sm);
     };
-    const core = noyau(lenCore, smCore, atrC);
-    const bal  = noyau(lenBal,  smBal,  atrB);
+    const core = noyau(lenCore, smCore, atrCore);
+    const bal  = noyau(lenBal,  smBal,  atrBal);
 
-    /* Flow : au volume quand il existe, au corps de bougie sinon. */
-    let ecartVol = 0, moyVol = 0;
-    for (let i=0;i<N;i++) moyVol += v[i]; moyVol /= N;
-    for (let i=0;i<N;i++) ecartVol += (v[i]-moyVol)*(v[i]-moyVol);
-    ecartVol = Math.sqrt(ecartVol/N);
-    const auVolume = (opt.forceCandle !== true) && ecartVol > 0;
-
-    const brutFlow = new Float64Array(N);
-    const poids = new Float64Array(N);
-    for (let i=0;i<N;i++){
-      if (auVolume) { brutFlow[i] = c[i]>o[i]? v[i] : c[i]<o[i]? -v[i] : 0; poids[i] = v[i]; }
-      else { const r = h[i]-l[i]; brutFlow[i] = r>0? (c[i]-o[i])/r : 0; poids[i] = 1; }
+    /* Flow Pressure. Le Pine détecte le volume par son écart-type sur 20. */
+    let volOk = false;
+    if (opt.forceCandle !== true && N >= 20) {
+      let som=0; for(let i=N-20;i<N;i++) som+=v[i];
+      const m=som/20; let sq=0;
+      for(let i=N-20;i<N;i++) sq+=(v[i]-m)*(v[i]-m);
+      volOk = Math.sqrt(sq/20) > 0;
     }
-    const pct = new Float64Array(N);
+    const brutFlux = new Float64Array(N), poids = new Float64Array(N);
+    for (let i=0;i<N;i++){
+      if (volOk){ brutFlux[i] = c[i]>o[i]? v[i] : c[i]<o[i]? -v[i] : 0; poids[i] = v[i]; }
+      else { const r=h[i]-l[i]; brutFlux[i] = r>0? (c[i]-o[i])/r : 0; poids[i] = 1; }
+    }
+    const pctFlux = new Float64Array(N);
     let sF=0, sP=0;
     for (let i=0;i<N;i++){
-      sF += brutFlow[i]; sP += poids[i];
-      if (i>=lenFlow){ sF -= brutFlow[i-lenFlow]; sP -= poids[i-lenFlow]; }
-      pct[i] = sP!==0 ? (sF/sP)*50 + 50 : 50;
+      sF+=brutFlux[i]; sP+=poids[i];
+      if(i>=lenFlow){ sF-=brutFlux[i-lenFlow]; sP-=poids[i-lenFlow]; }
+      pctFlux[i] = sP!==0 ? sF/sP*50 + 50 : 50;
     }
-    const flow = moy(pct, smFlow);
+    const flow = moy(pctFlux, smFlow);
 
-    /* Structure : bande de Keltner, la direction ne bascule qu'à la sortie. */
+    /* Structure : bande de Keltner, bascule seulement à la sortie. */
     const baseT = ema(c, trendLen);
     const trend = new Int8Array(N);
-    let haussier = true;
+    let haut = true;
     for (let i=0;i<N;i++){
-      const bande = atrT[i]*trendMult;
-      if (haussier && c[i] < baseT[i]-bande) haussier = false;
-      else if (!haussier && c[i] > baseT[i]+bande) haussier = true;
-      trend[i] = haussier ? 1 : -1;
+      const b = atrTr[i]*trendMult;
+      if (haut && c[i] < baseT[i]-b) haut = false;
+      else if (!haut && c[i] > baseT[i]+b) haut = true;
+      trend[i] = haut ? 1 : -1;
     }
 
-    /* KNN : chaque bougie devient une observation à trois dimensions, étiquetée
-       par ce qu'a fait la bougie suivante. On vote sur les k plus proches.
-       Distance moyenne trop grande : on s'abstient, valeur neutre. */
-    const knn = new Float64Array(N).fill(50);
-    const mM=[], mF=[], mT=[], mL=[];
-    for (let i=1;i<N;i++){
-      const fM = core[i]/100, fF = flow[i]/100, fT = (trend[i]+1)/2;
-      if (mM.length >= knnK){
-        /* Sélection directe des k plus proches, sans trier les 400 voisins :
-           trier à chaque bougie coûtait une seconde entière sur 6 000 bougies.
-           On garde une petite liste de k éléments, triée par insertion — k
-           vaut 5, l'insertion est immédiate. On compare aussi les distances
-           au carré, la racine n'est prise que sur les k retenus. */
-        const dBest = new Float64Array(knnK).fill(Infinity);
-        const lBest = new Float64Array(knnK);
-        for (let j=0;j<mM.length;j++){
-          const dm=fM-mM[j], df=fF-mF[j], dt=fT-mT[j];
-          const d2 = dm*dm+df*df+dt*dt;
-          if (d2 >= dBest[knnK-1]) continue;
-          let p = knnK-1;
-          while (p > 0 && dBest[p-1] > d2){ dBest[p]=dBest[p-1]; lBest[p]=lBest[p-1]; p--; }
-          dBest[p]=d2; lBest[p]=mL[j];
-        }
-        let sv=0, st=0, sd=0;
-        for (let k=0;k<knnK;k++){
-          const dk = Math.sqrt(dBest[k]);
-          const w = 1/(dk+0.05);
-          sv += lBest[k]*w; st += w; sd += dk;
-        }
-        const vote = st>0 ? sv/st*100 : 50;
-        knn[i] = (sd/knnK > 0.6) ? 50 : vote;
-      }
-      mM.push(fM); mF.push(fF); mT.push(fT);
-      mL.push(c[i] > c[i-1] ? 1 : 0);
-      if (mM.length > knnWin){ mM.shift(); mF.shift(); mT.shift(); mL.shift(); }
-    }
-
-    /* Tension entre le noyau et la ligne de balance. Une vague qui se creuse
-       compte pour le score ; sa première bougie ne compte pas. */
-    const tension = new Float64Array(N);
-    const vagueH = new Uint8Array(N), vagueB = new Uint8Array(N);
+    /* Tension entre noyau et balance, et vague qui se creuse. */
+    const tension = new Float64Array(N), waveHist = new Float64Array(N);
+    const vagueH = new Uint8Array(N), vagueB = new Uint8Array(N), renforce = new Uint8Array(N);
     for (let i=0;i<N;i++){
       tension[i] = core[i]-bal[i];
+      waveHist[i] = borne(50 + tension[i]*MULT_VAGUE, 0, 100);
       if (i>0){
-        const haut = tension[i] > 0, hautAv = tension[i-1] > 0;
-        vagueH[i] = (haut && hautAv && tension[i] > tension[i-1]) ? 1 : 0;
-        vagueB[i] = (!haut && !hautAv && tension[i] < tension[i-1]) ? 1 : 0;
+        const hh = tension[i] > 0, ha = tension[i-1] > 0;
+        vagueH[i] = (hh && ha && tension[i] > tension[i-1]) ? 1 : 0;
+        vagueB[i] = (!hh && !ha && tension[i] < tension[i-1]) ? 1 : 0;
+        renforce[i] = (vagueH[i] || vagueB[i]) ? 1 : 0;
       }
     }
 
-    /* Score : on compte les modules d'accord avec la couleur de la bougie. */
+    /* KNN. Le Pine met les caractéristiques en attente une bougie, puis les
+       étiquette avec le mouvement de la bougie suivante. C'est ce décalage
+       qui fait la prédiction — sans lui, on classe un mouvement déjà connu. */
+    const knn = new Float64Array(N).fill(50);
+    const mM=[], mF=[], mT=[], mL=[];
+    let attMom=null, attFlow=null, attTrend=null;
+    for (let i=1;i<N;i++){
+      if (attMom !== null){
+        mM.push(attMom); mF.push(attFlow); mT.push(attTrend);
+        mL.push(c[i] > c[i-1] ? 1 : 0);          // étiquette = mouvement suivant
+        if (mM.length > knnWin){ mM.shift(); mF.shift(); mT.shift(); mL.shift(); }
+      }
+      const fM = core[i]/100, fF = flow[i]/100, fT = (trend[i]+1)/2;
+      if (mM.length >= knnK){
+        const dB = new Float64Array(knnK).fill(Infinity);
+        const lB = new Float64Array(knnK);
+        for (let q=0;q<mM.length;q++){
+          const a=fM-mM[q], b=fF-mF[q], e=fT-mT[q];
+          const d2 = a*a+b*b+e*e;
+          if (d2 >= dB[knnK-1]) continue;
+          let p = knnK-1;
+          while (p>0 && dB[p-1] > d2){ dB[p]=dB[p-1]; lB[p]=lB[p-1]; p--; }
+          dB[p]=d2; lB[p]=mL[q];
+        }
+        let sv=0, st=0, sd=0;
+        for (let q=0;q<knnK;q++){
+          const dk = Math.sqrt(dB[q]);
+          const w = 1/(dk+0.05);
+          sv += lB[q]*w; st += w; sd += dk;
+        }
+        const vote = st>0 ? sv/st*100 : 50;
+        knn[i] = (sd/knnK > 0.6) ? 50 : vote;   // trop loin : on s'abstient
+      }
+      attMom = fM; attFlow = fF; attTrend = fT;
+    }
+
+    /* Score composite et baromètre de confluence. */
     const score = new Float64Array(N), sens = new Int8Array(N);
+    const accord = new Int8Array(N), baro = new Float64Array(N);
     const buys=[], sells=[];
     const total = W.mom+W.flow+W.trend+W.knn+W.wave;
     let buUse=false, seUse=false;
     for (let i=1;i<N;i++){
       const vert = c[i] > o[i], rouge = c[i] < o[i];
       const monte = core[i] > core[i-1], baisse = core[i] < core[i-1];
-      let pts = 0;
-      if (vert){
-        if (core[i] > 50 && monte) pts += W.mom;
-        if (flow[i] > 50)          pts += W.flow;
-        if (trend[i] === 1)        pts += W.trend;
-        if (knn[i] > 60)           pts += W.knn;
-        if (vagueH[i])             pts += W.wave;
-      } else if (rouge){
-        if (core[i] < 50 && baisse) pts += W.mom;
-        if (flow[i] < 50)           pts += W.flow;
-        if (trend[i] === -1)        pts += W.trend;
-        if (knn[i] < 40)            pts += W.knn;
-        if (vagueB[i])              pts += W.wave;
-      }
+      const mods = vert
+        ? [core[i]>50&&monte, flow[i]>50, trend[i]===1, knn[i]>60, !!vagueH[i]]
+        : rouge
+        ? [core[i]<50&&baisse, flow[i]<50, trend[i]===-1, knn[i]<40, !!vagueB[i]]
+        : [false,false,false,false,false];
+      const poidsMod = [W.mom, W.flow, W.trend, W.knn, W.wave];
+      let pts=0, n=0;
+      for (let q=0;q<5;q++) if (mods[q]){ pts += poidsMod[q]; n++; }
+      accord[i] = n;
+      baro[i] = n/5*100;
       sens[i] = vert ? 1 : rouge ? -1 : 0;
-      score[i] = total > 0 ? pts/total*100 : 0;
+      score[i] = total>0 ? pts/total*100 : 0;
 
-      // une nouvelle vague commence à chaque franchissement de 50
-      if ((core[i] > 50 && core[i-1] <= 50) || (core[i] < 50 && core[i-1] >= 50)){
-        buUse = false; seUse = false;
-      }
+      if ((core[i]>50 && core[i-1]<=50) || (core[i]<50 && core[i-1]>=50)){ buUse=false; seUse=false; }
       if (vert && score[i] >= seuil && (!unParVague || !buUse)){
-        buys.push({ i, t:d[i].t, price:c[i], score:score[i] });
+        buys.push({ i, t:d[i].t, price:c[i], score:score[i], accord:n });
         if (unParVague) buUse = true;
       }
       if (rouge && score[i] >= seuil && (!unParVague || !seUse)){
-        sells.push({ i, t:d[i].t, price:c[i], score:score[i] });
+        sells.push({ i, t:d[i].t, price:c[i], score:score[i], accord:n });
         if (unParVague) seUse = true;
       }
     }
 
-    /* Contrarien : retour du noyau depuis une zone extrême. */
+    /* Contrarien : franchissement des zones extrêmes. */
     const contraLong=[], contraShort=[];
     for (let i=1;i<N;i++){
       if (core[i-1] <= osLvl && core[i] > osLvl) contraLong.push({ i, t:d[i].t, price:c[i] });
       if (core[i-1] >= obLvl && core[i] < obLvl) contraShort.push({ i, t:d[i].t, price:c[i] });
     }
 
-    /* Divergences sur le noyau : prix plus bas, noyau plus haut, et l'inverse. */
+    /* Divergences sur le noyau, entre deux pivots consécutifs. */
     const divBull=[], divBear=[];
     const creux=[], sommets=[];
     for (let j=pivotLen; j<N-pivotLen; j++){
-      let bas=true, haut=true;
-      for (let k=1;k<=pivotLen;k++){
-        if (core[j] >= core[j-k] || core[j] >= core[j+k]) bas=false;
-        if (core[j] <= core[j-k] || core[j] <= core[j+k]) haut=false;
+      let bas=true, hh=true;
+      for (let q=1;q<=pivotLen;q++){
+        if (core[j] >= core[j-q] || core[j] >= core[j+q]) bas=false;
+        if (core[j] <= core[j-q] || core[j] <= core[j+q]) hh=false;
       }
-      if (bas)  creux.push(j);
-      if (haut) sommets.push(j);
+      if (bas) creux.push(j);
+      if (hh)  sommets.push(j);
     }
-    for (let k=1;k<creux.length;k++){
-      const a=creux[k-1], b=creux[k];
-      if (l[b] < l[a] && core[b] > core[a]) divBull.push({ i:b, t:d[b].t, price:c[b] });
+    for (let q=1;q<creux.length;q++){
+      const a=creux[q-1], b=creux[q];
+      if (l[b] < l[a] && core[b] > core[a]) divBull.push({ i:b, t:d[b].t, price:c[b], core:core[b] });
     }
-    for (let k=1;k<sommets.length;k++){
-      const a=sommets[k-1], b=sommets[k];
-      if (h[b] > h[a] && core[b] < core[a]) divBear.push({ i:b, t:d[b].t, price:c[b] });
+    for (let q=1;q<sommets.length;q++){
+      const a=sommets[q-1], b=sommets[q];
+      if (h[b] > h[a] && core[b] < core[a]) divBear.push({ i:b, t:d[b].t, price:c[b], core:core[b] });
+    }
+
+    /* Vague de flux : hauteur signée, et seuil au-delà duquel elle fonce. */
+    const fluxHaut=new Float64Array(N), fluxBas=new Float64Array(N);
+    const fluxHautN=new Float64Array(N), fluxBasN=new Float64Array(N);
+    const extreme = fluxExtreme * hauteurFlux;
+    for (let i=0;i<N;i++){
+      const sg = flow[i] - 50;
+      fluxHaut[i] = sg > 0 ? sg*hauteurFlux : 0;
+      fluxBas[i]  = sg < 0 ? sg*hauteurFlux : 0;
+      fluxHautN[i] = Math.min(fluxHaut[i], extreme);
+      fluxBasN[i]  = Math.max(fluxBas[i], -extreme);
     }
 
     return { core:Array.from(core), bal:Array.from(bal), flow:Array.from(flow),
              trend:Array.from(trend), knn:Array.from(knn), score:Array.from(score),
              dir:Array.from(sens), tension:Array.from(tension),
+             waveHist:Array.from(waveHist), strengthening:Array.from(renforce),
+             matchCount:Array.from(accord), baroPct:Array.from(baro),
+             flowBull:Array.from(fluxHaut), flowBear:Array.from(fluxBas),
+             flowBullNorm:Array.from(fluxHautN), flowBearNorm:Array.from(fluxBasN),
              buys, sells, contraLong, contraShort, divBull, divBear,
-             obLvl, osLvl, auVolume };
+             obLvl, osLvl, auVolume: volOk };
   },
 
   sqzMom(d, opt={}){
@@ -5348,7 +5369,7 @@ const state = {
     fmc:{on:false,tf:'chart',lenCore:14,smoothCore:5,lenBal:14,smoothBal:7,maMethod:'EMA',
       scaleCore:7,lenFlow:25,smoothFlow:10,forceCandle:false,trendLen:50,trendMult:1.5,
       knnK:5,knnWindow:400,obLevel:70,osLevel:30,pivotLength:2,scoreThresh:80,
-      oneSignalPerWave:true,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
+      oneSignalPerWave:true,srcCore:'close',flowHeightScale:0.5,flowExtremeLevel:15,waveBaseTransp:60,useDynamicLevels:true,levelLineWidth:3,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
       showScore:true,showContrarian:true,showDivergence:true,showWaves:true,showFlow:true,
       cBull:'#06A22F',cBear:'#CF1717',showOscillator:true},
     sqz_mom:{on:true,showSqzLevels:true,showStats:false,statsLookback:2000,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true,c1Up:'#00E676',c1UpDn:'#00897B',c1Dn:'#FF5252',c1DnUp:'#B71C1C',c2Up:'#00E5FF',c2UpDn:'#0288D1',c2Dn:'#FF9F1C',c2DnUp:'#B36200',c2Line:'#00E5FF'},
@@ -10814,6 +10835,11 @@ function drawMacdSR(p,s,e,cw,K){
    échelle 0-100, la tension entre les deux en histogramme, les zones extrêmes,
    et les signaux du score. */
 function drawFmcSub(p, s, e, cw, cle) {
+  /* Rendu fidèle au Pine : dégradé du noyau vers 50, remplissage entre noyau
+     et balance, histogramme de tension avec opacité variable selon qu'elle se
+     creuse, vague de flux à deux teintes au-delà du seuil extrême, zones dont
+     la transparence dépend de la distance, signaux, contrariens, divergences,
+     et le baromètre de confluence dans le titre. */
   const K = cle || (p && p.key) || 'fmc';
   const r = getInd(K);
   if (!r || !r.core || !r.core.length) return;
@@ -10823,31 +10849,28 @@ function drawFmcSub(p, s, e, cw, cle) {
   const cBear = S(K,'cBear') || '#CF1717';
   const ob = S(K,'obLevel') != null ? +S(K,'obLevel') : 70;
   const os = S(K,'osLevel') != null ? +S(K,'osLevel') : 30;
+  const der = Math.min(e, r.core.length - 1);
 
-  // niveaux
-  ctx.save();
-  ctx.setLineDash([3,3]); ctx.lineWidth = 1;
-  for (const [lvl, col] of [[ob, cBear], [50, '#8B98A5'], [os, cBull]]) {
-    ctx.strokeStyle = hexA(col, lvl===50 ? .35 : .55);
-    ctx.beginPath(); ctx.moveTo(0, yOf(lvl)); ctx.lineTo(W-AXIS_W, yOf(lvl)); ctx.stroke();
-  }
-  ctx.setLineDash([]);
-  ctx.restore();
-
-  // tension entre noyau et balance, en histogramme autour de 50
-  if (S(K,'showWaves') !== false && r.tension) {
+  const fonce = (hex, f) => {
+    const n = parseInt(String(hex).replace('#',''), 16);
+    const rr = Math.round(((n>>16)&255)*f), gg = Math.round(((n>>8)&255)*f), bb = Math.round((n&255)*f);
+    return 'rgb(' + rr + ',' + gg + ',' + bb + ')';
+  };
+  const aire = (arr, base, col, alpha) => {
+    ctx.fillStyle = hexA(col, alpha);
+    ctx.beginPath();
+    let ouvert = false;
     for (let i = s; i <= e; i++) {
-      const v = r.tension[i];
+      const v = arr[i];
       if (v == null || !isFinite(v)) continue;
-      const haut = 50 + Math.max(-50, Math.min(50, v * 2));
       const x = xOf(i);
-      ctx.fillStyle = hexA(v >= 0 ? cBull : cBear, .30);
-      const y0 = yOf(50), y1 = yOf(haut);
-      ctx.fillRect(x - cw*0.35, Math.min(y0,y1), Math.max(1, cw*0.7), Math.abs(y1-y0));
+      if (!ouvert) { ctx.moveTo(x, yOf(base)); ouvert = true; }
+      ctx.lineTo(x, yOf(v));
     }
-  }
-
-  // ligne de balance puis noyau
+    if (!ouvert) return;
+    ctx.lineTo(xOf(Math.min(e, arr.length-1)), yOf(base));
+    ctx.closePath(); ctx.fill();
+  };
   const trace = (arr, col, lw) => {
     ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
     let debut = true;
@@ -10859,52 +10882,140 @@ function drawFmcSub(p, s, e, cw, cle) {
     }
     ctx.stroke();
   };
-  const dernier = r.core[e] != null ? r.core[e] : 50;
-  const balDer = r.bal[e] != null ? r.bal[e] : 50;
-  const colLigne = dernier >= balDer ? cBull : cBear;
-  if (r.bal) trace(r.bal, hexA(colLigne, .6), 1);
+
+  /* 1. Vague de flux, ancrée sur les zones, deux teintes au-delà du seuil. */
+  if (S(K,'showFlow') !== false && r.flowBull) {
+    for (let i = s; i <= e; i++) {
+      const x = xOf(i), demi = Math.max(1, cw*0.45);
+      const hn = r.flowBullNorm[i] || 0, ht = r.flowBull[i] || 0;
+      if (ht > 0) {
+        ctx.fillStyle = hexA(cBull, .28);
+        ctx.fillRect(x-demi, yOf(ob+hn), demi*2, Math.abs(yOf(ob)-yOf(ob+hn)));
+        if (ht > hn) { ctx.fillStyle = hexA(fonce(cBull,.55), .40);
+          ctx.fillRect(x-demi, yOf(ob+ht), demi*2, Math.abs(yOf(ob+hn)-yOf(ob+ht))); }
+      }
+      const bn = r.flowBearNorm[i] || 0, bt = r.flowBear[i] || 0;
+      if (bt < 0) {
+        ctx.fillStyle = hexA(cBear, .28);
+        ctx.fillRect(x-demi, yOf(os), demi*2, Math.abs(yOf(os+bn)-yOf(os)));
+        if (bt < bn) { ctx.fillStyle = hexA(fonce(cBear,.55), .40);
+          ctx.fillRect(x-demi, yOf(os+bn), demi*2, Math.abs(yOf(os+bt)-yOf(os+bn))); }
+      }
+    }
+  }
+
+  /* 2. Dégradé du noyau vers la ligne médiane. */
+  const hautPart = r.core.map(v => (v != null && v > 50) ? v : null);
+  const basPart  = r.core.map(v => (v != null && v < 50) ? v : null);
+  aire(hautPart, 50, cBull, .18);
+  aire(basPart,  50, cBear, .18);
+
+  /* 3. Zones et ligne médiane. La transparence suit la distance du noyau. */
+  const dyn = (lvl, col, versHaut) => {
+    if (S(K,'useDynamicLevels') === false) return hexA(col, .70);
+    const dist = versHaut ? (lvl - r.core[der]) : (r.core[der] - lvl);
+    const maxD = Math.abs(lvl - 50);
+    const cl = Math.max(0, Math.min(maxD, dist));
+    return hexA(col, 0.70 - 0.60 * (maxD > 0 ? cl/maxD : 0));
+  };
+  ctx.save();
+  ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+  ctx.strokeStyle = hexA('#8B98A5', .35);
+  ctx.beginPath(); ctx.moveTo(0, yOf(50)); ctx.lineTo(W-AXIS_W, yOf(50)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.lineWidth = Math.max(1, +S(K,'levelLineWidth') || 3);
+  ctx.strokeStyle = dyn(ob, cBear, true);
+  ctx.beginPath(); ctx.moveTo(0, yOf(ob)); ctx.lineTo(W-AXIS_W, yOf(ob)); ctx.stroke();
+  ctx.strokeStyle = dyn(os, cBull, false);
+  ctx.beginPath(); ctx.moveTo(0, yOf(os)); ctx.lineTo(W-AXIS_W, yOf(os)); ctx.stroke();
+  ctx.restore();
+
+  /* 4. Tension entre noyau et balance : plus opaque quand elle se creuse. */
+  if (S(K,'showWaves') !== false && r.waveHist) {
+    const base = (S(K,'waveBaseTransp') != null) ? +S(K,'waveBaseTransp') : 60;
+    for (let i = s; i <= e; i++) {
+      const v = r.waveHist[i];
+      if (v == null || !isFinite(v)) continue;
+      const t = r.strengthening[i] ? Math.max(0, base-15) : Math.min(100, base+15);
+      ctx.fillStyle = hexA(r.tension[i] >= 0 ? cBull : cBear, (100-t)/100);
+      const x = xOf(i), y0 = yOf(50), y1 = yOf(v);
+      ctx.fillRect(x - cw*0.35, Math.min(y0,y1), Math.max(1, cw*0.7), Math.abs(y1-y0));
+    }
+  }
+
+  /* 5. Remplissage entre noyau et balance, puis les deux lignes. */
+  const colLigne = (r.core[der] >= r.bal[der]) ? cBull : cBear;
+  ctx.fillStyle = hexA(colLigne, .18);
+  ctx.beginPath();
+  let ouv = false;
+  for (let i = s; i <= e; i++) {
+    if (r.core[i] == null) continue;
+    const x = xOf(i);
+    if (!ouv) { ctx.moveTo(x, yOf(r.core[i])); ouv = true; } else ctx.lineTo(x, yOf(r.core[i]));
+  }
+  for (let i = e; i >= s; i--) {
+    if (r.bal[i] == null) continue;
+    ctx.lineTo(xOf(i), yOf(r.bal[i]));
+  }
+  if (ouv) { ctx.closePath(); ctx.fill(); }
+  trace(r.bal, hexA(colLigne, .75), 1);
   trace(r.core, colLigne, 2);
 
-  // pression de flux, en pointillés
-  if (S(K,'showFlow') !== false && r.flow) trace(r.flow, hexA('#F7931A', .7), 1);
-
-  // signaux du score
-  const marque = (liste, versLeHaut, col, forme) => {
-    for (const sig of (liste || [])) {
-      if (sig.i == null || sig.i < s || sig.i > e) continue;
-      const x = xOf(sig.i);
-      const y = yOf(versLeHaut ? os - 6 : ob + 6);
-      ctx.fillStyle = col;
-      ctx.beginPath();
-      if (forme === 'losange') {
-        ctx.moveTo(x, y-4); ctx.lineTo(x+4, y); ctx.lineTo(x, y+4); ctx.lineTo(x-4, y);
-      } else {
-        const d2 = versLeHaut ? -1 : 1;
-        ctx.moveTo(x, y + 4*d2); ctx.lineTo(x-4, y - 3*d2); ctx.lineTo(x+4, y - 3*d2);
-      }
-      ctx.closePath(); ctx.fill();
-    }
+  /* 6. Signaux du score, contrariens, divergences. */
+  const forme = (x, y, type, col, versHaut) => {
+    ctx.fillStyle = col; ctx.beginPath();
+    if (type === 'losange') { ctx.moveTo(x,y-4); ctx.lineTo(x+4,y); ctx.lineTo(x,y+4); ctx.lineTo(x-4,y); }
+    else { const dd = versHaut ? -1 : 1;
+           ctx.moveTo(x, y+4*dd); ctx.lineTo(x-4, y-3*dd); ctx.lineTo(x+4, y-3*dd); }
+    ctx.closePath(); ctx.fill();
   };
   if (S(K,'showScore') !== false) {
-    marque(r.buys,  true,  cBull, 'losange');
-    marque(r.sells, false, cBear, 'losange');
+    for (const g of (r.buys||[]))  if (g.i>=s && g.i<=e) forme(xOf(g.i), yOf(os-6), 'losange', cBull, true);
+    for (const g of (r.sells||[])) if (g.i>=s && g.i<=e) forme(xOf(g.i), yOf(ob+6), 'losange', cBear, false);
   }
   if (S(K,'showContrarian') !== false) {
-    marque(r.contraLong,  true,  hexA(cBull, .7), 'triangle');
-    marque(r.contraShort, false, hexA(cBear, .7), 'triangle');
+    for (const g of (r.contraLong||[]))  if (g.i>=s && g.i<=e) forme(xOf(g.i), yOf(os-6), 'tri', hexA(cBull,.75), true);
+    for (const g of (r.contraShort||[])) if (g.i>=s && g.i<=e) forme(xOf(g.i), yOf(ob+6), 'tri', hexA(cBear,.75), false);
+  }
+  if (S(K,'showDivergence') !== false) {
+    ctx.font = 'bold 8px "IBM Plex Sans", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const [liste, col, txt, dy] of [[r.divBull, cBull, 'Div \u25b2', 9], [r.divBear, cBear, 'Div \u25bc', -9]]) {
+      for (const g of (liste||[])) {
+        if (g.i < s || g.i > e) continue;
+        const x = xOf(g.i), y = yOf(g.core) + dy;
+        const w = ctx.measureText(txt).width + 6;
+        ctx.fillStyle = hexA(col, .55);
+        if (typeof roundRect === 'function') roundRect(x-w/2, y-6, w, 12, 3);
+        else { ctx.beginPath(); ctx.rect(x-w/2, y-6, w, 12); }
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF'; ctx.fillText(txt, x, y);
+      }
+    }
+    ctx.textAlign = 'left';
   }
 
-  // titre : l'état des cinq modules en un coup d'oeil
-  const der = e;
-  const knnTxt = r.knn && r.knn[der] != null
-    ? (r.knn[der] > 60 ? 'KNN haussier' : r.knn[der] < 40 ? 'KNN baissier' : 'KNN neutre') : '';
-  const struct = r.trend && r.trend[der] === 1 ? 'structure haussière' : 'structure baissière';
-  const flux = r.flow && r.flow[der] != null
-    ? (r.flow[der] >= 50 ? 'flux acheteur' : 'flux vendeur') : '';
-  const sc = r.score && r.score[der] != null ? Math.round(r.score[der]) : 0;
-  subLabel(p, 'FMC · noyau ' + Math.round(dernier) + ' · ' + flux + ' · ' + struct +
-              ' · ' + knnTxt + ' · score ' + sc + '%',
-           null, colLigne, colLigne);
+  /* 7. Titre : les cinq modules et le baromètre, comme la table du Pine. */
+  const bloc = (pct) => {
+    const n = Math.max(0, Math.min(10, Math.round(pct/10)));
+    let t = '';
+    for (let q=1;q<=10;q++) t += (q<=n) ? '\u2588' : '\u2591';
+    return t;
+  };
+  const knnTxt = r.knn[der] > 60 ? 'KNN haussier' : r.knn[der] < 40 ? 'KNN baissier' : 'KNN neutre';
+  const vagTxt = r.tension[der] >= 0
+    ? (r.strengthening[der] ? 'tension haussière +' : 'tension haussière')
+    : (r.strengthening[der] ? 'tension baissière −' : 'tension baissière');
+  subLabel(p,
+    'FMC \u00b7 noyau ' + Math.round(r.core[der]) +
+    ' \u00b7 ' + (r.flow[der] >= 50 ? 'flux acheteur' : 'flux vendeur') +
+    ' \u00b7 structure ' + (r.trend[der] === 1 ? 'haussière' : 'baissière') +
+    ' \u00b7 ' + knnTxt + ' (' + Math.round(r.knn[der]) + ' %)' +
+    ' \u00b7 ' + vagTxt +
+    ' \u00b7 score ' + Math.round(r.score[der]) + ' %' +
+    ' \u00b7 confluence ' + (r.matchCount[der] || 0) + '/5 ' + bloc(r.baroPct[der] || 0) +
+    ' \u00b7 ' + (r.auVolume ? 'volume' : 'bougies'),
+    null, colLigne, colLigne);
 }
 
 function drawSqzMom(p, s, e, cw, key) {
@@ -16843,7 +16954,7 @@ const SCHEMA={
     {k:'showContrarian',t:'bool',lab:'Afficher les signaux contrariens',def:true},
     {k:'showWaves',t:'bool',lab:'Afficher la tension noyau/balance',def:true},
     {k:'showFlow',t:'bool',lab:'Afficher la pression de flux',def:true},
-    {k:'showOscillator',t:'bool',lab:'Afficher le panneau',def:true},
+    {k:'showOscillator',t:'bool',lab:'Afficher le panneau',def:true},{k:'srcCore',t:'choice',lab:'Source',opts:[{v:'close',t:'Clôture'},{v:'open',t:'Ouverture'},{v:'high',t:'Haut'},{v:'low',t:'Bas'},{v:'hl2',t:'hl2'},{v:'hlc3',t:'hlc3'}]},{k:'flowHeightScale',t:'num',lab:'Flux — hauteur de la vague',def:0.5},{k:'flowExtremeLevel',t:'num',lab:'Flux — seuil extrême',def:15},{k:'waveBaseTransp',t:'num',lab:'Tension — transparence de base',def:60},{k:'useDynamicLevels',t:'bool',lab:'Zones à transparence dynamique',def:true},{k:'levelLineWidth',t:'num',lab:'Épaisseur des zones',def:3},{k:'showDivergence',t:'bool',lab:'Afficher les divergences',def:true},
     {k:'cBull',t:'col',lab:'Couleur haussière',def:'#06A22F'},
     {k:'cBear',t:'col',lab:'Couleur baissière',def:'#CF1717'}
   ]},
@@ -33979,7 +34090,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2208-2140';
+  window.__LUMEN_BUILD = 'B-2208-2320';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
