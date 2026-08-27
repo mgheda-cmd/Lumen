@@ -8610,13 +8610,22 @@ function render(){
   /* Pendant un glissement, on ne touche pas au tableau : la mémoire évite
      déjà le recalcul, mais reconstruire le HTML à chaque image reste inutile.
      Un rafraîchissement est programmé pour la fin du geste. */
-  /* Premier balayage automatique, une seule fois, dès qu'il y a de quoi
-     calculer. Différé pour ne pas retarder le premier affichage. */
+  /* Premier balayage automatique, une seule fois. Il était différé de 2,5 s,
+     ce qui était bien trop court : le balayage mobilise le processeur et
+     figeait le graphique juste après son apparition. Repoussé à trois minutes
+     par défaut, réglable, pour laisser le temps de travailler d'abord. */
   if(!window.__stratLancee && (state.data||[]).length > 500){
     window.__stratLancee = true;
+    const attente = (function(){
+      try{
+        const v = localStorage.getItem('lumen_delai_balayage');
+        return v != null ? Math.max(0, +v) : 180;
+      }catch(e){ return 180; }
+    })();
+    window.__stratEcheance = Date.now() + attente * 1000;
     setTimeout(function(){
       if(typeof window.lancerBalayageStrat === 'function') window.lancerBalayageStrat();
-    }, 2500);
+    }, attente * 1000);
   }
 
   if(typeof updateMmsBoTable === 'function' && typeof mmsBoHudVisible !== 'undefined' && mmsBoHudVisible){
@@ -34244,7 +34253,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2708-0710';
+  window.__LUMEN_BUILD = 'B-2708-0820';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -36207,7 +36216,27 @@ window.majPanneauStrat = function(){
   if(!el) return;
   const res = window.__balayageMM;
   if(!Array.isArray(res) || !res.length){
-    el.innerHTML = '<div style="font-size:10.5px;color:#94A3B8">Balayage en attente…</div>';
+    /* Compte à rebours plutôt qu'un « en attente » muet : on sait quand ça va
+       démarrer, et un bouton permet de le lancer tout de suite. */
+    const reste = window.__stratEcheance
+      ? Math.max(0, Math.round((window.__stratEcheance - Date.now()) / 1000)) : null;
+    const txtA = (reste == null) ? 'Balayage en attente\u2026'
+      : (reste > 0
+          ? 'Balayage dans ' + (reste >= 60 ? Math.ceil(reste/60) + ' min' : reste + ' s')
+          : 'Balayage imminent\u2026');
+    el.innerHTML =
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<span style="font-size:10.5px;color:#94A3B8">' + txtA + '</span>' +
+        '<button id="strat-maintenant" style="margin-left:auto;background:none;border:1px solid var(--line);' +
+        'border-radius:5px;color:#94A3B8;font-size:9.5px;padding:1px 5px;cursor:pointer">maintenant</button>' +
+      '</div>';
+    const bMaint = document.getElementById('strat-maintenant');
+    if(bMaint) bMaint.onclick = function(){
+      window.__stratEcheance = Date.now();
+      if(typeof window.lancerBalayageStrat === 'function') window.lancerBalayageStrat();
+    };
+    if(reste > 0) setTimeout(function(){
+      if(typeof window.majPanneauStrat === 'function') window.majPanneauStrat(); }, 1000);
     return;
   }
   const best = choisirMeilleureStrat(res);

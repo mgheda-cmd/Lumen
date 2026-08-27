@@ -66,9 +66,25 @@ window.__stratHistoOuvert=false;
 window.majPanneauStrat();
 t('   masquable', !/21\/08 04:00/.test(zone.innerHTML));
 
+console.log('\n== Balayage differe ==');
+t('delai de trois minutes par defaut', /return v != null \? Math\.max\(0, \+v\) : 180;/.test(src));
+t('   reglable', /lumen_delai_balayage/.test(src));
+t('   echeance memorisee', /window\.__stratEcheance = Date\.now\(\) \+ attente \* 1000/.test(src));
+
 window.__balayageMM=null;
+window.__stratEcheance=Date.now()+180000;
 window.majPanneauStrat();
-t('sans balayage : message d attente', /attente/.test(zone.innerHTML));
+t('compte a rebours affiche', /Balayage dans 3 min/.test(zone.innerHTML), zone.innerHTML.slice(0,90));
+t('   bouton pour lancer tout de suite', /strat-maintenant/.test(zone.innerHTML));
+window.__stratEcheance=Date.now()+25000;
+window.majPanneauStrat();
+t('   en secondes sous la minute', /Balayage dans 2[0-9] s/.test(zone.innerHTML));
+window.__stratEcheance=Date.now()-1000;
+window.majPanneauStrat();
+t('   imminent une fois l heure venue', /imminent/.test(zone.innerHTML));
+window.__stratEcheance=null;
+window.majPanneauStrat();
+t('sans echeance : message d attente', /attente/.test(zone.innerHTML));
 
 console.log('\n== Les deux lignes ==');
 window.__balayageMM=jeu;
