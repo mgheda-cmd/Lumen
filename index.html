@@ -11126,7 +11126,13 @@ function drawFmcSub(p, s, e, cw, cle) {
     ? (r.strengthening[der] ? 'tension haussière +' : 'tension haussière')
     : (r.strengthening[der] ? 'tension baissière −' : 'tension baissière');
   subLabel(p,
-    'FMC \u00b7 noyau ' + Math.round(r.core[der]) +
+    /* Quand l'indicateur tourne sur une unité supérieure à celle du graphique,
+       la courbe devient un escalier et plafonne plus bas — le Pine, lui,
+       travaille toujours sur l'unité affichée. On le dit clairement, sinon on
+       croit à un calcul qui s'arrête. */
+    'FMC' + ((S(K,'tf') && S(K,'tf') !== 'chart' && +S(K,'tf') !== state.tf)
+              ? ' \u26A0 ' + S(K,'tf') + 'm (paliers)' : '') +
+    ' \u00b7 noyau ' + Math.round(r.core[der]) +
     ' \u00b7 ' + (r.flow[der] >= 50 ? 'flux acheteur' : 'flux vendeur') +
     ' \u00b7 structure ' + (r.trend[der] === 1 ? 'haussière' : 'baissière') +
     ' \u00b7 ' + knnTxt + ' (' + Math.round(r.knn[der]) + ' %)' +
@@ -34209,7 +34215,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2708-0210';
+  window.__LUMEN_BUILD = 'B-2708-0340';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
