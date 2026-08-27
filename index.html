@@ -6567,9 +6567,18 @@ function getInd(key){
       else {
         const M=a=>mapHTF(src,a,d);
         const P=l=>(l||[]).map(x=>{const gi=idxOfTime(x.t); return gi!=null?Object.assign({},x,{i:gi}):null;}).filter(Boolean);
+        /* TOUTES les séries doivent être recalibrées sur les bougies affichées.
+           Huit l'étaient, huit ne l'étaient pas : la tension, la vague de flux,
+           la confluence et le baromètre gardaient la longueur de l'unité
+           supérieure — 1 200 valeurs pour 6 000 bougies en 5 minutes — et
+           s'arrêtaient donc au cinquième du graphique. */
         state.cache[ck]=Object.assign({}, r, {
           core:M(r.core), bal:M(r.bal), flow:M(r.flow), knn:M(r.knn),
           score:M(r.score), tension:M(r.tension), trend:M(r.trend), dir:M(r.dir),
+          waveHist:M(r.waveHist), strengthening:M(r.strengthening),
+          matchCount:M(r.matchCount), baroPct:M(r.baroPct),
+          flowBull:M(r.flowBull), flowBear:M(r.flowBear),
+          flowBullNorm:M(r.flowBullNorm), flowBearNorm:M(r.flowBearNorm),
           buys:P(r.buys), sells:P(r.sells), contraLong:P(r.contraLong),
           contraShort:P(r.contraShort), divBull:P(r.divBull), divBear:P(r.divBear)});
       }
@@ -34225,7 +34234,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2708-0930';
+  window.__LUMEN_BUILD = 'B-2708-1050';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
