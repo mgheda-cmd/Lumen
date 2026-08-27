@@ -27,31 +27,38 @@ global.xOf=(i)=>i*0.2; global.labelHits=[];
 
 let ko=0; const t=(n,ok,d)=>{ if(!ok) ko++; console.log((ok?'OK    ':'ECHEC ')+n+(d?'  -> '+d:'')); };
 const mm=state.indicators.strat_mm;
-const rendu=(compact)=>{
-  mm.pastillesCompactes=compact; state.cache={};
+const rendu=(taille)=>{
+  mm.taillePastilles=taille; state.cache={};
   textes.length=0; boites.length=0;
   try{ __draw(__g('strat_mm'), 0, 5999, (p)=>500-(p-60000)/25, 4); }
   catch(e){ return {err:e.message.slice(0,70)}; }
   return {textes:textes.slice(), boites:boites.slice()};
 };
-const normal=rendu(false), compact=rendu(true);
-t('le dessin passe dans les deux modes', !normal.err && !compact.err, normal.err||compact.err||'aucune exception');
+const normal=rendu('normale'), compact=rendu('compacte'), mini=rendu('minimale');
+t('le dessin passe dans les trois tailles', !normal.err && !compact.err && !mini.err, normal.err||compact.err||mini.err||'aucune exception');
 
-t('reglage present', /k:'pastillesCompactes'/.test(src));
-t('   desactive par defaut', /pastillesCompactes:false/.test(src));
+t('reglage de taille present', /k:'taillePastilles'/.test(src));
+t('   reglage d opacite present', /k:'opacitePastilles'/.test(src));
 t('   la taille suit le facteur', /const bw = Math\.round\(\(is15m \? 154 : 148\) \* kT\)/.test(src));
+t('   trois tailles proposees', /k:'taillePastilles'/.test(src) && /minimale/.test(src));
+t('   compacte par defaut', /taillePastilles:'compacte'/.test(src));
+t('   fond translucide', /opacitePastilles/.test(src) && /0\.78/.test(src));
 t('   les polices aussi', /\(9 \* kT\)\.toFixed\(1\)/.test(src) && /\(14 \* kT\)\.toFixed\(1\)/.test(src));
 t('   les positions aussi', /by \+ 18 \* kT/.test(src));
-t('   les renforts sont encore plus petits', /cRenfort \? 0\.60 : 0\.70/.test(src));
+t('   les renforts sont plus petits', /cRenfort \? 0\.55 : 0\.65/.test(src));
 
 // meme quantite d information
-t('autant de textes ecrits', compact.textes.length===normal.textes.length,
-  normal.textes.length+' contre '+compact.textes.length);
-const memeContenu = JSON.stringify(normal.textes)===JSON.stringify(compact.textes);
-t('   contenu identique', memeContenu);
+t('autant de textes dans les trois tailles',
+  compact.textes.length===normal.textes.length && mini.textes.length===normal.textes.length,
+  normal.textes.length+' / '+compact.textes.length+' / '+mini.textes.length);
+t('   contenu identique',
+  JSON.stringify(normal.textes)===JSON.stringify(compact.textes) &&
+  JSON.stringify(normal.textes)===JSON.stringify(mini.textes));
 
 console.log('\n== Facteurs ==');
-for(const [nom,att] of [['consigne normale',1],['renfort normal',0.85],['consigne compacte',0.70],['renfort compact',0.60]])
+for(const [nom,att] of [['consigne normale',1],['renfort normal',0.85],
+  ['consigne compacte',0.65],['renfort compact',0.55],
+  ['consigne minimale',0.50],['renfort minimal',0.42]])
   console.log('   '+nom.padEnd(20)+att+'  ->  largeur '+Math.round(148*att)+' px, hauteur '+Math.round(46*att)+' px');
 
 console.log('\n'+(ko===0?'Les pastilles compactes gardent toute l information.':ko+' probleme(s).'));
