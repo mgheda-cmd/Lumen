@@ -10844,7 +10844,13 @@ function drawFmcSub(p, s, e, cw, cle) {
   const r = getInd(K);
   if (!r || !r.core || !r.core.length) return;
 
-  const yOf = subYOf(p, K, 0, 100, true);
+  /* Échelle verrouillée sur 0-100, sixième argument à true.
+     Sans ce verrou, subYOf remplace ces bornes par celles du groupe quand
+     plusieurs indicateurs partagent le panneau, ou par une échelle mémorisée :
+     la graduation se mettait à bouger seule et les tracés ne correspondaient
+     plus aux repères. Le FMC est un oscillateur borné, ses limites ne doivent
+     jamais être ni partagées ni conservées. */
+  const yOf = subYOf(p, K, 0, 100, true, true);
   const cBull = S(K,'cBull') || '#06A22F';
   const cBear = S(K,'cBear') || '#CF1717';
   const ob = S(K,'obLevel') != null ? +S(K,'obLevel') : 70;
@@ -34238,7 +34244,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2708-0600';
+  window.__LUMEN_BUILD = 'B-2708-0710';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
