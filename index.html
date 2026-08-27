@@ -11018,10 +11018,24 @@ function drawFmcSub(p, s, e, cw, cle) {
 
     ctx.font = 'bold 8px "IBM Plex Sans", sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    /* Sur une unité de temps élevée, la même largeur d'écran couvre bien plus
+       de temps : les divergences se multiplient et leurs étiquettes finissent
+       par se recouvrir jusqu'à masquer la courbe. On garde le cercle de pivot
+       de chacune, mais on n'écrit l'étiquette que si elle ne chevauche pas la
+       précédente. La densité devient la même quelle que soit l'unité. */
+    const occupes = [];
+    const libre = (x, y, w) => {
+      for (const o of occupes)
+        if (Math.abs(o.x - x) < (o.w + w)/2 + 3 && Math.abs(o.y - y) < 14) return false;
+      return true;
+    };
     for (const [liste, col, txt, dy] of [[r.divBull, cBull, 'Div \u25b2', 9], [r.divBear, cBear, 'Div \u25bc', -9]]) {
       for (const g of (liste||[])) {
         if (g.i < s || g.i > e) continue;
         const x = xOf(g.i), y = yOf(g.core) + dy;
+        const largeur = ctx.measureText(txt).width + 6;
+        if (!libre(x, y, largeur)) continue;
+        occupes.push({ x, y, w: largeur });
         const w = ctx.measureText(txt).width + 6;
         ctx.fillStyle = hexA(col, (100 - ((S(K,'divLineTransp') != null) ? +S(K,'divLineTransp') : 40)) / 100);
         if (typeof roundRect === 'function') roundRect(x-w/2, y-6, w, 12, 3);
@@ -34224,7 +34238,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2708-0450';
+  window.__LUMEN_BUILD = 'B-2708-0600';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
