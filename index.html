@@ -10856,20 +10856,20 @@ function drawFmcSub(p, s, e, cw, cle) {
     const rr = Math.round(((n>>16)&255)*f), gg = Math.round(((n>>8)&255)*f), bb = Math.round((n&255)*f);
     return 'rgb(' + rr + ',' + gg + ',' + bb + ')';
   };
-  const aire = (arr, base, col, alpha) => {
+  /* Remplissage barre à barre entre deux séries. Tracer un polygone continu
+     reliait les segments par-dessus les trous et débordait jusqu'en bas du
+     panneau : une colonne par bougie est exacte et ne peut pas déborder. */
+  const aireEntre = (haut, bas, col, alpha, cond) => {
     ctx.fillStyle = hexA(col, alpha);
-    ctx.beginPath();
-    let ouvert = false;
+    const demi = Math.max(0.5, cw * 0.5);
     for (let i = s; i <= e; i++) {
-      const v = arr[i];
-      if (v == null || !isFinite(v)) continue;
-      const x = xOf(i);
-      if (!ouvert) { ctx.moveTo(x, yOf(base)); ouvert = true; }
-      ctx.lineTo(x, yOf(v));
+      const a = (typeof haut === 'number') ? haut : haut[i];
+      const b = (typeof bas  === 'number') ? bas  : bas[i];
+      if (a == null || b == null || !isFinite(a) || !isFinite(b)) continue;
+      if (cond && !cond(i)) continue;
+      const x = xOf(i), y1 = yOf(a), y2 = yOf(b);
+      ctx.fillRect(x - demi, Math.min(y1, y2), demi * 2, Math.abs(y2 - y1));
     }
-    if (!ouvert) return;
-    ctx.lineTo(xOf(Math.min(e, arr.length-1)), yOf(base));
-    ctx.closePath(); ctx.fill();
   };
   const trace = (arr, col, lw) => {
     ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
@@ -10911,10 +10911,9 @@ function drawFmcSub(p, s, e, cw, cle) {
      cas, d'où des aplats bien plus pâles qu'à l'écran d'origine. */
   const tCentre = (S(K,'centerGradTransp') != null) ? +S(K,'centerGradTransp') : 60;
   const tCoreBal = (S(K,'coreBalTransp') != null) ? +S(K,'coreBalTransp') : 30;
-  const hautPart = r.core.map(v => (v != null && v > 50) ? v : null);
-  const basPart  = r.core.map(v => (v != null && v < 50) ? v : null);
-  aire(hautPart, 50, cBull, (100 - tCentre) / 100);
-  aire(basPart,  50, cBear, (100 - tCentre) / 100);
+  const aCentre = (100 - tCentre) / 100;
+  aireEntre(r.core, 50, cBull, aCentre, (i) => r.core[i] > 50);
+  aireEntre(r.core, 50, cBear, aCentre, (i) => r.core[i] < 50);
 
   /* 3. Zones et ligne médiane. La transparence suit la distance du noyau. */
   /* Le Pine interpole entre deux TRANSPARENCES, 30 près du niveau et 90 loin.
@@ -10956,21 +10955,27 @@ function drawFmcSub(p, s, e, cw, cle) {
 
   /* 5. Remplissage entre noyau et balance, puis les deux lignes. */
   const colLigne = (r.core[der] >= r.bal[der]) ? cBull : cBear;
-  ctx.fillStyle = hexA(colLigne, (100 - tCoreBal) / 100);
-  ctx.beginPath();
-  let ouv = false;
-  for (let i = s; i <= e; i++) {
-    if (r.core[i] == null) continue;
-    const x = xOf(i);
-    if (!ouv) { ctx.moveTo(x, yOf(r.core[i])); ouv = true; } else ctx.lineTo(x, yOf(r.core[i]));
-  }
-  for (let i = e; i >= s; i--) {
-    if (r.bal[i] == null) continue;
-    ctx.lineTo(xOf(i), yOf(r.bal[i]));
-  }
-  if (ouv) { ctx.closePath(); ctx.fill(); }
-  trace(r.bal, hexA(colLigne, .75), 1);
-  trace(r.core, colLigne, 2);
+  /* Le Pine colore ce ruban selon la position du noyau par rapport à la
+     balance, bougie par bougie — pas selon la dernière valeur. */
+  const aCB = (100 - tCoreBal) / 100;
+  aireEntre(r.core, r.bal, cBull, aCB, (i) => r.core[i] >= r.bal[i]);
+  aireEntre(r.core, r.bal, cBear, aCB, (i) => r.core[i] <  r.bal[i]);
+  /* Les lignes changent de couleur au croisement, comme dans le Pine : on
+     trace par segments plutôt qu'en une seule teinte. */
+  const traceSegments = (arr, lw, alpha) => {
+    for (let i = Math.max(s, 1); i <= e; i++) {
+      const a = arr[i-1], b = arr[i];
+      if (a == null || b == null || !isFinite(a) || !isFinite(b)) continue;
+      ctx.strokeStyle = hexA((r.core[i] >= r.bal[i]) ? cBull : cBear, alpha);
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      ctx.moveTo(xOf(i-1), yOf(a));
+      ctx.lineTo(xOf(i), yOf(b));
+      ctx.stroke();
+    }
+  };
+  traceSegments(r.bal, 1, .75);
+  traceSegments(r.core, 2, 1);
 
   /* 6. Signaux du score, contrariens, divergences. */
   const forme = (x, y, type, col, versHaut) => {
@@ -11069,11 +11074,24 @@ function drawFmcSub(p, s, e, cw, cle) {
       lgG = Math.max(lgG, ctx.measureText(a).width);
       lgD = Math.max(lgD, ctx.measureText(b).width);
     }
-    const pad = 6, hL = 12;
-    const lgT = lgG + lgD + pad*3;
-    const hT = lignes.length * hL + pad*2;
-    const xT = W - AXIS_W - lgT - 8;
-    const yT = p.y + 6;
+    /* Le tableau doit tenir DANS le panneau : neuf lignes à 12 px dépassaient
+       quand le panneau est court, et il chevauchait le titre. On adapte la
+       hauteur de ligne à la place disponible, et on le supprime s'il ne reste
+       vraiment pas de quoi l'afficher lisiblement. */
+    const pad = 5;
+    const dispo = Math.max(0, p.h - 22);
+    let hL = Math.min(12, Math.floor((dispo - pad*2) / lignes.length));
+    if (hL >= 7) {
+      if (hL < 12) ctx.font = Math.max(7, hL - 2.5).toFixed(1) + 'px "IBM Plex Mono", monospace';
+      lgG = 0; lgD = 0;
+      for (const [a,b] of lignes) {
+        lgG = Math.max(lgG, ctx.measureText(a).width);
+        lgD = Math.max(lgD, ctx.measureText(b).width);
+      }
+      const lgT = Math.min(lgG + lgD + pad*3, (W - AXIS_W) * 0.42);
+      const hT = lignes.length * hL + pad*2;
+      const xT = Math.max(2, W - AXIS_W - lgT - 6);
+      const yT = p.y + 18;
 
     ctx.fillStyle = hexA('#1A1A1A', .88);
     ctx.fillRect(xT, yT, lgT, hT);
@@ -11091,7 +11109,8 @@ function drawFmcSub(p, s, e, cw, cle) {
       ctx.fillStyle = col;
       ctx.fillText(val, xT + lgT - pad, yL);
     }
-    ctx.textAlign = 'left';
+      ctx.textAlign = 'left';
+    }
     ctx.restore();
   }
 
@@ -34190,7 +34209,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2608-0330';
+  window.__LUMEN_BUILD = 'B-2708-0210';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
