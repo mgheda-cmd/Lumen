@@ -5369,7 +5369,7 @@ const state = {
     fmc:{on:false,tf:'chart',lenCore:14,smoothCore:5,lenBal:14,smoothBal:7,maMethod:'EMA',
       scaleCore:7,lenFlow:25,smoothFlow:10,forceCandle:false,trendLen:50,trendMult:1.5,
       knnK:5,knnWindow:400,obLevel:70,osLevel:30,pivotLength:2,scoreThresh:80,
-      oneSignalPerWave:true,srcCore:'close',flowHeightScale:0.5,flowExtremeLevel:15,waveBaseTransp:60,centerGradTransp:60,coreBalTransp:30,useDynamicLevels:true,levelLineWidth:3,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
+      oneSignalPerWave:true,srcCore:'close',flowHeightScale:0.5,flowExtremeLevel:15,waveBaseTransp:60,centerGradTransp:60,coreBalTransp:30,useDynamicLevels:true,levelLineWidth:4,flowWaveTransp:50,obosCloseTransp:30,obosFarTransp:90,divLineTransp:40,cNeutral:'#808080',cZeroLine:'#808080',cText:'#FFFFFF',showTable:true,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
       showScore:true,showContrarian:true,showDivergence:true,showWaves:true,showFlow:true,
       cBull:'#06A22F',cBear:'#CF1717',showOscillator:true},
     sqz_mom:{on:true,showSqzLevels:true,showStats:false,statsLookback:2000,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true,c1Up:'#00E676',c1UpDn:'#00897B',c1Dn:'#FF5252',c1DnUp:'#B71C1C',c2Up:'#00E5FF',c2UpDn:'#0288D1',c2Dn:'#FF9F1C',c2DnUp:'#B36200',c2Line:'#00E5FF'},
@@ -10887,18 +10887,19 @@ function drawFmcSub(p, s, e, cw, cle) {
   if (S(K,'showFlow') !== false && r.flowBull) {
     for (let i = s; i <= e; i++) {
       const x = xOf(i), demi = Math.max(1, cw*0.45);
+      const aFlux = (100 - ((S(K,'flowWaveTransp') != null) ? +S(K,'flowWaveTransp') : 50)) / 100;
       const hn = r.flowBullNorm[i] || 0, ht = r.flowBull[i] || 0;
       if (ht > 0) {
-        ctx.fillStyle = hexA(cBull, .28);
+        ctx.fillStyle = hexA(cBull, aFlux);
         ctx.fillRect(x-demi, yOf(ob+hn), demi*2, Math.abs(yOf(ob)-yOf(ob+hn)));
-        if (ht > hn) { ctx.fillStyle = hexA(fonce(cBull,.55), .40);
+        if (ht > hn) { ctx.fillStyle = hexA(fonce(cBull,.55), aFlux);
           ctx.fillRect(x-demi, yOf(ob+ht), demi*2, Math.abs(yOf(ob+hn)-yOf(ob+ht))); }
       }
       const bn = r.flowBearNorm[i] || 0, bt = r.flowBear[i] || 0;
       if (bt < 0) {
-        ctx.fillStyle = hexA(cBear, .28);
+        ctx.fillStyle = hexA(cBear, aFlux);
         ctx.fillRect(x-demi, yOf(os), demi*2, Math.abs(yOf(os+bn)-yOf(os)));
-        if (bt < bn) { ctx.fillStyle = hexA(fonce(cBear,.55), .40);
+        if (bt < bn) { ctx.fillStyle = hexA(fonce(cBear,.55), aFlux);
           ctx.fillRect(x-demi, yOf(os+bn), demi*2, Math.abs(yOf(os+bt)-yOf(os+bn))); }
       }
     }
@@ -10916,19 +10917,24 @@ function drawFmcSub(p, s, e, cw, cle) {
   aire(basPart,  50, cBear, (100 - tCentre) / 100);
 
   /* 3. Zones et ligne médiane. La transparence suit la distance du noyau. */
+  /* Le Pine interpole entre deux TRANSPARENCES, 30 près du niveau et 90 loin.
+     On convertit en opacité : 0,70 tout près, 0,10 au plus loin. */
+  const tPres = (S(K,'obosCloseTransp') != null) ? +S(K,'obosCloseTransp') : 30;
+  const tLoin = (S(K,'obosFarTransp') != null) ? +S(K,'obosFarTransp') : 90;
   const dyn = (lvl, col, versHaut) => {
-    if (S(K,'useDynamicLevels') === false) return hexA(col, .70);
+    if (S(K,'useDynamicLevels') === false) return hexA(col, (100 - tPres) / 100);
     const dist = versHaut ? (lvl - r.core[der]) : (r.core[der] - lvl);
     const maxD = Math.abs(lvl - 50);
     const cl = Math.max(0, Math.min(maxD, dist));
-    return hexA(col, 0.70 - 0.60 * (maxD > 0 ? cl/maxD : 0));
+    const t = tPres + (tLoin - tPres) * (maxD > 0 ? cl / maxD : 0);
+    return hexA(col, (100 - t) / 100);
   };
   ctx.save();
   ctx.setLineDash([4,4]); ctx.lineWidth = 1;
-  ctx.strokeStyle = hexA('#8B98A5', .35);
+  ctx.strokeStyle = hexA(S(K,'cZeroLine') || '#808080', .40);
   ctx.beginPath(); ctx.moveTo(0, yOf(50)); ctx.lineTo(W-AXIS_W, yOf(50)); ctx.stroke();
   ctx.setLineDash([]);
-  ctx.lineWidth = Math.max(1, +S(K,'levelLineWidth') || 3);
+  ctx.lineWidth = Math.max(1, +S(K,'levelLineWidth') || 4);
   ctx.strokeStyle = dyn(ob, cBear, true);
   ctx.beginPath(); ctx.moveTo(0, yOf(ob)); ctx.lineTo(W-AXIS_W, yOf(ob)); ctx.stroke();
   ctx.strokeStyle = dyn(os, cBull, false);
@@ -11012,17 +11018,84 @@ function drawFmcSub(p, s, e, cw, cle) {
         if (g.i < s || g.i > e) continue;
         const x = xOf(g.i), y = yOf(g.core) + dy;
         const w = ctx.measureText(txt).width + 6;
-        ctx.fillStyle = hexA(col, .55);
+        ctx.fillStyle = hexA(col, (100 - ((S(K,'divLineTransp') != null) ? +S(K,'divLineTransp') : 40)) / 100);
         if (typeof roundRect === 'function') roundRect(x-w/2, y-6, w, 12, 3);
         else { ctx.beginPath(); ctx.rect(x-w/2, y-6, w, 12); }
         ctx.fill();
-        ctx.fillStyle = '#FFFFFF'; ctx.fillText(txt, x, y);
+        ctx.fillStyle = S(K,'cText') || '#FFFFFF'; ctx.fillText(txt, x, y);
       }
     }
     ctx.textAlign = 'left';
   }
 
-  /* 7. Titre : les cinq modules et le baromètre, comme la table du Pine. */
+  /* 7. Tableau récapitulatif, les neuf lignes du Pine, en haut à droite du
+        panneau. Dessiné directement sur le canevas pour rester solidaire de
+        l'indicateur. Masquable par le réglage. */
+  if (S(K,'showTable') !== false) {
+    const neutre = S(K,'cNeutral') || '#808080';
+    const knnB = r.knn[der] >= 60 ? 1 : r.knn[der] <= 40 ? -1 : 0;
+    const nAcc = r.matchCount[der] || 0;
+    const pctB = r.baroPct[der] || 0;
+    const scP = Math.round(r.score[der] || 0);
+    const sensD = r.dir[der];
+    const rang = (sensD === 1 && scP >= 51) ? (scP >= 80 ? 'TRÈS HAUSSIER' : 'HAUSSIER')
+               : (sensD === -1 && scP >= 51) ? (scP >= 80 ? 'TRÈS BAISSIER' : 'BAISSIER')
+               : 'NEUTRE';
+    const colScore = (sensD === 1 && scP >= 51) ? cBull : (sensD === -1 && scP >= 51) ? cBear : neutre;
+    const barres = (function(){
+      const n = Math.max(0, Math.min(10, Math.round(pctB/10)));
+      let t = '';
+      for (let q=1;q<=10;q++) t += (q<=n) ? '\u2588' : '\u2591';
+      return t;
+    })();
+    const lignes = [
+      ['Noyau', (r.core[der]||0).toFixed(1), r.core[der] >= 50 ? cBull : cBear],
+      ['Flux', r.flow[der] >= 50 ? 'HAUSSIER' : 'BAISSIER', r.flow[der] >= 50 ? cBull : cBear],
+      ['Structure', r.trend[der] === 1 ? 'Haussière' : 'Baissière', r.trend[der] === 1 ? cBull : cBear],
+      ['KNN', (knnB === 1 ? 'HAUSSIER ' : knnB === -1 ? 'BAISSIER ' : 'NEUTRE ') + Math.round(r.knn[der]) + ' %',
+              knnB === 1 ? cBull : knnB === -1 ? cBear : neutre],
+      ['Tension', r.strengthening[der] ? (r.tension[der] >= 0 ? 'HAUSSIÈRE +' : 'BAISSIÈRE −') : '—',
+              r.strengthening[der] ? (r.tension[der] >= 0 ? cBull : cBear) : neutre],
+      ['Source', r.auVolume ? 'Volume' : 'Bougies (auto)', neutre],
+      ['Score', rang + ' ' + scP + ' %', colScore],
+      ['Confluence', nAcc + '/5  (' + Math.round(pctB) + ' %)', colScore],
+      ['Baromètre', barres, colScore]
+    ];
+
+    ctx.save();
+    ctx.font = '9.5px "IBM Plex Mono", monospace';
+    let lgG = 0, lgD = 0;
+    for (const [a,b] of lignes) {
+      lgG = Math.max(lgG, ctx.measureText(a).width);
+      lgD = Math.max(lgD, ctx.measureText(b).width);
+    }
+    const pad = 6, hL = 12;
+    const lgT = lgG + lgD + pad*3;
+    const hT = lignes.length * hL + pad*2;
+    const xT = W - AXIS_W - lgT - 8;
+    const yT = p.y + 6;
+
+    ctx.fillStyle = hexA('#1A1A1A', .88);
+    ctx.fillRect(xT, yT, lgT, hT);
+    ctx.strokeStyle = hexA(neutre, .40); ctx.lineWidth = 1;
+    ctx.strokeRect(xT, yT, lgT, hT);
+
+    ctx.textBaseline = 'middle';
+    for (let q = 0; q < lignes.length; q++) {
+      const [lab, val, col] = lignes[q];
+      const yL = yT + pad + q*hL + hL/2;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(lab, xT + pad, yL);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = col;
+      ctx.fillText(val, xT + lgT - pad, yL);
+    }
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
+
+  /* 8. Titre : les cinq modules et le baromètre, comme la table du Pine. */
   const bloc = (pct) => {
     const n = Math.max(0, Math.min(10, Math.round(pct/10)));
     let t = '';
@@ -16981,7 +17054,7 @@ const SCHEMA={
     {k:'showContrarian',t:'bool',lab:'Afficher les signaux contrariens',def:true},
     {k:'showWaves',t:'bool',lab:'Afficher la tension noyau/balance',def:true},
     {k:'showFlow',t:'bool',lab:'Afficher la pression de flux',def:true},
-    {k:'showOscillator',t:'bool',lab:'Afficher le panneau',def:true},{k:'srcCore',t:'choice',lab:'Source',opts:[{v:'close',t:'Clôture'},{v:'open',t:'Ouverture'},{v:'high',t:'Haut'},{v:'low',t:'Bas'},{v:'hl2',t:'hl2'},{v:'hlc3',t:'hlc3'}]},{k:'flowHeightScale',t:'num',lab:'Flux — hauteur de la vague',def:0.5},{k:'flowExtremeLevel',t:'num',lab:'Flux — seuil extrême',def:15},{k:'waveBaseTransp',t:'num',lab:'Tension — transparence de base',def:60},{k:'useDynamicLevels',t:'bool',lab:'Zones à transparence dynamique',def:true},{k:'levelLineWidth',t:'num',lab:'Épaisseur des zones',def:3},{k:'showDivergence',t:'bool',lab:'Afficher les divergences',def:true},{k:'centerGradTransp',t:'num',lab:'Transparence du dégradé vers 50',def:60},{k:'coreBalTransp',t:'num',lab:'Transparence entre noyau et balance',def:30},
+    {k:'showOscillator',t:'bool',lab:'Afficher le panneau',def:true},{k:'srcCore',t:'choice',lab:'Source',opts:[{v:'close',t:'Clôture'},{v:'open',t:'Ouverture'},{v:'high',t:'Haut'},{v:'low',t:'Bas'},{v:'hl2',t:'hl2'},{v:'hlc3',t:'hlc3'}]},{k:'flowHeightScale',t:'num',lab:'Flux — hauteur de la vague',def:0.5},{k:'flowExtremeLevel',t:'num',lab:'Flux — seuil extrême',def:15},{k:'waveBaseTransp',t:'num',lab:'Tension — transparence de base',def:60},{k:'useDynamicLevels',t:'bool',lab:'Zones à transparence dynamique',def:true},{k:'levelLineWidth',t:'num',lab:'Épaisseur des zones',def:3},{k:'showDivergence',t:'bool',lab:'Afficher les divergences',def:true},{k:'flowWaveTransp',t:'num',lab:'Transparence de la vague de flux',def:50},{k:'obosCloseTransp',t:'num',lab:'Zones — transparence près du niveau',def:30},{k:'obosFarTransp',t:'num',lab:'Zones — transparence loin du niveau',def:90},{k:'divLineTransp',t:'num',lab:'Transparence des divergences',def:40},{k:'cNeutral',t:'col',lab:'Couleur neutre',def:'#808080'},{k:'cZeroLine',t:'col',lab:'Couleur de la ligne 50',def:'#808080'},{k:'cText',t:'col',lab:'Couleur du texte des étiquettes',def:'#FFFFFF'},{k:'showTable',t:'bool',lab:'Afficher le tableau récapitulatif',def:true},{k:'centerGradTransp',t:'num',lab:'Transparence du dégradé vers 50',def:60},{k:'coreBalTransp',t:'num',lab:'Transparence entre noyau et balance',def:30},
     {k:'cBull',t:'col',lab:'Couleur haussière',def:'#06A22F'},
     {k:'cBear',t:'col',lab:'Couleur baissière',def:'#CF1717'}
   ]},
@@ -34117,7 +34190,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2608-0140';
+  window.__LUMEN_BUILD = 'B-2608-0330';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
