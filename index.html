@@ -2776,6 +2776,7 @@ footer{
           <option value="mm_all" selected>🔥 Stratégie MM — Toutes Options actives</option>
           <option value="mm_base">🟢 Stratégie MM — Base</option>
           <option value="mm_opt15m">🕒 Stratégie MM — Option 15M (Base 15 Minutes)</option>
+          <option value="mm_fmc_solo">🌊 Stratégie MM — Pastille FMC</option>
           <option value="mm_fmc_conf">🔮 Stratégie MM — Confluence FMC</option>
           <option value="mm_opt15m2">🕓 Stratégie MM — Option 15M sortie de zone</option>
           <option value="mm_opt6">💎 Stratégie MM — Option 6 (BOS / DIV)</option>
@@ -5360,7 +5361,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_mm:{on:true,showOptFmc:true,fmcSource:'base',fmcSens:true,fmcConfluenceMin:3,fmcScoreMin:0,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
+    strat_mm:{on:true,showFmcSolo:true,fmcSoloSource:'score',showOptFmc:false,fmcSource:'base',fmcSens:true,fmcConfluenceMin:3,fmcScoreMin:0,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
     strat_master:{on:false,minScore:5,trailMult:2,slMult:1.5,tpRR:2.5,allowShort:true},
@@ -15030,9 +15031,11 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
     const mEntLabels = {
       base: '🟢 Signal Base (Ligne MM)',
       mm_base: '🟢 Signal Base (Ligne MM)',
+      fmc_solo: '🌊 Pastille FMC',
       fmc_conf: '🔮 Confluence FMC',
       opt15m2: '🕓 Opt 15M · sortie de zone',
       opt15m: '🕒 Opt 15M (Base 15 Minutes)',
+      mm_fmc_solo: '🌊 Pastille FMC',
       mm_fmc_conf: '🔮 Confluence FMC',
       mm_opt15m2: '🕓 Opt 15M · sortie de zone',
       mm_opt15m: '🕒 Opt 15M (Base 15 Minutes)',
@@ -15906,6 +15909,7 @@ function checkAutoTrade(inputSignals){
         candidateSignals = mmData.signals;
         const mEnt = (strat && strat.mEnt) ? strat.mEnt : (document.getElementById('paper-ent')?.value || 'mm_all');
         if (mEnt === 'mm_base' || mEnt === 'base') candidateSignals = candidateSignals.filter(s => s.optKey === 'base');
+        else if (mEnt === 'mm_fmc_solo' || mEnt === 'fmc_solo') candidateSignals = candidateSignals.filter(s => s.optKey === 'fmc_solo');
         else if (mEnt === 'mm_fmc_conf' || mEnt === 'fmc_conf') candidateSignals = candidateSignals.filter(s => s.optKey === 'fmc_conf');
         else if (mEnt === 'mm_opt15m2' || mEnt === 'opt15m2') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt15m2');
         else if (mEnt === 'mm_opt15m' || mEnt === 'mm_15m' || mEnt === 'opt15m' || mEnt === '15m') candidateSignals = candidateSignals.filter(s => s.optKey === 'opt15m');
@@ -16845,7 +16849,7 @@ const SCHEMA={
     {k:'impTf',t:'num',lab:'UT Impulse MACD (minutes)',min:1,max:240,ind:1},
     {k:'impPeriod',t:'num',lab:'Période Impulse MACD',min:5,max:200,ind:1}
   ]},
-  strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[{k:'showOptFmc',t:'bool',lab:'Option Confluence FMC',def:true},{k:'fmcSource',t:'choice',lab:'Confluence FMC — sur quelles entrées',opts:[{v:'base',t:'Signal Base'},{v:'opt6',t:'Option 6'},{v:'opt2',t:'Option 2'},{v:'toutes',t:'Toutes les options'}]},{k:'fmcSens',t:'bool',lab:'Confluence FMC — exiger structure et flux dans le sens',def:true},{k:'fmcConfluenceMin',t:'num',lab:'Confluence FMC — modules d\'accord minimum (0 à 5)',def:3},{k:'fmcScoreMin',t:'num',lab:'Confluence FMC — score minimum en %',def:0},{k:'taillePastilles',t:'choice',lab:'Taille des pastilles',opts:[{v:'normale',t:'Normale'},{v:'compacte',t:'Compacte'},{v:'minimale',t:'Minimale'}]},{k:'opacitePastilles',t:'num',lab:'Opacité du fond des pastilles (0,3 à 1)',def:0.78},{k:'showRenforts',t:'bool',lab:'Afficher les renforts grisés (entrées du même sens, numérotées)',def:true},{k:'showOpt15mZone',t:'bool',lab:'Option 15M — variante sortie de zone',def:true},{k:'opt6IgnoreMss',t:'bool',lab:'Option 6 — ignorer les cassures marquées MSS',def:false},{k:'resetSurStructure',t:'bool',lab:'Remettre le cycle à zéro sur CHoCH (mesuré perdant sur 1 semaine BTC)',def:false},
+  strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[{k:'showFmcSolo',t:'bool',lab:'Pastille FMC (signaux du FMC seul)',def:true},{k:'fmcSoloSource',t:'choice',lab:'Pastille FMC — source des signaux',opts:[{v:'score',t:'Score composite'},{v:'contrarien',t:'Contrariens'},{v:'divergence',t:'Divergences'},{v:'tout',t:'Les trois'}]},{k:'showOptFmc',t:'bool',lab:'Option Confluence FMC (avec les entrées MM)',def:false},{k:'fmcSource',t:'choice',lab:'Confluence FMC — sur quelles entrées',opts:[{v:'base',t:'Signal Base'},{v:'opt6',t:'Option 6'},{v:'opt2',t:'Option 2'},{v:'toutes',t:'Toutes les options'}]},{k:'fmcSens',t:'bool',lab:'Confluence FMC — exiger structure et flux dans le sens',def:true},{k:'fmcConfluenceMin',t:'num',lab:'Confluence FMC — modules d\'accord minimum (0 à 5)',def:3},{k:'fmcScoreMin',t:'num',lab:'Confluence FMC — score minimum en %',def:0},{k:'taillePastilles',t:'choice',lab:'Taille des pastilles',opts:[{v:'normale',t:'Normale'},{v:'compacte',t:'Compacte'},{v:'minimale',t:'Minimale'}]},{k:'opacitePastilles',t:'num',lab:'Opacité du fond des pastilles (0,3 à 1)',def:0.78},{k:'showRenforts',t:'bool',lab:'Afficher les renforts grisés (entrées du même sens, numérotées)',def:true},{k:'showOpt15mZone',t:'bool',lab:'Option 15M — variante sortie de zone',def:true},{k:'opt6IgnoreMss',t:'bool',lab:'Option 6 — ignorer les cassures marquées MSS',def:false},{k:'resetSurStructure',t:'bool',lab:'Remettre le cycle à zéro sur CHoCH (mesuré perdant sur 1 semaine BTC)',def:false},
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
     {k:'confluenceFilter',t:'choice',lab:"🎯 MODE CONFLUENCE & FILTRAGE",opts:[
       {v:'all',t:'Toutes les options actives'},
@@ -28476,6 +28480,59 @@ function computeMMSignals(d, ind) {
   sommetsList.sort((a, b) => a.i - b.i);
   signals.sort((a, b) => a.i - b.i);
 
+  /* ---------- PASTILLE FMC ----------
+     Option autonome : les signaux viennent du Flow Momentum Composite seul,
+     sans rien emprunter à la stratégie MM. Trois sources cumulables :
+
+       score       : le score composite franchit son seuil, losanges du Pine
+       contrarien  : le noyau ressort d'une zone extrême
+       divergence  : prix et noyau divergent sur deux pivots
+
+     L'alternance s'applique à cette option seule, comme pour les autres. */
+  if (indMM.showFmcSolo !== false) {
+    let fs_ = null;
+    try { fs_ = (typeof getInd === 'function') ? getInd('fmc') : null; } catch(e) { fs_ = null; }
+    if (fs_ && Array.isArray(fs_.core) && fs_.core.length) {
+      const src = indMM.fmcSoloSource || 'score';
+      const prendre = [];
+      const ajoute = (liste, sens, quoi) => {
+        for (const g of (liste || [])) {
+          if (g.i == null || g.i < 0 || g.i >= d.length) continue;
+          prendre.push({ i: g.i, t: d[g.i].t, dir: sens, quoi: quoi,
+                         conf: fs_.matchCount ? (fs_.matchCount[g.i] || 0) : 0,
+                         sc: fs_.score ? Math.round(fs_.score[g.i] || 0) : 0,
+                         noyau: fs_.core[g.i] });
+        }
+      };
+      if (src === 'score' || src === 'tout') { ajoute(fs_.buys, 1, 'score'); ajoute(fs_.sells, -1, 'score'); }
+      if (src === 'contrarien' || src === 'tout') { ajoute(fs_.contraLong, 1, 'contrarien'); ajoute(fs_.contraShort, -1, 'contrarien'); }
+      if (src === 'divergence' || src === 'tout') { ajoute(fs_.divBull, 1, 'divergence'); ajoute(fs_.divBear, -1, 'divergence'); }
+
+      prendre.sort((a, b) => a.i - b.i);
+      let etatSolo = 0;
+      for (const g of prendre) {
+        if (alternateSignals && etatSolo === g.dir) continue;
+        etatSolo = g.dir;
+        const versHaut = (g.dir === 1);
+        const bougie = d[g.i];
+        signals.push({
+          i: g.i, t: g.t, dir: g.dir,
+          type: versHaut ? 'ACHAT' : 'VENTE',
+          optKey: 'fmc_solo',
+          price: bougie.c, low: bougie.l, high: bougie.h,
+          score: g.noyau,
+          reason: g.quoi + ' \u00b7 ' + g.conf + '/5',
+          label: (versHaut ? 'ACHAT' : 'VENTE') + ' FMC \u2014 ' + g.quoi,
+          badge: '\u{1F30A} ' + (versHaut ? 'ACHAT' : 'VENTE') + ' FMC \u00b7 ' + g.quoi.toUpperCase(),
+          sub: g.quoi + ' \u00b7 noyau ' + Math.round(g.noyau) + ' \u00b7 ' + g.conf + '/5 \u00b7 score ' + g.sc + ' %',
+          color: versHaut ? '#22D3EE' : '#FB7185',
+          bgFill: versHaut ? 'rgba(6, 32, 40, 0.95)' : 'rgba(44, 10, 20, 0.95)'
+        });
+      }
+      signals.sort((a, b) => a.i - b.i);
+    }
+  }
+
   /* ---------- OPTION CONFLUENCE FMC ----------
      Une option de plus, avec sa propre pastille : elle ne modifie aucune
      entrée existante. Elle retient les entrées MM que le Flow Momentum
@@ -28713,6 +28770,7 @@ function drawMMSignals(res, s, e, yOf, cw) {
              case pour être masquées, contrairement aux huit autres. */
           if (sig.optKey === 'opt15m2' && ind.showOpt15mZone === false) return false;
           if (sig.optKey === 'fmc_conf' && ind.showOptFmc === false) return false;
+          if (sig.optKey === 'fmc_solo' && ind.showFmcSolo === false) return false;
           if (sig.optKey === 'base' && ind.showBase === false) return false;
         }
         return true;
@@ -28944,6 +29002,7 @@ function drawMMSignals(res, s, e, yOf, cw) {
           opt4: '🎯 Opt 4 (Lissage)',
           opt5: '🚀 Opt 5 (Rebond V)',
           opt6: '💎 Opt 6 (BOS/DIV)',
+          fmc_solo: '🌊 Pastille FMC',
           fmc_conf: '🔮 Confluence FMC',
           opt15m2: '🕓 15 MIN · SORTIE ZONE',
           opt15m: '🕒 15 MINUTES',
@@ -34368,7 +34427,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-0320';
+  window.__LUMEN_BUILD = 'B-2808-0510';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
