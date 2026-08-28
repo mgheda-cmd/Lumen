@@ -28696,6 +28696,10 @@ function drawMMSignals(res, s, e, yOf, cw) {
       }
     } else {
       displaySignals = res.signals.filter(sig => {
+        /* Attention : hors « all » et hors modes conf_, ce réglage n'est pas
+           une confluence mais un filtre d'option unique — il ne laisse passer
+           qu'une seule option et masque toutes les autres. C'est la première
+           chose à vérifier quand plus aucune pastille n'apparaît. */
         if (cFilter !== 'all' && sig.optKey !== cFilter) return false;
         if (cFilter === 'all') {
           if (sig.optKey === 'opt1' && ind.showOpt1 === false) return false;
@@ -28705,16 +28709,32 @@ function drawMMSignals(res, s, e, yOf, cw) {
           if (sig.optKey === 'opt5' && ind.showOpt5 === false) return false;
           if (sig.optKey === 'opt6' && ind.showOpt6 === false) return false;
           if (sig.optKey === 'opt15m' && ind.show15m === false) return false;
+          /* Ces deux options manquaient à la liste : elles n'avaient aucune
+             case pour être masquées, contrairement aux huit autres. */
+          if (sig.optKey === 'opt15m2' && ind.showOpt15mZone === false) return false;
+          if (sig.optKey === 'fmc_conf' && ind.showOptFmc === false) return false;
           if (sig.optKey === 'base' && ind.showBase === false) return false;
         }
         return true;
       });
     }
 
+    /* Diagnostic : quand plus aucune pastille n'apparaît, on veut savoir si
+       la stratégie n'en produit pas, ou si un réglage les masque. */
+    window.__diagPastilles = {
+      produites: res.signals.length,
+      affichables: displaySignals.length,
+      consignes: displaySignals.filter(x => !(x.renfort > 0)).length,
+      renforts: displaySignals.filter(x => x.renfort > 0).length,
+      filtre: cFilter,
+      dansLaVue: 0
+    };
+
     for (const sig of displaySignals) {
 
       const i = (sig.t != null && typeof idxOfTime === "function" ? idxOfTime(sig.t) : null) ?? sig.i;
       if (i == null || i < s - 2 || i > e + 2) continue;
+      if(window.__diagPastilles) window.__diagPastilles.dansLaVue++;
       const x = xOf(i);
       if (x < -220 || x > W - AXIS_W + 220) continue;
 
@@ -28968,6 +28988,28 @@ function drawMMSignals(res, s, e, yOf, cw) {
       if (typeof labelHits !== "undefined" && Array.isArray(labelHits)) {
         labelHits.push({ x: bx, y: by, w: bw, h: bh, key: "strat_mm" });
       }
+    }
+
+    /* Bandeau de diagnostic, affiché seulement quand rien n'apparaît à
+       l'écran alors que la stratégie produit des signaux. Il nomme la cause
+       au lieu de laisser chercher. */
+    const g = window.__diagPastilles;
+    if (g && g.dansLaVue === 0 && g.produites > 0) {
+      let cause;
+      if (g.affichables === 0 && g.filtre && g.filtre !== 'all')
+        cause = 'le filtre « ' + g.filtre + ' » masque tout \u2014 remettez-le sur Toutes';
+      else if (g.affichables === 0)
+        cause = 'toutes les options sont masquées dans les réglages';
+      else
+        cause = g.affichables + ' pastille(s) hors de la vue \u2014 faites défiler';
+      try{
+        ctx.save();
+        ctx.font = 'bold 10px "IBM Plex Mono", monospace';
+        ctx.fillStyle = '#FF9F1C';
+        ctx.textAlign = 'left';
+        ctx.fillText('\u26A0 MM : ' + g.produites + ' signaux calculés, aucun affiché \u00b7 ' + cause, 8, 30);
+        ctx.restore();
+      }catch(e){}
     }
   }
 }
@@ -34326,7 +34368,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-0140';
+  window.__LUMEN_BUILD = 'B-2808-0320';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
