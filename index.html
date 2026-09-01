@@ -10650,6 +10650,26 @@ function subLabel(p,txt,val,color,titleColor){
     x0=5+4*(aw+2)+6;
   }
   ctx.fillStyle=titleColor || css('--text');
+  /* Repère « FIGÉ » quand l'échelle du panneau a été verrouillée par un
+     glissement : sans lui, on croit que l'indicateur ne bouge plus alors
+     qu'il sort simplement de la plage fixée. Cliquable pour revenir en
+     automatique. */
+  if(mk && state.subScale && state.subScale[mk] && state.subScale[mk].auto===false){
+    const et='FIGÉ';
+    ctx.save();
+    ctx.font='bold 9px "IBM Plex Mono",monospace';
+    const lw=ctx.measureText(et).width+8;
+    ctx.fillStyle='rgba(255,159,28,.22)';
+    ctx.fillRect(x0, yy-10, lw, 13);
+    ctx.strokeStyle='rgba(255,159,28,.65)'; ctx.lineWidth=1;
+    ctx.strokeRect(x0, yy-10, lw, 13);
+    ctx.fillStyle='#FF9F1C';
+    ctx.fillText(et, x0+4, yy);
+    ctx.restore();
+    if(typeof paneCtrls!=='undefined' && Array.isArray(paneCtrls))
+      paneCtrls.push({x:x0, y:yy-10, w:lw, h:13, key:mk, act:'auto_scale'});
+    x0 += lw + 6;
+  }
   ctx.fillText(txt,x0,yy);
   let wtot=ctx.measureText(txt).width;
   if(val!=null){ctx.fillStyle=color;ctx.fillText(val,x0+wtot+8,yy);wtot+=8+ctx.measureText(val).width;}
@@ -12987,6 +13007,13 @@ canvas.addEventListener('touchend',e=>{
   _lastTap=now; _lastTapY=y;
 });
 function applyPaneCtrl(key,act){
+  /* Clic sur le repère « FIGÉ » : l'échelle du panneau revient en
+     automatique et l'indicateur se remet à suivre le prix. */
+  if(act==='auto_scale'){
+    if(state.subScale) delete state.subScale[key];
+    if(typeof toast==='function') toast('Échelle « '+key+' » remise en automatique');
+    saveConfig(); scheduleRender(); return;
+  }
   if(act==='toggle_collapse'){
     state.collapsedPanes = state.collapsedPanes || {};
     state.collapsedPanes[key] = !state.collapsedPanes[key];
@@ -13135,9 +13162,27 @@ function paneIndicatorAt(y){
   return null;
 }
 canvas.addEventListener('dblclick',e=>{
-  // double-clic dans un sous-panneau -> ouvrir ses paramètres
+  /* Double-clic dans un sous-panneau. Faire glisser le CORPS d'un panneau
+     fige son échelle (auto:false) et l'indicateur cesse alors de s'adapter :
+     le prix bouge, lui reste plat, et on croit à un blocage. Le seul retour
+     en automatique était un double-clic sur la bande étroite de la
+     graduation, ce que personne ne devine.
+
+     Désormais : si le panneau a une échelle figée, le double-clic la rend à
+     l'automatique. Sinon, il ouvre les réglages comme avant. */
   const k=paneIndicatorAt(e.offsetY);
-  if(k){openCfg(k);return;}
+  if(k){
+    const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).indexOf(k)>=0);
+    const membres=pane?(pane.members||[pane.key]):[k];
+    const figes=membres.filter(mk=>state.subScale[mk] && state.subScale[mk].auto===false);
+    if(figes.length){
+      for(const mk of figes) delete state.subScale[mk];
+      if(typeof toast==='function') toast('Échelle remise en automatique');
+      render();
+      return;
+    }
+    openCfg(k); return;
+  }
   const z=hitZone(e.offsetX,e.offsetY);
   if(z.startsWith('resize:')){delete state.paneH[z.slice(7)];saveConfig();render();}
   else if(z==='price'){state.yScale.auto=true;render();}
@@ -34436,7 +34481,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-0640';
+  window.__LUMEN_BUILD = 'B-2808-0810';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
