@@ -5326,7 +5326,12 @@ const state = {
     ichi:{on:false},
     st:{on:false},
     almasd:{on:true,fac:1.8,sd:33,alen:35,asig:4,aoff:0.85},
-    sha:{on:true,period:10,tf:'chart',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
+    /* Éteint par défaut. Cet indicateur était actif mais aucune fonction ne
+       le dessinait : personne ne l'avait jamais vu. En le branchant, il s'est
+       mis à superposer un chandelier par bougie au prix — un maillage dense
+       et illisible. La fonction de dessin reste disponible pour qui l'active
+       volontairement. */
+    sha:{on:false,period:10,tf:'chart',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
     sha2:{on:false,period:10,tf:'15',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
     sha3:{on:false,period:10,tf:'60',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
     smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showBoxes:true,showZigzag:false,showPaLabels:false,showBos:true,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
@@ -5587,6 +5592,19 @@ function loadConfig(){
     state.indicators.smc_lite.on = true;
     state.indicators.smc_lite.hidden = false;
   }
+
+  /* Bascule unique : le Heikin Ashi était actif dans toutes les configurations
+     enregistrées, mais aucune fonction ne le dessinait — personne ne l'avait
+     jamais vu. Depuis qu'il est branché, il superpose un chandelier par
+     bougie et sature le prix. On l'éteint une seule fois, en le notant, pour
+     ne pas défaire un choix volontaire par la suite. */
+  try{
+    if(localStorage.getItem('lumen_sha_eteint_une_fois') !== '1'){
+      for(const k of ['sha','sha2','sha3'])
+        if(state.indicators[k]) state.indicators[k].on = false;
+      localStorage.setItem('lumen_sha_eteint_une_fois','1');
+    }
+  }catch(e){}
 }
 function applyConfigToUI(){
   symBtn.textContent=labelOf(state.symbol)+' ▾';
@@ -34613,7 +34631,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-1810';
+  window.__LUMEN_BUILD = 'B-2808-1930';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
