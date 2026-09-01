@@ -29024,7 +29024,10 @@ function drawMMSignals(res, s, e, yOf, cw) {
         const subTxt = lvlStr ? `${priceStr} · Niv: ${lvlStr}` : priceStr;
         ctx.font = (8.5 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
         ctx.fillStyle = "#CBD5E1";
-        ctx.fillText(subTxt, bx + bw / 2, by + 37);
+        /* Cette position n'avait pas été mise à l'échelle avec les autres quand
+           le mode compact est arrivé : la boîte fait 35 px de haut en compact
+           et le prix était écrit à 37, donc en dehors de la pastille. */
+        ctx.fillText(subTxt, bx + bw / 2, by + 37 * kT);
       } else {
         // --- RENDU STANDARD SUR 3 LIGNES (FORMAT PLUS CARRÉ) ---
         // Ligne 1 : Heure + Mot-clé ACHAT (Vert) ou VENTE (Rouge)
@@ -34481,7 +34484,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-0810';
+  window.__LUMEN_BUILD = 'B-2808-0920';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
