@@ -2492,9 +2492,7 @@ footer{
   <div id="panneau-strat" style="position:absolute;top:8px;right:12px;z-index:40;
        background:var(--panel-2);border:1px solid var(--line);border-radius:9px;
        padding:7px 9px;min-width:186px;max-width:260px;
-       box-shadow:0 4px 14px rgba(0,0,0,.28);pointer-events:auto">
-    <div style="font-size:10.5px;color:#94A3B8">Balayage en attente…</div>
-  </div>
+       box-shadow:0 4px 14px rgba(0,0,0,.28);pointer-events:auto;display:none"></div>
 </div>
 
 <div id="zoom-back">
@@ -34546,7 +34544,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-1250';
+  window.__LUMEN_BUILD = 'B-2808-1400';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -36530,6 +36528,14 @@ window.majPanneauStrat = function(){
   el.style.minWidth = '186px';
   el.style.padding = '7px 9px';
   const res = window.__balayageMM;
+  /* Tant qu'aucun balayage n'a été lancé, le panneau n'a rien à dire : il
+     s'efface complètement plutôt que d'afficher un message d'attente
+     permanent. Il réapparaît au clic sur « ★ Balayage ». */
+  if((!Array.isArray(res) || !res.length) && !window.__stratEnCours){
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
   if(!Array.isArray(res) || !res.length){
     /* Compte à rebours plutôt qu'un « en attente » muet : on sait quand ça va
        démarrer, et un bouton permet de le lancer tout de suite. */
@@ -36625,7 +36631,9 @@ window.majPanneauStrat = function(){
 
 window.lancerBalayageStrat = async function(force){
   const el = document.getElementById('panneau-strat');
-  if(el) el.innerHTML = '<div style="font-size:10.5px;color:#00E5FF">Balayage en cours\u2026</div>';
+  /* Le panneau ne réapparaît qu'ici, quand vous lancez le balayage. */
+  window.__stratEnCours = true;
+  if(el){ el.style.display = ''; el.innerHTML = '<div style="font-size:10.5px;color:#00E5FF">Balayage en cours\u2026</div>'; }
 
   /* Le balayage charge son propre historique pour mesurer les combinaisons.
      Sans précaution, il laissait ces données et les signaux calculés dessus
@@ -36661,6 +36669,7 @@ window.lancerBalayageStrat = async function(force){
   if(state.subScale){
     for(const k in state.subScale){ if(state.subScale[k]) state.subScale[k].auto = true; }
   }
+  window.__stratEnCours = false;
   if(typeof window.scrollToLatestCandles === 'function') window.scrollToLatestCandles();
   else if(typeof render === 'function') render();
   const best = choisirMeilleureStrat(window.__balayageMM);
