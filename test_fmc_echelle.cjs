@@ -13,7 +13,7 @@ global.document={documentElement:el(''),getElementById:()=>el(''),querySelector:
 global.localStorage={getItem:()=>null,setItem(){},removeItem(){}};global.navigator={userAgent:'node'};
 global.getComputedStyle=()=>({getPropertyValue:()=>''});global.fetch=async()=>({ok:true,json:async()=>({})});
 eval('var state;'+sc.replace('const state =','state =')+';global.__g=getInd;global.__d=drawFmcSub;');
-const tout=JSON.parse(fs.readFileSync('candles_ok.json','utf8')).slice(0,3000);
+const tout=JSON.parse(fs.readFileSync('candles_synth.json','utf8')).slice(0,3000);
 state.data=tout;state.symbol='BTCUSDT';state.tf=1;state.cache={};
 global.ctx=faux();global.W=1200;global.H=900;global.AXIS_W=60;global.AXIS_H=24;global.xOf=(i)=>i*0.35;
 
@@ -30,20 +30,27 @@ p={key:'fmc',y:0,h:200,_sameScale:true,_forceLo:-250,_forceHi:900,_groupKey:'mac
 t('pas d exception', !dessine(p));
 t('   bornes toujours 0 et 100', p.lo===0 && p.hi===100, p.lo+' a '+p.hi);
 
-console.log('\n== Echelle memorisee par un glissement ==');
+console.log('\n== Echelle reglee a la main ==');
+/* Une echelle fixee par l'utilisateur doit etre respectee : c'est ce qui
+   permet d'agrandir ou de reduire le panneau depuis la graduation. */
 state.subScale={fmc:{auto:false,lo:35,hi:64}};
 p={key:'fmc',y:0,h:200};
 t('pas d exception', !dessine(p));
-t('   bornes toujours 0 et 100', p.lo===0 && p.hi===100, p.lo+' a '+p.hi);
+t('   la votre est respectee', p.lo===35 && p.hi===64, p.lo+' a '+p.hi);
+state.subScale={fmc:{auto:true}};
+p={key:'fmc',y:0,h:200};
+dessine(p);
+t('   retour a 0-100 en automatique', p.lo===0 && p.hi===100, p.lo+' a '+p.hi);
 state.subScale={};
 
-console.log('\n== Les deux a la fois ==');
+console.log('\n== Panneau partage ET echelle a la main ==');
 state.subScale={fmc:{auto:false,lo:10,hi:20},macd:{auto:false,lo:-500,hi:500}};
 p={key:'fmc',y:0,h:200,_sameScale:true,_forceLo:-500,_forceHi:500,_groupKey:'macd'};
 t('pas d exception', !dessine(p));
-t('   bornes toujours 0 et 100', p.lo===0 && p.hi===100, p.lo+' a '+p.hi);
+t('   la votre l emporte sur le groupe', p.lo===10 && p.hi===20, p.lo+' a '+p.hi);
+t('   le groupe est rendu intact apres', p._sameScale===true);
 state.subScale={};
 
-t('le verrou est dans le code', /subYOf\(p, K, 0, 100, true, true\)/.test(src));
+t('le groupe est neutralise le temps de l appel', /p\._sameScale = false;\s*const yOf = subYOf\(p, K, 0, 100, true\);\s*p\._sameScale = groupeSauve;/.test(src));
 
 console.log('\n'+(ko===0?'L echelle du FMC ne bouge plus.':ko+' probleme(s).'));

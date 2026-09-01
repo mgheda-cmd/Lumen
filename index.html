@@ -10895,7 +10895,19 @@ function drawFmcSub(p, s, e, cw, cle) {
      la graduation se mettait à bouger seule et les tracés ne correspondaient
      plus aux repères. Le FMC est un oscillateur borné, ses limites ne doivent
      jamais être ni partagées ni conservées. */
-  const yOf = subYOf(p, K, 0, 100, true, true);
+  /* Échelle : 0-100 par défaut, mais réglable à la main comme les autres
+     panneaux. Le sixième argument, forceAuto, interdisait TOUTE échelle
+     mémorisée — y compris celle que vous fixez en faisant glisser la
+     graduation, d'où l'impossibilité d'agrandir ou de réduire le panneau.
+
+     Ce qu'il fallait neutraliser, c'est seulement l'échelle imposée par le
+     groupe quand plusieurs indicateurs partagent un panneau : c'est elle qui
+     faisait dériver la graduation. On la met donc en sommeil le temps de
+     l'appel, et le réglage manuel reprend ses droits. */
+  const groupeSauve = p._sameScale;
+  p._sameScale = false;
+  const yOf = subYOf(p, K, 0, 100, true);
+  p._sameScale = groupeSauve;
   const cBull = S(K,'cBull') || '#06A22F';
   const cBear = S(K,'cBear') || '#CF1717';
   const ob = S(K,'obLevel') != null ? +S(K,'obLevel') : 70;
@@ -34484,7 +34496,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-0920';
+  window.__LUMEN_BUILD = 'B-2808-1030';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
