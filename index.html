@@ -7403,8 +7403,52 @@ function computePanes(){
     let h=state.paneH[g[0]]||def;
     return Math.max(40,Math.min(h,avail*0.6));
   });
-  const maxSubs=avail*0.7, tot=hs.reduce((a,b)=>a+b,0);
-  if(tot>maxSubs){const f=maxSubs/tot;hs=hs.map(h=>h*f);}
+  /* Répartition de la hauteur. L'ancien calcul plafonnait l'ensemble des
+     sous-panneaux à 70 % et absorbait le dépassement en écrasant tout le
+     monde proportionnellement, sans plancher : à partir d'une dizaine
+     d'indicateurs il ne restait que 28 pixels dessinables, et une hauteur
+     mémorisée sur un seul panneau suffisait à réduire les autres à des
+     bandes illisibles. On croyait alors l'indicateur absent ou figé.
+
+     Désormais : chaque panneau déplié garde au moins 46 pixels, soit 30 de
+     zone utile une fois les marges retirées. Si la place manque, on prend
+     jusqu'à 82 % de la hauteur, et le surplus est retiré aux panneaux les
+     plus grands en premier plutôt qu'à tous à égalité. */
+  const MIN_PANNEAU = 46;
+  const estReplie = (i) => hs[i] <= 22;
+  let maxSubs = avail*0.7;
+  let tot = hs.reduce((a,b)=>a+b,0);
+  if(tot > maxSubs){
+    const besoin = hs.reduce((a,h,i)=> a + (estReplie(i) ? h : Math.max(h, MIN_PANNEAU)), 0);
+    maxSubs = Math.min(avail*0.82, Math.max(maxSubs, Math.min(besoin, avail*0.82)));
+  }
+  tot = hs.reduce((a,b)=>a+b,0);
+  if(tot > maxSubs){
+    /* On retire le surplus aux plus grands, par passes, sans jamais
+       descendre sous le plancher. */
+    let surplus = tot - maxSubs;
+    for(let garde=0; garde<40 && surplus > 0.5; garde++){
+      const reductibles = hs.map((h,i)=>({h,i}))
+                            .filter(o=>!estReplie(o.i) && o.h > MIN_PANNEAU);
+      if(!reductibles.length) break;
+      const dispo = reductibles.reduce((a,o)=>a + (o.h - MIN_PANNEAU), 0);
+      if(dispo <= 0.5) break;
+      const part = Math.min(1, surplus / dispo);
+      for(const o of reductibles){
+        const retire = (o.h - MIN_PANNEAU) * part;
+        hs[o.i] -= retire; surplus -= retire;
+      }
+    }
+    /* S'il reste du surplus, c'est qu'il y a trop d'indicateurs pour la
+       hauteur : on l'accepte plutôt que de tout rendre illisible, et le
+       prix se réduit d'autant. */
+    tot = hs.reduce((a,b)=>a+b,0);
+    if(tot > avail - 80) {
+      const f = (avail - 80) / tot;
+      hs = hs.map(h => h * f);
+      window.__tropDePanneaux = hs.length;
+    } else window.__tropDePanneaux = 0;
+  } else window.__tropDePanneaux = 0;
   const priceH=avail-hs.reduce((a,b)=>a+b,0);
   const panes=[{key:'price', y:0, h:priceH, members:['price']}];
   let y=priceH;
@@ -34569,7 +34613,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-1650';
+  window.__LUMEN_BUILD = 'B-2808-1810';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
