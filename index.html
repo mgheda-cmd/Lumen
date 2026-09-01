@@ -5353,7 +5353,7 @@ const state = {
       showScore:true,showContrarian:true,showDivergence:true,showWaves:true,showFlow:true,
       cBull:'#06A22F',cBear:'#CF1717',showOscillator:true},
     sqz_mom:{on:true,showSqzLevels:true,showStats:false,statsLookback:2000,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true,c1Up:'#00E676',c1UpDn:'#00897B',c1Dn:'#FF5252',c1DnUp:'#B71C1C',c2Up:'#00E5FF',c2UpDn:'#0288D1',c2Dn:'#FF9F1C',c2DnUp:'#B36200',c2Line:'#00E5FF'},
-    imp:{on:false,period:34,tf:'chart'},
+    imp:{on:true,period:34,tf:'chart'},
     imp2:{on:false,period:34,tf:'60'},
     stoch:{on:false,period:14,tf:'chart'},
     atr:{on:false,period:14,tf:'chart'},
@@ -5591,6 +5591,20 @@ function loadConfig(){
     state.indicators.smc_lite.on = true;
     state.indicators.smc_lite.hidden = false;
   }
+
+  /* Bascule unique : allumer l'Impulse MACD dans les configurations déjà
+     enregistrées. Changer la valeur par défaut ne suffit pas — une config
+     sauvegardée écrase les défauts au chargement. Notée pour ne pas
+     rallumer un indicateur que vous auriez éteint volontairement. */
+  try{
+    if(localStorage.getItem('lumen_imp_allume_une_fois') !== '1'){
+      if(state.indicators.imp){
+        state.indicators.imp.on = true;
+        state.indicators.imp.hidden = false;
+      }
+      localStorage.setItem('lumen_imp_allume_une_fois','1');
+    }
+  }catch(e){}
 
   /* Bascule unique : le Heikin Ashi était actif dans toutes les configurations
      enregistrées, mais aucune fonction ne le dessinait — personne ne l'avait
@@ -34522,7 +34536,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-2210';
+  window.__LUMEN_BUILD = 'B-2808-2320';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
