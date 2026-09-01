@@ -5324,9 +5324,9 @@ const state = {
     ichi:{on:false},
     st:{on:false},
     almasd:{on:true,fac:1.8,sd:33,alen:35,asig:4,aoff:0.85},
-    sha:{on:true,period:10,tf:'chart',mode:'lisse'},
-    sha2:{on:false,period:10,tf:'15',mode:'lisse'},
-    sha3:{on:false,period:10,tf:'60',mode:'lisse'},
+    sha:{on:true,period:10,tf:'chart',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
+    sha2:{on:false,period:10,tf:'15',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
+    sha3:{on:false,period:10,tf:'60',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
     smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showBoxes:true,showZigzag:false,showPaLabels:false,showBos:true,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
     fvg_ranked:{on:true,maxZones:10,maxStored:50,volLength:20,trendLength:50,showBars:true,showBlockText:true,strengthTextSize:'auto',blockTextSize:'auto',cBull:'#1AD8C2',cBear:'#D81A66',tf:'chart'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
@@ -8915,6 +8915,8 @@ function drawPrice(p,s,e,cw,sharedXStack){
   // Order Blocks MTF : zones par UT, étiquetées, les mitigées disparaissent
   if(vis('rangeDet') && S('rangeDet','showOverlay')!==false) drawRangeDetOverlay(getInd('rangeDet'),s,e,yOf,cw,p);
   if(vis('rangeDet2') && S('rangeDet2','showOverlay')!==false) drawRangeDet2Overlay(getInd('rangeDet2'),s,e,yOf,cw,p);
+  for(const kSha of ['sha','sha2','sha3'])
+    if(vis(kSha)) drawSHA(kSha, getInd(kSha), s, e, yOf, cw, p);
   if(vis('smc_lite')) drawSmcLite(getInd('smc_lite'),s,e,yOf,cw,p);
   if(vis('fvg_ranked')) drawRankedFVG(getInd('fvg_ranked'),s,e,yOf,cw,p,'fvg_ranked');
   if(vis('ob')){const _ob=getInd('ob');drawOBMTF(_ob,s,e,yOf,cw,p);alertNewOB(_ob);}
@@ -9346,6 +9348,51 @@ function drawPrice(p,s,e,cw,sharedXStack){
       }
     }
   }
+}
+
+
+/* Chandeliers Heikin Ashi lissés, tracés par-dessus le prix. Cet indicateur
+   avait son entrée de menu, ses sept unités de temps, son schéma de réglages
+   et son calcul — mais aucune fonction ne le dessinait. Activé par défaut, il
+   ne pouvait donc jamais apparaître. */
+function drawSHA(cle, ha, s, e, yOf, cw, p) {
+  if (!Array.isArray(ha) || !ha.length) return;
+  const mtf = S(cle,'tf');
+  const vert = S(cle,'cUp') || '#26C6DA';
+  const rouge = S(cle,'cDown') || '#EF5350';
+  const alpha = (S(cle,'opacite') != null) ? +S(cle,'opacite') : 0.55;
+  const largeur = Math.max(1, cw * 0.62);
+
+  /* Sur une unité supérieure, le tableau suit les bougies de cette unité :
+     on le ramène sur les bougies affichées par l'horodatage. */
+  let serie = ha;
+  if (mtf && mtf !== 'chart' && +mtf !== state.tf) {
+    const parT = new Map();
+    for (const b of ha) if (b) parT.set(b.t, b);
+    const pas = (+mtf) * 60000;
+    serie = state.data.map(b => {
+      const cle2 = Math.floor(b.t / pas) * pas;
+      return parT.get(cle2) || null;
+    });
+  }
+
+  ctx.save();
+  for (let i = s; i <= e; i++) {
+    const b = serie[i];
+    if (!b || b.o == null || b.c == null) continue;
+    const x = xOf(i);
+    const monte = b.c >= b.o;
+    const col = monte ? vert : rouge;
+    const yO = yOf(b.o), yC = yOf(b.c), yH = yOf(b.h), yL = yOf(b.l);
+    ctx.strokeStyle = hexA(col, alpha);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, yH); ctx.lineTo(x, yL); ctx.stroke();
+    ctx.fillStyle = hexA(col, alpha * 0.75);
+    const haut = Math.max(1, Math.abs(yC - yO));
+    ctx.fillRect(x - largeur/2, Math.min(yO, yC), largeur, haut);
+    ctx.strokeRect(x - largeur/2, Math.min(yO, yC), largeur, haut);
+  }
+  ctx.restore();
 }
 
 function drawSmcLite(data, s, e, yOf, cw, p) {
@@ -16859,7 +16906,7 @@ const SCHEMA={
     {k:'col',t:'col',lab:'Couleur',def:'#E8B84B'},
   ]},
   vwap:{title:'VWAP',fields:[{k:'cLine',t:'col',lab:'Couleur',def:'#FF9D66'}]},
-  sha:{title:'Heikin Ashi lissé ①',fields:[
+  sha:{title:'Heikin Ashi lissé ①',fields:[{k:'cUp',t:'col',lab:'Couleur haussière',def:'#26C6DA'},{k:'cDown',t:'col',lab:'Couleur baissière',def:'#EF5350'},{k:'opacite',t:'num',lab:'Opacité (0 à 1)',def:0.55},
     {k:'opacity',t:'num',lab:'Opacité (0.2 à 1)',min:0.2,max:1,def:0.55},
     {k:'mode',t:'choice',lab:'Type',opts:[{v:'normal',t:'Normal'},{v:'lisse',t:'Lissé'}]},
     {k:'showTf',t:'bool',lab:'Afficher l UT sur les bougies',def:true},
@@ -34496,7 +34543,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-1030';
+  window.__LUMEN_BUILD = 'B-2808-1140';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
