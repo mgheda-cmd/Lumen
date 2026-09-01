@@ -6272,6 +6272,22 @@ function ensureMTF(tf){
   const k=state.symbol+'|'+state.market;
   if(mtfStore.key!==k){mtfStore.key=k;mtfStore.data={};}
   if(mtfStore.data[tf]!==undefined)return;
+
+  /* L'échange ne connaît que 1, 3, 5, 15, 60, 240 et 1440 minutes. Or les
+     menus proposent aussi 4, 6, 7, 8, 9, 10, 12 et 30 minutes : la requête
+     partait avec un intervalle indéfini, l'échange la rejetait, et
+     l'indicateur restait sans données — actif, coché, mais invisible.
+
+     Ces unités-là se reconstruisent par agrégation des bougies affichées,
+     ce que le code sait déjà faire ailleurs. */
+  if(!TF_MAP[tf]){
+    mtfStore.data[tf] = null;
+    try{
+      const agg = (typeof aggregateData==='function') ? aggregateData(state.data, tf) : null;
+      mtfStore.data[tf] = (agg && agg.length) ? agg : null;
+    }catch(e){ mtfStore.data[tf] = null; }
+    return;
+  }
   mtfStore.data[tf]=null; // chargement en cours
   fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[tf]}&limit=500`)
     .then(rows=>{
@@ -34536,7 +34552,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-2320';
+  window.__LUMEN_BUILD = 'B-2908-0110';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
