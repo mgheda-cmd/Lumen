@@ -5837,6 +5837,15 @@ function applyTickPrice(px){
     const now = Date.now();
     if(now - _lastHeavyTickTime > 400){
       _lastHeavyTickTime = now;
+      /* Le flux envoie deux sortes de messages : les bougies, qui passent par
+         applyKline et vident le cache, et les transactions, qui passent ici.
+         Ce chemin-ci ne le vidait pas : le prix avançait, la dernière bougie
+         changeait, mais tous les indicateurs restaient sur leurs valeurs
+         d'avant. Le graphique bougeait sans que le bas le suive.
+
+         On vide donc le cache ici aussi, dans le bloc déjà limité à un
+         passage toutes les 400 ms — le coût est le même qu'à chaque bougie. */
+      state.cache = {};
       updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
       if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
@@ -34427,7 +34436,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-0510';
+  window.__LUMEN_BUILD = 'B-2808-0640';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
