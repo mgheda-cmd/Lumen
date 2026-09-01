@@ -7356,10 +7356,16 @@ function computePanes(){
   // toute la hauteur. Les indicateurs restent actifs, ils ne sont plus
   // dessinés en bas — un second appui les ramène tels quels.
   if(state.fullChart){
+    /* Ce mode escamote TOUS les indicateurs du bas, même ceux cochés, et les
+       pointillés des pastilles n'ont donc plus rien à traverser. Il se
+       conserve d'un rechargement à l'autre et le seul indice était la teinte
+       du bouton : on le signale clairement. */
+    window.__pleinGraphique = true;
     const p={key:'price',y:0,h:H-AXIS_H,members:['price']};
     state.lastPanes=[p];
     return [p];
   }
+  window.__pleinGraphique = false;
   if(vis('vol_delta')) subs.push('vol_delta');
   if(vis('rsi')) subs.push('rsi');
   if(vis('rsi2')) subs.push('rsi2');
@@ -8603,6 +8609,26 @@ function render(){
     }
     ctx.restore();
   }
+  /* Bandeau d'avertissement : en plein graphique, les indicateurs du bas sont
+     escamotés et les pointillés des pastilles s'arrêtent au prix. Sans ce
+     rappel, on croit à une panne. */
+  if(window.__pleinGraphique){
+    try{
+      ctx.save();
+      ctx.font='bold 10px "IBM Plex Mono", monospace';
+      ctx.textAlign='left';
+      const msg='\u26F6 Plein graphique actif \u2014 indicateurs du bas escamotés (bouton « Pleine page »)';
+      const w=ctx.measureText(msg).width+14;
+      ctx.fillStyle='rgba(37,208,164,.14)';
+      ctx.fillRect(8, H-AXIS_H-24, w, 17);
+      ctx.strokeStyle='rgba(37,208,164,.55)'; ctx.lineWidth=1;
+      ctx.strokeRect(8, H-AXIS_H-24, w, 17);
+      ctx.fillStyle='#25D0A4';
+      ctx.fillText(msg, 15, H-AXIS_H-12);
+      ctx.restore();
+    }catch(e){}
+  }
+
   /* Prolongement des pointillés des pastilles Z.Z. jusqu'en bas du
      graphique, à travers tous les indicateurs affichés. Tracé ici, après
      tous les panneaux, sans quoi ceux-ci le recouvriraient. */
@@ -34544,7 +34570,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2808-1400';
+  window.__LUMEN_BUILD = 'B-2808-1520';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
