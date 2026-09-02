@@ -11315,28 +11315,31 @@ function drawFmcSub(p, s, e, cw, cle) {
                : (sensD === -1 && scP >= 51) ? (scP >= 80 ? 'TRÈS BAISSIER' : 'BAISSIER')
                : 'NEUTRE';
     const colScore = (sensD === 1 && scP >= 51) ? cBull : (sensD === -1 && scP >= 51) ? cBear : neutre;
+    /* Cinq blocs au lieu de dix : autant de lisibilité, moitié moins large. */
     const barres = (function(){
-      const n = Math.max(0, Math.min(10, Math.round(pctB/10)));
+      const n = Math.max(0, Math.min(5, Math.round(pctB/20)));
       let t = '';
-      for (let q=1;q<=10;q++) t += (q<=n) ? '\u2588' : '\u2591';
+      for (let q=1;q<=5;q++) t += (q<=n) ? '\u2588' : '\u2591';
       return t;
     })();
+    /* Intitulés raccourcis : sur un écran étroit, le tableau mangeait un
+       tiers du panneau. */
     const lignes = [
       ['Noyau', (r.core[der]||0).toFixed(1), r.core[der] >= 50 ? cBull : cBear],
       ['Flux', r.flow[der] >= 50 ? 'HAUSSIER' : 'BAISSIER', r.flow[der] >= 50 ? cBull : cBear],
-      ['Structure', r.trend[der] === 1 ? 'Haussière' : 'Baissière', r.trend[der] === 1 ? cBull : cBear],
+      ['Struct.', r.trend[der] === 1 ? 'Haussière' : 'Baissière', r.trend[der] === 1 ? cBull : cBear],
       ['KNN', (knnB === 1 ? 'HAUSSIER ' : knnB === -1 ? 'BAISSIER ' : 'NEUTRE ') + Math.round(r.knn[der]) + ' %',
               knnB === 1 ? cBull : knnB === -1 ? cBear : neutre],
       ['Tension', r.strengthening[der] ? (r.tension[der] >= 0 ? 'HAUSSIÈRE +' : 'BAISSIÈRE −') : '—',
               r.strengthening[der] ? (r.tension[der] >= 0 ? cBull : cBear) : neutre],
-      ['Source', r.auVolume ? 'Volume' : 'Bougies (auto)', neutre],
+      ['Src', r.auVolume ? 'Volume' : 'Bougies (auto)', neutre],
       ['Score', rang + ' ' + scP + ' %', colScore],
-      ['Confluence', nAcc + '/5  (' + Math.round(pctB) + ' %)', colScore],
-      ['Baromètre', barres, colScore]
+      ['Confl.', nAcc + '/5  (' + Math.round(pctB) + ' %)', colScore],
+      ['Baro.', barres, colScore]
     ];
 
     ctx.save();
-    ctx.font = '9.5px "IBM Plex Mono", monospace';
+    ctx.font = '8px "IBM Plex Mono", monospace';
     let lgG = 0, lgD = 0;
     for (const [a,b] of lignes) {
       lgG = Math.max(lgG, ctx.measureText(a).width);
@@ -11346,17 +11349,17 @@ function drawFmcSub(p, s, e, cw, cle) {
        quand le panneau est court, et il chevauchait le titre. On adapte la
        hauteur de ligne à la place disponible, et on le supprime s'il ne reste
        vraiment pas de quoi l'afficher lisiblement. */
-    const pad = 5;
-    const dispo = Math.max(0, p.h - 22);
-    let hL = Math.min(12, Math.floor((dispo - pad*2) / lignes.length));
-    if (hL >= 7) {
-      if (hL < 12) ctx.font = Math.max(7, hL - 2.5).toFixed(1) + 'px "IBM Plex Mono", monospace';
+    const pad = 3;
+    const dispo = Math.max(0, p.h - 20);
+    let hL = Math.min(10, Math.floor((dispo - pad*2) / lignes.length));
+    if (hL >= 6) {
+      if (hL < 10) ctx.font = Math.max(6, hL - 2).toFixed(1) + 'px "IBM Plex Mono", monospace';
       lgG = 0; lgD = 0;
       for (const [a,b] of lignes) {
         lgG = Math.max(lgG, ctx.measureText(a).width);
         lgD = Math.max(lgD, ctx.measureText(b).width);
       }
-      const lgT = Math.min(lgG + lgD + pad*3, (W - AXIS_W) * 0.42);
+      const lgT = Math.min(lgG + lgD + pad*3, (W - AXIS_W) * 0.30);
       const hT = lignes.length * hL + pad*2;
       const xT = Math.max(2, W - AXIS_W - lgT - 6);
       const yT = p.y + 18;
@@ -34641,7 +34644,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2908-0740';
+  window.__LUMEN_BUILD = 'B-2908-0850';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
