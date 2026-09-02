@@ -5611,6 +5611,9 @@ function loadConfig(){
         state.indicators.imp.hidden = false;
       }
       localStorage.setItem('lumen_imp_allume_une_fois','1');
+      /* Même correctif : sans enregistrement, le changement était perdu au
+         rechargement suivant. */
+      if(typeof saveConfig === 'function') setTimeout(saveConfig, 0);
     }
   }catch(e){}
 
@@ -5620,10 +5623,19 @@ function loadConfig(){
      bougie et sature le prix. On l'éteint une seule fois, en le notant, pour
      ne pas défaire un choix volontaire par la suite. */
   try{
-    if(localStorage.getItem('lumen_sha_eteint_une_fois') !== '1'){
+    /* Cette bascule éteignait le Heikin Ashi en mémoire mais n'enregistrait
+       pas : au rechargement suivant, la configuration sauvegardée le
+       rallumait et le drapeau empêchait la bascule de rejouer. Il revenait
+       donc à chaque fois. Nouveau drapeau pour qu'elle s'applique une fois de
+       plus, et enregistrement immédiat cette fois. */
+    if(localStorage.getItem('lumen_sha_eteint_v2') !== '1'){
+      let change = false;
       for(const k of ['sha','sha2','sha3'])
-        if(state.indicators[k]) state.indicators[k].on = false;
-      localStorage.setItem('lumen_sha_eteint_une_fois','1');
+        if(state.indicators[k] && state.indicators[k].on){
+          state.indicators[k].on = false; change = true;
+        }
+      localStorage.setItem('lumen_sha_eteint_v2','1');
+      if(change && typeof saveConfig === 'function') setTimeout(saveConfig, 0);
     }
   }catch(e){}
 }
@@ -34571,7 +34583,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2908-0240';
+  window.__LUMEN_BUILD = 'B-2908-0350';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
