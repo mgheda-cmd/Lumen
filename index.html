@@ -6438,11 +6438,46 @@ function getMTFBars(tf){
         return older.length ? older.concat(mtfBars) : mtfBars;
       }
     }
-    return mtfBars;
+    return rafraichirMTF(tf, mtfBars);
   }
 
-  if(mtfBars && mtfBars.length) return mtfBars;
+  if(mtfBars && mtfBars.length) return rafraichirMTF(tf, mtfBars);
   return state.data;
+}
+
+/* Les bougies d'une unité supérieure ne sont chargées qu'une fois : le magasin
+   garde l'instantané du démarrage et ensureMTF ressort aussitôt. Un indicateur
+   réglé sur 5 ou 15 minutes restait donc figé sur cet instantané pendant que
+   le prix avançait, et seul un rechargement de page le remettait à jour.
+
+   On prolonge le magasin à partir des bougies affichées, qui, elles, sont
+   vivantes : la dernière bougie de l'unité supérieure est reconstruite à
+   chaque appel, et les nouvelles sont ajoutées au fur et à mesure. */
+function rafraichirMTF(tf, bars){
+  if(!bars || !bars.length || !state.data || !state.data.length) return bars;
+  if(!(state.tf < tf)) return bars;
+  const pas = tf * 60000;
+  const debut = bars[bars.length - 1].t;          // dernière bougie connue
+  const recentes = state.data.filter(b => b.t >= debut);
+  if(!recentes.length) return bars;
+
+  const refaites = [];
+  let cur = null;
+  for(const b of recentes){
+    const cle = Math.floor(b.t / pas) * pas;
+    if(!cur || cur.t !== cle){
+      cur = { t:cle, o:b.o, h:b.h, l:b.l, c:b.c, v:b.v||0 };
+      refaites.push(cur);
+    } else {
+      cur.h = Math.max(cur.h, b.h);
+      cur.l = Math.min(cur.l, b.l);
+      cur.c = b.c;
+      cur.v += (b.v||0);
+    }
+  }
+  if(!refaites.length) return bars;
+  const avant = bars.slice(0, bars.length - 1);   // on remplace la dernière
+  return avant.concat(refaites);
 }
 
 function mapHTF(bars,arr,baseData){
@@ -34606,7 +34641,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2908-0620';
+  window.__LUMEN_BUILD = 'B-2908-0740';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
