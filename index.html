@@ -5592,6 +5592,14 @@ function loadConfig(){
     state.indicators.smc_lite.hidden = false;
   }
 
+  /* Le second état « hidden » n'est plus consulté. On l'efface partout une
+     fois, sinon un indicateur masqué autrefois resterait marqué comme tel
+     dans la configuration enregistrée sans plus aucun effet visible. */
+  try{
+    for(const k in state.indicators)
+      if(state.indicators[k] && state.indicators[k].hidden) state.indicators[k].hidden = false;
+  }catch(e){}
+
   /* Bascule unique : allumer l'Impulse MACD dans les configurations déjà
      enregistrées. Changer la valeur par défaut ne suffit pas — une config
      sauvegardée écrase les défauts au chargement. Notée pour ne pas
@@ -12808,7 +12816,11 @@ const IND_META={
     return `Sortie Order Block 📦 ($${dist}) 🎯`;
   },color:'#C084FC'},
 };
-function vis(k){return state.indicators[k] && state.indicators[k].on && !state.indicators[k].hidden;}
+/* Un seul interrupteur décide de l'affichage : « on ». Il existait un second
+   état, « hidden », piloté par l'œil des pastilles : un indicateur pouvait
+   être coché et invisible, sans qu'on comprenne pourquoi. L'œil bascule
+   maintenant « on » directement, et « hidden » n'est plus consulté. */
+function vis(k){return !!(state.indicators[k] && state.indicators[k].on);}
 /* visB : comme vis(), mais rend faux quand le mode « graphique propre »
    est actif. Réservé aux familles de pastilles, pour toutes les masquer
    d'un geste sans désactiver les indicateurs eux-mêmes. */
@@ -12857,7 +12869,7 @@ function updateChips(){
       else if(k==='bb'){const a=getInd(k);val=a.mid[i]!=null?fmt(a.mid[i]):'';}
       else if(k==='two_ind'){const a=getInd(k);val=a.ssWma&&a.ssWma[i]!=null?fmt(a.ssWma[i]):'';}
     }catch(e){}
-    const hidden=!!ind.hidden;
+    const hidden=!ind.on;
     const eye=hidden?'🚫':'👁';
     let btBtn = '';
     if (k === 'signal_ema_ha') {
@@ -12928,7 +12940,13 @@ chips.addEventListener('click',e=>{
     return;
   }
   const ek=e.target.dataset.eye || e.target.closest('[data-eye]')?.dataset.eye;
-  if(ek){state.indicators[ek].hidden=!state.indicators[ek].hidden;saveConfig();render();return;}
+  if(ek){
+    /* L'œil bascule l'indicateur lui-même : un seul état, pas deux. */
+    state.indicators[ek].on = !state.indicators[ek].on;
+    state.indicators[ek].hidden = false;
+    if(typeof syncMenu==='function') syncMenu();
+    saveConfig(); render(); return;
+  }
   const k=e.target.dataset.off || e.target.closest('[data-off]')?.dataset.off;
   if(k){state.indicators[k].on=false;state.indicators[k].hidden=false;syncMenu();saveConfig();render();return;}
   const chip=e.target.closest('.chip');
@@ -13146,7 +13164,8 @@ function applyPaneCtrl(key,act){
   }
   if(act==='toggle_ind_eye'){
     if(state.indicators && state.indicators[key]){
-      state.indicators[key].hidden = !state.indicators[key].hidden;
+      state.indicators[key].on = !state.indicators[key].on;
+      state.indicators[key].hidden = false;
     }
     if(typeof syncMenu==='function')syncMenu();
     if(typeof updateChips==='function')updateChips();
@@ -34552,7 +34571,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2908-0110';
+  window.__LUMEN_BUILD = 'B-2908-0240';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
