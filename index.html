@@ -5905,14 +5905,22 @@ function applyTickPrice(px){
     const now = Date.now();
     if(now - _lastHeavyTickTime > 400){
       _lastHeavyTickTime = now;
-      /* On NE vide PAS le cache ici. Essayé : recalculer tous les
-         indicateurs toutes les 400 ms sature le navigateur — la stratégie MM
-         et le FMC n'ont pas le temps de finir avant le tick suivant, et le
-         bas paraît figé alors qu'il calcule en permanence.
+      /* Les transactions font avancer le prix sans passer par applyKline :
+         sans vidage du cache ici, les indicateurs du bas restent figés
+         pendant que le graphique bouge. Mesuré : 0 indicateur sur 5 suivait.
 
-         Les bougies passent par applyKline, qui vide le cache à chaque
-         message : c'est là que les indicateurs se mettent à jour, et c'est
-         suffisant. */
+         Vider à chaque passage saturait le navigateur — la stratégie MM
+         demande plus de 3 secondes. On le fait donc à cadence lente, une fois
+         par seconde et demie, et seulement si le calcul précédent est
+         terminé. Le prix reste fluide, les indicateurs suivent avec un léger
+         décalage plutôt que de rester immobiles. */
+      const _now2 = Date.now();
+      if(!window.__recalcEnCours && _now2 - (window.__dernierRecalc || 0) > 1500){
+        window.__dernierRecalc = _now2;
+        window.__recalcEnCours = true;
+        state.cache = {};
+        setTimeout(function(){ window.__recalcEnCours = false; }, 0);
+      }
       updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
       if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
@@ -34598,7 +34606,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2908-0500';
+  window.__LUMEN_BUILD = 'B-2908-0620';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
