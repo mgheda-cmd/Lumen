@@ -2395,6 +2395,10 @@ footer{
             <span style="font-weight:700;color:#FCD34D">🏔️ Sorties MM (Sommets ≥ +75 & Creux ≤ -75)</span>
           </label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="notif-type-fmc" checked>
+            <span style="font-weight:700;color:#22D3EE">🌊 Pastilles FMC (losanges, triangles, divergences)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
             <input type="checkbox" id="notif-type-mm-preavis" checked>
             <span style="font-weight:700;color:#38BDF8">⏳ Préavis — le score entre en zone extrême</span>
           </label>
@@ -14259,6 +14263,8 @@ function loadPhoneNotifUI(){
     document.getElementById('notif-ntfy-link').href = 'https://ntfy.sh/' + (cfg.ntfyTopic || 'lumen_mm_alerts');
   const elMmPreavis = document.getElementById('notif-type-mm-preavis');
   if(elMmPreavis) elMmPreavis.checked = cfg.mmPreavisAlerts !== false;
+  const elFmc = document.getElementById('notif-type-fmc');
+  if(elFmc) elFmc.checked = cfg.fmcAlerts !== false;
   const elExits = document.getElementById('notif-type-exits');
   if(elExits) elExits.checked = cfg.exitAlerts === true;
   if(document.getElementById('notif-tg-token')) document.getElementById('notif-tg-token').value = cfg.telegramToken || '';
@@ -14298,7 +14304,8 @@ function savePhoneNotifUI(){
        cause des notifications qui s'arrêtaient après le test. */
     ntfyTopic: document.getElementById('notif-ntfy-topic')?.value.trim() || sujetNtfyPrive(),
     role: document.getElementById('notif-role')?.value || 'emetteur',
-    mmPreavisAlerts: document.getElementById('notif-type-mm-preavis')?.checked ?? true
+    mmPreavisAlerts: document.getElementById('notif-type-mm-preavis')?.checked ?? true,
+    fmcAlerts: document.getElementById('notif-type-fmc')?.checked ?? true
   };
   savePhoneNotifConfig(cfg);
 }
@@ -18145,6 +18152,7 @@ function getPhoneNotifConfig(){
     /* Préavis d'entrée en zone extrême : prévient qu'un trade se prépare,
        plusieurs bougies avant le signal d'entrée lui-même. */
     mmPreavisAlerts: true,
+    fmcAlerts: true,
     mexcOnly: false,
     telegramToken: '',
     telegramChatId: '',
@@ -18751,7 +18759,11 @@ function checkAllAlerts(){
         const isOpt6 = (s.optKey === 'opt6');
         const isOpt1 = (s.optKey === 'opt1');
         const isBase = (s.optKey === 'base');
+        const isFmc  = (s.optKey === 'fmc_solo');
 
+        /* Les pastilles FMC ont leur propre interrupteur : losanges,
+           triangles et divergences, dans les deux sens. */
+        if(isFmc && phoneCfg.fmcAlerts === false) return;
         if(isOpt2 && phoneCfg.mmOpt2Alerts === false) return;
         if(isOpt6 && phoneCfg.mmOpt6Alerts === false) return;
         if(isOpt1 && phoneCfg.mmOpt1Alerts === false) return;
@@ -18765,7 +18777,16 @@ function checkAllAlerts(){
           opt4: '🎯 Opt 4 (Lissage)',
           opt5: '🚀 Opt 5 (Rebond V)',
           opt6: '💎 Opt 6 (BOS/DIV)',
-          confluence: (s.badge || '🏆 Confluence Élite')
+          confluence: (s.badge || '🏆 Confluence Élite'),
+          /* Le titre annonce la nature du signal : losange pour une
+             continuation, triangle pour un retournement. */
+          fmc_solo: (function(){
+            const r = String(s.reason || '');
+            if(/CONTRARIEN/.test(r))   return '🌊 FMC ▲▼ Contrarien';
+            if(/CONTINUATION/.test(r)) return '🌊 FMC ◆ Continuation';
+            if(/DIVERGENCE/.test(r))   return '🌊 FMC ≈ Divergence';
+            return '🌊 Pastille FMC';
+          })()
         };
         const optTag = optTitles[s.optKey] || 'MM Base';
 
@@ -34644,7 +34665,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2908-0850';
+  window.__LUMEN_BUILD = 'B-2908-1000';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
