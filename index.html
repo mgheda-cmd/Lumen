@@ -5328,7 +5328,7 @@ const state = {
     sess:{on:false,hour:15,min:29},
     ichi:{on:false},
     st:{on:false},
-    almasd:{on:true,fac:1.8,sd:33,alen:35,asig:4,aoff:0.85},
+    almasd:{on:true,tf:'chart',fac:1.8,sd:33,alen:35,asig:4,aoff:0.85},
     /* Éteint par défaut. Cet indicateur était actif mais aucune fonction ne
        le dessinait : personne ne l'avait jamais vu. En le branchant, il s'est
        mis à superposer un chandelier par bougie au prix — un maillage dense
@@ -6457,6 +6457,77 @@ function getMTFBars(tf){
    On prolonge le magasin à partir des bougies affichées, qui, elles, sont
    vivantes : la dernière bougie de l'unité supérieure est reconstruite à
    chaque appel, et les nouvelles sont ajoutées au fur et à mesure. */
+/* ---------- BOUGIES PLUS FINES QUE CELLE DU GRAPHIQUE ----------
+   Pour une unité inférieure — 30 secondes — l'agrégation ne sert à rien : on
+   ne peut pas découper une bougie d'une minute. Il faut des données plus
+   fines. Binance fournit des bougies d'une seconde, qu'on regroupe par 30.
+
+   Chaque requête rend au plus 1000 secondes, soit une demi-heure : on en
+   enchaîne plusieurs pour disposer d'assez d'historique. Le chargement est
+   asynchrone, comme pour les unités supérieures : le premier rendu peut ne
+   rien avoir, le suivant aura les données. */
+const fineStore = { key:'', data:{} };
+
+function getFineBars(secondes){
+  const k = state.symbol + '|' + state.market;
+  if(fineStore.key !== k){ fineStore.key = k; fineStore.data = {}; }
+  const dispo = fineStore.data[secondes];
+  if(dispo === undefined){
+    fineStore.data[secondes] = null;
+    chargerFines(secondes, k);
+    return null;
+  }
+  return dispo;
+}
+
+async function chargerFines(secondes, cle){
+  const PAS = secondes * 1000;
+  const morceaux = [];
+  let fin = Date.now();
+  try{
+    for(let tour = 0; tour < 6; tour++){
+      const rows = await fetchJSON(
+        `/api/v3/klines?symbol=${state.symbol}&interval=1s&limit=1000&endTime=${fin}`);
+      if(fineStore.key !== cle) return;
+      if(!Array.isArray(rows) || !rows.length) break;
+      morceaux.unshift(rows);
+      fin = +rows[0][0] - 1;
+      if(rows.length < 1000) break;
+    }
+  }catch(e){ fineStore.data[secondes] = null; return; }
+
+  const secs = [].concat.apply([], morceaux)
+    .map(r => ({ t:+r[0], o:+r[1], h:+r[2], l:+r[3], c:+r[4], v:+r[5] }));
+  if(!secs.length){ fineStore.data[secondes] = null; return; }
+
+  const out = []; let cur = null;
+  for(const b of secs){
+    const cl = Math.floor(b.t / PAS) * PAS;
+    if(!cur || cur.t !== cl){ cur = { t:cl, o:b.o, h:b.h, l:b.l, c:b.c, v:b.v }; out.push(cur); }
+    else { cur.h = Math.max(cur.h, b.h); cur.l = Math.min(cur.l, b.l); cur.c = b.c; cur.v += b.v; }
+  }
+  fineStore.data[secondes] = out;
+  state.cache = {};
+  if(typeof render === 'function') render();
+}
+
+/* Ramène un résultat calculé sur une autre série vers les bougies affichées,
+   par horodatage : chaque bougie du graphique reçoit la dernière valeur
+   connue de l'autre série. */
+function ramenerSurGraphique(src, res, d){
+  if(!res || !src || !src.length) return res;
+  const sortie = {};
+  const cles = Object.keys(res);
+  for(const c of cles) sortie[c] = Array.isArray(res[c]) ? new Array(d.length).fill(null) : res[c];
+  let j = 0;
+  for(let i = 0; i < d.length; i++){
+    while(j + 1 < src.length && src[j + 1].t <= d[i].t) j++;
+    if(src[j].t > d[i].t) continue;
+    for(const c of cles) if(Array.isArray(res[c])) sortie[c][i] = res[c][j];
+  }
+  return sortie;
+}
+
 function rafraichirMTF(tf, bars){
   if(!bars || !bars.length || !state.data || !state.data.length) return bars;
   if(!(state.tf < tf)) return bars;
@@ -6674,7 +6745,20 @@ function getInd(key){
       state.cache[ck] = { tf1: res1, tf2: res2 };
     }
     if(key==='st')state.cache[ck]=calc.supertrend(d);
-    if(key==='almasd')state.cache[ck]=calc.almaSD(d,ind.fac,ind.sd,ind.alen,ind.asig,ind.aoff);
+    if(key==='almasd'){
+      /* L'indicateur peut travailler sur une autre unité que le graphique.
+         Au-dessus, on prend les bougies de cette unité ; en dessous — les
+         30 secondes — on prend les bougies fines chargées séparément. Le
+         résultat est ensuite ramené sur les bougies affichées. */
+      const utA = ind.tf;
+      const finA = (utA === '0.5');
+      const mtfA = (utA && utA !== 'chart' && !finA && +utA !== state.tf) ? +utA : null;
+      let srcA = d;
+      if(finA) srcA = getFineBars(30) || d;
+      else if(mtfA) srcA = getMTFBars(mtfA) || d;
+      const rA = calc.almaSD(srcA, ind.fac, ind.sd, ind.alen, ind.asig, ind.aoff);
+      state.cache[ck] = (srcA === d) ? rA : ramenerSurGraphique(srcA, rA, d);
+    }
     if(key==='signal')state.cache[ck]=computeSignals(d,ind);
     if(key==='signal_inv')state.cache[ck]=computeInvertedConfluenceSignals(d);
     if(key==='signal_ema_ha')state.cache[ck]=computeEmaHaCrossSignals(d,ind);
@@ -17234,7 +17318,7 @@ const SCHEMA={
     {k:'tpRR',t:'num',lab:'Objectif de gain (× le risque)',min:1,max:20,ind:1,def:2.5},
     {k:'allowShort',t:'bool',lab:'Autoriser les positions vendeuses (Shorts)',def:true}
   ]},
-  almasd:{title:'Alma SD SuperTrend',fields:[
+  almasd:{title:'Alma SD SuperTrend',fields:[{k:'tf',t:'choice',lab:'Unité de temps',opts:[{v:'chart',t:'Graphique'},{v:'0.5',t:'30 secondes'},{v:'1',t:'1 minute'},{v:'3',t:'3 minutes'},{v:'5',t:'5 minutes'},{v:'15',t:'15 minutes'},{v:'30',t:'30 minutes'},{v:'60',t:'1 heure'},{v:'240',t:'4 heures'}]},
     {k:'fac',t:'num',lab:'Facteur',min:0.1,max:10,ind:1},
     {k:'sd',t:'num',lab:'SD Length',min:2,max:200,ind:1},
     {k:'alen',t:'num',lab:'Alma Length',min:2,max:200,ind:1},
@@ -34665,7 +34749,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-2908-1000';
+  window.__LUMEN_BUILD = 'B-2908-1130';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
