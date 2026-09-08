@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0040</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0050</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -8350,15 +8350,31 @@ function render(){
         }
       });
     }
-    // séparation
+    // séparation avec poignée de redimensionnement
     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
+    // Poignée visuelle au centre de la ligne de séparation (sauf en bas du dernier panneau)
+    const handleW = 44, handleH = 4;
+    const handleX = (W - AXIS_W)/2 - handleW/2;
+    const handleY = p.y + p.h - 2;
+    ctx.fillStyle = 'rgba(122, 162, 255, 0.45)';
+    if (typeof roundRect === 'function') roundRect(handleX, handleY, handleW, handleH, 2);
+    else ctx.fillRect(handleX, handleY, handleW, handleH);
+    ctx.fill();
+
     // commandes de panneau (replier / fusionner / fermer) en haut à droite
     if(p.key!=='price'){
       const isCol = !!p.collapsed;
       const eyeIcon = isCol ? '🚫' : '👁';
       const bx=W-AXIS_W-152, by=p.y+3, bw=22, bh=16;
-      const btns=[[eyeIcon,'toggle_collapse'],['⧉','merge'],['=','same'],['⬍','front'],['🔒','lock'],['✕','close']];
+      const btns=[
+        [eyeIcon, 'toggle_collapse', isCol ? 'Agrandir / Déplier ce volet' : 'Réduire / Replier ce volet'],
+        ['⧉', 'merge', state.subMergeUp[p.key] ? 'Séparer ce volet (Défusionner)' : 'Fusionner avec le volet au-dessus'],
+        ['=', 'same', 'Même échelle que les autres indicateurs'],
+        ['⬍', 'front', 'Mettre au premier plan'],
+        ['🔒', 'lock', 'Verrouiller / Déverrouiller l\'échelle'],
+        ['✕', 'close', 'Fermer ce volet']
+      ];
       ctx.font='11px system-ui';ctx.textAlign='center';
       btns.forEach((b,i)=>{
         const x=bx+i*(bw+2);
@@ -8372,7 +8388,7 @@ function render(){
         roundRect(x,by,bw,bh,4);ctx.fill();
         ctx.fillStyle=(b[1]==='close')?'rgba(244,91,125,.95)':(b[1]==='toggle_collapse'&&isCol?'#FFB43C':'rgba(200,212,235,.9)');
         ctx.fillText(b[0],x+bw/2,by+bh-4);
-        paneCtrls.push({x,y:by,w:bw,h:bh,key:p.key,act:b[1]});
+        paneCtrls.push({x,y:by,w:bw,h:bh,key:p.key,act:b[1],title:b[2]});
       });
       ctx.textAlign='left';
     }
@@ -13811,8 +13827,14 @@ canvas.addEventListener('mousedown',e=>{
   state.dragStart=state.view.start;
   state.dragCount=state.view.count;
   state.dragRight=state.view.start+state.view.count;
-  if(state.dragMode.startsWith('resize:'))
-    state.dragPaneH=paneHeightOf(state.dragMode.slice(7));
+  if(state.dragMode.startsWith('resize:')){
+    const key = state.dragMode.slice(7);
+    const panes = state.lastPanes || [];
+    const pIdx = panes.findIndex(q => q.key === key);
+    state.dragPaneH = paneHeightOf(key);
+    state.dragPaneAboveKey = (pIdx > 1) ? panes[pIdx - 1].key : null;
+    state.dragPaneAboveH = state.dragPaneAboveKey ? paneHeightOf(state.dragPaneAboveKey) : 0;
+  }
   if(state.dragMode==='price'&&state.yScale.auto)state.yScale.auto=false;
   state.dragLo=state.yScale.lo; state.dragHi=state.yScale.hi;
   if(state.dragMode.startsWith('sub:')){
@@ -13839,8 +13861,22 @@ canvas.addEventListener('mousemove',e=>{
   if(state.dragging){
     if(state.dragMode&&state.dragMode.startsWith('resize:')){
       const key=state.dragMode.slice(7);
-      state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,
-        state.dragPaneH-(y-state.dragY)));
+      const dy = y - state.dragY;
+      if(state.dragPaneAboveKey){
+        const minH = 34;
+        const totalH = state.dragPaneAboveH + state.dragPaneH;
+        let newAboveH = Math.max(minH, Math.min(totalH - minH, state.dragPaneAboveH + dy));
+        let newBelowH = Math.max(minH, totalH - newAboveH);
+        state.paneH[state.dragPaneAboveKey] = newAboveH;
+        state.paneH[key] = newBelowH;
+        if(state.collapsedPanes){
+          delete state.collapsedPanes[state.dragPaneAboveKey];
+          delete state.collapsedPanes[key];
+        }
+      }else{
+        state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75, state.dragPaneH - dy));
+        if(state.collapsedPanes) delete state.collapsedPanes[key];
+      }
     }else if(state.dragMode==='time'){
       // étirer l'axe du temps, bord droit fixe (comme TV)
       const f=Math.exp(-(x-state.dragX)*0.005);
@@ -13889,11 +13925,18 @@ canvas.addEventListener('mousemove',e=>{
     // survol : on ne fait que changer le curseur, jamais cocher quoi que ce soit
     const gh=ghostHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
     const lh=labelHits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
-    if(gh){
+    const cc=hitPaneCtrl(x,y);
+    if(cc){
       canvas.style.cursor='pointer';
+      canvas.title=cc.title || '';
+    }else if(gh){
+      canvas.style.cursor='pointer';
+      canvas.title='';
     }else if(lh){
       canvas.style.cursor='pointer';
+      canvas.title='';
     }else{
+      canvas.title='';
       const z=hitZone(x,y);
       canvas.style.cursor=z.startsWith('resize:')?'row-resize':
         z==='time'?'ew-resize':(z==='price'||z.startsWith('sub:'))?'ns-resize':'crosshair';
@@ -13948,6 +13991,7 @@ function applyPaneCtrl(key,act){
   if(act==='toggle_collapse'){
     state.collapsedPanes = state.collapsedPanes || {};
     state.collapsedPanes[key] = !state.collapsedPanes[key];
+    if(typeof toast==='function') toast(state.collapsedPanes[key] ? 'Volet « '+key+' » replié' : 'Volet « '+key+' » déplié');
     saveConfig(); scheduleRender(); return;
   }
   if(act==='toggle_ind_eye'){
@@ -13961,7 +14005,11 @@ function applyPaneCtrl(key,act){
   }
   // construire l'ordre courant des sous-panneaux visibles
   const cur=(state.lastPanes||[]).filter(p=>p.key!=='price').flatMap(p=>p.members||[p.key]);
-  if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); scheduleRender(); return; }
+  if(act==='merge'){
+    state.subMergeUp[key]=!state.subMergeUp[key];
+    if(typeof toast==='function') toast(state.subMergeUp[key] ? 'Volet « '+key+' » fusionné avec le dessus' : 'Volet « '+key+' » séparé (défusionné)');
+    saveConfig(); scheduleRender(); return;
+  }
   if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); scheduleRender(); return; }
   if(act==='front'){
     const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
@@ -14200,9 +14248,19 @@ canvas.addEventListener('touchstart',e=>{
       const pane=(state.lastPanes||[]).find(q=>q.key===z.slice(7));
       subPan={}; if(pane)for(const mk of (pane.members||[pane.key]))subPan[mk]=pane['scale_'+mk]?{...pane['scale_'+mk]}:{lo:pane.lo,hi:pane.hi};
     }
+    let resizeAboveKey = null, resizeAboveH = 0;
+    if(z.startsWith('resize:')){
+      const rKey = z.slice(7);
+      const panes = state.lastPanes || [];
+      const pIdx = panes.findIndex(q => q.key === rKey);
+      resizeAboveKey = (pIdx > 1) ? panes[pIdx - 1].key : null;
+      resizeAboveH = resizeAboveKey ? paneHeightOf(resizeAboveKey) : 0;
+    }
     touch={mode:z,x,y,sx:x,sy:y,start:state.view.start,count:state.view.count,
       right:state.view.start+state.view.count,
       paneH:z.startsWith('resize:')?paneHeightOf(z.slice(7)):0,
+      paneAboveKey: resizeAboveKey,
+      paneAboveH: resizeAboveH,
       lo:state.yScale.lo,hi:state.yScale.hi,subLo,subHi,subPan};
     pinch=null;
   }else if(e.touches.length===2){
@@ -14221,7 +14279,22 @@ canvas.addEventListener('touchmove',e=>{
     if(touch.mode==='xhair'){ state.mouse={x,y}; scheduleRender(); return; }
     if(touch.mode.startsWith('resize:')){
       const key=touch.mode.slice(7);
-      state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,touch.paneH-(y-touch.y)));
+      const dy = y - touch.y;
+      if(touch.paneAboveKey){
+        const minH = 34;
+        const totalH = touch.paneAboveH + touch.paneH;
+        let newAboveH = Math.max(minH, Math.min(totalH - minH, touch.paneAboveH + dy));
+        let newBelowH = Math.max(minH, totalH - newAboveH);
+        state.paneH[touch.paneAboveKey] = newAboveH;
+        state.paneH[key] = newBelowH;
+        if(state.collapsedPanes){
+          delete state.collapsedPanes[touch.paneAboveKey];
+          delete state.collapsedPanes[key];
+        }
+      }else{
+        state.paneH[key]=Math.max(34,Math.min((H-AXIS_H)*0.75,touch.paneH - dy));
+        if(state.collapsedPanes) delete state.collapsedPanes[key];
+      }
     }else if(touch.mode==='time'){
       const f=Math.exp(-(x-touch.x)*0.006);
       const nc=Math.max(20,Math.min(state.data.length||N_BARS,touch.count*f));
@@ -35593,7 +35666,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0040';
+  window.__LUMEN_BUILD = 'B-0909-0050';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
