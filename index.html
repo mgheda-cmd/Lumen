@@ -8105,7 +8105,7 @@ function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,
    elle glisse dans sa direction naturelle (vers le haut pour les signaux du
    dessus, vers le bas pour ceux du dessous) jusqu'à trouver un trou libre.
    Elle reste toujours dans les limites du panneau des prix.            */
-let _badgeRects=[], _priceBot=0; let _tripleMesures=null; let _tripleCtx=null;
+let _badgeRects=[], _priceBot=0, _pricePaneObj=null; let _tripleMesures=null; let _tripleCtx=null;
 /* Clignotement des pastilles en confluence multi-UT.
    _blinkAny est remis à faux à chaque frame ; s'il repasse à vrai,
    un minuteur léger redessine deux fois par seconde. */
@@ -8118,38 +8118,117 @@ function ensureBlinkTimer(){
     try{render();}catch(e){}
   },480);
 }
-function resetBadgeLayout(bot){ _badgeRects=[]; _priceBot=bot||0; }
+function resetBadgeLayout(pricePaneOrBot){
+  _badgeRects = [];
+  if (pricePaneOrBot && typeof pricePaneOrBot === 'object') {
+    _pricePaneObj = pricePaneOrBot;
+    _priceBot = (pricePaneOrBot.y != null && pricePaneOrBot.h != null) ? (pricePaneOrBot.y + pricePaneOrBot.h) : 0;
+  } else {
+    _pricePaneObj = null;
+    _priceBot = pricePaneOrBot || 0;
+  }
+}
+
+function getCandleEnvelope(bx, bw) {
+  const pp = _pricePaneObj || (typeof panes !== 'undefined' && Array.isArray(panes) && panes.find(q => q.key === 'price')) || (state.lastPanes && state.lastPanes.find(q => q.key === 'price'));
+  const yOfFn = (pp && typeof pp.yOf === 'function') ? pp.yOf : window.__priceYOf;
+  if (!yOfFn || !state.data || !state.data.length || !state.view || !state.view.count) {
+    return null;
+  }
+  const cw = (W - AXIS_W) / state.view.count;
+  if (cw <= 0) return null;
+
+  // Marge horizontale pour analyser toutes les mèches et corps sous la largeur de la pastille
+  const leftX = bx - 10;
+  const rightX = bx + bw + 10;
+
+  const iMin = Math.max(0, Math.floor(state.view.start + (leftX - cw / 2) / cw));
+  const iMax = Math.min(state.data.length - 1, Math.ceil(state.view.start + (rightX + cw / 2) / cw));
+
+  if (iMin > iMax) return null;
+
+  let highestY = Infinity; // Mèche la plus haute sur l'écran (Y minimal)
+  let lowestY = -Infinity; // Mèche la plus basse sur l'écran (Y maximal)
+
+  for (let i = iMin; i <= iMax; i++) {
+    const c = state.data[i];
+    if (!c) continue;
+    const yh = yOfFn(c.h);
+    const yl = yOfFn(c.l);
+    if (isFinite(yh) && yh < highestY) highestY = yh;
+    if (isFinite(yl) && yl > lowestY) lowestY = yl;
+  }
+
+  if (!isFinite(highestY) || !isFinite(lowestY)) return null;
+  return { highestY, lowestY };
+}
+
 function placeBadge(bx, bw, by, bh, dir) {
-  const GAP = 4, MAXTRY = 90;
-  let y = by, n = 0, r;
+  const GAP = 5, MAXTRY = 100;
+  // Dégagement dynamique franc : la pastille flotte toujours à au moins 42px de la bougie la plus proche
+  const CLEARANCE = 42;
 
-  const minY = 4;
-  const maxY = (_priceBot > 0) ? (_priceBot - bh - 4) : 2000;
+  const minY = 6;
+  const maxY = (_priceBot > 0) ? (_priceBot - bh - 6) : (H - AXIS_H - bh - 6);
 
-  const hit = () => _badgeRects.find(q =>
-    bx < q.x + q.w + GAP && bx + bw + GAP > q.x && y < q.y + q.h + GAP && y + bh + GAP > q.y
+  const env = getCandleEnvelope(bx, bw);
+
+  let y = by;
+  const currentDir = (dir < 0) ? -1 : 1;
+
+  if (currentDir < 0) {
+    // Pastille AU-DESSUS du graphique :
+    // Le bas de la pastille (y + bh) doit être impérativement à CLEARANCE au-dessus de la mèche la plus haute
+    if (env && isFinite(env.highestY)) {
+      const maxAllowedY = env.highestY - CLEARANCE - bh;
+      y = Math.min(y, maxAllowedY);
+    }
+  } else {
+    // Pastille EN-DESSOUS du graphique :
+    // Le haut de la pastille (y) doit être impérativement à CLEARANCE en-dessous de la mèche la plus basse
+    if (env && isFinite(env.lowestY)) {
+      const minAllowedY = env.lowestY + CLEARANCE;
+      y = Math.max(y, minAllowedY);
+    }
+  }
+
+  const hit = (cy) => _badgeRects.find(q =>
+    bx < q.x + q.w + GAP && bx + bw + GAP > q.x && cy < q.y + q.h + GAP && cy + bh + GAP > q.y
   );
 
-  let currentDir = dir;
-  while ((r = hit()) && n < MAXTRY) {
+  let n = 0, r;
+  while ((r = hit(y)) && n < MAXTRY) {
     if (currentDir < 0) {
+      // Au-dessus : s'éloigner toujours vers le HAUT (plus loin des bougies), JAMAIS vers le bas
       const nextY = r.y - bh - GAP;
       if (nextY < minY) {
-        currentDir = 1;
-        y = r.y + r.h + GAP;
-      } else {
-        y = nextY;
+        y = minY;
+        break;
       }
+      y = nextY;
     } else {
+      // En-dessous : s'éloigner toujours vers le BAS (plus loin des bougies), JAMAIS vers le haut
       const nextY = r.y + r.h + GAP;
       if (nextY > maxY) {
-        currentDir = -1;
-        y = r.y - bh - GAP;
-      } else {
-        y = nextY;
+        y = maxY;
+        break;
       }
+      y = nextY;
     }
     n++;
+  }
+
+  // Contrôle absolu de non-contact : aucune pastille ne peut jamais toucher ni cacher une bougie
+  if (env) {
+    if (currentDir < 0 && isFinite(env.highestY)) {
+      if (y + bh > env.highestY - 14) {
+        y = Math.max(minY, env.highestY - 14 - bh);
+      }
+    } else if (currentDir > 0 && isFinite(env.lowestY)) {
+      if (y < env.lowestY + 14) {
+        y = Math.min(maxY, env.lowestY + 14);
+      }
+    }
   }
 
   if (y < minY) y = minY;
@@ -8182,7 +8261,7 @@ function render(){
   paneCtrls=[]; labelHits=[]; ghostHits=[];
   const panes = computePanes();
   const _pp = panes.find(q=>q.key==='price');
-  resetBadgeLayout(_pp ? (_pp.y+_pp.h) : (H-AXIS_H));
+  resetBadgeLayout(_pp || (_pp ? (_pp.y+_pp.h) : (H-AXIS_H)));
   _blinkAny=false; ensureBlinkTimer();
   const {s,e} = visible();
   const cw = (W-AXIS_W)/state.view.count;
@@ -8369,15 +8448,20 @@ function render(){
       // 2. BADGE D'ENTRÉE (Achat / Vente avec Prix d'entrée)
       if(iEntry!=null && iEntry>=s-1 && iEntry<=e){
         const x=xEntry;
+        const bar = state.data[iEntry];
         if(g.dir===1){
-          const yDot=yOf(g.price)+28;
+          const yWick = (bar && typeof yOf === 'function') ? yOf(bar.l) : yOf(g.price);
+          const yDot = yWick + 12;
           ctx.fillStyle='#25D0A4';
           ctx.beginPath();
           ctx.moveTo(x,yDot-8);ctx.lineTo(x-6,yDot);ctx.lineTo(x-2.5,yDot);
           ctx.lineTo(x-2.5,yDot+5);ctx.lineTo(x+2.5,yDot+5);ctx.lineTo(x+2.5,yDot);
           ctx.lineTo(x+6,yDot);ctx.closePath();ctx.fill();
 
-          const by=yDot+65; const bw=104, bh=28;
+          const bw=104, bh=28;
+          const by = (typeof placeBadge === 'function')
+            ? placeBadge(x-bw/2, bw, yDot + 50, bh, 1)
+            : (yDot + 50);
           ctx.save();
           ctx.strokeStyle='#25D0A4'; ctx.lineWidth=1; ctx.setLineDash([2,2]);
           ctx.beginPath(); ctx.moveTo(x, yDot+6); ctx.lineTo(x, by); ctx.stroke();
@@ -8395,14 +8479,18 @@ function render(){
           labelHits.push({x:x-bw/2,y:by,w:bw,h:bh,key:'signal_inv'});
           labelHits.push({x:x-8,y:yDot-8,w:16,h:16,key:'signal_inv'});
         } else {
-          const yDot=yOf(g.price)-28;
+          const yWick = (bar && typeof yOf === 'function') ? yOf(bar.h) : yOf(g.price);
+          const yDot = yWick - 12;
           ctx.fillStyle='#F45B7D';
           ctx.beginPath();
           ctx.moveTo(x,yDot+8);ctx.lineTo(x-6,yDot);ctx.lineTo(x-2.5,yDot);
           ctx.lineTo(x-2.5,yDot-5);ctx.lineTo(x+2.5,yDot-5);ctx.lineTo(x+2.5,yDot);
           ctx.lineTo(x+6,yDot);ctx.closePath();ctx.fill();
 
-          const by=yDot-80; const bw=104, bh=28;
+          const bw=104, bh=28;
+          const by = (typeof placeBadge === 'function')
+            ? placeBadge(x-bw/2, bw, yDot - 50 - bh, bh, -1)
+            : (yDot - 50 - bh);
           ctx.save();
           ctx.strokeStyle='#F45B7D'; ctx.lineWidth=1; ctx.setLineDash([2,2]);
           ctx.beginPath(); ctx.moveTo(x, yDot-6); ctx.lineTo(x, by+bh); ctx.stroke();
@@ -8428,10 +8516,23 @@ function render(){
         const color=g.dir===1?'#25D0A4':'#F45B7D';
         const bg=g.dir===1?'rgba(10,24,25,0.92)':'rgba(25,10,16,0.92)';
         
-        const yBase=yOf(exitP);
-        const y=g.dir===1?yBase-28:yBase+28;
-        const by=g.dir===1?y-60:y+28;
+        const barExit = state.data[iExit];
+        const yWickExit = (barExit && typeof yOf === 'function') ? (g.dir===1 ? yOf(barExit.h) : yOf(barExit.l)) : yOf(exitP);
+        const y = g.dir===1 ? yWickExit - 12 : yWickExit + 12;
         const bw=116, bh=28;
+        const byRaw = g.dir===1 ? (y - 50 - bh) : (y + 50);
+
+        // Décalage horizontal latéral pour rendre le badge de sortie parfaitement visible
+        let xTag = x + 35;
+        let attachX = xTag - bw / 2;
+        if(xTag + bw / 2 > W - AXIS_W - 10){
+          xTag = x - 35;
+          attachX = xTag + bw / 2;
+        }
+
+        const by = (typeof placeBadge === 'function')
+          ? placeBadge(xTag - bw/2, bw, byRaw, bh, g.dir===1 ? -1 : 1)
+          : byRaw;
         const tagCenterY=by+bh/2;
 
         ctx.fillStyle=color;
@@ -8442,14 +8543,6 @@ function render(){
           ctx.moveTo(x,y-8);ctx.lineTo(x-5,y);ctx.lineTo(x+5,y);
         }
         ctx.closePath();ctx.fill();
-
-        // Décalage horizontal latéral pour rendre le badge de sortie parfaitement visible
-        let xTag = x + 35;
-        let attachX = xTag - bw / 2;
-        if(xTag + bw / 2 > W - AXIS_W - 10){
-          xTag = x - 35;
-          attachX = xTag + bw / 2;
-        }
 
         ctx.save();
         ctx.strokeStyle=color; ctx.lineWidth=1;
@@ -8482,9 +8575,11 @@ function render(){
       const x = xOf(i);
       const entryP = g.price;
       const isTemp = !!g.isTemp || (lastCandleIdx >= 0 && i === lastCandleIdx);
+      const bar = state.data[i];
 
       if(g.dir === 1){
-        const yDot = yOf(entryP) + 26;
+        const yWick = (bar && typeof yOf === 'function') ? yOf(bar.l) : yOf(entryP);
+        const yDot = yWick + 12;
         const isDirect = (g.tag === 'DIRECT');
         const color = isTemp ? '#FFC107' : (isDirect ? '#FF9800' : '#00E5FF');
         const bgFill = isTemp ? 'rgba(35, 25, 5, 0.95)' : (isDirect ? 'rgba(38, 20, 6, 0.95)' : 'rgba(6, 20, 38, 0.95)');
@@ -8538,7 +8633,8 @@ function render(){
         labelHits.push({x: x - bw / 2, y: by, w: bw, h: bh, key: 'signal_ema_ha'});
         labelHits.push({x: x - 8, y: yDot - 8, w: 16, h: 16, key: 'signal_ema_ha'});
       } else if(g.dir === -1){
-        const yDot = yOf(entryP) - 26;
+        const yWick = (bar && typeof yOf === 'function') ? yOf(bar.h) : yOf(entryP);
+        const yDot = yWick - 12;
         const isDirect = (g.tag === 'DIRECT');
         const color = isTemp ? '#FFC107' : (isDirect ? '#FF9800' : '#FF007A');
         const bgFill = isTemp ? 'rgba(35, 25, 5, 0.95)' : (isDirect ? 'rgba(38, 20, 6, 0.95)' : 'rgba(38, 8, 22, 0.95)');
@@ -9185,8 +9281,9 @@ function drawPrice(p,s,e,cw,sharedXStack){
   if(vis('ichi')){const ic=getInd('ichi');
     for(const arr of [ic.T,ic.K,ic.A,ic.B])
       for(let i=s;i<e;i++)if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}}
-  if(vis('two_ind')&&state.indicators.two_ind.showSSWMA!==false){const res=getInd('two_ind');if(res&&res.ssWma){const a=res.ssWma;for(let i=s;i<e;i++)if(a[i]!=null){lo=Math.min(lo,a[i]);hi=Math.max(hi,a[i]);}}}
-  const pad = (isFinite(hi) && isFinite(lo) && hi > lo) ? ((hi - lo) * 0.08 || 1) : 1;
+  const hasBadges = vis('strat_zz') || vis('strat_zz2') || vis('strat_mm') || vis('signal_ema_ha') || vis('signal_triple') || vis('exhaustion') || vis('exhaustion_pro') || vis('signal_inv');
+  const padRatio = hasBadges ? 0.22 : 0.10;
+  const pad = (isFinite(hi) && isFinite(lo) && hi > lo) ? ((hi - lo) * padRatio || 1) : 1;
   lo -= pad; hi += pad;
   if(!state.yScale.auto && isFinite(state.yScale.lo) && isFinite(state.yScale.hi) && state.yScale.hi > state.yScale.lo){
     lo = state.yScale.lo; hi = state.yScale.hi;
@@ -9197,6 +9294,8 @@ function drawPrice(p,s,e,cw,sharedXStack){
   state.pricePaneH=p.h;
   const yOf=v=>p.y + (1-(v-lo)/(hi-lo))*p.h;
   p.lo=lo;p.hi=hi;p.yOf=yOf;
+  window.__priceYOf = yOf;
+  if (typeof _pricePaneObj !== 'undefined' && _pricePaneObj) _pricePaneObj.yOf = yOf;
   // Indicateur "Session 15:29 Londres" : rectangle high/low prolongé jusqu'au prochain 15:29
   if(vis('sess')){
     const hh=state.indicators.sess.hour, mm=state.indicators.sess.min;
@@ -10759,9 +10858,10 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
     const showCapsule = state.showAllExhaust ||
       (lastPerTf[String(g.tfName ?? g.tf ?? 'x') + '_' + g.dir] === i);
 
+    const bar = state.data[i];
     if(g.dir===-1){
-      const yHigh=yOf(g.price);
-      const dotY=yHigh-55;
+      const yHigh = (bar && typeof yOf === 'function') ? yOf(bar.h) : yOf(g.price);
+      const dotY = yHigh - 12;
       const bw=165, bh=25;
       const by=showCapsule ? placeBadge(x-bw/2, bw, dotY-75-offsetY, bh, -1) : dotY;
 
@@ -10813,8 +10913,8 @@ function drawExhaustion(events,s,e,yOf,cw,p,sharedXStack){
       ctx.textAlign='left';
 
     } else {
-      const yLow=yOf(g.price);
-      const dotY=yLow+55;
+      const yLow = (bar && typeof yOf === 'function') ? yOf(bar.l) : yOf(g.price);
+      const dotY = yLow + 12;
       const bw=165, bh=25;
       const by=showCapsule ? placeBadge(x-bw/2, bw, dotY+60+offsetY, bh, 1) : dotY;
 
@@ -10950,9 +11050,10 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
     const showCapsule = state.showAllExhaust ||
       (lastPerTf[String(g.tfName ?? g.tf ?? 'x') + '_' + g.dir] === i);
 
+    const bar = state.data[i];
     if(g.dir===-1){
-      const yHigh=yOf(g.price);
-      const dotY=yHigh-65;
+      const yHigh = (bar && typeof yOf === 'function') ? yOf(bar.h) : yOf(g.price);
+      const dotY = yHigh - 12;
       const bw=175, bh=25;
       const by=showCapsule ? placeBadge(x-bw/2, bw, dotY-80-offsetY, bh, -1) : dotY;
 
@@ -11004,8 +11105,8 @@ function drawExhaustionPro(events,s,e,yOf,cw,p,sharedXStack){
       ctx.textAlign='left';
 
     } else {
-      const yLow=yOf(g.price);
-      const dotY=yLow+65;
+      const yLow = (bar && typeof yOf === 'function') ? yOf(bar.l) : yOf(g.price);
+      const dotY = yLow + 12;
       const bw=175, bh=25;
       const by=showCapsule ? placeBadge(x-bw/2, bw, dotY+65+offsetY, bh, 1) : dotY;
 
@@ -32466,8 +32567,10 @@ function drawZZ2Signals(signals, s, e, yOf, cw) {
       const bgFill = 'rgba(25, 14, 52, 0.95)';
       const mainText = isBuyExit ? ('🎯 ' + numStr + 'SORTIE ACHAT (Z.Z.)') : ('🎯 ' + numStr + 'SORTIE VENTE (Z.Z.)');
 
+      const bar = state.data[i];
       const entryP = sig.price;
-      const yDot = isBuyExit ? (yOf(entryP) - 26) : (yOf(entryP) + 26);
+      const yWick = (bar && typeof yOf === 'function') ? (isBuyExit ? yOf(bar.h) : yOf(bar.l)) : yOf(entryP);
+      const yDot = isBuyExit ? (yWick - 12) : (yWick + 12);
 
       ctx.fillStyle = isWin ? '#10B981' : '#EF4444';
       ctx.beginPath();
@@ -32514,9 +32617,11 @@ function drawZZ2Signals(signals, s, e, yOf, cw) {
     } else {
       // Pastille d'Entrée Z.Z. (Achat = vert #10B981, Vente = rouge #EF4444, Inversé = jaune #FBBF24)
       const isInverted = !!(sig.isInverted || (sig.trigger && sig.trigger.includes('Inversé')) || (ind && ind.invertSignal));
+      const bar = state.data[i];
       const isBuy = (sig.dir === 1);
       const entryP = sig.price;
-      const yDot = isBuy ? (yOf(entryP) + 26) : (yOf(entryP) - 26);
+      const yWick = (bar && typeof yOf === 'function') ? (isBuy ? yOf(bar.l) : yOf(bar.h)) : yOf(entryP);
+      const yDot = isBuy ? (yWick + 12) : (yWick - 12);
       let color = isBuy ? '#10B981' : '#EF4444';
       let textColor = isBuy ? '#10B981' : '#EF4444';
       let bgFill = isBuy ? 'rgba(6, 30, 20, 0.95)' : 'rgba(38, 8, 12, 0.95)';
@@ -32751,8 +32856,10 @@ function drawZZSignals(signals, s, e, yOf, cw) {
       const bgFill = 'rgba(25, 14, 52, 0.95)';
       const mainText = isBuyExit ? ('🎯 ' + numStr + 'SORTIE ACHAT (Z.Z.)') : ('🎯 ' + numStr + 'SORTIE VENTE (Z.Z.)');
 
+      const bar = state.data[i];
       const entryP = sig.price;
-      const yDot = isBuyExit ? (yOf(entryP) - 26) : (yOf(entryP) + 26);
+      const yWick = (bar && typeof yOf === 'function') ? (isBuyExit ? yOf(bar.h) : yOf(bar.l)) : yOf(entryP);
+      const yDot = isBuyExit ? (yWick - 12) : (yWick + 12);
 
       ctx.fillStyle = isWin ? '#10B981' : '#EF4444';
       ctx.beginPath();
@@ -32797,9 +32904,11 @@ function drawZZSignals(signals, s, e, yOf, cw) {
     } else {
       // Pastille d'Entrée Z.Z. (Achat = vert #10B981, Vente = rouge #EF4444, Inversé = jaune #FBBF24)
       const isInverted = !!(sig.isInverted || (sig.trigger && sig.trigger.includes('Inversé')) || (ind && ind.invertSignal));
+      const bar = state.data[i];
       const isBuy = (sig.dir === 1);
       const entryP = sig.price;
-      const yDot = isBuy ? (yOf(entryP) + 26) : (yOf(entryP) - 26);
+      const yWick = (bar && typeof yOf === 'function') ? (isBuy ? yOf(bar.l) : yOf(bar.h)) : yOf(entryP);
+      const yDot = isBuy ? (yWick + 12) : (yWick - 12);
       let color = isBuy ? '#10B981' : '#EF4444';
       let textColor = isBuy ? '#10B981' : '#EF4444';
       let bgFill = isBuy ? 'rgba(6, 30, 20, 0.95)' : 'rgba(38, 8, 12, 0.95)';
@@ -32895,7 +33004,9 @@ function drawBacktestSignals(signals, s, e, yOf, cw) {
       const bgFill = 'rgba(25, 14, 52, 0.95)';
       const mainText = isBuyExit ? ('🎯 ' + numStr + 'SORTIE ACHAT') : ('🎯 ' + numStr + 'SORTIE VENTE');
       
-      const yDot = isBuyExit ? (yOf(entryP) - 26) : (yOf(entryP) + 26);
+      const bar = state.data[i];
+      const yWick = (bar && typeof yOf === 'function') ? (isBuyExit ? yOf(bar.h) : yOf(bar.l)) : yOf(entryP);
+      const yDot = isBuyExit ? (yWick - 12) : (yWick + 12);
 
       ctx.fillStyle = isWin ? '#A78BFA' : '#EF4444';
       ctx.beginPath();
@@ -32941,7 +33052,9 @@ function drawBacktestSignals(signals, s, e, yOf, cw) {
       // Pastille d'Entrée Backtest (alignée avec les entrées d'indicateurs Z.Z.)
       const isInverted = !!(g.isInverted || (g.trigger && (g.trigger.includes('Inversé') || g.trigger.includes('Inverse'))) || (g.stratName && (g.stratName.includes('Inversé') || g.stratName.includes('Inverse'))) || (state.indicators && state.indicators.strat_zz && state.indicators.strat_zz.invertSignal !== false));
       const isBuy = (g.dir === 1 || g.type === 'ACHAT');
-      const yDot = isBuy ? (yOf(entryP) + 26) : (yOf(entryP) - 26);
+      const bar = state.data[i];
+      const yWick = (bar && typeof yOf === 'function') ? (isBuy ? yOf(bar.l) : yOf(bar.h)) : yOf(entryP);
+      const yDot = isBuy ? (yWick + 12) : (yWick - 12);
       
       let color = isBuy ? '#A78BFA' : '#EF4444';
       let textColor = isBuy ? '#10B981' : '#EF4444';
