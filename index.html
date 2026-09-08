@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0050</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0055</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6113,26 +6113,16 @@ function applyTickPrice(px){
   if(changed){
     lastTick = Date.now();
     if(typeof checkPriceAlerts === 'function') checkPriceAlerts(px);
+    updateHeader();
     const now = Date.now();
-    if(now - _lastHeavyTickTime > 400){
+    if(now - _lastHeavyTickTime > 500){
       _lastHeavyTickTime = now;
-      /* Les transactions font avancer le prix sans passer par applyKline :
-         sans vidage du cache ici, les indicateurs du bas restent figés
-         pendant que le graphique bouge. Mesuré : 0 indicateur sur 5 suivait.
-
-         Vider à chaque passage saturait le navigateur — la stratégie MM
-         demande plus de 3 secondes. On le fait donc à cadence lente, une fois
-         par seconde et demie, et seulement si le calcul précédent est
-         terminé. Le prix reste fluide, les indicateurs suivent avec un léger
-         décalage plutôt que de rester immobiles. */
-      const _now2 = Date.now();
-      if(!window.__recalcEnCours && _now2 - (window.__dernierRecalc || 0) > 1500){
-        window.__dernierRecalc = _now2;
+      if(!window.__recalcEnCours && now - (window.__dernierRecalc || 0) > 1500){
+        window.__dernierRecalc = now;
         window.__recalcEnCours = true;
         state.cache = {};
         setTimeout(function(){ window.__recalcEnCours = false; }, 0);
       }
-      updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
       if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
       if(typeof checkAllAlerts === 'function') checkAllAlerts();
@@ -6145,9 +6135,52 @@ function applyKline(k, isLive=false){
   const d=state.data; if(!d.length)return;
   const bar={t:k.t,o:k.o,h:k.h,l:k.l,c:k.c,v:k.v,tbv:k.tbv};
   const last=d[d.length-1];
-  if(bar.t===last.t) d[d.length-1]=bar;
-  else if(bar.t>last.t){d.push(bar);d.shift();}
-  state.cache={}; updateHeader();
+  if(bar.t===last.t){
+    // Évolution intra-bougie en direct : mise à jour instantanée sans bloquer le thread UI
+    last.o = bar.o;
+    if(bar.h > last.h) last.h = bar.h;
+    if(bar.l < last.l) last.l = bar.l;
+    last.c = bar.c;
+    last.v = bar.v;
+    last.tbv = bar.tbv;
+    updateHeader();
+
+    // Recalcul lourd des indicateurs et alertes cadencé pour fluidité maximale à 60 FPS
+    const now = Date.now();
+    if(now - _lastHeavyTickTime > 500){
+      _lastHeavyTickTime = now;
+      if(!window.__recalcEnCours && now - (window.__dernierRecalc || 0) > 1500){
+        window.__dernierRecalc = now;
+        window.__recalcEnCours = true;
+        state.cache = {};
+        setTimeout(function(){ window.__recalcEnCours = false; }, 0);
+      }
+      if(typeof updatePaper === 'function') updatePaper();
+      if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+      if(isLive && typeof checkAllAlerts === 'function') checkAllAlerts();
+      if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
+    }
+    scheduleRender();
+    return;
+  }
+
+  // Nouvelle bougie (clôture de la précédente et ouverture de la nouvelle)
+  const wasLivePinned = (state.view.start + state.view.count >= d.length + 2);
+  let shifted = false;
+  if(d.length >= N_BARS){
+    d.shift();
+    shifted = true;
+  }
+  d.push(bar);
+
+  if(wasLivePinned){
+    state.view.start = Math.max(0, d.length - state.view.count + 6);
+  } else if(shifted && state.view.start > 0){
+    state.view.start = Math.max(0, state.view.start - 1);
+  }
+
+  state.cache={};
+  updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
   if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
   if(isLive && typeof checkAllAlerts === 'function') checkAllAlerts();
@@ -6397,9 +6430,9 @@ function restoreView(){
   if(!d || !d.length) return false;
   const count = (v && isFinite(v.count)) ? Math.max(20, Math.min(d.length, v.count)) : 150;
   
-  // TOUJOURS afficher la dernière bougie en direct et le prix actuel par défaut
+  // TOUJOURS afficher la dernière bougie en direct et le prix actuel avec une marge respirante à droite
   state.view = {
-    start: Math.max(0, d.length - count),
+    start: Math.max(0, d.length - count + 6),
     count: count
   };
   state.yScale = { auto: true, lo: 0, hi: 0 };
@@ -7848,7 +7881,7 @@ function visible(){
   let e=Math.min(state.data.length, Math.ceil(start+count));
   if(s>=e && state.data.length>0){
     const cnt = Math.max(10, count || 150);
-    state.view.start = Math.max(0, state.data.length - cnt);
+    state.view.start = Math.max(0, state.data.length - cnt + 6);
     s = Math.max(0, Math.floor(state.view.start));
     e = Math.min(state.data.length, Math.ceil(state.view.start + cnt));
   }
@@ -13327,7 +13360,7 @@ function __zzPulse(){
 window.scrollToLatestCandles = function() {
   if (!state.data || !state.data.length) return;
   const count = state.view.count || 150;
-  state.view.start = Math.max(0, state.data.length - count);
+  state.view.start = Math.max(0, state.data.length - count + 6);
   state.yScale.auto = true;
   if (state.subScale) {
     for (const k in state.subScale) {
@@ -13346,7 +13379,7 @@ function updateLatestCandlesBtnVisibility() {
     if (btnFloat && btnFloat.style.display !== 'none') btnFloat.style.display = 'none';
     return;
   }
-  const isBack = (state.view.start + state.view.count) < (state.data.length - 3);
+  const isBack = (state.view.start + state.view.count) < (state.data.length + 2);
   if (btnFloat) {
     if (btnFloat.style.display !== 'inline-flex') btnFloat.style.display = 'inline-flex';
     if (btnFloat.dataset.isBack !== String(isBack)) {
@@ -14168,7 +14201,7 @@ canvas.addEventListener('dblclick',e=>{
   else if(z==='price'){state.yScale.auto=true;render();}
   else if(z.startsWith('sub:')){delete state.subScale[z.slice(4)];render();}
   else if(z==='time'){
-    state.view={start:Math.max(0,state.data.length-150),count:150};
+    state.view={start:Math.max(0,state.data.length-150+6),count:150};
     render();
   }
 });
@@ -14215,7 +14248,7 @@ canvas.addEventListener('touchstart',e=>{
     }
     if((z==='price'||z==='time')&&lastTap.z===z&&now-lastTap.t<320){
       if(z==='price')state.yScale.auto=true;
-      else state.view={start:Math.max(0,state.data.length-150),count:150};
+      else state.view={start:Math.max(0,state.data.length-150+6),count:150};
       lastTap={t:0,z:''}; touch=null; render(); return;
     }
     if(z.startsWith('sub:')&&lastTap.z===z&&now-lastTap.t<320){
@@ -35666,7 +35699,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0050';
+  window.__LUMEN_BUILD = 'B-0909-0055';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
