@@ -1014,6 +1014,15 @@ footer{
         <span class="srtf on" data-smcopt="showBos" title="Activer ou masquer les cassures et lignes BOS">🏷️ BOS</span>
         <span class="state">on</span>
       </div>
+      <div class="ind-item on" data-ind="lux_sessions" id="item-lux_sessions" style="background:var(--panel-2,#0F172A);border:1.5px solid #089981;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(8,153,129,0.2)">
+        <span class="dot" style="background:#089981;box-shadow:0 0 6px #089981;flex:none"></span>
+        <span class="name">Sessions [LuxAlgo] <span class="desc">New York · London · Tokyo · Sydney</span></span>
+        <span class="srtf on" data-sessopt="showA" title="Activer / désactiver la session New York">🇺🇸 NY</span>
+        <span class="srtf on" data-sessopt="showB" title="Activer / désactiver la session London">🇬🇧 LDN</span>
+        <span class="srtf on" data-sessopt="showC" title="Activer / désactiver la session Tokyo">🇯🇵 TYO</span>
+        <span class="srtf on" data-sessopt="showD" title="Activer / désactiver la session Sydney">🇦🇺 SYD</span>
+        <span class="state">on</span>
+      </div>
       <div class="ind-item on" data-ind="fvg_ranked" id="item-fvg_ranked" style="background:var(--panel-2,#0F172A);border:1.5px solid #1AD8C2;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(26,216,194,0.2)">
         <span class="dot" style="background:#1AD8C2;box-shadow:0 0 6px #1AD8C2;flex:none"></span>
         <span class="name">Ranked FVG Imbalance <span class="desc">Ranking Top Zones (Zeiierman)</span></span>
@@ -3525,6 +3534,185 @@ const calc = {
        n'intervient qu'au retour. */
     return out.slice(-1500);
   },
+  luxSessions(d, ind) {
+    if (!d || !d.length) return { newDays: [], sessions: [] };
+    ind = ind || {};
+    const tzOffset = +(ind.tzOffset || 0);
+
+    const parseSess = (str, defH1, defH2) => {
+      if (!str) return { startMin: defH1 * 60, endMin: defH2 * 60 };
+      const m = String(str).match(/(\d{1,2})[:.]?(\d{2})?\s*-\s*(\d{1,2})[:.]?(\d{2})?/);
+      if (!m) return { startMin: defH1 * 60, endMin: defH2 * 60 };
+      let h1 = parseInt(m[1], 10), m1 = parseInt(m[2] || '0', 10);
+      let h2 = parseInt(m[3], 10), m2 = parseInt(m[4] || '0', 10);
+      if (m[1].length === 4) {
+        h1 = Math.floor(parseInt(m[1], 10) / 100);
+        m1 = parseInt(m[1], 10) % 100;
+      }
+      if (m[3].length === 4) {
+        h2 = Math.floor(parseInt(m[3], 10) / 100);
+        m2 = parseInt(m[3], 10) % 100;
+      }
+      return { startMin: h1 * 60 + m1, endMin: h2 * 60 + m2 };
+    };
+
+    const sessDefs = [
+      { key: 'A', show: ind.showA !== false, name: ind.nameA || 'New York', hours: parseSess(ind.timeA || '1300-2200', 13, 22), color: ind.colorA || '#ff5d00', range: ind.rangeA !== false, trendline: !!ind.trendlineA, mean: !!ind.meanA, vwap: !!ind.vwapA, maxMin: !!ind.maxMinA },
+      { key: 'B', show: ind.showB !== false, name: ind.nameB || 'London',   hours: parseSess(ind.timeB || '0700-1600', 7, 16),  color: ind.colorB || '#2157f3', range: ind.rangeB !== false, trendline: !!ind.trendlineB, mean: !!ind.meanB, vwap: !!ind.vwapB, maxMin: !!ind.maxMinB },
+      { key: 'C', show: ind.showC !== false, name: ind.nameC || 'Tokyo',    hours: parseSess(ind.timeC || '0000-0900', 0, 9),   color: ind.colorC || '#e91e63', range: ind.rangeC !== false, trendline: !!ind.trendlineC, mean: !!ind.meanC, vwap: !!ind.vwapC, maxMin: !!ind.maxMinC },
+      { key: 'D', show: ind.showD !== false, name: ind.nameD || 'Sydney',   hours: parseSess(ind.timeD || '2100-0600', 21, 6),  color: ind.colorD || '#ffeb3b', range: ind.rangeD !== false, trendline: !!ind.trendlineD, mean: !!ind.meanD, vwap: !!ind.vwapD, maxMin: !!ind.maxMinD }
+    ];
+
+    const isInSession = (min, sMin, eMin) => {
+      if (sMin < eMin) return min >= sMin && min < eMin;
+      return min >= sMin || min < eMin;
+    };
+
+    const newDays = [];
+    let prevDay = -1;
+
+    const sessTrackers = sessDefs.map(s => ({
+      def: s,
+      instances: [],
+      maxMinLevels: [],
+      current: null,
+      lastCompleted: null,
+      activeBars: new Uint8Array(d.length)
+    }));
+
+    const tzMs = tzOffset * 3600000;
+
+    for (let i = 0; i < d.length; i++) {
+      const b = d[i];
+      const dObj = new Date(b.t + tzMs);
+      const day = dObj.getUTCDay();
+      const min = dObj.getUTCHours() * 60 + dObj.getUTCMinutes();
+
+      if (i > 0 && day !== prevDay) {
+        newDays.push({ i, t: b.t, day });
+      }
+      prevDay = day;
+
+      for (let sIdx = 0; sIdx < sessTrackers.length; sIdx++) {
+        const trk = sessTrackers[sIdx];
+        if (!trk.def.show) continue;
+
+        const active = isInSession(min, trk.def.hours.startMin, trk.def.hours.endMin);
+        trk.activeBars[i] = active ? 1 : 0;
+        const wasActive = trk.current !== null;
+
+        if (active && !wasActive) {
+          if (trk.lastCompleted && trk.maxMinLevels.length > 0) {
+            const lastLvl = trk.maxMinLevels[trk.maxMinLevels.length - 1];
+            if (lastLvl.endIdx == null) lastLvl.endIdx = i;
+          }
+
+          trk.current = {
+            startIdx: i,
+            startTime: b.t,
+            endIdx: i,
+            endTime: b.t,
+            high: b.h,
+            low: b.l,
+            cumulativeClose: b.c,
+            cumulativeWeightedClose: b.c,
+            cumulativeSquaredClose: b.c * b.c,
+            volSum: b.v || 0,
+            volCloseSum: b.c * (b.v || 0),
+            length: 1,
+            means: [{ i, val: b.c }],
+            vwaps: [{ i, val: b.c }],
+            firstValue: b.c,
+            lastValue: b.c,
+            deviation: 0,
+            correlation: 0,
+            isActive: true
+          };
+        } else if (active && wasActive) {
+          const cur = trk.current;
+          cur.length++;
+          const L = cur.length;
+          cur.endIdx = i;
+          cur.endTime = b.t;
+          cur.high = Math.max(cur.high, b.h);
+          cur.low = Math.min(cur.low, b.l);
+          cur.cumulativeClose += b.c;
+          cur.cumulativeWeightedClose += b.c * L;
+          cur.cumulativeSquaredClose += b.c * b.c;
+          const v = b.v || 0;
+          cur.volSum += v;
+          cur.volCloseSum += b.c * v;
+
+          const mean = cur.cumulativeClose / L;
+          const vwap = cur.volSum > 0 ? cur.volCloseSum / cur.volSum : mean;
+          cur.means.push({ i, val: mean });
+          cur.vwaps.push({ i, val: vwap });
+
+          const avg = mean;
+          const wAvg = cur.cumulativeWeightedClose / (L * (L + 1) / 2);
+          cur.firstValue = 4.0 * avg - 3.0 * wAvg;
+          cur.lastValue = 3.0 * wAvg - 2.0 * avg;
+
+          const cov = (wAvg - avg) * (L + 1) / 2;
+          const variance = Math.max(0, cur.cumulativeSquaredClose / L - avg * avg);
+          cur.deviation = Math.sqrt(variance);
+          const corrDenom = cur.deviation * (Math.sqrt(Math.max(0, L * L - 1)) / (2.0 * Math.sqrt(3.0)));
+          cur.correlation = (corrDenom > 0) ? (cov / corrDenom) : 0;
+        } else if (!active && wasActive) {
+          const cur = trk.current;
+          cur.isActive = false;
+          trk.instances.push(cur);
+          trk.lastCompleted = cur;
+          trk.current = null;
+
+          if (trk.def.maxMin) {
+            trk.maxMinLevels.push({
+              startIdx: cur.endIdx,
+              startTime: cur.endTime,
+              endIdx: null,
+              high: cur.high,
+              low: cur.low
+            });
+          }
+        }
+      }
+    }
+
+    const sessions = sessTrackers.map(trk => {
+      if (trk.current) {
+        trk.instances.push(trk.current);
+      }
+      if (trk.maxMinLevels.length > 0) {
+        const lastLvl = trk.maxMinLevels[trk.maxMinLevels.length - 1];
+        if (lastLvl.endIdx == null) lastLvl.endIdx = d.length - 1;
+      }
+
+      const lastInst = trk.current || trk.lastCompleted;
+      const isCurrentlyActive = !!(trk.current && trk.current.isActive);
+      return {
+        key: trk.def.key,
+        name: trk.def.name,
+        color: trk.def.color,
+        show: trk.def.show,
+        range: trk.def.range,
+        trendline: trk.def.trendline,
+        mean: trk.def.mean,
+        vwap: trk.def.vwap,
+        maxMin: trk.def.maxMin,
+        instances: trk.instances,
+        maxMinLevels: trk.maxMinLevels,
+        activeBars: trk.activeBars,
+        isCurrentlyActive: isCurrentlyActive,
+        lastStats: {
+          correlation: lastInst ? (lastInst.correlation || 0) : 0,
+          deviation: lastInst ? (lastInst.deviation || 0) : 0,
+          volume: lastInst ? (lastInst.volSum || 0) : 0
+        }
+      };
+    });
+
+    return { newDays, sessions };
+  },
   smcLite(d, ind) {
     if (!d || !d.length) return { supplyBoxes: [], demandBoxes: [], supplyBos: [], demandBos: [], paLabels: [], zigzagPoints: [] };
 
@@ -5350,6 +5538,7 @@ const state = {
     sha2:{on:false,period:10,tf:'15',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
     sha3:{on:false,period:10,tf:'60',mode:'lisse',cUp:'#26C6DA',cDown:'#EF5350',opacite:0.55},
     smc_lite:{on:true,swingLen:10,keepHist:20,boxWidth:2.5,showBoxes:true,showZigzag:false,showPaLabels:false,showBos:true,cSupply:'#E2E8F0',cSupplyOutline:'#A0AEC0',cDemand:'#00E5FF',cDemandOutline:'#22D3EE',cBos:'#FFFFFF',cPoi:'#FFD700',cPa:'#FFFFFF',cZigzag:'#00E5FF'},
+    lux_sessions:{on:true,tzOffset:0,rangeTransparency:90,showRangeOutline:true,showRangeLabel:true,showDayDivider:true,showSessionDivider:false,showDashboard:false,advancedDashboard:false,dashboardPosition:'top_right',showA:true,nameA:'New York',timeA:'1300-2200',colorA:'#ff5d00',rangeA:true,trendlineA:false,meanA:false,vwapA:false,maxMinA:false,showB:true,nameB:'London',timeB:'0700-1600',colorB:'#2157f3',rangeB:true,trendlineB:false,meanB:false,vwapB:false,maxMinB:false,showC:true,nameC:'Tokyo',timeC:'0000-0900',colorC:'#e91e63',rangeC:true,trendlineC:false,meanC:false,vwapC:false,maxMinC:false,showD:true,nameD:'Sydney',timeD:'2100-0600',colorD:'#ffeb3b',rangeD:true,trendlineD:false,meanD:false,vwapD:false,maxMinD:false},
     fvg_ranked:{on:true,maxZones:10,maxStored:50,volLength:20,trendLength:50,showBars:true,showBlockText:true,strengthTextSize:'auto',blockTextSize:'auto',cBull:'#1AD8C2',cBear:'#D81A66',tf:'chart'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:true,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
@@ -5617,6 +5806,15 @@ function loadConfig(){
     if(state.indicators.strat_mm){
       delete state.indicators.strat_mm.showFmcSolo;
       delete state.indicators.strat_mm.fmcSoloSource;
+    }
+  }catch(e){}
+
+  /* Sessions [LuxAlgo] : initialisation propre */
+  try{
+    if(!state.indicators.lux_sessions){
+      state.indicators.lux_sessions = {
+        on:true,tzOffset:0,rangeTransparency:90,showRangeOutline:true,showRangeLabel:true,showDayDivider:true,showSessionDivider:false,showDashboard:false,advancedDashboard:false,dashboardPosition:'top_right',showA:true,nameA:'New York',timeA:'1300-2200',colorA:'#ff5d00',rangeA:true,trendlineA:false,meanA:false,vwapA:false,maxMinA:false,showB:true,nameB:'London',timeB:'0700-1600',colorB:'#2157f3',rangeB:true,trendlineB:false,meanB:false,vwapB:false,maxMinB:false,showC:true,nameC:'Tokyo',timeC:'0000-0900',colorC:'#e91e63',rangeC:true,trendlineC:false,meanC:false,vwapC:false,maxMinC:false,showD:true,nameD:'Sydney',timeD:'2100-0600',colorD:'#ffeb3b',rangeD:true,trendlineD:false,meanD:false,vwapD:false,maxMinD:false
+      };
     }
   }catch(e){}
 
@@ -7336,6 +7534,7 @@ function getInd(key){
     if(key==='ichi')state.cache[ck]=calc.ichimoku(d);
     const f=HTF_FACTOR[state.tf]||4;
     if(key==='smc_lite') state.cache[ck] = calc.smcLite(d, ind);
+    if(key==='lux_sessions') state.cache[ck] = calc.luxSessions(d, ind);
     if(key==='fvg_ranked'){
       const mtf = (ind.tf && ind.tf !== 'chart' && +ind.tf !== state.tf) ? +ind.tf : null;
       if(!mtf) state.cache[ck] = calc.rankedFvg(d, ind);
@@ -9162,6 +9361,7 @@ function drawPrice(p,s,e,cw,sharedXStack){
   for(const kSha of ['sha','sha2','sha3'])
     if(vis(kSha)) drawSHA(kSha, getInd(kSha), s, e, yOf, cw, p);
   if(vis('smc_lite')) drawSmcLite(getInd('smc_lite'),s,e,yOf,cw,p);
+  if(vis('lux_sessions')) drawLuxSessions(getInd('lux_sessions'),s,e,yOf,cw,p);
   if(vis('fvg_ranked')) drawRankedFVG(getInd('fvg_ranked'),s,e,yOf,cw,p,'fvg_ranked');
   if(vis('ob')){const _ob=getInd('ob');drawOBMTF(_ob,s,e,yOf,cw,p);alertNewOB(_ob);}
   // FVG enrichie MTF : moitiés % acheteur/vendeur, bleu/violet, MITIGATED
@@ -9830,6 +10030,313 @@ function drawSmcLite(data, s, e, yOf, cw, p) {
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawLuxSessions(data, s, e, yOf, cw, p) {
+  if (!data || !state.data || !state.data.length) return;
+  const d = state.data;
+  const ind = state.indicators.lux_sessions || {};
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, p.y, W - AXIS_W, p.h);
+  ctx.clip();
+
+  // 1. Daily Dividers (showDayDivider)
+  if (ind.showDayDivider !== false && data.newDays && data.newDays.length) {
+    const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.font = '10px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'left';
+
+    for (const nd of data.newDays) {
+      if (nd.i < s - 1 || nd.i >= e) continue;
+      const x = Math.round(xOf(nd.i));
+      if (x < 0 || x > W - AXIS_W) continue;
+
+      ctx.beginPath();
+      ctx.moveTo(x + 0.5, p.y);
+      ctx.lineTo(x + 0.5, p.y + p.h);
+      ctx.stroke();
+
+      const dayStr = dayNames[nd.day] || '';
+      const tw = ctx.measureText(dayStr).width;
+      ctx.save();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+      if (typeof roundRect === 'function') {
+        roundRect(x + 4, p.y + 6, tw + 10, 16, 3);
+      } else {
+        ctx.rect(x + 4, p.y + 6, tw + 10, 16);
+      }
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillText(dayStr, x + 9, p.y + 18);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // 2. Session Graphics
+  const rawTransp = (ind.rangeTransparency != null) ? ind.rangeTransparency : 90;
+  const transp = Math.max(0, Math.min(100, rawTransp)) / 100;
+  const fillAlpha = Math.max(0.02, Math.min(1, 1 - transp));
+  const showOutline = ind.showRangeOutline !== false;
+  const showLabel = ind.showRangeLabel !== false;
+
+  for (const sess of (data.sessions || [])) {
+    if (!sess.show) continue;
+    const col = sess.color || '#089981';
+
+    // 2.1 Range Boxes
+    if (sess.range && sess.instances) {
+      for (const inst of sess.instances) {
+        if (inst.endIdx < s || inst.startIdx >= e) continue;
+        const x0 = xOf(inst.startIdx) - cw / 2;
+        const x1 = xOf(inst.endIdx) + cw / 2;
+        const yH = yOf(inst.high);
+        const yL = yOf(inst.low);
+        const boxX = Math.max(0, x0);
+        const boxW = Math.min(W - AXIS_W, x1) - boxX;
+        const boxY = Math.min(yH, yL);
+        const boxH = Math.max(1, Math.abs(yL - yH));
+
+        if (boxW > 0 && boxX < W - AXIS_W) {
+          ctx.fillStyle = hexA(col, fillAlpha);
+          ctx.fillRect(boxX, boxY, boxW, boxH);
+
+          if (showOutline) {
+            ctx.save();
+            ctx.strokeStyle = hexA(col, 0.7);
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 3]);
+            ctx.strokeRect(x0 + 0.5, boxY + 0.5, (x1 - x0), boxH);
+            ctx.restore();
+          }
+
+          if (showLabel) {
+            ctx.save();
+            ctx.font = '10px "IBM Plex Mono", monospace';
+            ctx.fillStyle = col;
+            ctx.textAlign = 'center';
+            const midX = (x0 + x1) / 2;
+            if (midX >= -40 && midX <= W - AXIS_W + 40) {
+              const labelY = Math.max(p.y + 12, boxY - 4);
+              ctx.fillText(sess.name, Math.max(30, Math.min(W - AXIS_W - 30, midX)), labelY);
+            }
+            ctx.restore();
+          }
+        }
+      }
+    }
+
+    // 2.2 Max / Min Extended Lines
+    if (sess.maxMin && sess.maxMinLevels) {
+      ctx.save();
+      ctx.strokeStyle = hexA(col, 0.85);
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 2]);
+      for (const lvl of sess.maxMinLevels) {
+        const eIdx = lvl.endIdx != null ? lvl.endIdx : (d.length - 1);
+        if (eIdx < s || lvl.startIdx >= e) continue;
+        const xA = Math.max(0, xOf(lvl.startIdx));
+        const xB = Math.min(W - AXIS_W, xOf(eIdx));
+        if (xB <= xA) continue;
+        const yHi = yOf(lvl.high);
+        const yLo = yOf(lvl.low);
+        ctx.beginPath(); ctx.moveTo(xA, yHi + 0.5); ctx.lineTo(xB, yHi + 0.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(xA, yLo + 0.5); ctx.lineTo(xB, yLo + 0.5); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 2.3 Linear Regression Trendline
+    if (sess.trendline && sess.instances) {
+      ctx.save();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.5;
+      for (const inst of sess.instances) {
+        if (inst.endIdx < s || inst.startIdx >= e) continue;
+        const xA = xOf(inst.startIdx);
+        const xB = xOf(inst.endIdx);
+        const yA = yOf(inst.firstValue);
+        const yB = yOf(inst.lastValue);
+        ctx.beginPath(); ctx.moveTo(xA, yA); ctx.lineTo(xB, yB); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 2.4 Session Mean
+    if (sess.mean && sess.instances) {
+      ctx.save();
+      ctx.strokeStyle = hexA(col, 0.9);
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 2]);
+      for (const inst of sess.instances) {
+        if (inst.endIdx < s || inst.startIdx >= e) continue;
+        const xA = xOf(inst.startIdx);
+        const xB = xOf(inst.endIdx);
+        const avg = inst.cumulativeClose / inst.length;
+        const y = yOf(avg);
+        ctx.beginPath(); ctx.moveTo(xA, y + 0.5); ctx.lineTo(xB, y + 0.5); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 2.5 Session VWAP
+    if (sess.vwap && sess.instances) {
+      ctx.save();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.5;
+      for (const inst of sess.instances) {
+        if (inst.endIdx < s || inst.startIdx >= e) continue;
+        if (!inst.vwaps || !inst.vwaps.length) continue;
+        ctx.beginPath();
+        let started = false;
+        for (const pt of inst.vwaps) {
+          if (pt.i < s - 1 || pt.i > e) continue;
+          const x = xOf(pt.i), y = yOf(pt.val);
+          if (!started) { ctx.moveTo(x, y); started = true; }
+          else { ctx.lineTo(x, y); }
+        }
+        if (started) ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 2.6 Session Dividers along bottom
+    if (ind.showSessionDivider && sess.activeBars) {
+      ctx.save();
+      ctx.font = '9px "IBM Plex Mono", monospace';
+      ctx.fillStyle = col;
+      ctx.textAlign = 'center';
+      const botY = p.y + p.h - 6;
+      const minI = Math.max(0, s), maxI = Math.min(d.length - 1, e);
+      for (let i = minI; i <= maxI; i++) {
+        if (!sess.activeBars[i]) continue;
+        const x = xOf(i);
+        if (x < 0 || x > W - AXIS_W) continue;
+        const isBoundary = (i === 0 || !sess.activeBars[i - 1] || i === d.length - 1 || !sess.activeBars[i + 1]);
+        if (isBoundary) {
+          ctx.fillText('❚', x, botY);
+        } else if (cw >= 4) {
+          ctx.fillText('•', x, botY);
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  // 3. Dashboard Table
+  if (ind.showDashboard && data.sessions) {
+    const isAdv = !!ind.advancedDashboard;
+    const pos = ind.dashboardPosition || 'top_right';
+    const tblW = isAdv ? 260 : 165;
+    const rowH = 19;
+    const headerH = 24;
+    const tblH = headerH + 18 + 4 * rowH + 6;
+
+    let tblX = W - AXIS_W - tblW - 12;
+    let tblY = p.y + 12;
+    if (pos === 'bottom_right') {
+      tblX = W - AXIS_W - tblW - 12;
+      tblY = p.y + p.h - tblH - 12;
+    } else if (pos === 'bottom_left') {
+      tblX = 12;
+      tblY = p.y + p.h - tblH - 12;
+    }
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    if (typeof roundRect === 'function') {
+      roundRect(tblX, tblY, tblW, tblH, 6);
+    } else {
+      ctx.rect(tblX, tblY, tblW, tblH);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = 'bold 11px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#E2E8F0';
+    ctx.textAlign = 'center';
+    ctx.fillText('Sessions [LuxAlgo]', tblX + tblW / 2, tblY + 16);
+
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+    ctx.beginPath();
+    ctx.moveTo(tblX + 6, tblY + 22.5);
+    ctx.lineTo(tblX + tblW - 6, tblY + 22.5);
+    ctx.stroke();
+
+    ctx.font = '9px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#64748B';
+    ctx.textAlign = 'left';
+    ctx.fillText('Session', tblX + 8, tblY + 34);
+    ctx.textAlign = 'right';
+    ctx.fillText('Status', tblX + (isAdv ? 124 : tblW - 8), tblY + 34);
+    if (isAdv) {
+      ctx.fillText('Trend', tblX + 168, tblY + 34);
+      ctx.fillText('Vol', tblX + 214, tblY + 34);
+      ctx.fillText('σ', tblX + tblW - 8, tblY + 34);
+    }
+
+    let rY = tblY + 49;
+    for (const sess of data.sessions) {
+      ctx.font = '10px "IBM Plex Mono", monospace';
+      ctx.fillStyle = sess.show ? sess.color : '#64748B';
+      ctx.textAlign = 'left';
+      ctx.fillText(sess.name, tblX + 8, rY);
+
+      const stX = tblX + (isAdv ? 124 : tblW - 8);
+      const isActive = sess.isCurrentlyActive;
+      const stText = !sess.show ? 'Disabled' : (isActive ? 'Active' : 'Inactive');
+      const stCol = !sess.show ? '#64748B' : (isActive ? '#089981' : '#F23645');
+
+      ctx.save();
+      ctx.font = 'bold 9px "IBM Plex Mono", monospace';
+      const bw = ctx.measureText(stText).width + 8;
+      ctx.fillStyle = hexA(stCol, 0.2);
+      ctx.strokeStyle = hexA(stCol, 0.6);
+      if (typeof roundRect === 'function') {
+        roundRect(stX - bw, rY - 10, bw, 13, 3);
+      } else {
+        ctx.rect(stX - bw, rY - 10, bw, 13);
+      }
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = stCol;
+      ctx.textAlign = 'center';
+      ctx.fillText(stText, stX - bw / 2, rY);
+      ctx.restore();
+
+      if (isAdv) {
+        const corr = sess.lastStats.correlation;
+        ctx.textAlign = 'right';
+        ctx.fillStyle = corr >= 0 ? '#089981' : '#F23645';
+        ctx.fillText((corr >= 0 ? '+' : '') + corr.toFixed(2), tblX + 168, rY);
+
+        ctx.fillStyle = '#CBD5E1';
+        const v = sess.lastStats.volume;
+        const vStr = v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v.toFixed(0);
+        ctx.fillText(vStr, tblX + 214, rY);
+
+        const dev = sess.lastStats.deviation;
+        const dStr = dev >= 100 ? dev.toFixed(0) : dev.toFixed(1);
+        ctx.fillText(dStr, tblX + tblW - 8, rY);
+      }
+
+      rY += rowH;
+    }
+    ctx.restore();
   }
 
   ctx.restore();
@@ -12921,6 +13428,7 @@ const IND_META={
     return 'Squeeze Momentum [LazyBear] (' + tf1Str + tf2Str + ')';
   },color:'#00E676'},
   smc_lite:{label:()=>'FluidTrades - SMC Lite',color:'#00FFFF'},
+  lux_sessions:{label:()=>'Sessions [LuxAlgo]',color:'#089981'},
   fvg_ranked:{label:()=>'Ranked FVG (Zeiierman)',color:'#1AD8C2'},
   fvg:{label:()=>'FVG',color:'#25D0A4'},
   fvgm:{label:()=>'FVG MTF '+(state.indicators.fvgm.tf!=='auto'
@@ -13953,6 +14461,10 @@ function syncMenu(){
     const opt = el.dataset.smcopt;
     if(state.indicators.smc_lite) el.classList.toggle('on', state.indicators.smc_lite[opt] !== false);
   });
+  document.querySelectorAll('.srtf[data-sessopt]').forEach(el=>{
+    const opt = el.dataset.sessopt;
+    if(state.indicators.lux_sessions) el.classList.toggle('on', state.indicators.lux_sessions[opt] !== false);
+  });
   document.querySelectorAll('.srtf[data-tripleflag]').forEach(el=>{
   const f = el.dataset.tripleflag;
   if(state.indicators.signal_triple) el.classList.toggle('on', !!state.indicators.signal_triple[f]);
@@ -13995,6 +14507,19 @@ document.querySelectorAll('.srtf[data-smcopt]').forEach(el=>{
     if(state.indicators.smc_lite){
       const cur = state.indicators.smc_lite[opt] !== false;
       state.indicators.smc_lite[opt] = !cur;
+      el.classList.toggle('on', !cur);
+      state.cache={}; saveConfig(); syncMenu(); render();
+    }
+  });
+});
+document.querySelectorAll('.srtf[data-sessopt]').forEach(el=>{
+  const opt = el.dataset.sessopt;
+  if(state.indicators.lux_sessions) el.classList.toggle('on', state.indicators.lux_sessions[opt] !== false);
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(state.indicators.lux_sessions){
+      const cur = state.indicators.lux_sessions[opt] !== false;
+      state.indicators.lux_sessions[opt] = !cur;
       el.classList.toggle('on', !cur);
       state.cache={}; saveConfig(); syncMenu(); render();
     }
@@ -16963,6 +17488,57 @@ const SCHEMA={
     {k:'cPa',t:'col',lab:'Couleur Étiquette Price Action',def:'#FFFFFF'},
     {k:'cZigzag',t:'col',lab:'Couleur Zig Zag',def:'#00E5FF'},
   ]},
+  lux_sessions:{title:'Sessions [LuxAlgo]',fields:[
+    {k:'tzOffset',t:'num',lab:'Fuseau horaire UTC (heures)',min:-12,max:14,step:1,def:0,ind:1},
+    {k:'rangeTransparency',t:'num',lab:'Transparence boîtes (0-100%)',min:0,max:100,step:5,def:90,ind:1},
+    {k:'showRangeOutline',t:'bool',lab:'Afficher contour des boîtes',def:true},
+    {k:'showRangeLabel',t:'bool',lab:'Afficher nom de session sur boîte',def:true},
+    {k:'showDayDivider',t:'bool',lab:'Afficher séparateur de jour vertical',def:true},
+    {k:'showSessionDivider',t:'bool',lab:'Afficher ruban de session bas (❚ / •)',def:false},
+    {k:'showDashboard',t:'bool',lab:'Afficher Tableau de bord (Dashboard)',def:false},
+    {k:'advancedDashboard',t:'bool',lab:'Tableau de bord avancé (Stats/Trend/Vol)',def:false},
+    {k:'dashboardPosition',t:'choice',lab:'Position du tableau de bord',def:'top_right',opts:[
+      {v:'top_right',t:'Haut Droite'},
+      {v:'bottom_right',t:'Bas Droite'},
+      {v:'bottom_left',t:'Bas Gauche'}
+    ]},
+    {k:'showA',t:'bool',lab:'Activer Session A',def:true},
+    {k:'nameA',t:'text',lab:'Nom Session A',def:'New York'},
+    {k:'timeA',t:'text',lab:'Horaires Session A (HHMM-HHMM)',def:'1300-2200'},
+    {k:'colorA',t:'col',lab:'Couleur Session A',def:'#ff5d00'},
+    {k:'rangeA',t:'bool',lab:'Session A: Boîte de Range',def:true},
+    {k:'trendlineA',t:'bool',lab:'Session A: Régression linéaire (Trend)',def:false},
+    {k:'meanA',t:'bool',lab:'Session A: Moyenne glissante (Mean)',def:false},
+    {k:'vwapA',t:'bool',lab:'Session A: VWAP glissant',def:false},
+    {k:'maxMinA',t:'bool',lab:'Session A: Niveaux Max / Min étendus',def:false},
+    {k:'showB',t:'bool',lab:'Activer Session B',def:true},
+    {k:'nameB',t:'text',lab:'Nom Session B',def:'London'},
+    {k:'timeB',t:'text',lab:'Horaires Session B (HHMM-HHMM)',def:'0700-1600'},
+    {k:'colorB',t:'col',lab:'Couleur Session B',def:'#2157f3'},
+    {k:'rangeB',t:'bool',lab:'Session B: Boîte de Range',def:true},
+    {k:'trendlineB',t:'bool',lab:'Session B: Régression linéaire (Trend)',def:false},
+    {k:'meanB',t:'bool',lab:'Session B: Moyenne glissante (Mean)',def:false},
+    {k:'vwapB',t:'bool',lab:'Session B: VWAP glissant',def:false},
+    {k:'maxMinB',t:'bool',lab:'Session B: Niveaux Max / Min étendus',def:false},
+    {k:'showC',t:'bool',lab:'Activer Session C',def:true},
+    {k:'nameC',t:'text',lab:'Nom Session C',def:'Tokyo'},
+    {k:'timeC',t:'text',lab:'Horaires Session C (HHMM-HHMM)',def:'0000-0900'},
+    {k:'colorC',t:'col',lab:'Couleur Session C',def:'#e91e63'},
+    {k:'rangeC',t:'bool',lab:'Session C: Boîte de Range',def:true},
+    {k:'trendlineC',t:'bool',lab:'Session C: Régression linéaire (Trend)',def:false},
+    {k:'meanC',t:'bool',lab:'Session C: Moyenne glissante (Mean)',def:false},
+    {k:'vwapC',t:'bool',lab:'Session C: VWAP glissant',def:false},
+    {k:'maxMinC',t:'bool',lab:'Session C: Niveaux Max / Min étendus',def:false},
+    {k:'showD',t:'bool',lab:'Activer Session D',def:true},
+    {k:'nameD',t:'text',lab:'Nom Session D',def:'Sydney'},
+    {k:'timeD',t:'text',lab:'Horaires Session D (HHMM-HHMM)',def:'2100-0600'},
+    {k:'colorD',t:'col',lab:'Couleur Session D',def:'#ffeb3b'},
+    {k:'rangeD',t:'bool',lab:'Session D: Boîte de Range',def:true},
+    {k:'trendlineD',t:'bool',lab:'Session D: Régression linéaire (Trend)',def:false},
+    {k:'meanD',t:'bool',lab:'Session D: Moyenne glissante (Mean)',def:false},
+    {k:'vwapD',t:'bool',lab:'Session D: VWAP glissant',def:false},
+    {k:'maxMinD',t:'bool',lab:'Session D: Niveaux Max / Min étendus',def:false}
+  ]},
   imp:{title:'Impulse MACD',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'cSigUp',t:'col',lab:'Signal qui monte',def:'#1A1A1A'},
@@ -17692,6 +18268,9 @@ function openCfg(ind){
         opts.map(o=>`<button class="cfg-tf ${cur===o[0]?'on':''}" data-tf="${o[0]}">${o[1]}</button>`).join('')+
         `</div></div>`;
     }
+    if(f.t==='str'||f.t==='text')
+      return `<div class="cfg-row"><label>${f.lab}</label>
+        <input type="text" value="${v!=null?v:(f.def||'')}" data-f="${f.k}" style="background:var(--panel-2,#0F172A);color:var(--text,#fff);border:1px solid rgba(255,255,255,0.15);padding:4px 8px;border-radius:4px;width:130px;text-align:right"></div>`;
     const numVal = (v !== undefined && v !== null && !isNaN(v)) ? v : (f.def ?? 0);
     return `<div class="cfg-row"><label>${f.lab}</label>
       <input type="number" value="${numVal}" min="${f.min}" max="${f.max}" step="${(f.max<=1||String(f.def).includes('.')||String(f.min).includes('.'))?0.05:1}" data-f="${f.k}"></div>`;
@@ -17722,6 +18301,19 @@ function openCfg(ind){
     state.indicators[ind].tf=el.dataset.tf;
     state.cache={}; saveConfig(); render();
   }));
+  body.querySelectorAll('input[type=text]').forEach(el=>{
+    const update = ()=>{
+      const f=sc.fields.find(x=>x.k===el.dataset.f);
+      if(!f) return;
+      const v=el.value.trim();
+      if(state.indicators[ind]){
+        state.indicators[ind][f.k]=v;
+        state.cache={};
+      }
+      setStyle(ind,f.k,v,true);
+    };
+    el.addEventListener('change', update);
+  });
   body.querySelectorAll('input[type=number]').forEach(el=>{
     const update = ()=>{
       const f=sc.fields.find(x=>x.k===el.dataset.f);
@@ -34888,7 +35480,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0809-2400';
+  window.__LUMEN_BUILD = 'B-0909-0030';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
