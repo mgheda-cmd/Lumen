@@ -701,15 +701,6 @@ footer{
           <span class="state">on</span>
         </div>
       </div>
-      <div class="ind-item" data-ind="strat_fmc2" id="item-strat_fmc2" style="background:linear-gradient(135deg,rgba(56,189,248,0.16),rgba(167,139,250,0.10));border:1.5px solid #38BDF8;border-radius:8px;padding:9px 10px;margin-bottom:8px;box-shadow:0 2px 10px rgba(56,189,248,0.20)">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span class="dot" style="background:#38BDF8;box-shadow:0 0 7px #38BDF8;flex:none"></span>
-            <span class="name" style="font-weight:800;color:var(--text);font-size:12.5px">Stratégie FMC 2 🌊 <span style="background:#38BDF8;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">② SÉPARÉE</span><br><span class="desc" style="color:#BAE6FD;font-size:10.5px">Pastilles FMC 2 Autonomes & Confluence KK</span></span>
-          </div>
-          <span class="state">off</span>
-        </div>
-      </div>
       <div class="ind-item" data-ind="strat_zz2" id="item-strat_zz2" style="background:linear-gradient(135deg, rgba(56,189,248,0.16), rgba(16,185,129,0.12));border:1.5px solid #38BDF8;border-radius:10px;padding:10px 12px;margin-bottom:10px;box-shadow:0 3px 12px rgba(56,189,248,0.22);display:flex;flex-direction:column;align-items:stretch;gap:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
           <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
@@ -5709,7 +5700,6 @@ const state = {
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:10,maxDelay:12,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
-    strat_fmc2:{on:false,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:10,maxDelay:12,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#38BDF8',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -5965,14 +5955,7 @@ function loadConfig(){
     if(!state.indicators.fmc2 && state.indicators.fmc){
       state.indicators.fmc2 = Object.assign({}, state.indicators.fmc, { on: false });
     }
-    if(!state.indicators.strat_fmc2 && state.indicators.strat_fmc){
-      state.indicators.strat_fmc2 = Object.assign({}, state.indicators.strat_fmc, { on: false, cContrarien: '#38BDF8' });
-    } else if(state.indicators.strat_fmc2){
-      if(state.indicators.strat_fmc2.showKkConfluence === undefined) state.indicators.strat_fmc2.showKkConfluence = true;
-      if(state.indicators.strat_fmc2.kkLookback === undefined) state.indicators.strat_fmc2.kkLookback = 10;
-      if(state.indicators.strat_fmc2.maxDelay === undefined) state.indicators.strat_fmc2.maxDelay = 12;
-      if(state.indicators.strat_fmc2.requireFmcColors === undefined) state.indicators.strat_fmc2.requireFmcColors = true;
-    }
+    delete state.indicators.strat_fmc2;
   }catch(e){}
 
   /* Sessions [LuxAlgo] : initialisation propre */
@@ -9033,9 +9016,6 @@ function render(){
   if(vis('strat_fmc')){
     try{ drawFMCSignals(computeFMCSignals('fmc','strat_fmc'), s, e, yOf, cw, 'strat_fmc'); }catch(e){}
   }
-  if(vis('strat_fmc2')){
-    try{ drawFMCSignals(computeFMCSignals('fmc2','strat_fmc2'), s, e, yOf, cw, 'strat_fmc2'); }catch(e){}
-  }
   try{ if(typeof drawDemoPositionsOnChart === 'function') drawDemoPositionsOnChart(s, e, yOf, cw); }catch(e){}
   if(window.__btMarks && typeof window.drawMarquesBT === 'function') window.drawMarquesBT(s, e, yOf);
   // Couche supplémentaire : pastilles corrigées (mode strict). Les originales sont conservées.
@@ -9544,7 +9524,7 @@ function drawPrice(p,s,e,cw,sharedXStack){
   if(vis('ichi')){const ic=getInd('ichi');
     for(const arr of [ic.T,ic.K,ic.A,ic.B])
       for(let i=s;i<e;i++)if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}}
-  const hasBadges = vis('strat_super') || vis('strat_zz') || vis('strat_zz2') || vis('strat_mm') || vis('strat_fmc') || vis('strat_fmc2') || vis('signal_ema_ha') || vis('signal_triple') || vis('exhaustion') || vis('exhaustion_pro') || vis('signal_inv');
+  const hasBadges = vis('strat_super') || vis('strat_zz') || vis('strat_zz2') || vis('strat_mm') || vis('strat_fmc') || vis('signal_ema_ha') || vis('signal_triple') || vis('exhaustion') || vis('exhaustion_pro') || vis('signal_inv');
   const padRatio = hasBadges ? 0.22 : 0.10;
   const pad = (isFinite(hi) && isFinite(lo) && hi > lo) ? ((hi - lo) * padRatio || 1) : 1;
   lo -= pad; hi += pad;
@@ -13817,11 +13797,6 @@ const IND_META={
     const srcLab = s === 'score' ? 'Score' : s === 'contrarien' ? 'Contrarien' : s === 'divergence' ? 'Divergence' : 'Tout';
     return 'Stratégie FMC 🌊 (' + srcLab + ')';
   },color:'#22D3EE'},
-  strat_fmc2:{label:()=>{
-    const s = state.indicators.strat_fmc2?.source || 'tout';
-    const srcLab = s === 'score' ? 'Score' : s === 'contrarien' ? 'Contrarien' : s === 'divergence' ? 'Divergence' : 'Tout';
-    return 'Stratégie FMC 2 🌊 (' + srcLab + ')';
-  },color:'#38BDF8'},
   fmc:{label:()=>'Flow Momentum Composite (FMC)',color:'#22D3EE'},
   fmc2:{label:()=>'Flow Momentum Composite ② (FMC 2)',color:'#38BDF8'},
   strat_zz:{label:()=>'Indicateur Z. Z. ⚡',color:'#FBBF24'},
@@ -15057,66 +15032,6 @@ const PASTILLES_CATALOG = [
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.on = v;
-        }
-      }
-    ]
-  },
-  {
-    category: '🌊 STRATÉGIE FMC 2 (Flow Momentum ②)',
-    color: '#38BDF8',
-    items: [
-      {
-        id: 'fmc2_kk_confluence',
-        icon: '⚡',
-        label: 'Confluence FMC 2 × KK (Triangles ±75)',
-        desc: 'Achat: Triangle FMC 2 + KK sous -75 repassé vert + Ligne & Hist FMC 2 verts | Vente: Triangle + KK sur +75 repassé rouge + Ligne & Hist FMC 2 rouges',
-        accent: '#F59E0B',
-        def: true,
-        get: () => state.indicators?.strat_fmc2?.showKkConfluence !== false,
-        set: (v) => {
-          if (!state.indicators.strat_fmc2) state.indicators.strat_fmc2 = {};
-          state.indicators.strat_fmc2.showKkConfluence = v;
-          if (v && state.indicators.strat_fmc2.on === false) state.indicators.strat_fmc2.on = true;
-        }
-      },
-      {
-        id: 'fmc2_badges',
-        icon: '🌊',
-        label: 'Pastilles FMC 2 Autonomes',
-        desc: 'Score composite FMC 2 de liquidité et flux (Score · Contrarien · Div)',
-        accent: '#38BDF8',
-        def: false,
-        get: () => !!state.indicators?.strat_fmc2?.showBadges,
-        set: (v) => {
-          if (!state.indicators.strat_fmc2) state.indicators.strat_fmc2 = {};
-          state.indicators.strat_fmc2.showBadges = v;
-          if (v && state.indicators.strat_fmc2.on === false) state.indicators.strat_fmc2.on = true;
-        }
-      },
-      {
-        id: 'fmc2_lines',
-        icon: '📏',
-        label: 'Lignes Repères Verticales FMC 2',
-        desc: 'Lignes verticales sous les pastilles d\'entrée FMC 2 et FMC 2 × KK',
-        accent: '#38BDF8',
-        def: true,
-        get: () => state.indicators?.strat_fmc2?.showVerticalLines !== false,
-        set: (v) => {
-          if (!state.indicators.strat_fmc2) state.indicators.strat_fmc2 = {};
-          state.indicators.strat_fmc2.showVerticalLines = v;
-        }
-      },
-      {
-        id: 'fmc2_on',
-        icon: '⚡',
-        label: 'Module Stratégie FMC 2',
-        desc: 'Activation générale du moteur de calcul FMC 2',
-        accent: '#38BDF8',
-        def: false,
-        get: () => !!state.indicators?.strat_fmc2?.on,
-        set: (v) => {
-          if (!state.indicators.strat_fmc2) state.indicators.strat_fmc2 = {};
-          state.indicators.strat_fmc2.on = v;
         }
       }
     ]
@@ -19102,25 +19017,6 @@ const SCHEMA={
     {k:'cContrarien',t:'col',lab:'Couleur Contrarien',def:'#22D3EE'},
     {k:'cDivergence',t:'col',lab:'Couleur Divergence',def:'#F59E0B'}
   ]},
-  strat_fmc2:{title:'Stratégie FMC 2 🌊 (Pastilles & Confluence KK)',fields:[
-    {k:'showKkConfluence',t:'bool',lab:'Afficher la Confluence FMC 2 × KK (Triangles ±75)',def:true},
-    {k:'requireFmcColors',t:'bool',lab:'Exiger Ligne & Histogramme FMC 2 du même sens (Vert: Achat / Rouge: Vente)',def:true},
-    {k:'kkLookback',t:'num',lab:'Historique bougies seuil KK (1 à 25)',min:1,max:25,def:10,ind:1},
-    {k:'maxDelay',t:'num',lab:'Délai max confirmation après triangle (1 à 25 bougies)',min:1,max:25,def:12,ind:1},
-    {k:'source',t:'choice',lab:'Source des signaux FMC 2 autonomes',opts:[
-      {v:'tout',t:'Les trois (Score + Contrarien + Divergence)'},
-      {v:'score',t:'Score composite uniquement'},
-      {v:'contrarien',t:'Contrariens uniquement'},
-      {v:'divergence',t:'Divergences uniquement'}
-    ],def:'tout'},
-    {k:'showBadges',t:'bool',lab:'Afficher les pastilles FMC 2 autonomes brutes',def:false},
-    {k:'showVerticalLines',t:'bool',lab:'Afficher les lignes verticales repères',def:true},
-    {k:'cBuyKk',t:'col',lab:'Couleur Pastille Achat Confluence',def:'#00E676'},
-    {k:'cSellKk',t:'col',lab:'Couleur Pastille Vente Confluence',def:'#FF0055'},
-    {k:'cScore',t:'col',lab:'Couleur Continuation (Score)',def:'#A78BFA'},
-    {k:'cContrarien',t:'col',lab:'Couleur Contrarien',def:'#38BDF8'},
-    {k:'cDivergence',t:'col',lab:'Couleur Divergence',def:'#F59E0B'}
-  ]},
   strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[{k:'taillePastilles',t:'choice',lab:'Taille des pastilles',opts:[{v:'normale',t:'Normale'},{v:'compacte',t:'Compacte'},{v:'minimale',t:'Minimale'}]},{k:'opacitePastilles',t:'num',lab:'Opacité du fond des pastilles (0,3 à 1)',def:0.78},{k:'showRenforts',t:'bool',lab:'Afficher les renforts grisés (entrées du même sens, numérotées)',def:true},{k:'showOpt15mZone',t:'bool',lab:'Option 15M — variante sortie de zone',def:true},{k:'opt6IgnoreMss',t:'bool',lab:'Option 6 — ignorer les cassures marquées MSS',def:false},{k:'resetSurStructure',t:'bool',lab:'Remettre le cycle à zéro sur CHoCH (mesuré perdant sur 1 semaine BTC)',def:false},
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
     {k:'confluenceFilter',t:'choice',lab:"🎯 MODE CONFLUENCE & FILTRAGE",opts:[
@@ -20982,27 +20878,6 @@ function checkAllAlerts(){
             tag: optTag,
             source: 'strat_fmc',
             sourceName: `Stratégie FMC · ${optTag}`
-          });
-        });
-      }
-      const fmc2Data = computeFMCSignals('fmc2', 'strat_fmc2');
-      if(fmc2Data && Array.isArray(fmc2Data.signals)){
-        fmc2Data.signals.forEach(s => {
-          let optTag = '🌊 Pastille FMC ②';
-          if(s.isConfluenceKK) optTag = '⚡ FMC ② × KK Confluence';
-          else if(s.optKey === 'contrarien') optTag = '🌊 FMC ② ▲▼ Contrarien';
-          else if(s.optKey === 'score') optTag = '🌊 FMC ② ◆ Continuation';
-          else if(s.optKey === 'divergence') optTag = '🌊 FMC ② ≈ Divergence';
-
-          allSignals.push({
-            i: (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i,
-            t: s.t,
-            price: s.price,
-            dir: s.dir,
-            type: s.dir === 1 ? 'ACHAT' : 'VENTE',
-            tag: optTag,
-            source: 'strat_fmc2',
-            sourceName: `Stratégie FMC ② · ${optTag}`
           });
         });
       }
@@ -31401,8 +31276,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
   try { fs_ = (typeof getInd === 'function') ? getInd(cleFmc) : null; } catch(e) { fs_ = null; }
   if (!fs_ || !Array.isArray(fs_.core) || !fs_.core.length) return { signals: [] };
 
-  const isFmc2 = (cleFmc === 'fmc2' || cleStrat === 'strat_fmc2');
-  const nomFmc = isFmc2 ? 'FMC ②' : 'FMC';
+  const nomFmc = 'FMC';
   const src = indFmc.source || 'tout';
   const signals = [];
   const prendre = [];
@@ -31447,7 +31321,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
             : g.quoi === 'score'      ? 'score (continuation)'
             :                           'divergence')
             + ' · noyau ' + Math.round(g.noyau) + ' · ' + g.conf + '/5 · score ' + g.sc + ' %',
-        color: (g.quoi === 'contrarien') ? (versHaut ? (cFmc.cContrarien||(isFmc2?'#38BDF8':'#22D3EE')) : '#FB7185')
+        color: (g.quoi === 'contrarien') ? (versHaut ? (cFmc.cContrarien||'#22D3EE') : '#FB7185')
                                          : g.quoi === 'divergence' ? (versHaut ? (cFmc.cDivergence||'#F59E0B') : '#F97316')
                                          : (versHaut ? (cFmc.cScore||'#A78BFA') : '#E879F9'),
         bgFill: versHaut ? (cFmc.cBgBull||'rgba(6,32,40,0.95)') : (cFmc.cBgBear||'rgba(44,10,20,0.95)')
@@ -31530,7 +31404,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
           confCandidate.push({
             i: matchIdx, t: bougie.t, dir: 1,
             type: 'ACHAT',
-            optKey: isFmc2 ? 'fmc2_kk_confluence' : 'fmc_kk_confluence',
+            optKey: 'fmc_kk_confluence',
             isConfluenceKK: true,
             price: bougie.c, low: bougie.l, high: bougie.h,
             score: net[matchIdx],
@@ -31594,7 +31468,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
           confCandidate.push({
             i: matchIdx, t: bougie.t, dir: -1,
             type: 'VENTE',
-            optKey: isFmc2 ? 'fmc2_kk_confluence' : 'fmc_kk_confluence',
+            optKey: 'fmc_kk_confluence',
             isConfluenceKK: true,
             price: bougie.c, low: bougie.l, high: bougie.h,
             score: net[matchIdx],
@@ -31636,8 +31510,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   const signals = fmcRes.signals || [];
   if (!signals.length) return;
 
-  const isFmc2 = (cleStrat === 'strat_fmc2');
-  const nomFmc = isFmc2 ? 'FMC ②' : 'FMC';
+  const nomFmc = 'FMC';
   const taille = 'compacte';
   const kT = taille === 'compacte' ? 0.82 : taille === 'minimale' ? 0.64 : 1;
 
@@ -37549,7 +37422,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0270';
+  window.__LUMEN_BUILD = 'B-0909-0280';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
