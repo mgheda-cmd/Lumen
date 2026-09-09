@@ -1,0 +1,712 @@
+commit 5b0bc50ef617e6d90c6cf2c407195ba28c2e703b
+Author: mgheda-cmd <mgheda-cmd@users.noreply.github.com>
+Date:   Mon Aug 17 22:56:16 2026 +0100
+
+    fix(ui): restaurer le bouton Plein Écran (Build B-1708-2255)
+
+diff --git a/index.html b/index.html
+index 1ffdbe5..ee41fbc 100644
+--- a/index.html
++++ b/index.html
+@@ -486,10 +486,13 @@ footer{
+     </button>
+   </div>
+ 
+-  <button class="btn" id="full-chart-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
++  <button class="btn" id="full-chart-btn" title="Plein graphique / Pleine page : escamoter tous les indicateurs du bas" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
++    <span style="font-size:14px">⛶</span> <span class="btn-full-txt">Pleine page</span>
++  </button>
++  <button class="btn" id="collapse-panes-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
+     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
+   </button>
+-  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2250</span>
++  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2255</span>
+   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
+   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:3px">⇩ FORCER</button>
+ 
+@@ -6814,21 +6817,39 @@ try{
+ }catch(e){}
+ function applyFullBtn(){
+   const b=document.getElementById('full-chart-btn'); if(!b)return;
+-  const on=!!state.fullChart || !!state.allSubsCollapsed;
++  const on=!!state.fullChart;
+   b.style.background=on?'rgba(37,208,164,0.20)':'';
+   b.style.borderColor=on?'#25D0A4':'';
+   b.style.color=on?'#25D0A4':'';
+-  b.title=on ? 'Volets masqués — Cliquez pour rouvrir tous les indicateurs du bas'
+-             : 'Cliquez pour replier tous les indicateurs du bas d\'un coup';
++  b.title=on ? 'Plein graphique actif — appuyer pour revoir les indicateurs du bas'
++             : 'Plein graphique : escamoter tous les indicateurs du bas';
+ }
+ try{
+   const fb=document.getElementById('full-chart-btn');
+   fb.addEventListener('click',()=>{
+-    state.allSubsCollapsed = !state.allSubsCollapsed;
+-    applyFullBtn(); saveConfig(); scheduleRender();
++    state.fullChart=!state.fullChart;
++    applyFullBtn(); saveConfig(); resize(); render();
+   });
+   applyFullBtn();
+ }catch(e){}
++
++function applyCollapseBtn(){
++  const b=document.getElementById('collapse-panes-btn'); if(!b)return;
++  const on=!!state.allSubsCollapsed;
++  b.style.background=on?'rgba(255,180,60,0.25)':'';
++  b.style.borderColor=on?'#FFB43C':'';
++  b.style.color=on?'#FFB43C':'';
++  b.title=on ? 'Volets masqués — Cliquez pour rouvrir tous les indicateurs du bas'
++             : 'Cliquez pour replier tous les indicateurs du bas d\'un coup';
++}
++try{
++  const cb=document.getElementById('collapse-panes-btn');
++  cb.addEventListener('click',()=>{
++    state.allSubsCollapsed = !state.allSubsCollapsed;
++    applyCollapseBtn(); saveConfig(); scheduleRender();
++  });
++  applyCollapseBtn();
++}catch(e){}
+ function applyCleanBtn(){
+   const b=document.getElementById('clean-chart-btn'); if(!b)return;
+   const on=!!state.hideBadges;
+@@ -30934,7 +30955,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
+     } catch(e){}
+   }
+ 
+-  window.__LUMEN_BUILD = 'B-1708-2250';
++  window.__LUMEN_BUILD = 'B-1708-2255';
+   setTimeout(function(){
+     const el = document.getElementById('mexc-build-tag');
+     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
+
+commit 41189e4f1a968d5f710623c3fbb8eeffa639053d
+Author: mgheda-cmd <mgheda-cmd@users.noreply.github.com>
+Date:   Mon Aug 17 22:50:57 2026 +0100
+
+    fix(ui): désactivation de backdrop-filter et optimisation touchmove (Build B-1708-2250)
+
+diff --git a/index.html b/index.html
+index c930c40..1ffdbe5 100644
+--- a/index.html
++++ b/index.html
+@@ -366,7 +366,7 @@ canvas{display:block; width:100%; height:100%; cursor:crosshair; touch-action:no
+ }
+ #chips-toggle{
+   position:absolute; top:5px; left:6px; z-index:12; cursor:pointer;
+-  background:var(--chip-bg); backdrop-filter:blur(4px); border:1px solid var(--line);
++  background:var(--chip-bg);  border:1px solid var(--line);
+   color:var(--muted); border-radius:4px; width:20px; height:18px; font-size:11px;
+   line-height:1; padding:0; display:none;
+ }
+@@ -375,13 +375,13 @@ body.chips-collapsed #chips-toggle{ transform:none; }
+ #chips-toggle.showing{ display:block; }
+ .legend-ohlc{
+   font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted);
+-  background:var(--chip-bg); backdrop-filter:blur(4px);
++  background:var(--chip-bg); 
+   padding:1px 5px; border-radius:4px; width:max-content; line-height:1.35;
+ }
+ .legend-ohlc b{color:var(--text);font-weight:600}
+ .chip{
+   display:flex; align-items:center; gap:4px; width:max-content;
+-  background:var(--chip-bg); backdrop-filter:blur(4px);
++  background:var(--chip-bg); 
+   border:1px solid var(--line); border-radius:4px; padding:0 5px;
+   font-size:9.5px; font-family:'IBM Plex Mono',monospace; pointer-events:auto;
+   line-height:1.6; white-space:nowrap; cursor:pointer; transition:background .15s, border-color .15s;
+@@ -489,7 +489,7 @@ footer{
+   <button class="btn" id="full-chart-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
+     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
+   </button>
+-  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-1030</span>
++  <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-2250</span>
+   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
+   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge tout (cache HTTP, Cache API, service workers, stockage de session) puis recharge." style="font-size:11px;padding:3px 7px;background:rgba(255,180,0,.16);border:1px solid #FFB400;color:#FFB400;font-weight:700;display:inline-flex;align-items:center;gap:3px">⇩ FORCER</button>
+ 
+@@ -1320,7 +1320,7 @@ footer{
+ </div>
+ 
+ <!-- MODAL TABLEAU COMPARATIF DES RÉSULTATS DU BACKTEST -->
+-<div id="bt-table-modal" style="display:none;position:fixed;inset:0;background:rgba(6,10,20,0.88);z-index:10001;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(4px)">
++<div id="bt-table-modal" style="display:none;position:fixed;inset:0;background:rgba(6,10,20,0.88);z-index:10001;align-items:center;justify-content:center;padding:14px;">
+   <div style="background:var(--panel,#0A111F);border:2px solid #3B82F6;border-radius:16px;max-width:960px;width:100%;max-height:92vh;overflow:auto;padding:20px;box-shadow:0 16px 50px rgba(59,130,246,0.3)">
+     
+     <!-- Modal Header -->
+@@ -1688,7 +1688,7 @@ footer{
+ </div>
+ 
+ <!-- MODAL LANCEMENT EN DIRECT SUR EXCHANGE EN ARGENT RÉEL -->
+-<div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(4,8,18,0.92);z-index:10000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)">
++<div id="live-exchange-modal" style="display:none;position:fixed;inset:0;background:rgba(4,8,18,0.92);z-index:10000;align-items:center;justify-content:center;padding:16px;">
+   <div style="background:#0B132B;border:2px solid #00E5FF;border-radius:18px;max-width:1300px;width:95vw;max-height:92vh;overflow:auto;padding:24px;color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(0,229,255,0.3)">
+     
+     <!-- Modal Header -->
+@@ -2308,7 +2308,7 @@ footer{
+   <div id="chart-trade-hud" style="display:none"></div>
+   <button id="chips-toggle" title="Masquer / afficher la liste des indicateurs">▾</button>
+   <div id="chips"></div>
+-  <button id="btn-float-latest-candles" onclick="scrollToLatestCandles()" title="Aller aux bougies les plus récentes (temps réel)" style="position:absolute;bottom:30px;right:75px;z-index:25;background:rgba(15,23,42,0.92);border:1px solid #00E5FF;color:#00E5FF;border-radius:20px;padding:6px 14px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.6);backdrop-filter:blur(6px);transition:all 0.2s">⏭️ Dernières bougies</button>
++  <button id="btn-float-latest-candles" onclick="scrollToLatestCandles()" title="Aller aux bougies les plus récentes (temps réel)" style="position:absolute;bottom:30px;right:75px;z-index:25;background:rgba(15,23,42,0.92);border:1px solid #00E5FF;color:#00E5FF;border-radius:20px;padding:6px 14px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,0.6);transition:all 0.2s">⏭️ Dernières bougies</button>
+   <canvas id="chart"></canvas>
+ </div>
+ 
+@@ -6786,7 +6786,7 @@ try{
+   let longTimer=null, longFired=false;
+   const start=()=>{ longFired=false; longTimer=setTimeout(()=>{longFired=true;clearAllWant();},650); };
+   const end=(ev)=>{ clearTimeout(longTimer); if(!longFired){ if(ev&&ev.cancelable)ev.preventDefault(); undoLastWant(); } };
+-  cb2.addEventListener('touchstart',e=>{e.stopPropagation();start();},{passive:true});
++  cb2.addEventListener('touchstart',e=>{e.stopPropagation();start();},{passive:false});
+   cb2.addEventListener('touchend',e=>{e.stopPropagation();end(e);});
+   cb2.addEventListener('mousedown',e=>{e.stopPropagation();start();});
+   cb2.addEventListener('mouseup',e=>{e.stopPropagation();end(e);});
+@@ -11811,7 +11811,7 @@ canvas.addEventListener('touchstart',e=>{
+       mid:(a.x+b.x)/2, count:state.view.count, start:state.view.start,
+       lo:state.yScale.lo, hi:state.yScale.hi};
+   }
+-},{passive:true});
++},{passive:false});
+ canvas.addEventListener('touchmove',e=>{
+   if(touch&&e.touches.length===1){
+     const {x,y}=tpos(e.touches[0]);
+@@ -11862,6 +11862,7 @@ canvas.addEventListener('touchmove',e=>{
+       }
+     }
+     scheduleRender();
++    if(e.cancelable) e.preventDefault();
+   }else if(pinch&&e.touches.length===2){
+     const a=tpos(e.touches[0]), b=tpos(e.touches[1]);
+     const ndx=Math.abs(a.x-b.x)||1, ndy=Math.abs(a.y-b.y)||1;
+@@ -11879,14 +11880,15 @@ canvas.addEventListener('touchmove',e=>{
+       state.yScale.lo=c-r; state.yScale.hi=c+r;
+     }
+     scheduleRender();
++    if(e.cancelable) e.preventDefault();
+   }
+-},{passive:true});
++},{passive:false});
+ canvas.addEventListener('touchend',()=>{
+   if(touch&&touch.mode&&touch.mode.startsWith('resize:'))saveConfig();
+   clearTimeout(lpTimer); lpTimer=null;
+   if(touch&&touch.mode==='xhair'&&!state.xhairMode){ state.mouse=null; scheduleRender(); }
+   touch=null;pinch=null;
+-},{passive:true});
++},{passive:false});
+ 
+ /* ---------- Menu indicateurs & Menu Outils ---------- */
+ const btnInd=document.getElementById('btn-ind'), menu=document.getElementById('ind-menu');
+@@ -17135,7 +17137,7 @@ zoomCanvas.addEventListener('touchstart',e=>{
+       mid:(a.x+b.x)/2,count:zoomState.view.count,start:zoomState.view.start,
+       lo:zoomState.yScale.lo,hi:zoomState.yScale.hi};
+   }
+-},{passive:true});
++},{passive:false});
+ zoomCanvas.addEventListener('touchmove',e=>{
+   const w=zoomCanvas.getBoundingClientRect().width-zAxisW();
+   if(zoomState.touch&&e.touches.length===1){
+@@ -17169,7 +17171,7 @@ zoomCanvas.addEventListener('touchmove',e=>{
+     }
+   }
+   renderZoom();
+-},{passive:true});
++},{passive:false});
+ zoomCanvas.addEventListener('touchend',()=>{ zoomState.touch=null; zoomState.pinch=null; });
+ 
+ // boutons +/- et réinitialiser
+@@ -24590,7 +24592,7 @@ window.triggerInsistentMexcTradeAlert = function(details) {
+   if (!modal) {
+     modal = document.createElement('div');
+     modal.id = 'mexc-insistent-modal';
+-    modal.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);backdrop-filter:blur(10px);z-index:999999;align-items:center;justify-content:center;padding:20px';
++    modal.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);z-index:999999;align-items:center;justify-content:center;padding:20px';
+     modal.innerHTML = `
+       <div style="background:#0F172A;border:3px solid #EF4444;box-shadow:0 0 50px rgba(239,68,68,0.7);border-radius:16px;max-width:520px;width:100%;padding:24px;text-align:center;color:#FFFFFF;position:relative">
+         <div style="font-size:48px;margin-bottom:12px;animation:pulse 0.8s infinite">🚨</div>
+@@ -30932,7 +30934,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
+     } catch(e){}
+   }
+ 
+-  window.__LUMEN_BUILD = 'B-1708-1950';
++  window.__LUMEN_BUILD = 'B-1708-2250';
+   setTimeout(function(){
+     const el = document.getElementById('mexc-build-tag');
+     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
+
+commit 1bf6398abca67b27b43e3d61bbcadeb501b7b82a
+Author: mgheda-cmd <mgheda-cmd@users.noreply.github.com>
+Date:   Mon Aug 17 22:35:58 2026 +0100
+
+    feat: ajout de la fonction balayage MM MTF dans le backtest apparié
+
+diff --git a/index.html b/index.html
+index 857e04b..c930c40 100644
+--- a/index.html
++++ b/index.html
+@@ -32017,6 +32017,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
+       '<button onclick="window.runBtApparie()" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);color:#0F172A;border:none;border-radius:8px;padding:8px 18px;font-weight:800;cursor:pointer">▶ Lancer</button>' +
+       '<button onclick="window.envoyerVersDemo()" title="Transférer et exécuter automatiquement cette stratégie sur le Compte Démo" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#0F172A;border:none;border-radius:8px;padding:8px 15px;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(0,230,118,0.35)">🚀 Compte Démo</button>' +
+       '<button onclick="window.balayerMM()" title="Compare toutes les combinaisons MM (Base vs Option 2 et chaque type de sortie)" style="background:rgba(0,230,118,.16);border:1.5px solid #00E676;color:#00E676;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔎 Balayer MM</button>' +
++      '<button onclick="window.balayerMM_MTF()" title="Compare toutes les combinaisons MM sur toutes les Unités de Temps (Multi-TF)" style="background:rgba(245,158,11,.16);border:1.5px solid #F59E0B;color:#FCD34D;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;margin-left:4px">🔎 Balayer MM (MTF)</button>' +
+       '<button onclick="window.balayerKK()" title="Teste toutes les combinaisons d\'unites de temps de kk bis et classe les resultats" style="background:rgba(0,229,255,.14);border:1px solid #00E5FF;color:#00E5FF;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔎 Balayer kk bis</button>' +
+       '<button onclick="window.balayerKKFusion(\'union\')" title="Meme balayage, mais la seconde unite de temps produit elle aussi des sorties, fusionnees avec les premieres. Les 21 combinaisons deviennent reellement distinctes. Attention : cela modifie aussi les pastilles kk bis affichees." style="background:rgba(167,139,250,.16);border:1px solid #A78BFA;color:#C4B5FD;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer">🔗 Balayer fusionné</button>' +
+       '<button onclick="window.reinitBt()" title="Libère les verrous de chargement si un lancement est resté bloqué" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer">↺ Débloquer</button>' +
+@@ -32947,6 +32948,234 @@ window.trierBalayageMM = function(mode){
+   if(typeof window.__redessinerBalayageMM === 'function') window.__redessinerBalayageMM();
+ };
+ 
++/* Re-tri du balayage MTF selon la notation choisie. */
++window.trierBalayageMM_MTF = function(mode){
++  const r = window.__balayageMM_MTF;
++  if(!r) return;
++  if(mode === 'souple') r.sort(function(x, y){ return y.noteSouple - x.noteSouple; });
++  else                  r.sort(function(x, y){ return y.noteDure - x.noteDure; });
++  if(typeof window.__redessinerBalayageMM_MTF === 'function') window.__redessinerBalayageMM_MTF();
++};
++
++window.appliquerCombiMM_MTF = function(i){
++  const x = (window.__balayageMM_MTF || [])[i];
++  if(!x) return;
++  const selEnt = document.getElementById('bta-ent');
++  const selSor = document.getElementById('bta-sor');
++  if(selEnt) selEnt.value = x.ent;
++  if(selSor) selSor.value = x.sor;
++  if(state.indicators && state.indicators.strat_mm){
++    state.indicators.strat_mm.tf = x.tf;
++    state.indicators.strat_mm.opt2Tf = x.tf;
++  }
++  state.cache = {};
++  if(typeof saveConfig === 'function') saveConfig();
++  if(typeof syncMenu === 'function') syncMenu();
++};
++
++window.appliquerCombiEtTracerMM_MTF = function(i){
++  window.appliquerCombiMM_MTF(i);
++  window.runBtApparie();
++};
++
++window.__redessinerBalayageMM_MTF = function(){
++  const r = window.__balayageMM_MTF;
++  if(!r) return;
++  const box = document.getElementById('bta-res');
++  if(!box) return;
++  
++  let h = '<div style="font-size:12px;font-weight:800;color:#F59E0B;margin-bottom:8px">' +
++    '🔥 Balayage Stratégie MM (Multi-TF) — ' + r.length + ' combinaisons testées' +
++    ' <button onclick="window.trierBalayageMM_MTF(\'dure\')" style="margin-left:8px;background:transparent;border:1px solid #10B981;color:#10B981;border-radius:5px;padding:2px 9px;font-size:10px;cursor:pointer">Trier prudente</button>' +
++    ' <button onclick="window.trierBalayageMM_MTF(\'souple\')" style="background:transparent;border:1px solid #7DD3FC;color:#7DD3FC;border-radius:5px;padding:2px 9px;font-size:10px;cursor:pointer">Trier offensive</button></div>' +
++    '<div style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px">' +
++    '<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:\'IBM Plex Mono\',monospace">' +
++    '<tr style="position:sticky;top:0;background:#0F172A;color:#CBD5E1;font-weight:800">' +
++    '<th style="padding:6px" title="Privilégie la maîtrise du risque">Prudente</th>' +
++    '<th style="padding:6px" title="Privilégie le gain absolu">Offensive</th>' +
++    '<th style="padding:6px">UT</th>' +
++    '<th style="padding:6px">Combinaison MM</th><th style="padding:6px">Trades</th>' +
++    '<th style="padding:6px">Réussite</th><th style="padding:6px">PnL net</th>' +
++    '<th style="padding:6px">Repli max</th>' +
++    '<th style="padding:6px" title="Nombre de trades liquidés">Liquid.</th>' +
++    '<th style="padding:6px" title="Sens auquel cette combinaison profite le plus">Convient à</th>' +
++    '<th style="padding:6px"></th></tr>';
++
++  r.forEach(function(x, i){
++    const cw = x.wr >= 55 ? '#10B981' : x.wr >= 45 ? '#F59E0B' : '#FF5252';
++    const cp = x.pnl >= 0 ? '#10B981' : '#FF5252';
++    h += '<tr style="border-top:1px solid #1E293B;background:' +
++      (i === 0 ? 'rgba(245,158,11,.08)' : (i % 2 ? 'rgba(255,255,255,.02)' : 'transparent')) + '">' +
++      '<td style="padding:5px 6px;font-weight:900;font-size:13px;color:' +
++        (x.noteDure >= 7 ? '#10B981' : x.noteDure >= 5 ? '#F59E0B' : '#FF5252') + '">' +
++        x.noteDure.toFixed(1) + '</td>' +
++      '<td style="padding:5px 6px;font-weight:800;font-size:12px;color:' +
++        (x.noteSouple >= 7 ? '#7DD3FC' : x.noteSouple >= 5 ? '#F59E0B' : '#FF5252') + '">' +
++        x.noteSouple.toFixed(1) + '</td>' +
++      '<td style="padding:5px 6px;color:#FCD34D;font-weight:800">' + x.tf + 'm</td>' +
++      '<td style="padding:5px 6px;color:#00E676;font-weight:700">' + x.entNom + ' × ' + x.sorNom +
++        (x.conforme ? ' <span style="color:#10B981">✓</span>' : '') + '</td>' +
++      '<td style="padding:5px 6px;color:#94A3B8">' + x.trades + '</td>' +
++      '<td style="padding:5px 6px;font-weight:700;color:' + cw + '">' + x.wr.toFixed(1) + ' %</td>' +
++      '<td style="padding:5px 6px;font-weight:800;color:' + cp + '">' + (x.pnl >= 0 ? '+' : '') + x.pnl.toFixed(2) + ' $</td>' +
++      '<td style="padding:5px 6px;color:#FF9F1C">−' + x.dd.toFixed(2) + ' $</td>' +
++      '<td style="padding:5px 6px;font-weight:800;color:' + (x.liq ? '#FF5252' : '#10B981') + '">' +
++        (x.liq ? '💀 ' + x.liq : '0') + '</td>' +
++      '<td style="padding:5px 6px">' + (function(){
++        const o = x.orient;
++        if(!o) return '<span style="color:#64748B">—</span>';
++        const col = o.s === 'L' ? '#10B981' : o.s === 'S' ? '#FF5252' : '#94A3B8';
++        const ico = o.s === 'L' ? '▲' : o.s === 'S' ? '▼' : '=';
++        const det = (o.pnl != null && o.autre != null)
++          ? '<div style="font-size:9px;color:#7E8CA8">' +
++            (o.pnl >= 0 ? '+' : '') + o.pnl.toFixed(1) + ' vs ' +
++            (o.autre >= 0 ? '+' : '') + o.autre.toFixed(1) + '</div>' : '';
++        return '<span style="color:' + col + ';font-weight:800">' + ico + ' ' + o.txt + '</span>' + det;
++      })() + '</td>' +
++      '<td style="padding:5px 6px;text-align:right">' +
++        '<button onclick="window.appliquerCombiMM_MTF(' + i + ')" style="background:rgba(0,230,118,.16);border:1px solid #00E676;color:#00E676;border-radius:5px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer">Choisir</button>' +
++        '<button onclick="window.appliquerCombiEtTracerMM_MTF(' + i + ')" title="Applique la combinaison MM, relance le backtest et trace les trades sur le graphique" style="background:rgba(56,189,248,.16);border:1px solid #38BDF8;color:#7DD3FC;border-radius:5px;padding:3px 8px;font-size:10.5px;font-weight:700;cursor:pointer;margin-left:4px">Tracer</button>' +
++      '</td></tr>';
++  });
++
++  h += '</table></div>' +
++    '<div style="margin-top:8px;font-size:10.5px;color:#94A3B8;line-height:1.6">' +
++    '<b style="color:#10B981">Prudente</b> — 4 pts rapport PnL/repli · 3 pts profit factor · 2 pts nombre de trades · 1 pt stabilité. Plafonnée à 7 si la combinaison ne tient pas sur les trois tiers.<br>' +
++    '<b style="color:#7DD3FC">Offensive</b> — 4 pts PnL rapporté au meilleur du balayage · 3 pts profit factor · 2 pts nombre de trades · 1 pt rapport PnL/repli.<br>' +
++    'Le taux de réussite n\'entre dans aucune des deux : seul, il ne dit rien de la rentabilité.<br>' +
++    '<b style="color:#CBD5E1">Convient à</b> — sens dont le PnL domine, avec au moins 5 trades de chaque côté. « équilibrée » quand l\'écart reste sous 25 %. Les deux chiffres sont les PnL comparés.<br>' +
++    '<b style="color:#FF5252">Liquid.</b> — trades emportés en cours de route : la mèche a touché le prix de liquidation avant la sortie. Calculé à 95 % de la marge perdue, au levier choisi. Une seule suffit à retirer le ✓ de conformité.<br>' +
++    'Cliquez sur « Choisir » pour appliquer une combinaison ou « Tracer » pour la dessiner sur le graphique.</div>';
++
++  if(box) box.innerHTML = h;
++};
++
++window.balayerMM_MTF = async function(){
++  const box = document.getElementById('bta-res');
++  const info = document.getElementById('bta-charge');
++  if(!state.indicators || !state.indicators.strat_mm){
++    if(box) box.innerHTML = '<div style="color:#F59E0B;padding:10px">Stratégie MM introuvable.</div>';
++    return;
++  }
++
++  const selEnt = document.getElementById('bta-ent');
++  const selSor = document.getElementById('bta-sor');
++  const avEnt = selEnt ? selEnt.value : 'mm_base';
++  const avSor = selSor ? selSor.value : 'mm_opp';
++  const avTf = state.indicators.strat_mm.tf;
++  const avTf2 = state.indicators.strat_mm.opt2Tf;
++
++  const mmConfigs = [
++    { ent: 'mm_base', sor: 'mm_sig_opp', entNom: 'MM Base', sorNom: 'Signal opposé MM' },
++    { ent: 'mm_base', sor: 'mm_opp',     entNom: 'MM Base', sorNom: 'Sommet/Creux MM' },
++    { ent: 'mm_base', sor: 'tout',       entNom: 'MM Base', sorNom: 'KK bis (Toutes)' },
++    { ent: 'mm_base', sor: 'div',        entNom: 'MM Base', sorNom: 'KK bis (Divergences)' },
++    { ent: 'mm_base', sor: 'seuil',      entNom: 'MM Base', sorNom: 'KK bis (Seuil)' },
++    { ent: 'mm_opt2', sor: 'mm_sig_opp', entNom: 'MM Option 2 (iMACD)', sorNom: 'Signal opposé MM' },
++    { ent: 'mm_opt2', sor: 'mm_opp',     entNom: 'MM Option 2 (iMACD)', sorNom: 'Sommet/Creux MM' },
++    { ent: 'mm_opt2', sor: 'tout',       entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Toutes)' },
++    { ent: 'mm_opt2', sor: 'div',        entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Divergences)' },
++    { ent: 'mm_opt2', sor: 'seuil',      entNom: 'MM Option 2 (iMACD)', sorNom: 'KK bis (Seuil)' }
++  ];
++  
++  const UTS = ['1','2','3','5','15','30','60'];
++  const res = [];
++  
++  let count = 0;
++  const total = mmConfigs.length * UTS.length;
++
++  for(let k = 0; k < mmConfigs.length; k++){
++    const cfg = mmConfigs[k];
++    if(selEnt) selEnt.value = cfg.ent;
++    if(selSor) selSor.value = cfg.sor;
++      
++    for(let t = 0; t < UTS.length; t++){
++      count++;
++      const tf = UTS[t];
++      if(info) info.innerHTML = '<span style="color:#F59E0B">Balayage MM MTF ' + count + ' / ' +
++        total + ' · ' + tf + 'm ' + cfg.entNom + ' × ' + cfg.sorNom + '…</span>';
++      
++      state.indicators.strat_mm.tf = tf;
++      state.indicators.strat_mm.opt2Tf = tf;
++      state.cache = {};
++
++      await new Promise(r => setTimeout(r, 12));
++      try{
++        await window.__runBtInterne();
++        const r = window.__btDernier;
++        if(r && r.trades > 0){
++          const dd2 = window.__btDirs || null;
++          res.push(Object.assign({}, cfg, {
++            tf: tf, trades: r.trades, wr: r.wr, pnl: r.pnl, dd: r.dd,
++            pf: r.pf, conforme: r.conforme, liq: (r.liq || 0), dirs: dd2
++          }));
++        } else {
++          res.push(Object.assign({}, cfg, { tf: tf, trades: 0, wr: 0, pnl: 0, dd: 0, pf: 0, conforme: false, liq: 0 }));
++        }
++      }catch(e){
++        res.push(Object.assign({}, cfg, { tf: tf, trades: 0, wr: 0, pnl: 0, dd: 0, pf: 0, conforme: false, liq: 0, err: true }));
++      }
++    }
++  }
++
++  // Restauration des sélections
++  if(selEnt) selEnt.value = avEnt;
++  if(selSor) selSor.value = avSor;
++  state.indicators.strat_mm.tf = avTf;
++  state.indicators.strat_mm.opt2Tf = avTf2;
++  state.cache = {};
++
++  res.forEach(function(x){
++    const rap = (x.dd > 0) ? (x.pnl / x.dd) : (x.pnl > 0 ? 3 : 0);
++    const pf  = isFinite(x.pf) ? x.pf : 3;
++
++    /* NOTE PRUDENTE */
++    let dure = Math.max(0, Math.min(4, rap * 2))
++             + Math.max(0, Math.min(3, (pf - 1) * 3))
++             + Math.max(0, Math.min(2, x.trades / 30 * 2))
++             + (x.conforme ? 1 : 0);
++    if(x.pnl <= 0)     dure = Math.min(dure, 2);
++    if(x.trades < 10)  dure = Math.min(dure, 3);
++    if(!x.conforme)    dure = Math.min(dure, 7);
++    x.noteDure = Math.round(dure * 10) / 10;
++
++    /* NOTE OFFENSIVE */
++    const pnlMax = Math.max.apply(null, res.map(function(y){ return Math.max(0.01, y.pnl); }));
++    let souple = Math.max(0, Math.min(4, (x.pnl / pnlMax) * 4))
++               + Math.max(0, Math.min(3, (pf - 1) * 2.5))
++               + Math.max(0, Math.min(2, x.trades / 20 * 2))
++               + Math.max(0, Math.min(1, rap));
++    if(x.pnl <= 0)    souple = Math.min(souple, 2);
++    if(x.trades < 6)  souple = Math.min(souple, 3);
++    x.noteSouple = Math.round(souple * 10) / 10;
++
++    x.note = x.noteDure;
++
++    /* Orientation */
++    x.orient = null;
++    const dd = x.dirs;
++    if(dd && dd.lg && dd.sh){
++      const nl = dd.lg.n, ns = dd.sh.n;
++      if(nl >= 5 && ns >= 5){
++        const pl = dd.lg.pnl, ps = dd.sh.pnl;
++        const ecart = Math.abs(pl - ps);
++        const base = Math.max(Math.abs(pl), Math.abs(ps), 1);
++        if(ecart / base < 0.25) x.orient = { s:'=', txt:'équilibrée' };
++        else if(pl > ps)        x.orient = { s:'L', txt:'longs', pnl:pl, autre:ps };
++        else                    x.orient = { s:'S', txt:'shorts', pnl:ps, autre:pl };
++      } else if(nl >= 5 && ns < 5) x.orient = { s:'L', txt:'longs seuls', pnl:dd.lg.pnl };
++      else if(ns >= 5 && nl < 5)   x.orient = { s:'S', txt:'shorts seuls', pnl:dd.sh.pnl };
++    }
++  });
++
++  res.sort(function(x, y){ return y.noteDure - x.noteDure; });
++  window.__balayageMM_MTF = res;
++  
++  if(typeof window.__redessinerBalayageMM_MTF === 'function') window.__redessinerBalayageMM_MTF();
++  if(info) info.innerHTML = '<span style="color:#F59E0B">Balayage MM MTF terminé · ' + res.length + ' combinaisons</span>';
++};
++
++
+ /* ================================================================
+    SURVEILLANCE DU BOT — alerte en cas de série perdante
+    Trois critères, évalués après chaque trade fermé :
+
+commit d15b344a331977974735fdd89203e64caf5e661b
+Author: mgheda-cmd <mgheda-cmd@users.noreply.github.com>
+Date:   Mon Aug 17 22:03:45 2026 +0100
+
+    Repliement / Deploiement des volets du bas a l oeil style TradingView (Build B-1708-1950)
+
+diff --git a/index.html b/index.html
+index dd8216e..857e04b 100644
+--- a/index.html
++++ b/index.html
+@@ -486,8 +486,8 @@ footer{
+     </button>
+   </div>
+ 
+-  <button class="btn" id="full-chart-btn" title="Plein graphique / Pleine page : escamoter tous les indicateurs du bas" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
+-    <span style="font-size:14px">⛶</span> <span class="btn-full-txt">Pleine page</span>
++  <button class="btn" id="full-chart-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
++    <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
+   </button>
+   <span id="header-build-tag" class="mono" title="Version active du build (mise à jour à chaque publication)" style="font-size:10.5px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.14);border:1px solid rgba(122,162,255,.45);border-radius:6px;padding:3px 7px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-1708-1030</span>
+   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 7px;background:rgba(37,208,164,.16);border:1px solid #25D0A4;color:#25D0A4;font-weight:700;display:inline-flex;align-items:center;gap:3px">⟳ MAJ</button>
+@@ -4796,7 +4796,7 @@ const state = {
+   },
+   cache:{},
+   mouse:null, dragging:false, dragX:0, dragStart:0,
+-  showAllExhaust:false, hideBadges:false, fullChart:false, tripleKeep:{}, wantMarks:{}, wantMode:0,
++  showAllExhaust:false, hideBadges:false, fullChart:false, collapsedPanes:{}, allSubsCollapsed:false, tripleKeep:{}, wantMarks:{}, wantMode:0,
+   yScale:{auto:true,lo:0,hi:0}, subScale:{}, pricePaneH:0, paneH:{}, lastPanes:[], style:{}, subOrder:[], subMergeUp:{},
+ };
+ 
+@@ -4809,7 +4809,7 @@ const CFG_KEY='lumen-config-v1';
+ let cfgTs=+(localStorage.getItem('lumen-cfg-ts')||0);
+ function currentConfig(){
+   return {symbol:state.symbol, tf:state.tf, type:state.type, market:state.market,
+-    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, fullChart:state.fullChart, tripleKeep:state.tripleKeep, wantMarks:state.wantMarks, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
++    ts:cfgTs, paperUnit, tz:state.tz, showAllExhaust:state.showAllExhaust, hideBadges:state.hideBadges, fullChart:state.fullChart, collapsedPanes:state.collapsedPanes, allSubsCollapsed:state.allSubsCollapsed, tripleKeep:state.tripleKeep, wantMarks:state.wantMarks, sessZones:state.sessZones, paneH:state.paneH, subOrder:state.subOrder, subMergeUp:state.subMergeUp, subFront:state.subFront, subSameScale:state.subSameScale, subLock:state.subLock, subScale:state.subScale, zones:state.zones, style:state.style, indicators:state.indicators,
+     paper:{cash:paper.cash,bank:paper.bank||0,withdrawals:Array.isArray(paper.withdrawals)?paper.withdrawals.slice(0,100):[],positions:paper.positions,history:paper.history.slice(0,50)}};
+ }
+ function mergeConfig(c){
+@@ -4840,17 +4840,9 @@ function mergeConfig(c){
+       }
+     }
+ 
+-    // Auto-correction de position résiduelle en BTC à 0.02 BTC
+-    if (paper && Array.isArray(paper.positions)) {
+-      paper.positions.forEach(p => {
+-        if (p && p.sym && p.sym.includes('BTC') && p.qty > 0.1) {
+-          const correctQty = 0.02;
+-          p.qty = correctQty;
+-          p.notional = p.entry * correctQty;
+-          p.margin = (p.notional / (p.lev || 200));
+-        }
+-      });
+-    }
++    // Restauration de l'état des panneaux repliés
++    if(c.collapsedPanes && typeof c.collapsedPanes==='object') state.collapsedPanes = c.collapsedPanes;
++    if(typeof c.allSubsCollapsed==='boolean') state.allSubsCollapsed = c.allSubsCollapsed;
+   }
+   if(c.style&&typeof c.style==='object'){
+     state.style={};
+@@ -6616,6 +6608,8 @@ function computePanes(){
+   const avail=H-AXIS_H;
+   const def=groups.length?Math.min(110,avail*0.5/groups.length):0;
+   let hs=groups.map(g=>{
++    const isCol = state.allSubsCollapsed || !!(state.collapsedPanes && state.collapsedPanes[g[0]]);
++    if (isCol) return 22; // Hauteur repliée : juste la fine barre de titre
+     let h=state.paneH[g[0]]||def;
+     return Math.max(40,Math.min(h,avail*0.6));
+   });
+@@ -6624,7 +6618,11 @@ function computePanes(){
+   const priceH=avail-hs.reduce((a,b)=>a+b,0);
+   const panes=[{key:'price', y:0, h:priceH, members:['price']}];
+   let y=priceH;
+-  groups.forEach((g,i)=>{panes.push({key:g[0], y, h:hs[i], members:g}); y+=hs[i];});
++  groups.forEach((g,i)=>{
++    const isCol = state.allSubsCollapsed || !!(state.collapsedPanes && state.collapsedPanes[g[0]]);
++    panes.push({key:g[0], y, h:hs[i], members:g, collapsed: isCol});
++    y+=hs[i];
++  });
+   state.lastPanes=panes;
+   return panes;
+ }
+@@ -6816,18 +6814,18 @@ try{
+ }catch(e){}
+ function applyFullBtn(){
+   const b=document.getElementById('full-chart-btn'); if(!b)return;
+-  const on=!!state.fullChart;
++  const on=!!state.fullChart || !!state.allSubsCollapsed;
+   b.style.background=on?'rgba(37,208,164,0.20)':'';
+   b.style.borderColor=on?'#25D0A4':'';
+   b.style.color=on?'#25D0A4':'';
+-  b.title=on ? 'Plein graphique actif — appuyer pour revoir les indicateurs du bas'
+-             : 'Plein graphique : escamoter tous les indicateurs du bas';
++  b.title=on ? 'Volets masqués — Cliquez pour rouvrir tous les indicateurs du bas'
++             : 'Cliquez pour replier tous les indicateurs du bas d\'un coup';
+ }
+ try{
+   const fb=document.getElementById('full-chart-btn');
+   fb.addEventListener('click',()=>{
+-    state.fullChart=!state.fullChart;
+-    applyFullBtn(); saveConfig(); resize(); render();
++    state.allSubsCollapsed = !state.allSubsCollapsed;
++    applyFullBtn(); saveConfig(); scheduleRender();
+   });
+   applyFullBtn();
+ }catch(e){}
+@@ -6980,8 +6978,19 @@ function render(){
+         // n'appliquer que si toutes les plages sont connues et l'étendue est valide
+         if(ok&&lo<hi&&isFinite(lo)&&isFinite(hi)){p._sameScale=true;p._forceLo=lo;p._forceHi=hi;p._groupKey=p.key;}
+       }
+-      members.forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw,mk); p['scale_'+mk]={lo:p.lo,hi:p.hi}; state._lastRange[mk]={lo:p.lo,hi:p.hi}; });
+-      _subRow=0; _subRowKey='';
++      if(p.collapsed){
++        // Sous-panneau replié (comme TradingView) : on affiche juste le bandeau d'en-tête (subLabel)
++        members.forEach((mk,mi)=>{
++          _subRow=mi; _subRowKey=mk;
++          const meta=IND_META[mk];
++          const txt=(meta?meta.label():mk)+subTfSuffix(mk);
++          subLabel(p, txt, null, meta?meta.color:null);
++        });
++        _subRow=0; _subRowKey='';
++      } else {
++        members.forEach((mk,mi)=>{ _subRow=mi; _subRowKey=mk; if(DR[mk])DR[mk](p,s,e,cw,mk); p['scale_'+mk]={lo:p.lo,hi:p.hi}; state._lastRange[mk]={lo:p.lo,hi:p.hi}; });
++        _subRow=0; _subRowKey='';
++      }
+     }
+     ctx.restore();
+     // axe de valeurs à droite du sous-panneau (une colonne par indicateur fusionné)
+@@ -7007,23 +7016,24 @@ function render(){
+     // séparation
+     ctx.strokeStyle=css('--line'); ctx.lineWidth=1;
+     ctx.beginPath();ctx.moveTo(0,p.y+p.h+.5);ctx.lineTo(W,p.y+p.h+.5);ctx.stroke();
+-    // commandes de panneau (monter / descendre / fusionner) en haut à droite
++    // commandes de panneau (replier / fusionner / fermer) en haut à droite
+     if(p.key!=='price'){
+-      const bx=W-AXIS_W-126, by=p.y+4, bw=22, bh=16;
+-      // les flèches ▲▼ sont désormais portées par chaque indicateur, à côté
+-      // de son nom : plus besoin d'une paire commune au panneau entier
+-      const btns=[['⧉','merge'],['=','same'],['⬍','front'],['🔒','lock'],['✕','close']];
++      const isCol = !!p.collapsed;
++      const eyeIcon = isCol ? '🚫' : '👁';
++      const bx=W-AXIS_W-152, by=p.y+3, bw=22, bh=16;
++      const btns=[[eyeIcon,'toggle_collapse'],['⧉','merge'],['=','same'],['⬍','front'],['🔒','lock'],['✕','close']];
+       ctx.font='11px system-ui';ctx.textAlign='center';
+       btns.forEach((b,i)=>{
+         const x=bx+i*(bw+2);
+         ctx.fillStyle='rgba(90,105,140,.18)';
++        if(b[1]==='toggle_collapse'&&isCol){ctx.fillStyle='rgba(255,180,60,.35)';}
+         if(b[1]==='merge'&&state.subMergeUp[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
+         if(b[1]==='same'&&state.subSameScale[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
+         if(b[1]==='front'&&state.subFront&&state.subFront[p.key]){ctx.fillStyle='rgba(122,162,255,.35)';}
+         if(b[1]==='lock'){const mm=(p.members||[p.key]);if(mm.some(k=>state.subLock&&state.subLock[k]))ctx.fillStyle='rgba(255,180,60,.4)';}
+         if(b[1]==='close'){ctx.fillStyle='rgba(244,91,125,.20)';}
+         roundRect(x,by,bw,bh,4);ctx.fill();
+-        ctx.fillStyle=(b[1]==='close')?'rgba(244,91,125,.95)':'rgba(200,212,235,.9)';
++        ctx.fillStyle=(b[1]==='close')?'rgba(244,91,125,.95)':(b[1]==='toggle_collapse'&&isCol?'#FFB43C':'rgba(200,212,235,.9)');
+         ctx.fillText(b[0],x+bw/2,by+bh-4);
+         paneCtrls.push({x,y:by,w:bw,h:bh,key:p.key,act:b[1]});
+       });
+@@ -9624,18 +9634,20 @@ function subLabel(p,txt,val,color,titleColor){
+   if(mk && p.key!=='price'){
+     const aw=14, ah=13, ay=yy-11;
+     const col=(IND_META[mk]&&IND_META[mk].color)||'rgba(200,212,235,.9)';
+-    [['▲','up'],['▼','down'],['✕','close_ind']].forEach((b,bi)=>{
++    const indHidden = state.indicators[mk] && state.indicators[mk].hidden;
++    const indEye = indHidden ? '🚫' : '👁';
++    [[indEye,'toggle_ind_eye'],['▲','up'],['▼','down'],['✕','close_ind']].forEach((b,bi)=>{
+       const ax=5+bi*(aw+2);
+-      ctx.fillStyle=(b[1]==='close_ind')?'rgba(244,91,125,.20)':'rgba(90,105,140,.20)';
++      ctx.fillStyle=(b[1]==='close_ind')?'rgba(244,91,125,.20)':(b[1]==='toggle_ind_eye'&&indHidden?'rgba(255,180,60,.25)':'rgba(90,105,140,.20)');
+       roundRect(ax,ay,aw,ah,3); ctx.fill();
+-      ctx.fillStyle=(b[1]==='close_ind')?'rgba(244,91,125,.95)':col;
++      ctx.fillStyle=(b[1]==='close_ind')?'rgba(244,91,125,.95)':(b[1]==='toggle_ind_eye'&&indHidden?'#FFB43C':col);
+       ctx.font='9px system-ui'; ctx.textAlign='center';
+       ctx.fillText(b[0],ax+aw/2,ay+ah-3);
+       paneCtrls.push({x:ax,y:ay,w:aw,h:ah,key:mk,act:b[1]});
+     });
+     ctx.textAlign='left';
+     ctx.font='11px "IBM Plex Mono",monospace';
+-    x0=5+3*(aw+2)+6;
++    x0=5+4*(aw+2)+6;
+   }
+   ctx.fillStyle=titleColor || css('--text');
+   ctx.fillText(txt,x0,yy);
+@@ -11551,15 +11563,28 @@ canvas.addEventListener('touchend',e=>{
+   _lastTap=now; _lastTapY=y;
+ });
+ function applyPaneCtrl(key,act){
++  if(act==='toggle_collapse'){
++    state.collapsedPanes = state.collapsedPanes || {};
++    state.collapsedPanes[key] = !state.collapsedPanes[key];
++    saveConfig(); scheduleRender(); return;
++  }
++  if(act==='toggle_ind_eye'){
++    if(state.indicators && state.indicators[key]){
++      state.indicators[key].hidden = !state.indicators[key].hidden;
++    }
++    if(typeof syncMenu==='function')syncMenu();
++    if(typeof updateChips==='function')updateChips();
++    saveConfig(); scheduleRender(); return;
++  }
+   // construire l'ordre courant des sous-panneaux visibles
+   const cur=(state.lastPanes||[]).filter(p=>p.key!=='price').flatMap(p=>p.members||[p.key]);
+-  if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); render(); return; }
+-  if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); render(); return; }
++  if(act==='merge'){ state.subMergeUp[key]=!state.subMergeUp[key]; saveConfig(); scheduleRender(); return; }
++  if(act==='same'){ state.subSameScale[key]=!state.subSameScale[key]; saveConfig(); scheduleRender(); return; }
+   if(act==='front'){
+     const pane=(state.lastPanes||[]).find(q=>(q.members||[q.key]).includes(key));
+     const gk=pane?pane.key:key;
+     state.subFront[gk]=(state.subFront[gk]===key)?null:key;
+-    saveConfig(); render(); return;
++    saveConfig(); scheduleRender(); return;
+   }
+   if(act==='lock'){
+     // verrouiller/déverrouiller l'échelle de tous les membres du panneau, à leur échelle actuelle
+@@ -30907,7 +30932,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
+     } catch(e){}
+   }
+ 
+-  window.__LUMEN_BUILD = 'B-1708-1940';
++  window.__LUMEN_BUILD = 'B-1708-1950';
+   setTimeout(function(){
+     const el = document.getElementById('mexc-build-tag');
+     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

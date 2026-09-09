@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0310</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0320</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -31316,11 +31316,8 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
     if (kkRes && Array.isArray(kkRes.net) && kkRes.net.length) {
       const net = kkRes.net;
-      const sig = kkRes.signal || [];
       const seuilH = (kkRes.up && kkRes.up[0] != null) ? +kkRes.up[0] : 75;
       const seuilB = (kkRes.lo && kkRes.lo[0] != null) ? +kkRes.lo[0] : -75;
-      const lookback = Math.max(2, +indFmc.kkLookback || 10);
-      const maxDelay = (indFmc.maxDelay != null) ? Math.max(1, +indFmc.maxDelay) : 12;
       const reqColors = (indFmc.requireFmcColors !== false);
 
       const cBuy = indFmc.cBuyKk || '#00E676';
@@ -31328,118 +31325,82 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
       const confCandidate = [];
 
+      // LOG DIAGNOSTIC (temporaire)
+      const netValides = net.filter(v => v != null);
+      console.log('[FMC×KK] net.length:', net.length, 'seuilH:', seuilH, 'seuilB:', seuilB,
+        'contraLong:', (fs_.contraLong || []).length, 'contraShort:', (fs_.contraShort || []).length,
+        'KK range: [', netValides.length ? Math.min(...netValides).toFixed(1) : 'N/A', ',',
+        netValides.length ? Math.max(...netValides).toFixed(1) : 'N/A', ']');
 
-      // B. VENTE : Noyau FMC sort de surachat (▼ contraShort)
-      // 1. KK a touché >= +75 dans la fenêtre lookback
-      // 2. KK repasse au ROUGE (net <= sig)
-      // 3. Ligne FMC ROUGE (core < bal)
-      // 4. Histogramme FMC ROUGE (tension < 0)
-      for (const g of (fs_.contraShort || [])) {
-        if (g.i == null || g.i < 1 || g.i >= d.length) continue;
-        const minK = Math.max(1, g.i - 2);
-        const maxK = Math.min(d.length - 1, g.i + maxDelay);
-        let matchIdx = -1;
+      // B. VENTE : KK repasse SOUS seuilH (croisement descendant depuis surachat)
+      // net[k-1] >= seuilH && net[k] < seuilH → KK sort de la zone surachat
+      // + FMC ROUGE (si reqColors)
+      for (let k = 1; k < net.length; k++) {
+        const prev = net[k - 1];
+        const curr = net[k];
+        if (prev == null || curr == null) continue;
 
-        for (let k = minK; k <= maxK; k++) {
-          if (net[k] == null) continue;
-
-          // 1. KK a touché >= +75 dans la fenêtre
-          let hasPassedAbove = false;
-          const startLook = Math.max(0, k - lookback);
-          for (let j = startLook; j <= k; j++) {
-            if (net[j] != null && net[j] >= seuilH) { hasPassedAbove = true; break; }
-          }
-          if (!hasPassedAbove) continue;
-
-          // 2. KK repasse au ROUGE (net <= signal)
-          const isKkRed = (sig[k] != null) ? (net[k] <= sig[k]) : (net[k] <= (net[k-1] || net[k]));
-          if (!isKkRed) continue;
-
-          // 3 & 4. Ligne FMC et Histogramme FMC sont ROUGES
+        // Croisement descendant du seuil surachat
+        if (prev >= seuilH && curr < seuilH) {
           if (reqColors) {
             const fmcLineRed = (fs_.bal && fs_.bal[k] != null) ? (fs_.core[k] < fs_.bal[k]) : (fs_.core[k] < 50);
-            const fmcHistRed = (fs_.tension && fs_.tension[k] != null) ? (fs_.tension[k] < 0) : (fs_.waveHist ? fs_.waveHist[k] < 50 : true);
+            const fmcHistRed = (fs_.tension && fs_.tension[k] != null) ? (fs_.tension[k] < 0) : true;
             if (!fmcLineRed || !fmcHistRed) continue;
           }
-
-          matchIdx = k;
-          break;
-        }
-
-        if (matchIdx >= 0) {
-          const bougie = d[matchIdx];
+          const bougie = d[k];
+          if (!bougie) continue;
           confCandidate.push({
-            i: matchIdx, t: bougie.t, dir: -1,
+            i: k, t: bougie.t, dir: -1,
             type: 'VENTE',
             optKey: 'fmc_kk_confluence',
             isConfluenceKK: true,
             price: bougie.c, low: bougie.l, high: bougie.h,
-            score: net[matchIdx],
-            reason: '▼ KK + FMC ROUGES',
-            label: 'VENTE ' + nomFmc + ' × KK',
-            badge: '⚡ VENTE ' + nomFmc + ' × KK',
-            sub: '▼ FMC sort surachat · KK +' + Math.round(net[matchIdx]) + ' (> +' + seuilH + ' ↘) · Ligne & Hist Rouges',
+            score: curr,
+            reason: '▼ KK sort surachat',
+            label: 'VENTE FMC × KK',
+            badge: '⚡ VENTE FMC × KK',
+            sub: '▼ KK sort +' + seuilH + ' · KK=' + Math.round(curr) + (reqColors ? ' · FMC Rouge' : ''),
             color: cSell,
             bgFill: 'rgba(44, 10, 24, 0.95)'
           });
         }
       }
 
-      // A. ACHAT : Noyau FMC sort de survente (▲ contraLong) — miroir exact de VENTE
-      // 1. KK a touché <= -75 dans la fenêtre lookback
-      // 2. KK repasse au VERT (net > sig)
-      // 3. Ligne FMC VERTE (core >= bal)
-      // 4. Histogramme FMC VERT (tension >= 0)
-      for (const g of (fs_.contraLong || [])) {
-        if (g.i == null || g.i < 1 || g.i >= d.length) continue;
-        const minK = Math.max(1, g.i - 2);
-        const maxK = Math.min(d.length - 1, g.i + maxDelay);
-        let matchIdx = -1;
+      // A. ACHAT : KK repasse AU-DESSUS de seuilB (croisement ascendant depuis survente)
+      // net[k-1] <= seuilB && net[k] > seuilB → KK sort de la zone survente
+      // + FMC VERT (si reqColors)
+      for (let k = 1; k < net.length; k++) {
+        const prev = net[k - 1];
+        const curr = net[k];
+        if (prev == null || curr == null) continue;
 
-        for (let k = minK; k <= maxK; k++) {
-          if (net[k] == null) continue;
-
-          // 1. KK a touché <= -75 dans la fenêtre
-          let hasPassedBelow = false;
-          const startLook = Math.max(0, k - lookback);
-          for (let j = startLook; j <= k; j++) {
-            if (net[j] != null && net[j] <= seuilB) { hasPassedBelow = true; break; }
-          }
-          if (!hasPassedBelow) continue;
-
-          // 2. KK repasse au VERT (net > signal)
-          const isKkGreen = (sig[k] != null) ? (net[k] > sig[k]) : (net[k] >= (net[k-1] || net[k]));
-          if (!isKkGreen) continue;
-
-          // 3 & 4. Ligne FMC et Histogramme FMC sont VERTS
+        // Croisement ascendant du seuil survente
+        if (prev <= seuilB && curr > seuilB) {
           if (reqColors) {
             const fmcLineGreen = (fs_.bal && fs_.bal[k] != null) ? (fs_.core[k] >= fs_.bal[k]) : (fs_.core[k] >= 50);
-            const fmcHistGreen = (fs_.tension && fs_.tension[k] != null) ? (fs_.tension[k] >= 0) : (fs_.waveHist ? fs_.waveHist[k] >= 50 : true);
+            const fmcHistGreen = (fs_.tension && fs_.tension[k] != null) ? (fs_.tension[k] >= 0) : true;
             if (!fmcLineGreen || !fmcHistGreen) continue;
           }
-
-          matchIdx = k;
-          break;
-        }
-
-        if (matchIdx >= 0) {
-          const bougie = d[matchIdx];
+          const bougie = d[k];
+          if (!bougie) continue;
           confCandidate.push({
-            i: matchIdx, t: bougie.t, dir: 1,
+            i: k, t: bougie.t, dir: 1,
             type: 'ACHAT',
             optKey: 'fmc_kk_confluence',
             isConfluenceKK: true,
             price: bougie.c, low: bougie.l, high: bougie.h,
-            score: net[matchIdx],
-            reason: '▲ KK + FMC VERTS',
-            label: 'ACHAT ' + nomFmc + ' × KK',
-            badge: '⚡ ACHAT ' + nomFmc + ' × KK',
-            sub: '▲ FMC sort survente · KK ' + Math.round(net[matchIdx]) + ' (< ' + seuilB + ' ↗) · Ligne & Hist Verts',
+            score: curr,
+            reason: '▲ KK sort survente',
+            label: 'ACHAT FMC × KK',
+            badge: '⚡ ACHAT FMC × KK',
+            sub: '▲ KK sort ' + seuilB + ' · KK=' + Math.round(curr) + (reqColors ? ' · FMC Vert' : ''),
             color: cBuy,
             bgFill: 'rgba(6, 36, 32, 0.95)'
           });
         }
       }
+
+      console.log('[FMC×KK] confCandidate avant filtre:', confCandidate.length);
 
       confCandidate.sort((a, b) => a.i - b.i);
       let lastDir = 0, lastI = -999;
@@ -37381,7 +37342,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0310';
+  window.__LUMEN_BUILD = 'B-0909-0320';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;

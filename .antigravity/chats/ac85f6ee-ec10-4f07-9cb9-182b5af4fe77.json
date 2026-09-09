@@ -1,0 +1,57 @@
+{
+  "sessionId": "ac85f6ee-ec10-4f07-9cb9-182b5af4fe77",
+  "name": "Bh",
+  "createdAt": "2026-08-18T05:28:09.197Z",
+  "filename": "ac85f6ee-ec10-4f07-9cb9-182b5af4fe77.json",
+  "geminiStarted": true,
+  "messages": [
+    {
+      "id": "f52a7137-fb50-4678-8ac9-194bacd8c9df",
+      "role": "user",
+      "content": "Salut",
+      "status": "pending",
+      "model": "gemini-2.5-flash",
+      "client_type": "gemini-bridge",
+      "parent_message_id": null,
+      "created_at": "2026-08-18T05:28:32.915+00:00",
+      "sender": "ios",
+      "is_cancelled": false
+    },
+    {
+      "id": "686b1f30-3b86-4ccb-aa70-0cae8cedb7e1",
+      "role": "agent",
+      "content": "[INTERACTIVE_STEP_REQUIRED] Antigravity CLI requested an interactive terminal step.\nPlease complete the prompt in Terminal on your computer (for example approval/login), then retry from the app.",
+      "status": "error",
+      "model": "gemini-2.5-flash",
+      "client_type": "gemini-bridge",
+      "parent_message_id": "f52a7137-fb50-4678-8ac9-194bacd8c9df",
+      "created_at": "2026-08-18T05:28:39.773Z",
+      "sender": "macOS",
+      "is_cancelled": false
+    },
+    {
+      "id": "c2b531b7-7a20-4e11-9218-b237026fa5ec",
+      "role": "user",
+      "content": "Salut",
+      "status": "pending",
+      "model": "gemini-2.5-flash",
+      "client_type": "gemini-bridge",
+      "parent_message_id": null,
+      "created_at": "2026-08-18T05:33:38.679+00:00",
+      "sender": "ios",
+      "is_cancelled": false
+    },
+    {
+      "id": "49e3e045-48bd-4d76-8e7f-a6620392af3b",
+      "role": "agent",
+      "content": "[INTERACTIVE_STEP_REQUIRED] Antigravity CLI requested an interactive terminal step.\nPlease complete the prompt in Terminal on your computer (for example approval/login), then retry from the app.",
+      "status": "error",
+      "model": "gemini-2.5-flash",
+      "client_type": "gemini-bridge",
+      "parent_message_id": "c2b531b7-7a20-4e11-9218-b237026fa5ec",
+      "created_at": "2026-08-18T05:33:46.496Z",
+      "sender": "macOS",
+      "is_cancelled": false
+    }
+  ]
+}
