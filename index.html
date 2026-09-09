@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0240</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0250</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1019,6 +1019,36 @@ footer{
         <span class="srtf mtf" data-ind2="fmc" data-tf="240">4H</span>
         <span class="sub" style="opacity:.7;margin-left:8px;font-size:9px">2ᵉ ligne</span>
         <span class="state">on</span>
+      </div>
+      <div class="ind-item" data-ind="fmc2" id="item-fmc2" style="background:var(--panel-2,#0F172A);border:1.5px solid #22D3EE;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(34,211,238,0.15)">
+        <span class="dot" style="background:#22D3EE;box-shadow:0 0 6px #22D3EE;flex:none"></span>
+        <span class="nm">FMC 2 <span class="sub">Flow Momentum Composite ② — second panneau / multi-TF</span><span class="sub">seuils fixes 75 / −75 · sans adaptation à la volatilité</span></span>
+        <span class="srtf mtf on" data-ind2="fmc2" data-tf="chart">UT</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="1">1m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="2">2m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="3">3m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="4">4m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="5">5m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="6">6m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="7">7m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="8">8m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="9">9m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="10">10m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="11">11m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="12">12m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="13">13m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="14">14m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="15">15m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="16">16m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="17">17m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="18">18m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="19">19m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="20">20m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="30">30m</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="60">1H</span>
+        <span class="srtf mtf" data-ind2="fmc2" data-tf="240">4H</span>
+        <span class="sub" style="opacity:.7;margin-left:8px;font-size:9px">2ᵉ ligne</span>
+        <span class="state">off</span>
       </div>
       <div class="ind-item on" data-ind="signal_exit_ob" id="item-signal_exit_ob" style="background:var(--panel-2,#0F172A);border:1.5px solid #C084FC;border-radius:8px;padding:8px 10px;margin-bottom:8px;box-shadow:0 2px 8px rgba(192,132,252,0.25)">
         <span class="dot" style="background:#C084FC;box-shadow:0 0 6px #C084FC;flex:none"></span>
@@ -5648,6 +5678,12 @@ const state = {
       oneSignalPerWave:true,srcCore:'close',flowHeightScale:0.5,flowExtremeLevel:15,waveBaseTransp:60,centerGradTransp:60,coreBalTransp:30,useDynamicLevels:true,levelLineWidth:4,flowWaveTransp:50,obosCloseTransp:30,obosFarTransp:90,divLineTransp:40,cNeutral:'#808080',cZeroLine:'#808080',cText:'#FFFFFF',showTable:true,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
       showScore:true,showContrarian:true,showDivergence:true,showWaves:true,showFlow:true,
       cBull:'#06A22F',cBear:'#CF1717',showOscillator:true},
+    fmc2:{on:false,tf:'chart',lenCore:14,smoothCore:5,lenBal:14,smoothBal:7,maMethod:'EMA',
+      scaleCore:7,lenFlow:25,smoothFlow:10,forceCandle:false,trendLen:50,trendMult:1.5,
+      knnK:5,knnWindow:400,obLevel:70,osLevel:30,pivotLength:2,scoreThresh:80,
+      oneSignalPerWave:true,srcCore:'close',flowHeightScale:0.5,flowExtremeLevel:15,waveBaseTransp:60,centerGradTransp:60,coreBalTransp:30,useDynamicLevels:true,levelLineWidth:4,flowWaveTransp:50,obosCloseTransp:30,obosFarTransp:90,divLineTransp:40,cNeutral:'#808080',cZeroLine:'#808080',cText:'#FFFFFF',showTable:true,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
+      showScore:true,showContrarian:true,showDivergence:true,showWaves:true,showFlow:true,
+      cBull:'#06A22F',cBear:'#CF1717',showOscillator:true},
     sqz_mom:{on:true,showSqzLevels:true,showStats:false,statsLookback:2000,tf1:'chart',tf2:'off',bbLength:20,bbMult:2.0,kcLength:20,kcMult:1.5,useTrueRange:true,modeTF2:'overlay',showSqzDots:true,c1Up:'#00E676',c1UpDn:'#00897B',c1Dn:'#FF5252',c1DnUp:'#B71C1C',c2Up:'#00E5FF',c2UpDn:'#0288D1',c2Dn:'#FF9F1C',c2DnUp:'#B36200',c2Line:'#00E5FF'},
     imp:{on:true,period:34,tf:'chart'},
     imp2:{on:false,period:34,tf:'60'},
@@ -5799,7 +5835,7 @@ function mergeConfig(c){
   if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
     state.paneH={};
-    for(const k of ['rsi','macd','imp','stoch','atr','rosc','macdsr','rangeDet','rangeDet2','two_ind','kk_bis','kk_bis2','fmc'])
+    for(const k of ['rsi','macd','imp','stoch','atr','rosc','macdsr','rangeDet','rangeDet2','two_ind','kk_bis','kk_bis2','fmc','fmc2'])
       if(typeof c.paneH[k]==='number'&&c.paneH[k]>=34&&c.paneH[k]<=800)
         state.paneH[k]=c.paneH[k];
   }
@@ -5914,6 +5950,9 @@ function loadConfig(){
     if(state.indicators.strat_mm){
       delete state.indicators.strat_mm.showFmcSolo;
       delete state.indicators.strat_mm.fmcSoloSource;
+    }
+    if(!state.indicators.fmc2 && state.indicators.fmc){
+      state.indicators.fmc2 = Object.assign({}, state.indicators.fmc, { on: false });
     }
   }catch(e){}
 
@@ -7160,7 +7199,7 @@ function getInd(key){
       }
       return state.cache[ckExitOb];
     }
-    if(key==='fmc'){
+    if(key==='fmc' || key==='fmc2'){
       const mtf=(ind.tf&&ind.tf!=='chart'&&+ind.tf!==state.tf)?+ind.tf:null;
       const src = mtf ? getMTFBars(mtf) : d;
       if(!src||!src.length){ state.cache[ck]={core:[],bal:[],flow:[],knn:[],score:[],buys:[],sells:[]}; return state.cache[ck]; }
@@ -7970,6 +8009,7 @@ function computePanes(){
   if(vis('macdsr2')) subs.push('macdsr2');
   if(vis('sqz_mom')) subs.push('sqz_mom');
   if(vis('fmc') && state.indicators.fmc && state.indicators.fmc.showOscillator!==false) subs.push('fmc');
+  if(vis('fmc2') && state.indicators.fmc2 && state.indicators.fmc2.showOscillator!==false) subs.push('fmc2');
   if(vis('rangeDet') && S('rangeDet','showSubpane')!==false) subs.push('rangeDet');
   if(vis('two_ind') && state.indicators.two_ind.showOscillator!==false) subs.push('two_ind');
   if(vis('kk_bis') && state.indicators.kk_bis.showOscillator!==false) subs.push('kk_bis');
@@ -8407,6 +8447,11 @@ function placeBadge(bx, bw, by, bh, dir) {
   _badgeRects.push({ x: bx, y, w: bw, h: bh });
   return y;
 }
+function subTfSuffix(mk) {
+  const ind = state.indicators[mk];
+  if (!ind || !ind.tf || ind.tf === 'chart' || +ind.tf === state.tf) return '';
+  return ' (' + ind.tf + 'm)';
+}
 function render(){
   /* Les lignes verticales des pastilles sont recollectées à chaque rendu. */
   window.__zzVerticales = [];
@@ -8447,7 +8492,8 @@ function render(){
       const DR={rsi:drawRSI,rsi2:drawRSI,macd:drawMACD,vol_delta:drawVolDelta,imp:drawImp,imp2:drawImp,stoch:drawStoch,atr:drawATR,rosc:drawROsc,rosc2:drawROsc,macdsr:drawMacdSR,macdsr2:drawMacdSR,rangeDet:drawRangeDetSub,rangeDet2:drawRangeDet2Sub,two_ind:drawTwoIndSub,kk_bis:(p,s,e,cw)=>drawKKBisSub(p,s,e,cw,'kk_bis'),
         kk_bis2:(p,s,e,cw)=>drawKKBisSub(p,s,e,cw,'kk_bis2'),
         sqz_mom:drawSqzMom,
-        fmc:(p,s,e,cw)=>drawFmcSub(p,s,e,cw,'fmc')};
+        fmc:(p,s,e,cw)=>drawFmcSub(p,s,e,cw,'fmc'),
+        fmc2:(p,s,e,cw)=>drawFmcSub(p,s,e,cw,'fmc2')};
       let members=(p.members||[p.key]).slice();
       // membre au premier plan -> dessiné en dernier (au-dessus)
       const front=state.subFront&&state.subFront[p.key];
@@ -12304,7 +12350,7 @@ function drawFmcSub(p, s, e, cw, cle) {
        la courbe devient un escalier et plafonne plus bas — le Pine, lui,
        travaille toujours sur l'unité affichée. On le dit clairement, sinon on
        croit à un calcul qui s'arrête. */
-    'FMC' + ((S(K,'tf') && S(K,'tf') !== 'chart' && +S(K,'tf') !== state.tf)
+    (K === 'fmc2' ? 'FMC ②' : 'FMC') + ((S(K,'tf') && S(K,'tf') !== 'chart' && +S(K,'tf') !== state.tf)
               ? ' \u26A0 ' + S(K,'tf') + 'm (paliers)' : '') +
     ' \u00b7 noyau ' + Math.round(r.core[der]) +
     ' \u00b7 ' + (r.flow[der] >= 50 ? 'flux acheteur' : 'flux vendeur') +
@@ -13750,6 +13796,7 @@ const IND_META={
     return 'Stratégie FMC 🌊 (' + srcLab + ')';
   },color:'#22D3EE'},
   fmc:{label:()=>'Flow Momentum Composite (FMC)',color:'#22D3EE'},
+  fmc2:{label:()=>'Flow Momentum Composite ② (FMC 2)',color:'#38BDF8'},
   strat_zz:{label:()=>'Indicateur Z. Z. ⚡',color:'#FBBF24'},
   imp:{label:p=>'Impulse MACD '+p,color:'#7CE38B'},
   imp2:{label:p=>'Impulse MACD ② '+p,color:'#5AB0E0'},
@@ -19211,6 +19258,39 @@ const SCHEMA={
     {k:'cSig',t:'col',lab:'Couleur signal',def:'#FFFFFF'},
   ]},
   fmc:{title:'Flow Momentum Composite',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
+    {k:'lenCore',t:'num',lab:'Noyau — période',def:14},
+    {k:'smoothCore',t:'num',lab:'Noyau — lissage',def:5},
+    {k:'scaleCore',t:'num',lab:'Sensibilité (saturation 0-100)',def:7},
+    {k:'lenBal',t:'num',lab:'Balance — période',def:14},
+    {k:'smoothBal',t:'num',lab:'Balance — lissage',def:7},
+    {k:'maMethod',t:'choice',lab:'Méthode de moyenne',opts:[{v:'EMA',t:'EMA'},{v:'SMA',t:'SMA'},{v:'RMA',t:'RMA'}]},
+    {k:'lenFlow',t:'num',lab:'Flux — période',def:25},
+    {k:'smoothFlow',t:'num',lab:'Flux — lissage',def:10},
+    {k:'forceCandle',t:'bool',lab:'Forcer le calcul du flux sur les bougies',def:false},
+    {k:'trendLen',t:'num',lab:'Structure — période',def:50},
+    {k:'trendMult',t:'num',lab:'Structure — multiplicateur ATR',def:1.5},
+    {k:'knnK',t:'num',lab:'KNN — nombre de voisins',def:5},
+    {k:'knnWindow',t:'num',lab:'KNN — mémoire (bougies)',def:400},
+    {k:'obLevel',t:'num',lab:'Zone haute',def:70},
+    {k:'osLevel',t:'num',lab:'Zone basse',def:30},
+    {k:'scoreThresh',t:'num',lab:'Seuil de signal (% du score max)',def:80},
+    {k:'oneSignalPerWave',t:'bool',lab:'Un seul signal par vague',def:true},
+    {k:'wMom',t:'num',lab:'Poids — momentum',def:20},
+    {k:'wFlow',t:'num',lab:'Poids — flux',def:20},
+    {k:'wTrend',t:'num',lab:'Poids — structure',def:20},
+    {k:'wKnn',t:'num',lab:'Poids — KNN',def:20},
+    {k:'wWave',t:'num',lab:'Poids — tension',def:20},
+    {k:'pivotLength',t:'num',lab:'Divergences — pivot',def:2},
+    {k:'showScore',t:'bool',lab:'Afficher les signaux du score',def:true},
+    {k:'showContrarian',t:'bool',lab:'Afficher les signaux contrariens',def:true},
+    {k:'showWaves',t:'bool',lab:'Afficher la tension noyau/balance',def:true},
+    {k:'showFlow',t:'bool',lab:'Afficher la pression de flux',def:true},
+    {k:'showOscillator',t:'bool',lab:'Afficher le panneau',def:true},{k:'srcCore',t:'choice',lab:'Source',opts:[{v:'close',t:'Clôture'},{v:'open',t:'Ouverture'},{v:'high',t:'Haut'},{v:'low',t:'Bas'},{v:'hl2',t:'hl2'},{v:'hlc3',t:'hlc3'}]},{k:'flowHeightScale',t:'num',lab:'Flux — hauteur de la vague',def:0.5},{k:'flowExtremeLevel',t:'num',lab:'Flux — seuil extrême',def:15},{k:'waveBaseTransp',t:'num',lab:'Tension — transparence de base',def:60},{k:'useDynamicLevels',t:'bool',lab:'Zones à transparence dynamique',def:true},{k:'levelLineWidth',t:'num',lab:'Épaisseur des zones',def:3},{k:'showDivergence',t:'bool',lab:'Afficher les divergences',def:true},{k:'flowWaveTransp',t:'num',lab:'Transparence de la vague de flux',def:50},{k:'obosCloseTransp',t:'num',lab:'Zones — transparence près du niveau',def:30},{k:'obosFarTransp',t:'num',lab:'Zones — transparence loin du niveau',def:90},{k:'divLineTransp',t:'num',lab:'Transparence des divergences',def:40},{k:'cNeutral',t:'col',lab:'Couleur neutre',def:'#808080'},{k:'cZeroLine',t:'col',lab:'Couleur de la ligne 50',def:'#808080'},{k:'cText',t:'col',lab:'Couleur du texte des étiquettes',def:'#FFFFFF'},{k:'showTable',t:'bool',lab:'Afficher le tableau récapitulatif',def:true},{k:'centerGradTransp',t:'num',lab:'Transparence du dégradé vers 50',def:60},{k:'coreBalTransp',t:'num',lab:'Transparence entre noyau et balance',def:30},
+    {k:'cBull',t:'col',lab:'Couleur haussière',def:'#06A22F'},
+    {k:'cBear',t:'col',lab:'Couleur baissière',def:'#CF1717'}
+  ]},
+  fmc2:{title:'Flow Momentum Composite ② (FMC 2)',fields:[
     {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'lenCore',t:'num',lab:'Noyau — période',def:14},
     {k:'smoothCore',t:'num',lab:'Noyau — lissage',def:5},
@@ -37308,7 +37388,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0240';
+  window.__LUMEN_BUILD = 'B-0909-0250';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
