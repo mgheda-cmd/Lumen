@@ -263,28 +263,28 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
 .gear:hover{color:var(--accent)}
 #cfg-back{
   position:fixed;top:44px;bottom:0;left:0;right:0;background:transparent;z-index:2500;
-  display:none;align-items:center;justify-content:center;padding:12px 16px 24px;
-  pointer-events:none;                 /* le graphique reste visible et utilisable */
+  display:none;pointer-events:none;
 }
 #cfg-back > #cfg-box{ pointer-events:auto; }
-#cfg-back.open{display:flex}
+#cfg-back.open{display:block}
 #cfg-box{
-  background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
-  width:min(560px,96vw);max-height:calc(100vh - 65px);
-  box-shadow:0 24px 60px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,0.08);
-  position:relative;                    /* déplacé par transform */
-  display:flex;flex-direction:column;   /* titre fixe, corps défilant, pied fixe */
-  overflow:hidden;
+  position:fixed;top:50px;left:16px;
+  background:var(--panel-2,#0F172A);border:1.5px solid #00E5FF;border-radius:12px;
+  width:min(480px,calc(100vw - 24px));max-width:calc(100vw - 24px);
+  max-height:calc(100dvh - 60px);max-height:calc(100vh - 60px);
+  box-shadow:0 24px 60px rgba(0,0,0,.92), 0 0 0 1px rgba(0,229,255,0.25);
+  display:flex;flex-direction:column;
+  overflow:hidden;box-sizing:border-box;
 }
 #cfg-head{ touch-action:none; flex:none; cursor:grab; user-select:none; }
 #cfg-head:active{ cursor:grabbing; }
 #cfg-foot{ flex:none; }
 #cfg-head{
-  display:flex;align-items:center;gap:8px;padding:10px 14px;
-  border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel-2);
+  display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel-2,#0F172A);
   z-index:2;
 }
-#cfg-head h3{font-size:14px;font-weight:700;flex:1;margin:0}
+#cfg-head h3{font-size:13.5px;font-weight:700;flex:1;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #cfg-body{
   padding:8px 16px 4px;
   overflow-y:auto;
@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0155</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0200</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -2573,22 +2573,23 @@ footer{
 
 <div id="cfg-back">
   <div id="cfg-box">
-    <div id="cfg-head" title="Maintenez le clic sur cette barre pour déplacer le panneau où vous voulez sur l'écran">
-      <span class="cfg-drag-handle" style="font-size:16px;cursor:grab;color:#00E5FF;margin-right:2px;user-select:none">⠿</span>
-      <h3 id="cfg-title" style="margin:0;font-size:14px;font-weight:700">Paramètres</h3>
-      <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
-        <button class="btn" id="cfg-snap-left" title="Déplacer le panneau tout à gauche de l'écran" style="padding:2px 7px;font-size:11px;font-weight:700">↖ Gauche</button>
-        <button class="btn" id="cfg-snap-right" title="Déplacer le panneau tout à droite (pour voir tout le graphique au centre)" style="padding:2px 7px;font-size:11px;font-weight:700;border-color:#00E5FF;color:#00E5FF;background:rgba(0,229,255,0.12)">↗ Droite</button>
-        <button class="btn" id="cfg-snap-center" title="Recentrer le panneau au milieu de l'écran" style="padding:2px 7px;font-size:11px;font-weight:700">⟲ Centre</button>
-        <button class="btn" id="cfg-close" title="Fermer (Échap)" style="padding:2px 9px;font-size:13px;font-weight:800;border-color:rgba(255,255,255,0.2)">✕</button>
+    <div id="cfg-head" title="Maintenez le doigt ou le clic sur cette barre pour déplacer le panneau où vous voulez sur l'écran">
+      <div class="cfg-drag-handle" style="display:inline-flex;align-items:center;gap:4px;cursor:grab;background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;border-radius:6px;padding:3px 8px;font-size:11.5px;font-weight:700;user-select:none;touch-action:none" title="Glisser pour déplacer le panneau">⠿ Déplacer</div>
+      <h3 id="cfg-title" style="margin:0;font-size:13.5px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Paramètres</h3>
+      <div style="display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:nowrap">
+        <button class="btn" id="cfg-snap-left" title="Placer à gauche (libère la vue des cours récents sur la droite)" style="padding:3px 7px;font-size:11px;font-weight:700;border-color:#00E5FF;color:#00E5FF;background:rgba(0,229,255,0.12)">↖ Gauche</button>
+        <button class="btn" id="cfg-snap-right" title="Placer à droite" style="padding:3px 7px;font-size:11px;font-weight:700">↗ Droite</button>
+        <button class="btn" id="cfg-snap-center" title="Recentrer" style="padding:3px 7px;font-size:11px;font-weight:700">⟲ Centre</button>
+        <button class="btn" id="cfg-close" title="Fermer (Échap)" style="padding:3px 9px;font-size:13.5px;font-weight:800;border-color:rgba(255,255,255,0.25)">✕</button>
       </div>
     </div>
     <div id="cfg-body"></div>
-    <div id="cfg-foot">
-      <button class="btn" id="cfg-reset">Réinitialiser</button>
-      <button class="btn" id="cfg-save" title="Enregistrer les réglages actuels de cet indicateur sous un nom">💾 Enregistrer</button>
-      <button class="btn" id="cfg-load" title="Recharger des réglages enregistrés">📂 Charger</button>
-      <button class="btn" id="cfg-ok" style="margin-left:auto;border-color:var(--accent);color:var(--accent)">Terminé</button>
+    <div id="cfg-foot" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-top:1px solid var(--line);background:var(--panel-2,#0F172A);flex-wrap:wrap">
+      <button class="btn" id="cfg-foot-toggle-side" title="Déplacer le panneau de l'autre côté de l'écran" style="border-color:#00E5FF;color:#00E5FF;font-weight:700;font-size:11px;padding:4px 8px;background:rgba(0,229,255,0.08)">↔ Déplacer Gauche/Droite</button>
+      <button class="btn" id="cfg-reset" style="font-size:11px;padding:4px 8px">Réinitialiser</button>
+      <button class="btn" id="cfg-save" title="Enregistrer les réglages actuels de cet indicateur sous un nom" style="font-size:11px;padding:4px 8px">💾 Enregistrer</button>
+      <button class="btn" id="cfg-load" title="Recharger des réglages enregistrés" style="font-size:11px;padding:4px 8px">📂 Charger</button>
+      <button class="btn" id="cfg-ok" style="margin-left:auto;border-color:var(--accent);color:var(--accent);font-weight:700;font-size:11px;padding:4px 12px">Terminé</button>
     </div>
   </div>
 </div>
@@ -14078,10 +14079,13 @@ canvas.addEventListener('mousemove',e=>{
 });
 canvas.addEventListener('mouseleave',()=>{state.mouse=null;state.dragging=false;scheduleRender();});
 // tactile : le crosshair suit le doigt
+let _touchStartPt = null;
+let _touchCandidateLh = null;
 canvas.addEventListener('touchstart',e=>{
   if(e.touches.length!==1)return;
   const r=canvas.getBoundingClientRect();
   const tx=e.touches[0].clientX-r.left, ty=e.touches[0].clientY-r.top;
+  _touchStartPt = { x: tx, y: ty, t: Date.now() };
   /* Cases à cocher des pastilles Z.Z. 2, testées avant tout le reste :
      sinon la zone de la bulle prend le doigt et ouvre les réglages. */
   if(Array.isArray(window.__zz2Cases)){
@@ -14092,12 +14096,32 @@ canvas.addEventListener('touchstart',e=>{
   if(state.zoneMode&&zoneTapAt(tx,ty)){ if(e.cancelable)e.preventDefault(); return; }
   const gh=ghostHits.find(h=>tx>=h.x&&tx<=h.x+h.w&&ty>=h.y&&ty<=h.y+h.h);
   if(gh){ if(e.cancelable)e.preventDefault(); toggleGhostKeep(gh); return; }
-  const lh=labelHits.find(h=>tx>=h.x&&tx<=h.x+h.w&&ty>=h.y&&ty<=h.y+h.h);
-  if(lh){ if(e.cancelable)e.preventDefault(); openCfg(lh.key); return; }
+  // On mémorise la pastille touchée mais on NE bloque PAS le swipe du graphique immédiatement
+  _touchCandidateLh = labelHits.find(h=>tx>=h.x&&tx<=h.x+h.w&&ty>=h.y&&ty<=h.y+h.h) || null;
   const cc=hitPaneCtrl(tx,ty);
   if(cc){ if(e.cancelable)e.preventDefault(); applyPaneCtrl(cc.key,cc.act); }
 },{passive:false});
-canvas.addEventListener('touchend',()=>{ if(!state.dragging&&!state.xhairMode){state.mouse=null;scheduleRender();} });
+canvas.addEventListener('touchend',e=>{
+  if(_touchCandidateLh && _touchStartPt){
+    const t = (e.changedTouches && e.changedTouches[0]);
+    if(t){
+      const r = canvas.getBoundingClientRect();
+      const endX = t.clientX - r.left, endY = t.clientY - r.top;
+      const dist = Math.hypot(endX - _touchStartPt.x, endY - _touchStartPt.y);
+      const elapsed = Date.now() - _touchStartPt.t;
+      // Tap bref et précis (< 10px et < 350ms) : ouverture intentionnelle des réglages
+      if(dist < 10 && elapsed < 350){
+        openCfg(_touchCandidateLh.key);
+        _touchCandidateLh = null;
+        _touchStartPt = null;
+        return;
+      }
+    }
+  }
+  _touchCandidateLh = null;
+  _touchStartPt = null;
+  if(!state.dragging&&!state.xhairMode){state.mouse=null;scheduleRender();}
+});
 // double-tap tactile sur un sous-panneau -> paramètres
 let _lastTap=0,_lastTapY=0;
 canvas.addEventListener('touchend',e=>{
@@ -18773,6 +18797,9 @@ function openCfg(ind){
       openEmaHaBacktestModal();
     });
   }
+  if(typeof window.ensureCfgPosition === 'function'){
+    window.ensureCfgPosition();
+  }
   document.getElementById('cfg-back').classList.add('open');
 }
 function setStyle(ind,key,val,recalc){
@@ -18799,72 +18826,100 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
     saveConfig(); render();
   }
 });
-/* Panneau de paramètres déplaçable : on le pousse de côté pour voir
-   l'effet des réglages sur le graphique pendant qu'on les modifie.
-   La position est mémorisée d'une ouverture à l'autre. */
+/* Panneau de paramètres déplaçable : fluide sur iPad/tactile et desktop.
+   Par défaut ancré à GAUCHE pour ne jamais masquer les bougies du jour sur la droite.
+   Positionnement direct en pixels (left/top) avec clampage strict pour que l'en-tête
+   ne sorte jamais de l'écran. */
 (function(){
   const box = document.getElementById('cfg-box');
   const head = document.getElementById('cfg-head');
   if(!box || !head) return;
-  let dx = 0, dy = 0, sx = 0, sy = 0, dragging = false;
 
-  try{
-    const sv = JSON.parse(localStorage.getItem('lumen_cfg_pos') || 'null');
-    if(sv && isFinite(sv.x) && isFinite(sv.y)){ dx = sv.x; dy = sv.y; apply(); }
-  }catch(e){}
+  // Nettoyage de l'ancien format d'offset qui pouvait pousser le panneau hors écran sur iPad
+  try { localStorage.removeItem('lumen_cfg_pos'); } catch(e){}
 
-  function apply(){ box.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; }
+  let curX = 16, curY = 50;
+  let isDragging = false;
+  let startTouchX = 0, startTouchY = 0;
+  let initBoxX = 16, initBoxY = 50;
 
-  function clamp(){
-    const r = box.getBoundingClientRect();
-    // on garde toujours au moins l'en-tête accessible à l'écran
-    if(r.left > window.innerWidth - 80)  dx -= (r.left - (window.innerWidth - 80));
-    if(r.right < 80)                     dx += (80 - r.right);
-    if(r.top < 0)                        dy += -r.top;
-    if(r.top > window.innerHeight - 60)  dy -= (r.top - (window.innerHeight - 60));
+  function clampAndSet(x, y, save = false){
+    const winW = window.innerWidth || document.documentElement.clientWidth || 1024;
+    const winH = window.innerHeight || document.documentElement.clientHeight || 768;
+    const boxW = box.offsetWidth || Math.min(480, winW - 24);
+
+    // L'en-tête doit TOUJOURS rester visible en dessous de la barre d'outils (>= 48px)
+    curY = Math.max(48, Math.min(winH - 50, y));
+    curX = Math.max(4, Math.min(winW - boxW - 4, x));
+
+    box.style.left = curX + 'px';
+    box.style.top = curY + 'px';
+    box.style.transform = 'none';
+
+    if(save){
+      try{ localStorage.setItem('lumen_cfg_pos_v3', JSON.stringify({ x: curX, y: curY })); }catch(e){}
+    }
   }
 
-  function start(e){
-    if(e.target.closest('button')) return;
-    dragging = true;
+  window.ensureCfgPosition = function(forceLeft = false){
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('lumen_cfg_pos_v3')); } catch(e){}
+
+    if(forceLeft || !saved || !isFinite(saved.x) || !isFinite(saved.y)){
+      // Par défaut : ancrage à gauche (16px) pour libérer complètement la vue du jour
+      clampAndSet(16, 50, false);
+    } else {
+      clampAndSet(saved.x, saved.y, false);
+    }
+  };
+
+  // Gestion du glisser-déplacer tactile et souris
+  function onDragStart(e){
+    if(e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+    isDragging = true;
     const p = e.touches ? e.touches[0] : e;
-    sx = p.clientX - dx; sy = p.clientY - dy;
+    startTouchX = p.clientX;
+    startTouchY = p.clientY;
+    const r = box.getBoundingClientRect();
+    initBoxX = r.left;
+    initBoxY = r.top;
     box.style.transition = 'none';
   }
-  function move(e){
-    if(!dragging) return;
+
+  function onDragMove(e){
+    if(!isDragging) return;
     const p = e.touches ? e.touches[0] : e;
-    dx = p.clientX - sx; dy = p.clientY - sy;
-    apply();
+    const dx = p.clientX - startTouchX;
+    const dy = p.clientY - startTouchY;
+    clampAndSet(initBoxX + dx, initBoxY + dy, false);
     if(e.cancelable) e.preventDefault();
   }
-  function end(){
-    if(!dragging) return;
-    dragging = false;
-    clamp(); apply();
-    try{ localStorage.setItem('lumen_cfg_pos', JSON.stringify({x:dx, y:dy})); }catch(e){}
+
+  function onDragEnd(){
+    if(!isDragging) return;
+    isDragging = false;
+    clampAndSet(curX, curY, true);
   }
 
-  head.addEventListener('mousedown', start);
-  window.addEventListener('mousemove', move);
-  window.addEventListener('mouseup', end);
-  head.addEventListener('touchstart', start, {passive:false});
-  window.addEventListener('touchmove', move, {passive:false});
-  window.addEventListener('touchend', end);
+  head.addEventListener('mousedown', onDragStart);
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('mouseup', onDragEnd);
+
+  head.addEventListener('touchstart', onDragStart, { passive: false });
+  window.addEventListener('touchmove', onDragMove, { passive: false });
+  window.addEventListener('touchend', onDragEnd);
 
   // Boutons d'ancrage rapide
   const snapLeft = document.getElementById('cfg-snap-left');
   const snapRight = document.getElementById('cfg-snap-right');
   const snapCenter = document.getElementById('cfg-snap-center');
+  const footToggle = document.getElementById('cfg-foot-toggle-side');
 
   if(snapLeft){
     snapLeft.addEventListener('click', function(e){
       e.stopPropagation();
-      box.style.transition = 'transform .2s ease';
-      dx = -Math.max(10, Math.round(window.innerWidth / 2 - (box.offsetWidth / 2) - 16));
-      dy = -Math.max(10, Math.round(window.innerHeight / 2 - (box.offsetHeight / 2) - 30));
-      clamp(); apply();
-      try{ localStorage.setItem('lumen_cfg_pos', JSON.stringify({x:dx, y:dy})); }catch(err){}
+      box.style.transition = 'left .2s ease, top .2s ease';
+      clampAndSet(16, 50, true);
       setTimeout(()=>{ box.style.transition = 'none'; }, 220);
     });
   }
@@ -18872,11 +18927,10 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
   if(snapRight){
     snapRight.addEventListener('click', function(e){
       e.stopPropagation();
-      box.style.transition = 'transform .2s ease';
-      dx = Math.max(10, Math.round(window.innerWidth / 2 - (box.offsetWidth / 2) - 16));
-      dy = -Math.max(10, Math.round(window.innerHeight / 2 - (box.offsetHeight / 2) - 30));
-      clamp(); apply();
-      try{ localStorage.setItem('lumen_cfg_pos', JSON.stringify({x:dx, y:dy})); }catch(err){}
+      box.style.transition = 'left .2s ease, top .2s ease';
+      const winW = window.innerWidth || document.documentElement.clientWidth || 1024;
+      const boxW = box.offsetWidth || Math.min(480, winW - 24);
+      clampAndSet(winW - boxW - 16, 50, true);
       setTimeout(()=>{ box.style.transition = 'none'; }, 220);
     });
   }
@@ -18884,21 +18938,48 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
   if(snapCenter){
     snapCenter.addEventListener('click', function(e){
       e.stopPropagation();
-      box.style.transition = 'transform .2s ease';
-      dx = 0; dy = 0; apply();
-      try{ localStorage.removeItem('lumen_cfg_pos'); }catch(err){}
+      box.style.transition = 'left .2s ease, top .2s ease';
+      const winW = window.innerWidth || document.documentElement.clientWidth || 1024;
+      const boxW = box.offsetWidth || Math.min(480, winW - 24);
+      clampAndSet(Math.round((winW - boxW) / 2), 50, true);
       setTimeout(()=>{ box.style.transition = 'none'; }, 220);
     });
   }
 
-  // double-clic sur l'en-tête : recentrer
+  if(footToggle){
+    footToggle.addEventListener('click', function(e){
+      e.stopPropagation();
+      box.style.transition = 'left .2s ease, top .2s ease';
+      const winW = window.innerWidth || document.documentElement.clientWidth || 1024;
+      const boxW = box.offsetWidth || Math.min(480, winW - 24);
+      if(curX < winW / 2){
+        clampAndSet(winW - boxW - 16, 50, true);
+      } else {
+        clampAndSet(16, 50, true);
+      }
+      setTimeout(()=>{ box.style.transition = 'none'; }, 220);
+    });
+  }
+
+  // Double-tap ou double-clic sur l'en-tête : bascule gauche/droite
   head.addEventListener('dblclick', function(e){
     if(e.target.closest('button')) return;
-    box.style.transition = 'transform .2s ease';
-    dx = 0; dy = 0; apply();
-    try{ localStorage.removeItem('lumen_cfg_pos'); }catch(err){}
+    box.style.transition = 'left .2s ease, top .2s ease';
+    const winW = window.innerWidth || document.documentElement.clientWidth || 1024;
+    const boxW = box.offsetWidth || Math.min(480, winW - 24);
+    if(curX < winW / 2){
+      clampAndSet(winW - boxW - 16, 50, true);
+    } else {
+      clampAndSet(16, 50, true);
+    }
     setTimeout(()=>{ box.style.transition = 'none'; }, 220);
   });
+
+  window.addEventListener('resize', function(){
+    clampAndSet(curX, curY, false);
+  });
+
+  setTimeout(window.ensureCfgPosition, 100);
 })();
 
 /* ============ RÉGLAGES ENREGISTRÉS PAR INDICATEUR ============
@@ -36368,7 +36449,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0155';
+  window.__LUMEN_BUILD = 'B-0909-0200';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
