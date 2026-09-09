@@ -493,13 +493,19 @@ footer{
     </button>
   </div>
 
+  <div class="ind-wrap" id="pastilles-wrap" style="position:relative">
+    <button class="btn btn-pastilles" id="btn-pastilles-menu" aria-haspopup="true" aria-expanded="false" title="Gestionnaire direct des pastilles de signaux (cocher / décocher par stratégie)" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;border-color:rgba(255,180,0,.6);color:#FFB400;background:rgba(255,180,0,.08);padding:4px 9px;border-radius:6px">
+      <span style="font-size:13px">🏷️</span> <span>Pastilles</span> <span id="btn-pastilles-badge" class="mono" style="font-size:9.5px;background:rgba(255,180,0,.2);color:#FFB400;padding:1px 5px;border-radius:4px;font-weight:800;margin-left:2px">—</span> <span style="font-size:9px;opacity:.7">▾</span>
+    </button>
+  </div>
+
   <div class="ind-wrap" id="tools-wrap" style="position:relative">
     <button class="btn" id="btn-tools-menu" aria-haspopup="true" aria-expanded="false" title="Menu des outils, réglages et options supplémentaires" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;border-color:var(--accent);color:var(--text)">
       <span>⋯ Outils</span> <span style="font-size:9px;color:var(--muted)">▾</span>
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0210</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0220</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1287,6 +1293,35 @@ footer{
           <span class="state">off</span>
         </div>
       </div>
+    </div>
+
+    <!-- ===== MENU FILANT : GESTIONNAIRE CENTRALISÉ DES PASTILLES ===== -->
+    <div class="ind-menu" id="pastilles-menu" role="menu" style="width:min(390px,94vw);max-height:82vh;overflow-y:auto;padding:12px;background:var(--panel,#0A111F);border:1.5px solid #FFB400;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.92);z-index:99999">
+      
+      <!-- En-tête du Hub Pastilles -->
+      <div style="padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid rgba(255,180,0,0.25);display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:18px">🏷️</span>
+          <div>
+            <div style="font-weight:800;font-size:13px;color:#FFB400;letter-spacing:0.2px">Gestionnaire des Pastilles</div>
+            <div style="font-size:10px;color:var(--muted)">Cochez pour afficher ou masquer les signaux</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span id="pastilles-active-count" class="mono" style="font-size:10px;background:rgba(255,180,0,0.18);color:#FFB400;border:1px solid rgba(255,180,0,0.3);padding:2px 6px;border-radius:6px;font-weight:700">—</span>
+          <button id="btn-close-pastilles" class="btn" style="padding:2px 7px;font-size:12px;color:var(--muted);border:1px solid rgba(255,255,255,0.1)" title="Fermer le gestionnaire">✕</button>
+        </div>
+      </div>
+
+      <!-- Actions Rapides en tête -->
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button id="btn-pastilles-all-on" class="btn" style="flex:1;font-size:10.5px;padding:5px 6px;background:rgba(0,230,118,0.12);border:1.2px solid #00E676;color:#00E676;font-weight:800;border-radius:6px">👁️ Tout Afficher</button>
+        <button id="btn-pastilles-all-off" class="btn" style="flex:1;font-size:10.5px;padding:5px 6px;background:rgba(255,0,85,0.12);border:1.2px solid #FF0055;color:#FF0055;font-weight:800;border-radius:6px">🚫 Tout Masquer</button>
+        <button id="btn-pastilles-reset-def" class="btn" style="font-size:10.5px;padding:5px 8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:var(--text);font-weight:700;border-radius:6px" title="Rétablir les pastilles recommandées par défaut">⟲ Défaut</button>
+      </div>
+
+      <!-- Conteneur dynamique des groupes et pastilles -->
+      <div id="pastilles-list-container"></div>
     </div>
 
     <div class="ind-menu" id="tools-menu" style="width:320px;right:0;left:auto;padding:10px;max-height:82vh;overflow-y:auto;z-index:90">
@@ -14622,6 +14657,7 @@ btnInd.addEventListener('click',()=>{
     const sm=document.getElementById('sync-menu'); if(sm)sm.classList.remove('open');
     const nm=document.getElementById('notif-menu'); if(nm)nm.classList.remove('open');
     if(toolsMenuEl)toolsMenuEl.classList.remove('open');
+    if(pastillesMenuEl)pastillesMenuEl.classList.remove('open');
   }
   btnInd.setAttribute('aria-expanded',open);
 });
@@ -14635,6 +14671,7 @@ if(btnToolsMenu && toolsMenuEl){
       if(typeof symMenu!=='undefined') symMenu.classList.remove('open');
       const sm=document.getElementById('sync-menu'); if(sm) sm.classList.remove('open');
       const nm=document.getElementById('notif-menu'); if(nm) nm.classList.remove('open');
+      if(pastillesMenuEl) pastillesMenuEl.classList.remove('open');
       
       const r=btnToolsMenu.getBoundingClientRect();
       toolsMenuEl.style.position='fixed';
@@ -14657,11 +14694,548 @@ if(btnToolsMenu && toolsMenuEl){
     }
   });
 }
+
+/* ---------- Menu Gestionnaire Direct des Pastilles ---------- */
+const btnPastillesMenu = document.getElementById('btn-pastilles-menu');
+const pastillesMenuEl = document.getElementById('pastilles-menu');
+
+const PASTILLES_CATALOG = [
+  {
+    category: '🚀 SUPER STRATÉGIE (90–100% Win)',
+    color: '#00E676',
+    items: [
+      {
+        id: 'super_badges',
+        icon: '🎯',
+        label: 'Consignes Principales Super',
+        desc: 'Pastilles néon ACHAT (#00E676) et VENTE (#FF0055)',
+        accent: '#00E676',
+        def: true,
+        get: () => state.indicators?.strat_super?.showBadges !== false,
+        set: (v) => {
+          if (!state.indicators.strat_super) state.indicators.strat_super = {};
+          state.indicators.strat_super.showBadges = v;
+          if (v && state.indicators.strat_super.on === false) state.indicators.strat_super.on = true;
+        }
+      },
+      {
+        id: 'super_renforts',
+        icon: '🔄',
+        label: 'Renforts Grisés Super',
+        desc: '2e et 3e entrées dans le même sens (#1, #2...)',
+        accent: '#94A3B8',
+        def: true,
+        get: () => state.indicators?.strat_super?.showRenforts !== false,
+        set: (v) => {
+          if (!state.indicators.strat_super) state.indicators.strat_super = {};
+          state.indicators.strat_super.showRenforts = v;
+        }
+      },
+      {
+        id: 'super_targets',
+        icon: '🏁',
+        label: 'Cibles Take Profit (TP)',
+        desc: 'Repères pointillés et étiquettes TP',
+        accent: '#00E5FF',
+        def: true,
+        get: () => state.indicators?.strat_super?.showTargets !== false,
+        set: (v) => {
+          if (!state.indicators.strat_super) state.indicators.strat_super = {};
+          state.indicators.strat_super.showTargets = v;
+        }
+      },
+      {
+        id: 'super_lines',
+        icon: '📍',
+        label: 'Lignes Repères Verticales',
+        desc: 'Lignes verticales sous les pastilles d\'entrée',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_super?.showLines !== false,
+        set: (v) => {
+          if (!state.indicators.strat_super) state.indicators.strat_super = {};
+          state.indicators.strat_super.showLines = v;
+        }
+      },
+      {
+        id: 'super_on',
+        icon: '⚡',
+        label: 'Module Super Stratégie',
+        desc: 'Activation générale du moteur de calcul',
+        accent: '#00E676',
+        def: true,
+        get: () => state.indicators?.strat_super?.on !== false,
+        set: (v) => {
+          if (!state.indicators.strat_super) state.indicators.strat_super = {};
+          state.indicators.strat_super.on = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '📈 STRATÉGIE MM (Moyennes Mobiles)',
+    color: '#38BDF8',
+    items: [
+      {
+        id: 'mm_badges',
+        icon: '🏷️',
+        label: 'Pastilles Consignes MM',
+        desc: 'Signaux d\'entrée Base & Options 1 à 6',
+        accent: '#00E676',
+        def: true,
+        get: () => state.indicators?.strat_mm?.showBadges !== false,
+        set: (v) => {
+          if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
+          state.indicators.strat_mm.showBadges = v;
+          if (v && state.indicators.strat_mm.on === false) state.indicators.strat_mm.on = true;
+        }
+      },
+      {
+        id: 'mm_renforts',
+        icon: '🔄',
+        label: 'Renforts Grisés MM',
+        desc: 'Entrées secondaires du même sens (#1, #2...)',
+        accent: '#94A3B8',
+        def: true,
+        get: () => state.indicators?.strat_mm?.showRenforts !== false,
+        set: (v) => {
+          if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
+          state.indicators.strat_mm.showRenforts = v;
+        }
+      },
+      {
+        id: 'mm_15m',
+        icon: '⏱️',
+        label: 'Pastilles Multi-TF 15m',
+        desc: 'Pastille longue tendance calculée en 15 minutes',
+        accent: '#F59E0B',
+        def: false,
+        get: () => !!state.indicators?.strat_mm?.show15m,
+        set: (v) => {
+          if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
+          state.indicators.strat_mm.show15m = v;
+        }
+      },
+      {
+        id: 'mm_creux',
+        icon: '▲▼',
+        label: 'Repères Creux & Sommets MM',
+        desc: 'Triangles sous creux (-75) et sur sommets (+75)',
+        accent: '#EC4899',
+        def: true,
+        get: () => state.indicators?.strat_mm?.showCreuxMarkers !== false,
+        set: (v) => {
+          if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
+          state.indicators.strat_mm.showCreuxMarkers = v;
+        }
+      },
+      {
+        id: 'mm_on',
+        icon: '📊',
+        label: 'Module Stratégie MM',
+        desc: 'Activation générale de la stratégie MM',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_mm?.on !== false,
+        set: (v) => {
+          if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
+          state.indicators.strat_mm.on = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '⚡ STRATÉGIE ZIGZAG (ZLSMA & Scalp)',
+    color: '#A855F7',
+    items: [
+      {
+        id: 'zz_on',
+        icon: '📐',
+        label: 'Pastilles ZigZag (Achat / Vente)',
+        desc: 'Signaux ZigZag validés par les barres de rejet',
+        accent: '#A855F7',
+        def: false,
+        get: () => !!state.indicators?.strat_zz?.on,
+        set: (v) => {
+          if (!state.indicators.strat_zz) state.indicators.strat_zz = {};
+          state.indicators.strat_zz.on = v;
+        }
+      },
+      {
+        id: 'zz_pending',
+        icon: '⏳',
+        label: 'Anticipations Clignotantes ZZ',
+        desc: 'Potentiel Achat/Vente quand 3 conditions sur 4 sont prêtes',
+        accent: '#FBBF24',
+        def: false,
+        get: () => state.indicators?.strat_zz?.showPending !== false,
+        set: (v) => {
+          if (!state.indicators.strat_zz) state.indicators.strat_zz = {};
+          state.indicators.strat_zz.showPending = v;
+        }
+      },
+      {
+        id: 'zz_inv',
+        icon: '🔄',
+        label: 'Pastilles Inversées (Inverse ZZ)',
+        desc: 'Affichage des signaux contraires de contrôle',
+        accent: '#94A3B8',
+        def: false,
+        get: () => !!window.__invOn,
+        set: (v) => { window.__invOn = v; }
+      },
+      {
+        id: 'zz_corrected',
+        icon: '🛡️',
+        label: 'Pastilles ZZ Mode Strict (Sans lookahead)',
+        desc: 'Couche de validation temps réel sans projection future',
+        accent: '#10B981',
+        def: false,
+        get: () => !!window.__zzShowCorrected,
+        set: (v) => { window.__zzShowCorrected = v; }
+      },
+      {
+        id: 'zz2_on',
+        icon: '⚡',
+        label: 'Stratégie ZigZag 2',
+        desc: 'Version alternative de la stratégie ZigZag',
+        accent: '#8B5CF6',
+        def: false,
+        get: () => !!state.indicators?.strat_zz2?.on,
+        set: (v) => {
+          if (!state.indicators.strat_zz2) state.indicators.strat_zz2 = {};
+          state.indicators.strat_zz2.on = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '🌊 STRATÉGIE FMC (Flow Momentum)',
+    color: '#00E5FF',
+    items: [
+      {
+        id: 'fmc_on',
+        icon: '🌊',
+        label: 'Pastilles FMC Autonomes',
+        desc: 'Score composite de liquidité et dynamique de flux',
+        accent: '#00E5FF',
+        def: false,
+        get: () => !!state.indicators?.strat_fmc?.on,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.on = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '⚡ SIGNAUX DELTA TURN',
+    color: '#FF9F1C',
+    items: [
+      {
+        id: 'delta_on',
+        icon: '⚡',
+        label: 'Pastilles Delta Turn (Achat / Vente)',
+        desc: 'Poussées agressives d\'absorption volume delta',
+        accent: '#FF9F1C',
+        def: false,
+        get: () => !!state.indicators?.strat_delta?.on,
+        set: (v) => {
+          if (!state.indicators.strat_delta) state.indicators.strat_delta = {};
+          state.indicators.strat_delta.on = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '🎯 SORTIES & PIVOTS KK BIS 2 SUR PRIX',
+    color: '#FF007A',
+    items: [
+      {
+        id: 'kk_seuil',
+        icon: '🔻🔺',
+        label: 'Sorties par Seuil sur Prix',
+        desc: 'Pastilles Jaunes SORTIE VENTE et Roses SORTIE ACHAT',
+        accent: '#FF007A',
+        def: true,
+        get: () => state.indicators?.kk_bis2?.showSeuilOnPrice !== false,
+        set: (v) => {
+          if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
+          state.indicators.kk_bis2.showSeuilOnPrice = v;
+        }
+      },
+      {
+        id: 'kk_div',
+        icon: '〰️',
+        label: 'Divergences KK sur Prix',
+        desc: 'Pastilles de divergence haussière / baissière sur bougies',
+        accent: '#F59E0B',
+        def: false,
+        get: () => !!state.indicators?.kk_bis2?.showDivOnPrice,
+        set: (v) => {
+          if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
+          state.indicators.kk_bis2.showDivOnPrice = v;
+        }
+      },
+      {
+        id: 'kk_cross',
+        icon: '✖️',
+        label: 'Croisements MTF sur Prix',
+        desc: 'Mini pastilles ▲ Pot. Achat / ▼ Pot. Vente',
+        accent: '#00C853',
+        def: false,
+        get: () => !!state.indicators?.kk_bis2?.showCrossOnPrice,
+        set: (v) => {
+          if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
+          state.indicators.kk_bis2.showCrossOnPrice = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '🛑 SORTIES SPÉCIFIQUES & ORDER BLOCK',
+    color: '#A855F7',
+    items: [
+      {
+        id: 'exit_kk_on',
+        icon: '🛑',
+        label: 'Pastilles Sortie KK & Épuisement',
+        desc: 'Alertes visuelles de saturation de tendance',
+        accent: '#EF4444',
+        def: false,
+        get: () => !!state.indicators?.signal_exit_kk?.on,
+        set: (v) => {
+          if (!state.indicators.signal_exit_kk) state.indicators.signal_exit_kk = {};
+          state.indicators.signal_exit_kk.on = v;
+        }
+      },
+      {
+        id: 'exit_ob_on',
+        icon: '🟪',
+        label: 'Pastilles Sortie Order Block',
+        desc: 'Pastilles violettes d\'obstacles institutionnels',
+        accent: '#A855F7',
+        def: false,
+        get: () => !!state.indicators?.signal_exit_ob?.on,
+        set: (v) => {
+          if (!state.indicators.signal_exit_ob) state.indicators.signal_exit_ob = {};
+          state.indicators.signal_exit_ob.on = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '🌸 CONFLUENCE TRIPLE',
+    color: '#00E676',
+    items: [
+      {
+        id: 'triple_on',
+        icon: '🌸',
+        label: 'Signaux Confluence Triple',
+        desc: 'HA 5m + Nuage EMA + Range Osc 3m alignés',
+        accent: '#00E676',
+        def: false,
+        get: () => !!state.indicators?.signal_triple?.on,
+        set: (v) => {
+          if (!state.indicators.signal_triple) state.indicators.signal_triple = {};
+          state.indicators.signal_triple.on = v;
+        }
+      }
+    ]
+  }
+];
+
+function anchorPastillesMenu(el, btn) {
+  const r = btn.getBoundingClientRect();
+  el.style.position = 'fixed';
+  el.style.zIndex = '99999';
+  if (window.innerWidth <= 768) {
+    el.style.top = (r.bottom + 6) + 'px';
+    el.style.left = '8px';
+    el.style.right = '8px';
+    el.style.width = 'auto';
+    el.style.maxWidth = '390px';
+    el.style.margin = '0 auto';
+    el.style.maxHeight = (window.innerHeight - r.bottom - 16) + 'px';
+  } else {
+    el.style.top = (r.bottom + 6) + 'px';
+    const w = Math.min(390, window.innerWidth - 20);
+    el.style.width = w + 'px';
+    el.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 16)) + 'px';
+    el.style.right = 'auto';
+    el.style.maxHeight = (window.innerHeight - r.bottom - 16) + 'px';
+  }
+}
+
+function renderPastillesList() {
+  const container = document.getElementById('pastilles-list-container');
+  if (!container) return;
+  
+  let totalCount = 0;
+  let activeCount = 0;
+  let html = '';
+
+  for (const cat of PASTILLES_CATALOG) {
+    html += `
+      <div style="margin-bottom:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:${cat.color};margin-bottom:6px;display:flex;align-items:center;gap:5px">
+          <span>${cat.category}</span>
+        </div>
+    `;
+
+    for (const item of cat.items) {
+      totalCount++;
+      const isChecked = item.get();
+      if (isChecked) activeCount++;
+
+      html += `
+        <label class="pastille-row" data-pastille-id="${item.id}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 9px;margin-bottom:4px;background:${isChecked ? 'rgba(255,180,0,0.08)' : 'rgba(255,255,255,0.02)'};border:1px solid ${isChecked ? 'rgba(255,180,0,0.3)' : 'rgba(255,255,255,0.05)'};border-radius:7px;cursor:pointer;transition:all 0.15s">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-size:14px;flex:none">${item.icon}</span>
+            <div style="min-width:0">
+              <div style="font-size:11.5px;font-weight:700;color:${isChecked ? '#F8FAFC' : 'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.label}</div>
+              <div style="font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.desc}</div>
+            </div>
+          </div>
+          <input type="checkbox" data-pid="${item.id}" ${isChecked ? 'checked' : ''} style="width:17px;height:17px;accent-color:${item.accent || '#FFB400'};cursor:pointer;flex:none">
+        </label>
+      `;
+    }
+    html += `</div>`;
+  }
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('input[data-pid]').forEach(chk => {
+    chk.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const pid = chk.dataset.pid;
+      togglePastilleById(pid, chk.checked);
+    });
+  });
+
+  const badgeEl = document.getElementById('btn-pastilles-badge');
+  if (badgeEl) badgeEl.textContent = activeCount;
+  const countEl = document.getElementById('pastilles-active-count');
+  if (countEl) countEl.textContent = `${activeCount} / ${totalCount} actives`;
+}
+
+function togglePastilleById(id, val) {
+  for (const cat of PASTILLES_CATALOG) {
+    for (const item of cat.items) {
+      if (item.id === id) {
+        item.set(val);
+        try { saveConfig(); } catch(e) {}
+        if (typeof syncMenu === 'function') syncMenu();
+        if (typeof updateChips === 'function') updateChips();
+        if (typeof scheduleRender === 'function') scheduleRender();
+        else if (typeof render === 'function') render();
+        renderPastillesList();
+        return;
+      }
+    }
+  }
+}
+
+function setAllPastilles(val) {
+  for (const cat of PASTILLES_CATALOG) {
+    for (const item of cat.items) {
+      item.set(val);
+    }
+  }
+  try { saveConfig(); } catch(e) {}
+  if (typeof syncMenu === 'function') syncMenu();
+  if (typeof updateChips === 'function') updateChips();
+  if (typeof scheduleRender === 'function') scheduleRender();
+  else if (typeof render === 'function') render();
+  renderPastillesList();
+  if (typeof toast === 'function') {
+    toast(val ? '⚡ Toutes les pastilles sont affichées !' : '🚫 Toutes les pastilles sont masquées !', val ? '#FFB400' : '#94A3B8');
+  }
+}
+
+function resetDefaultPastilles() {
+  for (const cat of PASTILLES_CATALOG) {
+    for (const item of cat.items) {
+      item.set(item.def);
+    }
+  }
+  try { saveConfig(); } catch(e) {}
+  if (typeof syncMenu === 'function') syncMenu();
+  if (typeof updateChips === 'function') updateChips();
+  if (typeof scheduleRender === 'function') scheduleRender();
+  else if (typeof render === 'function') render();
+  renderPastillesList();
+  if (typeof toast === 'function') {
+    toast('⟲ Pastilles recommandées par défaut rétablies !', '#FFB400');
+  }
+}
+
+if (btnPastillesMenu && pastillesMenuEl) {
+  btnPastillesMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = pastillesMenuEl.classList.toggle('open');
+    if (open) {
+      renderPastillesList();
+      anchorPastillesMenu(pastillesMenuEl, btnPastillesMenu);
+      if (menu) menu.classList.remove('open');
+      if (btnInd) btnInd.setAttribute('aria-expanded', 'false');
+      if (typeof symMenu !== 'undefined') symMenu.classList.remove('open');
+      const sm = document.getElementById('sync-menu'); if (sm) sm.classList.remove('open');
+      const nm = document.getElementById('notif-menu'); if (nm) nm.classList.remove('open');
+      if (toolsMenuEl) toolsMenuEl.classList.remove('open');
+      const ap = document.getElementById('alerts-panel'); if (ap) ap.style.display = 'none';
+    }
+    btnPastillesMenu.setAttribute('aria-expanded', open);
+  });
+
+  const btnClosePast = document.getElementById('btn-close-pastilles');
+  if (btnClosePast) {
+    btnClosePast.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pastillesMenuEl.classList.remove('open');
+      btnPastillesMenu.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  const btnPastAllOn = document.getElementById('btn-pastilles-all-on');
+  if (btnPastAllOn) {
+    btnPastAllOn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setAllPastilles(true);
+    });
+  }
+
+  const btnPastAllOff = document.getElementById('btn-pastilles-all-off');
+  if (btnPastAllOff) {
+    btnPastAllOff.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setAllPastilles(false);
+    });
+  }
+
+  const btnPastResetDef = document.getElementById('btn-pastilles-reset-def');
+  if (btnPastResetDef) {
+    btnPastResetDef.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetDefaultPastilles();
+    });
+  }
+
+  setTimeout(() => {
+    try { renderPastillesList(); } catch(e) {}
+  }, 200);
+}
+
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.ind-wrap') && !e.target.closest('.ind-menu') && !e.target.closest('#tools-menu') && !e.target.closest('#alerts-panel')){
+  if(!e.target.closest('.ind-wrap') && !e.target.closest('.ind-menu') && !e.target.closest('#tools-menu') && !e.target.closest('#alerts-panel') && !e.target.closest('#pastilles-menu') && !e.target.closest('#pastilles-wrap')){
     const ap = document.getElementById('alerts-panel');
     if(ap) ap.style.display = 'none';
     menu.classList.remove('open');btnInd.setAttribute('aria-expanded','false');
+    if(pastillesMenuEl){
+      pastillesMenuEl.classList.remove('open');
+      if(btnPastillesMenu) btnPastillesMenu.setAttribute('aria-expanded','false');
+    }
     if(typeof symMenu!=='undefined')symMenu.classList.remove('open');
     const sm=document.getElementById('sync-menu');
     if(sm)sm.classList.remove('open');
@@ -36474,7 +37048,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0210';
+  window.__LUMEN_BUILD = 'B-0909-0220';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
