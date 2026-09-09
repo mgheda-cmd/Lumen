@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0290</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0300</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5642,7 +5642,7 @@ const state = {
     rsi:{on:true,period:14,tf:'chart'},
     rsi2:{on:false,period:14,tf:'60'},
     macd:{on:true,tf:'chart'},
-    fmc:{on:false,tf:'chart',lenCore:14,smoothCore:5,lenBal:14,smoothBal:7,maMethod:'EMA',
+    fmc:{on:true,tf:'chart',lenCore:14,smoothCore:5,lenBal:14,smoothBal:7,maMethod:'EMA',
       scaleCore:7,lenFlow:25,smoothFlow:10,forceCandle:false,trendLen:50,trendMult:1.5,
       knnK:5,knnWindow:400,obLevel:70,osLevel:30,pivotLength:2,scoreThresh:80,
       oneSignalPerWave:true,srcCore:'close',flowHeightScale:0.5,flowExtremeLevel:15,waveBaseTransp:60,centerGradTransp:60,coreBalTransp:30,useDynamicLevels:true,levelLineWidth:4,flowWaveTransp:50,obosCloseTransp:30,obosFarTransp:90,divLineTransp:40,cNeutral:'#808080',cZeroLine:'#808080',cText:'#FFFFFF',showTable:true,wMom:20,wFlow:20,wTrend:20,wKnn:20,wWave:20,
@@ -5669,7 +5669,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:10,maxDelay:12,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -5911,11 +5911,11 @@ function loadConfig(){
   /* Stratégie FMC autonome & Confluence KK : initialisation propre */
   try{
     if(!state.indicators.strat_fmc){
-      state.indicators.strat_fmc = {on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:10,maxDelay:12,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
+      state.indicators.strat_fmc = {on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
     } else {
       if(state.indicators.strat_fmc.showKkConfluence === undefined) state.indicators.strat_fmc.showKkConfluence = true;
-      if(state.indicators.strat_fmc.kkLookback === undefined) state.indicators.strat_fmc.kkLookback = 10;
-      if(state.indicators.strat_fmc.maxDelay === undefined) state.indicators.strat_fmc.maxDelay = 12;
+      if(state.indicators.strat_fmc.kkLookback === undefined) state.indicators.strat_fmc.kkLookback = 25;
+      if(state.indicators.strat_fmc.maxDelay === undefined) state.indicators.strat_fmc.maxDelay = 30;
       if(state.indicators.strat_fmc.requireFmcColors === undefined) state.indicators.strat_fmc.requireFmcColors = true;
     }
     if(state.indicators.strat_mm){
@@ -31355,11 +31355,9 @@ function computeFMCSignals(cleFmc, cleStrat) {
           }
           if (!hasPassedBelow) continue;
 
-          // 2. KK repasse au VERT (net > signal ou hausse)
+          // 2. KK repasse au VERT (net > signal)
           const isKkGreen = (sig[k] != null) ? (net[k] > sig[k]) : (net[k] >= (net[k-1] || net[k]));
           if (!isKkGreen) continue;
-          const isKkRising = (net[k-1] != null) ? (net[k] > net[k-1]) : true;
-          if (!isKkRising) continue;
 
           // 3 & 4. Ligne FMC et Histogramme FMC sont VERTS
           if (reqColors) {
@@ -31419,11 +31417,9 @@ function computeFMCSignals(cleFmc, cleStrat) {
           }
           if (!hasPassedAbove) continue;
 
-          // 2. KK repasse au ROUGE (net <= signal ou baisse)
+          // 2. KK repasse au ROUGE (net <= signal)
           const isKkRed = (sig[k] != null) ? (net[k] <= sig[k]) : (net[k] <= (net[k-1] || net[k]));
           if (!isKkRed) continue;
-          const isKkFalling = (net[k-1] != null) ? (net[k] < net[k-1]) : true;
-          if (!isKkFalling) continue;
 
           // 3 & 4. Ligne FMC et Histogramme FMC sont ROUGES
           if (reqColors) {
@@ -37396,7 +37392,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0290';
+  window.__LUMEN_BUILD = 'B-0909-0300';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
