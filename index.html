@@ -215,6 +215,18 @@ select:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid va
   border: 1.5px solid #00E5FF !important;
   border-radius: 12px !important;
 }
+#pastilles-menu.open{
+  display: flex !important;
+  flex-direction: column !important;
+  position: fixed !important;
+  z-index: 99999 !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.95) !important;
+  background: var(--panel, #0A111F) !important;
+  border: 1.5px solid #FFB400 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
 #notif-menu.open, #sync-menu.open {
   position: fixed !important;
   top: 50% !important;
@@ -505,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0220</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0230</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1296,32 +1308,34 @@ footer{
     </div>
 
     <!-- ===== MENU FILANT : GESTIONNAIRE CENTRALISÉ DES PASTILLES ===== -->
-    <div class="ind-menu" id="pastilles-menu" role="menu" style="width:min(390px,94vw);max-height:82vh;overflow-y:auto;padding:12px;background:var(--panel,#0A111F);border:1.5px solid #FFB400;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.92);z-index:99999">
+    <div class="ind-menu" id="pastilles-menu" role="menu" style="display:none;flex-direction:column;width:min(390px,94vw);max-height:80vh;padding:0;background:var(--panel,#0A111F);border:1.5px solid #FFB400;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.92);z-index:99999;overflow:hidden">
       
-      <!-- En-tête du Hub Pastilles -->
-      <div style="padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid rgba(255,180,0,0.25);display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:18px">🏷️</span>
-          <div>
-            <div style="font-weight:800;font-size:13px;color:#FFB400;letter-spacing:0.2px">Gestionnaire des Pastilles</div>
-            <div style="font-size:10px;color:var(--muted)">Cochez pour afficher ou masquer les signaux</div>
+      <!-- En-tête FIXE du Hub Pastilles (Ne défile JAMAIS) -->
+      <div style="flex:none;padding:12px 14px 10px;background:rgba(15,23,42,0.96);border-bottom:1px solid rgba(255,180,0,0.3);border-radius:11px 11px 0 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px;flex:none">🏷️</span>
+            <div>
+              <div style="font-weight:800;font-size:13px;color:#FFB400;letter-spacing:0.2px">Gestionnaire des Pastilles</div>
+              <div style="font-size:10px;color:var(--muted)">Cochez pour afficher ou masquer les signaux</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span id="pastilles-active-count" class="mono" style="font-size:10px;background:rgba(255,180,0,0.18);color:#FFB400;border:1px solid rgba(255,180,0,0.3);padding:2px 6px;border-radius:6px;font-weight:700">—</span>
+            <button id="btn-close-pastilles" class="btn" style="padding:4px 9px;font-size:13px;font-weight:800;color:#F8FAFC;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:6px;cursor:pointer" title="Fermer le gestionnaire">✕</button>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span id="pastilles-active-count" class="mono" style="font-size:10px;background:rgba(255,180,0,0.18);color:#FFB400;border:1px solid rgba(255,180,0,0.3);padding:2px 6px;border-radius:6px;font-weight:700">—</span>
-          <button id="btn-close-pastilles" class="btn" style="padding:2px 7px;font-size:12px;color:var(--muted);border:1px solid rgba(255,255,255,0.1)" title="Fermer le gestionnaire">✕</button>
+
+        <!-- Actions Rapides en tête (Toujours accessibles) -->
+        <div style="display:flex;gap:6px">
+          <button id="btn-pastilles-all-on" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(0,230,118,0.14);border:1.2px solid #00E676;color:#00E676;font-weight:800;border-radius:6px">👁️ Tout Afficher</button>
+          <button id="btn-pastilles-all-off" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(255,0,85,0.14);border:1.2px solid #FF0055;color:#FF0055;font-weight:800;border-radius:6px">🚫 Tout Masquer</button>
+          <button id="btn-pastilles-reset-def" class="btn" style="font-size:10.5px;padding:6px 8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:700;border-radius:6px" title="Rétablir les pastilles recommandées par défaut">⟲ Défaut</button>
         </div>
       </div>
 
-      <!-- Actions Rapides en tête -->
-      <div style="display:flex;gap:6px;margin-bottom:12px">
-        <button id="btn-pastilles-all-on" class="btn" style="flex:1;font-size:10.5px;padding:5px 6px;background:rgba(0,230,118,0.12);border:1.2px solid #00E676;color:#00E676;font-weight:800;border-radius:6px">👁️ Tout Afficher</button>
-        <button id="btn-pastilles-all-off" class="btn" style="flex:1;font-size:10.5px;padding:5px 6px;background:rgba(255,0,85,0.12);border:1.2px solid #FF0055;color:#FF0055;font-weight:800;border-radius:6px">🚫 Tout Masquer</button>
-        <button id="btn-pastilles-reset-def" class="btn" style="font-size:10.5px;padding:5px 8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:var(--text);font-weight:700;border-radius:6px" title="Rétablir les pastilles recommandées par défaut">⟲ Défaut</button>
-      </div>
-
-      <!-- Conteneur dynamique des groupes et pastilles -->
-      <div id="pastilles-list-container"></div>
+      <!-- Corps Défilable Indépendant (Scroll fluide tactile) -->
+      <div id="pastilles-list-container" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 16px;max-height:calc(80vh - 95px)"></div>
     </div>
 
     <div class="ind-menu" id="tools-menu" style="width:320px;right:0;left:auto;padding:10px;max-height:82vh;overflow-y:auto;z-index:90">
@@ -15049,35 +15063,47 @@ function anchorPastillesMenu(el, btn) {
   const r = btn.getBoundingClientRect();
   el.style.position = 'fixed';
   el.style.zIndex = '99999';
+  const topY = Math.max(48, Math.round(r.bottom + 6));
+  el.style.top = topY + 'px';
+
   if (window.innerWidth <= 768) {
-    el.style.top = (r.bottom + 6) + 'px';
     el.style.left = '8px';
     el.style.right = '8px';
     el.style.width = 'auto';
     el.style.maxWidth = '390px';
     el.style.margin = '0 auto';
-    el.style.maxHeight = (window.innerHeight - r.bottom - 16) + 'px';
   } else {
-    el.style.top = (r.bottom + 6) + 'px';
     const w = Math.min(390, window.innerWidth - 20);
     el.style.width = w + 'px';
     el.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 16)) + 'px';
     el.style.right = 'auto';
-    el.style.maxHeight = (window.innerHeight - r.bottom - 16) + 'px';
+  }
+
+  const maxH = Math.min(window.innerHeight - topY - 16, Math.round(window.innerHeight * 0.82));
+  el.style.maxHeight = maxH + 'px';
+  const container = document.getElementById('pastilles-list-container');
+  if (container) {
+    container.style.maxHeight = Math.max(180, maxH - 105) + 'px';
   }
 }
 
-function renderPastillesList() {
+function renderPastillesList(forceRebuild) {
   const container = document.getElementById('pastilles-list-container');
   if (!container) return;
   
+  // Si le contenu existe déjà et qu'on ne force pas la reconstruction, mise à jour en place (préserve 100% le scroll !)
+  if (!forceRebuild && container.children.length > 0) {
+    updatePastillesHubCheckboxesOnly();
+    return;
+  }
+
   let totalCount = 0;
   let activeCount = 0;
   let html = '';
 
   for (const cat of PASTILLES_CATALOG) {
     html += `
-      <div style="margin-bottom:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:8px 10px">
+      <div style="margin-bottom:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 10px">
         <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:${cat.color};margin-bottom:6px;display:flex;align-items:center;gap:5px">
           <span>${cat.category}</span>
         </div>
@@ -15089,15 +15115,15 @@ function renderPastillesList() {
       if (isChecked) activeCount++;
 
       html += `
-        <label class="pastille-row" data-pastille-id="${item.id}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 9px;margin-bottom:4px;background:${isChecked ? 'rgba(255,180,0,0.08)' : 'rgba(255,255,255,0.02)'};border:1px solid ${isChecked ? 'rgba(255,180,0,0.3)' : 'rgba(255,255,255,0.05)'};border-radius:7px;cursor:pointer;transition:all 0.15s">
-          <div style="display:flex;align-items:center;gap:8px;min-width:0">
-            <span style="font-size:14px;flex:none">${item.icon}</span>
+        <label id="row-pastille-${item.id}" class="pastille-row" data-pastille-id="${item.id}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;margin-bottom:5px;background:${isChecked ? 'rgba(255,180,0,0.10)' : 'rgba(255,255,255,0.025)'};border:1px solid ${isChecked ? 'rgba(255,180,0,0.35)' : 'rgba(255,255,255,0.06)'};border-radius:8px;cursor:pointer;transition:background 0.15s, border-color 0.15s">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0">
+            <span style="font-size:15px;flex:none">${item.icon}</span>
             <div style="min-width:0">
-              <div style="font-size:11.5px;font-weight:700;color:${isChecked ? '#F8FAFC' : 'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.label}</div>
-              <div style="font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.desc}</div>
+              <div style="font-size:12px;font-weight:700;color:${isChecked ? '#F8FAFC' : 'var(--text)'};line-height:1.25">${item.label}</div>
+              <div style="font-size:9.5px;color:var(--muted);line-height:1.3;margin-top:2px">${item.desc}</div>
             </div>
           </div>
-          <input type="checkbox" data-pid="${item.id}" ${isChecked ? 'checked' : ''} style="width:17px;height:17px;accent-color:${item.accent || '#FFB400'};cursor:pointer;flex:none">
+          <input type="checkbox" data-pid="${item.id}" ${isChecked ? 'checked' : ''} style="width:18px;height:18px;accent-color:${item.accent || '#FFB400'};cursor:pointer;flex:none;margin-left:6px">
         </label>
       `;
     }
@@ -15114,6 +15140,38 @@ function renderPastillesList() {
     });
   });
 
+  updatePastillesCounts(activeCount, totalCount);
+}
+
+function updatePastillesHubCheckboxesOnly() {
+  const container = document.getElementById('pastilles-list-container');
+  if (!container) return;
+
+  let totalCount = 0;
+  let activeCount = 0;
+
+  for (const cat of PASTILLES_CATALOG) {
+    for (const item of cat.items) {
+      totalCount++;
+      const isChecked = item.get();
+      if (isChecked) activeCount++;
+
+      const row = document.getElementById('row-pastille-' + item.id);
+      const chk = container.querySelector(`input[data-pid="${item.id}"]`);
+      if (chk && chk.checked !== isChecked) {
+        chk.checked = isChecked;
+      }
+      if (row) {
+        row.style.background = isChecked ? 'rgba(255,180,0,0.10)' : 'rgba(255,255,255,0.025)';
+        row.style.borderColor = isChecked ? 'rgba(255,180,0,0.35)' : 'rgba(255,255,255,0.06)';
+      }
+    }
+  }
+
+  updatePastillesCounts(activeCount, totalCount);
+}
+
+function updatePastillesCounts(activeCount, totalCount) {
   const badgeEl = document.getElementById('btn-pastilles-badge');
   if (badgeEl) badgeEl.textContent = activeCount;
   const countEl = document.getElementById('pastilles-active-count');
@@ -15130,7 +15188,7 @@ function togglePastilleById(id, val) {
         if (typeof updateChips === 'function') updateChips();
         if (typeof scheduleRender === 'function') scheduleRender();
         else if (typeof render === 'function') render();
-        renderPastillesList();
+        updatePastillesHubCheckboxesOnly();
         return;
       }
     }
@@ -15148,7 +15206,7 @@ function setAllPastilles(val) {
   if (typeof updateChips === 'function') updateChips();
   if (typeof scheduleRender === 'function') scheduleRender();
   else if (typeof render === 'function') render();
-  renderPastillesList();
+  updatePastillesHubCheckboxesOnly();
   if (typeof toast === 'function') {
     toast(val ? '⚡ Toutes les pastilles sont affichées !' : '🚫 Toutes les pastilles sont masquées !', val ? '#FFB400' : '#94A3B8');
   }
@@ -15165,7 +15223,7 @@ function resetDefaultPastilles() {
   if (typeof updateChips === 'function') updateChips();
   if (typeof scheduleRender === 'function') scheduleRender();
   else if (typeof render === 'function') render();
-  renderPastillesList();
+  updatePastillesHubCheckboxesOnly();
   if (typeof toast === 'function') {
     toast('⟲ Pastilles recommandées par défaut rétablies !', '#FFB400');
   }
@@ -15176,7 +15234,7 @@ if (btnPastillesMenu && pastillesMenuEl) {
     e.stopPropagation();
     const open = pastillesMenuEl.classList.toggle('open');
     if (open) {
-      renderPastillesList();
+      renderPastillesList(false);
       anchorPastillesMenu(pastillesMenuEl, btnPastillesMenu);
       if (menu) menu.classList.remove('open');
       if (btnInd) btnInd.setAttribute('aria-expanded', 'false');
@@ -15223,7 +15281,7 @@ if (btnPastillesMenu && pastillesMenuEl) {
   }
 
   setTimeout(() => {
-    try { renderPastillesList(); } catch(e) {}
+    try { renderPastillesList(true); } catch(e) {}
   }, 200);
 }
 
@@ -37048,7 +37106,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0220';
+  window.__LUMEN_BUILD = 'B-0909-0230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
