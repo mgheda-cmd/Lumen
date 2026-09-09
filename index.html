@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0320</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0040</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5911,12 +5911,13 @@ function loadConfig(){
   /* Stratégie FMC autonome & Confluence KK : initialisation propre */
   try{
     if(!state.indicators.strat_fmc){
-      state.indicators.strat_fmc = {on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
+      state.indicators.strat_fmc = {on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:25,maxDelay:30,requireFmcColors:false,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
     } else {
-      if(state.indicators.strat_fmc.showKkConfluence === undefined) state.indicators.strat_fmc.showKkConfluence = true;
+      state.indicators.strat_fmc.on = true;
+      state.indicators.strat_fmc.showKkConfluence = true;
       if(state.indicators.strat_fmc.kkLookback === undefined) state.indicators.strat_fmc.kkLookback = 25;
       if(state.indicators.strat_fmc.maxDelay === undefined) state.indicators.strat_fmc.maxDelay = 30;
-      if(state.indicators.strat_fmc.requireFmcColors === undefined) state.indicators.strat_fmc.requireFmcColors = true;
+      state.indicators.strat_fmc.requireFmcColors = false;
     }
     if(state.indicators.strat_mm){
       delete state.indicators.strat_mm.showFmcSolo;
@@ -14958,7 +14959,7 @@ const PASTILLES_CATALOG = [
         id: 'fmc_kk_confluence',
         icon: '⚡',
         label: 'Confluence FMC × KK (Triangles ±75)',
-        desc: 'Achat: Triangle FMC + KK sous -75 repassé vert + Ligne & Hist FMC verts | Vente: Triangle + KK sur +75 repassé rouge + Ligne & Hist FMC rouges',
+        desc: 'Vente: Triangle rouge + KK passée au-dessus de 75 redevient rouge et passe sous 75 | Achat: Triangle vert + KK sous -75 devient verte et sort au-dessus de -75',
         accent: '#F59E0B',
         def: true,
         get: () => state.indicators?.strat_fmc?.showKkConfluence !== false,
@@ -31243,36 +31244,33 @@ function computeFMCSignals(cleFmc, cleStrat) {
   cleStrat = cleStrat || 'strat_fmc';
   const d = state.data;
   if (!d || !d.length) return { signals: [] };
-  const indFmc = state.indicators[cleStrat];
-  if (!indFmc || !indFmc.on) return { signals: [] };
-
-  let fs_ = null;
-  try { fs_ = (typeof getInd === 'function') ? getInd(cleFmc) : null; } catch(e) { fs_ = null; }
-  if (!fs_ || !Array.isArray(fs_.core) || !fs_.core.length) return { signals: [] };
+  const indFmc = state.indicators[cleStrat] || { on: true, showKkConfluence: true };
+  if (!indFmc.on) return { signals: [] };
 
   const nomFmc = 'FMC';
-  const src = indFmc.source || 'tout';
   const signals = [];
-  const prendre = [];
 
-  const ajoute = (liste, sens, quoi) => {
-    for (const g of (liste || [])) {
-      if (g.i == null || g.i < 0 || g.i >= d.length) continue;
-      prendre.push({ i: g.i, t: d[g.i].t, dir: sens, quoi: quoi,
-                     conf: fs_.matchCount ? (fs_.matchCount[g.i] || 0) : 0,
-                     sc: fs_.score ? Math.round(fs_.score[g.i] || 0) : 0,
-                     noyau: fs_.core[g.i] });
-    }
-  };
+  /* 1. Pastilles FMC Autonomes (si cochées et si FMC disponible) */
+  let fs_ = null;
+  try { fs_ = (typeof getInd === 'function') ? getInd(cleFmc) : null; } catch(e) { fs_ = null; }
 
-  /* 1. Pastilles FMC Autonomes (si cochées) */
-  if (indFmc.showBadges) {
+  if (indFmc.showBadges && fs_ && Array.isArray(fs_.core) && fs_.core.length) {
+    const src = indFmc.source || 'tout';
+    const prendre = [];
+    const ajoute = (liste, sens, quoi) => {
+      for (const g of (liste || [])) {
+        if (g.i == null || g.i < 0 || g.i >= d.length) continue;
+        prendre.push({ i: g.i, t: d[g.i].t, dir: sens, quoi: quoi,
+                       conf: fs_.matchCount ? (fs_.matchCount[g.i] || 0) : 0,
+                       sc: fs_.score ? Math.round(fs_.score[g.i] || 0) : 0,
+                       noyau: fs_.core[g.i] });
+      }
+    };
     if (src === 'score' || src === 'tout') { ajoute(fs_.buys, 1, 'score'); ajoute(fs_.sells, -1, 'score'); }
     if (src === 'contrarien' || src === 'tout') { ajoute(fs_.contraLong, 1, 'contrarien'); ajoute(fs_.contraShort, -1, 'contrarien'); }
     if (src === 'divergence' || src === 'tout') { ajoute(fs_.divBull, 1, 'divergence'); ajoute(fs_.divBear, -1, 'divergence'); }
 
     prendre.sort((a, b) => a.i - b.i);
-
     let etatSolo = 0;
     for (const g of prendre) {
       if (etatSolo === g.dir) continue;
@@ -31303,7 +31301,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
     }
   }
 
-  /* 2. Confluence FMC × KK (Triangles FMC & Ligne KK ±75) */
+  /* 2. Pastilles Vente / Achat : Triangles KK & Ligne KK ±75 */
   if (indFmc.showKkConfluence !== false) {
     let kkRes = null;
     try { kkRes = (typeof getInd === 'function') ? (getInd('kk_bis2') || getInd('kk_bis')) : null; } catch(e) { kkRes = null; }
@@ -31316,97 +31314,118 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
     if (kkRes && Array.isArray(kkRes.net) && kkRes.net.length) {
       const net = kkRes.net;
+      const sig = kkRes.signal || [];
       const seuilH = (kkRes.up && kkRes.up[0] != null) ? +kkRes.up[0] : 75;
       const seuilB = (kkRes.lo && kkRes.lo[0] != null) ? +kkRes.lo[0] : -75;
-      const reqColors = (indFmc.requireFmcColors !== false);
 
       const cBuy = indFmc.cBuyKk || '#00E676';
       const cSell = indFmc.cSellKk || '#FF0055';
 
+      // Triangles sommets (rouge) et creux (vert)
+      let peaks = kkRes.peaks;
+      let troughs = kkRes.troughs;
+      if (!Array.isArray(peaks) || !Array.isArray(troughs)) {
+        peaks = [];
+        troughs = [];
+        const L = 3;
+        for (let j = L; j < net.length - L; j++) {
+          const v = net[j];
+          if (v == null) continue;
+          let isP = true, isT = true;
+          for (let q = 1; q <= L; q++) {
+            const a = net[j - q], b = net[j + q];
+            if (a == null || b == null) { isP = false; isT = false; break; }
+            if (!(v >= a && v >= b)) isP = false;
+            if (!(v <= a && v <= b)) isT = false;
+          }
+          if (isP) peaks.push(j);
+          if (isT) troughs.push(j);
+        }
+      }
+
       const confCandidate = [];
 
-      // LOG DIAGNOSTIC (temporaire)
-      const netValides = net.filter(v => v != null);
-      console.log('[FMC×KK] net.length:', net.length, 'seuilH:', seuilH, 'seuilB:', seuilB,
-        'contraLong:', (fs_.contraLong || []).length, 'contraShort:', (fs_.contraShort || []).length,
-        'KK range: [', netValides.length ? Math.min(...netValides).toFixed(1) : 'N/A', ',',
-        netValides.length ? Math.max(...netValides).toFixed(1) : 'N/A', ']');
+      // VENTE :
+      // 1. Un triangle rouge apparaît (sommet local du score)
+      // 2. La ligne KK est passée au-dessus des +75
+      // 3. Elle redevient rouge (net <= sig)
+      // 4. Elle passe en dessous de +75 (net < seuilH)
+      for (const pk of peaks) {
+        if (pk == null || pk < 1 || pk >= d.length) continue;
+        let passed75 = false;
+        for (let j = Math.max(0, pk - 10); j <= Math.min(net.length - 1, pk + 4); j++) {
+          if (net[j] != null && net[j] >= seuilH) { passed75 = true; break; }
+        }
+        if (!passed75) continue;
 
-      // B. VENTE : KK repasse SOUS seuilH (croisement descendant depuis surachat)
-      // net[k-1] >= seuilH && net[k] < seuilH → KK sort de la zone surachat
-      // + FMC ROUGE (si reqColors)
-      for (let k = 1; k < net.length; k++) {
-        const prev = net[k - 1];
-        const curr = net[k];
-        if (prev == null || curr == null) continue;
-
-        // Croisement descendant du seuil surachat
-        if (prev >= seuilH && curr < seuilH) {
-          if (reqColors) {
-            const fmcLineRed = (fs_.bal && fs_.bal[k] != null) ? (fs_.core[k] < fs_.bal[k]) : (fs_.core[k] < 50);
-            const fmcHistRed = (fs_.tension && fs_.tension[k] != null) ? (fs_.tension[k] < 0) : true;
-            if (!fmcLineRed || !fmcHistRed) continue;
+        for (let k = pk; k <= Math.min(net.length - 1, pk + 35); k++) {
+          if (net[k] == null) continue;
+          const isRed = (sig[k] != null) ? (net[k] <= sig[k]) : (net[k] <= (net[k-1] || net[k]));
+          if (net[k] < seuilH && isRed) {
+            const bougie = d[k];
+            if (!bougie) break;
+            confCandidate.push({
+              i: k, t: bougie.t, dir: -1,
+              type: 'VENTE',
+              optKey: 'fmc_kk_confluence',
+              isConfluenceKK: true,
+              price: bougie.c, low: bougie.l, high: bougie.h,
+              score: net[k],
+              reason: '▼ Triangle Rouge + KK < +75',
+              label: 'VENTE FMC × KK',
+              badge: '⚡ VENTE FMC × KK',
+              sub: '▼ Triangle Rouge · KK=' + Math.round(net[k]) + ' (< +' + seuilH + ') · Ligne Rouge',
+              color: cSell,
+              bgFill: 'rgba(44, 10, 24, 0.95)'
+            });
+            break;
           }
-          const bougie = d[k];
-          if (!bougie) continue;
-          confCandidate.push({
-            i: k, t: bougie.t, dir: -1,
-            type: 'VENTE',
-            optKey: 'fmc_kk_confluence',
-            isConfluenceKK: true,
-            price: bougie.c, low: bougie.l, high: bougie.h,
-            score: curr,
-            reason: '▼ KK sort surachat',
-            label: 'VENTE FMC × KK',
-            badge: '⚡ VENTE FMC × KK',
-            sub: '▼ KK sort +' + seuilH + ' · KK=' + Math.round(curr) + (reqColors ? ' · FMC Rouge' : ''),
-            color: cSell,
-            bgFill: 'rgba(44, 10, 24, 0.95)'
-          });
         }
       }
 
-      // A. ACHAT : KK repasse AU-DESSUS de seuilB (croisement ascendant depuis survente)
-      // net[k-1] <= seuilB && net[k] > seuilB → KK sort de la zone survente
-      // + FMC VERT (si reqColors)
-      for (let k = 1; k < net.length; k++) {
-        const prev = net[k - 1];
-        const curr = net[k];
-        if (prev == null || curr == null) continue;
+      // ACHAT :
+      // 1. Un triangle vert apparaît (creux local du score)
+      // 2. La ligne KK est passée sous les -75
+      // 3. Elle devient verte (net > sig)
+      // 4. Elle sort au-dessus des -75 (net > seuilB)
+      for (const tr of troughs) {
+        if (tr == null || tr < 1 || tr >= d.length) continue;
+        let passedM75 = false;
+        for (let j = Math.max(0, tr - 10); j <= Math.min(net.length - 1, tr + 4); j++) {
+          if (net[j] != null && net[j] <= seuilB) { passedM75 = true; break; }
+        }
+        if (!passedM75) continue;
 
-        // Croisement ascendant du seuil survente
-        if (prev <= seuilB && curr > seuilB) {
-          if (reqColors) {
-            const fmcLineGreen = (fs_.bal && fs_.bal[k] != null) ? (fs_.core[k] >= fs_.bal[k]) : (fs_.core[k] >= 50);
-            const fmcHistGreen = (fs_.tension && fs_.tension[k] != null) ? (fs_.tension[k] >= 0) : true;
-            if (!fmcLineGreen || !fmcHistGreen) continue;
+        for (let k = tr; k <= Math.min(net.length - 1, tr + 35); k++) {
+          if (net[k] == null) continue;
+          const isGreen = (sig[k] != null) ? (net[k] > sig[k]) : (net[k] >= (net[k-1] || net[k]));
+          if (net[k] > seuilB && isGreen) {
+            const bougie = d[k];
+            if (!bougie) break;
+            confCandidate.push({
+              i: k, t: bougie.t, dir: 1,
+              type: 'ACHAT',
+              optKey: 'fmc_kk_confluence',
+              isConfluenceKK: true,
+              price: bougie.c, low: bougie.l, high: bougie.h,
+              score: net[k],
+              reason: '▲ Triangle Vert + KK > -75',
+              label: 'ACHAT FMC × KK',
+              badge: '⚡ ACHAT FMC × KK',
+              sub: '▲ Triangle Vert · KK=' + Math.round(net[k]) + ' (> ' + seuilB + ') · Ligne Verte',
+              color: cBuy,
+              bgFill: 'rgba(6, 36, 32, 0.95)'
+            });
+            break;
           }
-          const bougie = d[k];
-          if (!bougie) continue;
-          confCandidate.push({
-            i: k, t: bougie.t, dir: 1,
-            type: 'ACHAT',
-            optKey: 'fmc_kk_confluence',
-            isConfluenceKK: true,
-            price: bougie.c, low: bougie.l, high: bougie.h,
-            score: curr,
-            reason: '▲ KK sort survente',
-            label: 'ACHAT FMC × KK',
-            badge: '⚡ ACHAT FMC × KK',
-            sub: '▲ KK sort ' + seuilB + ' · KK=' + Math.round(curr) + (reqColors ? ' · FMC Vert' : ''),
-            color: cBuy,
-            bgFill: 'rgba(6, 36, 32, 0.95)'
-          });
         }
       }
-
-      console.log('[FMC×KK] confCandidate avant filtre:', confCandidate.length);
 
       confCandidate.sort((a, b) => a.i - b.i);
       let lastDir = 0, lastI = -999;
       for (const cand of confCandidate) {
         if (cand.i === lastI) continue;
-        if (cand.dir === lastDir && (cand.i - lastI < 3)) continue;
+        if (cand.dir === lastDir && (cand.i - lastI < 5)) continue;
         lastDir = cand.dir;
         lastI = cand.i;
         signals.push(cand);
@@ -37342,7 +37361,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0320';
+  window.__LUMEN_BUILD = 'B-0910-0040';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
