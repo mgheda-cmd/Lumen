@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0260</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0270</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5708,8 +5708,8 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:8,kkTolerance:3,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
-    strat_fmc2:{on:false,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:8,kkTolerance:3,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#38BDF8',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:10,maxDelay:12,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc2:{on:false,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:10,maxDelay:12,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#38BDF8',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -5951,11 +5951,12 @@ function loadConfig(){
   /* Stratégie FMC autonome & Confluence KK : initialisation propre */
   try{
     if(!state.indicators.strat_fmc){
-      state.indicators.strat_fmc = {on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:8,kkTolerance:3,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
+      state.indicators.strat_fmc = {on:true,source:'tout',showBadges:false,showKkConfluence:true,kkLookback:10,maxDelay:12,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
     } else {
       if(state.indicators.strat_fmc.showKkConfluence === undefined) state.indicators.strat_fmc.showKkConfluence = true;
-      if(state.indicators.strat_fmc.kkLookback === undefined) state.indicators.strat_fmc.kkLookback = 8;
-      if(state.indicators.strat_fmc.kkTolerance === undefined) state.indicators.strat_fmc.kkTolerance = 3;
+      if(state.indicators.strat_fmc.kkLookback === undefined) state.indicators.strat_fmc.kkLookback = 10;
+      if(state.indicators.strat_fmc.maxDelay === undefined) state.indicators.strat_fmc.maxDelay = 12;
+      if(state.indicators.strat_fmc.requireFmcColors === undefined) state.indicators.strat_fmc.requireFmcColors = true;
     }
     if(state.indicators.strat_mm){
       delete state.indicators.strat_mm.showFmcSolo;
@@ -5966,6 +5967,11 @@ function loadConfig(){
     }
     if(!state.indicators.strat_fmc2 && state.indicators.strat_fmc){
       state.indicators.strat_fmc2 = Object.assign({}, state.indicators.strat_fmc, { on: false, cContrarien: '#38BDF8' });
+    } else if(state.indicators.strat_fmc2){
+      if(state.indicators.strat_fmc2.showKkConfluence === undefined) state.indicators.strat_fmc2.showKkConfluence = true;
+      if(state.indicators.strat_fmc2.kkLookback === undefined) state.indicators.strat_fmc2.kkLookback = 10;
+      if(state.indicators.strat_fmc2.maxDelay === undefined) state.indicators.strat_fmc2.maxDelay = 12;
+      if(state.indicators.strat_fmc2.requireFmcColors === undefined) state.indicators.strat_fmc2.requireFmcColors = true;
     }
   }catch(e){}
 
@@ -15003,7 +15009,7 @@ const PASTILLES_CATALOG = [
         id: 'fmc_kk_confluence',
         icon: '⚡',
         label: 'Confluence FMC × KK (Triangles ±75)',
-        desc: 'Achat: Triangle FMC + KK vert sous -75 ↗ | Vente: Triangle FMC + KK rouge sur +75 ↘',
+        desc: 'Achat: Triangle FMC + KK sous -75 repassé vert + Ligne & Hist FMC verts | Vente: Triangle + KK sur +75 repassé rouge + Ligne & Hist FMC rouges',
         accent: '#F59E0B',
         def: true,
         get: () => state.indicators?.strat_fmc?.showKkConfluence !== false,
@@ -15063,7 +15069,7 @@ const PASTILLES_CATALOG = [
         id: 'fmc2_kk_confluence',
         icon: '⚡',
         label: 'Confluence FMC 2 × KK (Triangles ±75)',
-        desc: 'Achat: Triangle FMC 2 + KK vert sous -75 ↗ | Vente: Triangle FMC 2 + KK rouge sur +75 ↘',
+        desc: 'Achat: Triangle FMC 2 + KK sous -75 repassé vert + Ligne & Hist FMC 2 verts | Vente: Triangle + KK sur +75 repassé rouge + Ligne & Hist FMC 2 rouges',
         accent: '#F59E0B',
         def: true,
         get: () => state.indicators?.strat_fmc2?.showKkConfluence !== false,
@@ -19078,9 +19084,10 @@ const SCHEMA={
     {k:'cSell',t:'col',lab:'Couleur Pastille Vente',def:'#FF0055'}
   ]},
   strat_fmc:{title:'Stratégie FMC 🌊 (Pastilles & Confluence KK)',fields:[
-    {k:'showKkConfluence',t:'bool',lab:'Afficher la Confluence FMC × KK (Triangles + KK ±75)',def:true},
-    {k:'kkLookback',t:'num',lab:'Historique bougies seuil KK (1 à 15)',min:1,max:15,def:8,ind:1},
-    {k:'kkTolerance',t:'num',lab:'Tolérance écart bougies FMC / KK (0 à 5)',min:0,max:5,def:3,ind:1},
+    {k:'showKkConfluence',t:'bool',lab:'Afficher la Confluence FMC × KK (Triangles ±75)',def:true},
+    {k:'requireFmcColors',t:'bool',lab:'Exiger Ligne & Histogramme FMC du même sens (Vert: Achat / Rouge: Vente)',def:true},
+    {k:'kkLookback',t:'num',lab:'Historique bougies seuil KK (1 à 25)',min:1,max:25,def:10,ind:1},
+    {k:'maxDelay',t:'num',lab:'Délai max confirmation après triangle (1 à 25 bougies)',min:1,max:25,def:12,ind:1},
     {k:'source',t:'choice',lab:'Source des signaux FMC autonomes',opts:[
       {v:'tout',t:'Les trois (Score + Contrarien + Divergence)'},
       {v:'score',t:'Score composite uniquement'},
@@ -19096,9 +19103,10 @@ const SCHEMA={
     {k:'cDivergence',t:'col',lab:'Couleur Divergence',def:'#F59E0B'}
   ]},
   strat_fmc2:{title:'Stratégie FMC 2 🌊 (Pastilles & Confluence KK)',fields:[
-    {k:'showKkConfluence',t:'bool',lab:'Afficher la Confluence FMC 2 × KK (Triangles + KK ±75)',def:true},
-    {k:'kkLookback',t:'num',lab:'Historique bougies seuil KK (1 à 15)',min:1,max:15,def:8,ind:1},
-    {k:'kkTolerance',t:'num',lab:'Tolérance écart bougies FMC 2 / KK (0 à 5)',min:0,max:5,def:3,ind:1},
+    {k:'showKkConfluence',t:'bool',lab:'Afficher la Confluence FMC 2 × KK (Triangles ±75)',def:true},
+    {k:'requireFmcColors',t:'bool',lab:'Exiger Ligne & Histogramme FMC 2 du même sens (Vert: Achat / Rouge: Vente)',def:true},
+    {k:'kkLookback',t:'num',lab:'Historique bougies seuil KK (1 à 25)',min:1,max:25,def:10,ind:1},
+    {k:'maxDelay',t:'num',lab:'Délai max confirmation après triangle (1 à 25 bougies)',min:1,max:25,def:12,ind:1},
     {k:'source',t:'choice',lab:'Source des signaux FMC 2 autonomes',opts:[
       {v:'tout',t:'Les trois (Score + Contrarien + Divergence)'},
       {v:'score',t:'Score composite uniquement'},
@@ -31463,32 +31471,32 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const sig = kkRes.signal || [];
       const seuilH = (kkRes.up && kkRes.up[0] != null) ? +kkRes.up[0] : 75;
       const seuilB = (kkRes.lo && kkRes.lo[0] != null) ? +kkRes.lo[0] : -75;
-      const lookback = Math.max(2, +indFmc.kkLookback || 8);
-      const tol = (indFmc.kkTolerance != null) ? +indFmc.kkTolerance : 3;
+      const lookback = Math.max(2, +indFmc.kkLookback || 10);
+      const maxDelay = (indFmc.maxDelay != null) ? Math.max(1, +indFmc.maxDelay) : 12;
+      const reqColors = (indFmc.requireFmcColors !== false);
 
       const cBuy = indFmc.cBuyKk || '#00E676';
       const cSell = indFmc.cSellKk || '#FF0055';
 
       const confCandidate = [];
 
-      // A. ACHAT : Triangle FMC Contrarien (▲) + KK Vert repartant vers le haut après passage sous -75
+      // A. ACHAT : Triangle FMC Contrarien (▲)
+      // Conditions :
+      // 1. KK est passé sous la ligne des -75 récemment (lookback)
+      // 2. KK repasse au VERT (net > sig)
+      // 3. Ligne FMC est VERTE (core >= bal)
+      // 4. Histogramme FMC est VERT (tension >= 0)
+      // Dès que toutes ces conditions sont réunies -> la pastille apparaît sur cette bougie.
       for (const g of (fs_.contraLong || [])) {
         if (g.i == null || g.i < 1 || g.i >= d.length) continue;
-        const minK = Math.max(1, g.i - tol);
-        const maxK = Math.min(d.length - 1, g.i + tol);
+        const minK = Math.max(1, g.i - 2);
+        const maxK = Math.min(d.length - 1, g.i + maxDelay);
         let matchIdx = -1;
 
         for (let k = minK; k <= maxK; k++) {
           if (net[k] == null) continue;
-          // Condition 1 : ligne KK verte (net > signal ou net en hausse franche)
-          const isGreen = (sig[k] != null) ? (net[k] > sig[k]) : (net[k] >= (net[k-1] || net[k]));
-          if (!isGreen) continue;
 
-          // Condition 2 : repart vers le haut
-          const isRising = (net[k-1] != null) ? (net[k] > net[k-1]) : true;
-          if (!isRising) continue;
-
-          // Condition 3 : déjà passée en dessous de -75
+          // 1. KK est passé sous -75 dans la fenêtre
           let hasPassedBelow = false;
           const startLook = Math.max(0, k - lookback);
           for (let j = startLook; j <= k; j++) {
@@ -31497,11 +31505,24 @@ function computeFMCSignals(cleFmc, cleStrat) {
               break;
             }
           }
+          if (!hasPassedBelow) continue;
 
-          if (hasPassedBelow) {
-            matchIdx = Math.max(g.i, k);
-            break;
+          // 2. KK repasse au VERT (net > signal ou hausse)
+          const isKkGreen = (sig[k] != null) ? (net[k] > sig[k]) : (net[k] >= (net[k-1] || net[k]));
+          if (!isKkGreen) continue;
+          const isKkRising = (net[k-1] != null) ? (net[k] > net[k-1]) : true;
+          if (!isKkRising) continue;
+
+          // 3 & 4. Ligne FMC et Histogramme FMC sont VERTS
+          if (reqColors) {
+            const fmcLineGreen = (fs_.bal && fs_.bal[k] != null) ? (fs_.core[k] >= fs_.bal[k]) : (fs_.core[k] >= 50);
+            const fmcHistGreen = (fs_.tension && fs_.tension[k] != null) ? (fs_.tension[k] >= 0) : (fs_.waveHist ? fs_.waveHist[k] >= 50 : true);
+            if (!fmcLineGreen || !fmcHistGreen) continue;
           }
+
+          // Toutes les conditions sont réunies dès la bougie k
+          matchIdx = k;
+          break;
         }
 
         if (matchIdx >= 0) {
@@ -31513,34 +31534,33 @@ function computeFMCSignals(cleFmc, cleStrat) {
             isConfluenceKK: true,
             price: bougie.c, low: bougie.l, high: bougie.h,
             score: net[matchIdx],
-            reason: '▲ TRIANGLE + KK VERT',
+            reason: '▲ KK + FMC VERTS',
             label: 'ACHAT ' + nomFmc + ' × KK',
             badge: '⚡ ACHAT ' + nomFmc + ' × KK',
-            sub: '▲ Triangle ' + nomFmc + ' · KK ' + Math.round(net[matchIdx]) + ' (< ' + seuilB + ' ↗)',
+            sub: '▲ Triangle ' + nomFmc + ' · KK ' + Math.round(net[matchIdx]) + ' (< ' + seuilB + ' ↗) · Ligne & Hist Verts',
             color: cBuy,
             bgFill: 'rgba(6, 36, 32, 0.95)'
           });
         }
       }
 
-      // B. VENTE : Triangle FMC Contrarien (▼) + KK Rouge partant vers le bas après passage au-dessus de +75
+      // B. VENTE : Triangle FMC Contrarien (▼)
+      // Conditions :
+      // 1. KK est passé au-dessus de la ligne des +75 récemment (lookback)
+      // 2. KK repasse au ROUGE (net <= sig)
+      // 3. Ligne FMC est ROUGE (core < bal)
+      // 4. Histogramme FMC est ROUGE (tension < 0)
+      // Dès que toutes ces conditions sont réunies -> la pastille apparaît sur cette bougie.
       for (const g of (fs_.contraShort || [])) {
         if (g.i == null || g.i < 1 || g.i >= d.length) continue;
-        const minK = Math.max(1, g.i - tol);
-        const maxK = Math.min(d.length - 1, g.i + tol);
+        const minK = Math.max(1, g.i - 2);
+        const maxK = Math.min(d.length - 1, g.i + maxDelay);
         let matchIdx = -1;
 
         for (let k = minK; k <= maxK; k++) {
           if (net[k] == null) continue;
-          // Condition 1 : ligne KK rouge (net <= signal ou net en baisse)
-          const isRed = (sig[k] != null) ? (net[k] <= sig[k]) : (net[k] <= (net[k-1] || net[k]));
-          if (!isRed) continue;
 
-          // Condition 2 : part vers le bas
-          const isFalling = (net[k-1] != null) ? (net[k] < net[k-1]) : true;
-          if (!isFalling) continue;
-
-          // Condition 3 : déjà passée au-dessus de +75
+          // 1. KK est passé au-dessus de +75 dans la fenêtre
           let hasPassedAbove = false;
           const startLook = Math.max(0, k - lookback);
           for (let j = startLook; j <= k; j++) {
@@ -31549,11 +31569,24 @@ function computeFMCSignals(cleFmc, cleStrat) {
               break;
             }
           }
+          if (!hasPassedAbove) continue;
 
-          if (hasPassedAbove) {
-            matchIdx = Math.max(g.i, k);
-            break;
+          // 2. KK repasse au ROUGE (net <= signal ou baisse)
+          const isKkRed = (sig[k] != null) ? (net[k] <= sig[k]) : (net[k] <= (net[k-1] || net[k]));
+          if (!isKkRed) continue;
+          const isKkFalling = (net[k-1] != null) ? (net[k] < net[k-1]) : true;
+          if (!isKkFalling) continue;
+
+          // 3 & 4. Ligne FMC et Histogramme FMC sont ROUGES
+          if (reqColors) {
+            const fmcLineRed = (fs_.bal && fs_.bal[k] != null) ? (fs_.core[k] < fs_.bal[k]) : (fs_.core[k] < 50);
+            const fmcHistRed = (fs_.tension && fs_.tension[k] != null) ? (fs_.tension[k] < 0) : (fs_.waveHist ? fs_.waveHist[k] < 50 : true);
+            if (!fmcLineRed || !fmcHistRed) continue;
           }
+
+          // Toutes les conditions sont réunies dès la bougie k
+          matchIdx = k;
+          break;
         }
 
         if (matchIdx >= 0) {
@@ -31565,10 +31598,10 @@ function computeFMCSignals(cleFmc, cleStrat) {
             isConfluenceKK: true,
             price: bougie.c, low: bougie.l, high: bougie.h,
             score: net[matchIdx],
-            reason: '▼ TRIANGLE + KK ROUGE',
+            reason: '▼ KK + FMC ROUGES',
             label: 'VENTE ' + nomFmc + ' × KK',
             badge: '⚡ VENTE ' + nomFmc + ' × KK',
-            sub: '▼ Triangle ' + nomFmc + ' · KK +' + Math.round(net[matchIdx]) + ' (> +' + seuilH + ' ↘)',
+            sub: '▼ Triangle ' + nomFmc + ' · KK +' + Math.round(net[matchIdx]) + ' (> +' + seuilH + ' ↘) · Ligne & Hist Rouges',
             color: cSell,
             bgFill: 'rgba(44, 10, 24, 0.95)'
           });
@@ -31614,7 +31647,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     if (!sig.isConfluenceKK && indFmc.showBadges === false) continue;
 
     const isConf = !!sig.isConfluenceKK;
-    const bw = Math.round((isConf ? 122 : 108) * kT);
+    const bw = Math.round((isConf ? 128 : 108) * kT);
     const bh = Math.round(44 * kT);
 
     const x = xOf(sig.i);
@@ -37516,7 +37549,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0260';
+  window.__LUMEN_BUILD = 'B-0909-0270';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
