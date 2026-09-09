@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0150</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0155</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5614,7 +5614,7 @@ const state = {
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     strat_fmc:{on:true,source:'tout',showBadges:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
-    strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
+    strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,minSpacing:25,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     signal_triple:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',cloudTf:0,cloudFast:30,cloudSlow:90,roscTf:3,roscPeriod:50,roscSmooth:2,useAdxFilter:true,useCloudSep:true,useCloudDist:false,useRangeFilter:false,rangePeriod:20,rangeThreshold:50,maxAtrDist:3.2,maxCloudSep:1.3,showGhosts:true,useEfficiency:true,erWindow:180,erMax:0.15,erCross:6,useImpulse:true,impTf:15,impPeriod:34,impStrict:false,impClosed:false},
@@ -5914,6 +5914,8 @@ function loadConfig(){
         useDeltaFlow: true,
         allowShorts: true,
         alternateSignals: true,
+        strictPositionTracking: true,
+        minSpacing: 25,
         showBadges: true,
         showLines: true,
         showTargets: true,
@@ -5922,6 +5924,10 @@ function loadConfig(){
         cBuy: '#00E676',
         cSell: '#FF0055'
       };
+    } else {
+      if (state.indicators.strat_super.strictPositionTracking == null) state.indicators.strat_super.strictPositionTracking = true;
+      if (state.indicators.strat_super.minSpacing == null) state.indicators.strat_super.minSpacing = 25;
+      if (state.indicators.strat_super.alternateSignals == null) state.indicators.strat_super.alternateSignals = true;
     }
   } catch(e){}
 
@@ -18228,7 +18234,9 @@ const SCHEMA={
     {k:'useRangeChop',t:'bool',lab:'4. Filtre Anti-Chop / Range Osc (Évite consolidations)',def:true},
     {k:'useDeltaFlow',t:'bool',lab:'5. Pression Volume / Delta Acheteur & Vendeur',def:true},
     {k:'allowShorts',t:'bool',lab:'Activer les signaux Vente (Shorts)',def:true},
+    {k:'strictPositionTracking',t:'bool',lab:'🔒 Verrouillage de position (aucun nouveau signal pendant un trade)',def:true},
     {k:'alternateSignals',t:'bool',lab:'Alternance stricte (1 Achat ➔ 1 Vente ➔ 1 Achat)',def:true},
+    {k:'minSpacing',t:'num',lab:'Espacement minimal entre signaux (barres)',min:5,max:100,def:25,ind:1},
     {k:'showBadges',t:'bool',lab:'Afficher les pastilles sur le graphique',def:true},
     {k:'showLines',t:'bool',lab:'Afficher les lignes verticales repères',def:true},
     {k:'showTargets',t:'bool',lab:'Afficher les pastilles d\'objectifs (Take Profit)',def:true},
@@ -33041,12 +33049,17 @@ function drawZZ2Signals(signals, s, e, yOf, cw) {
 
 /* ==========================================================================
    SUPER INDICATEUR 🚀 — Stratégie Confluence Multi-Moteurs Haute Rentabilité
-   Mixe les 5 couches indépendantes :
-   1. Rebond KK Bis 2 depuis survente / surachat extrême (<= -55 / >= +55)
-   2. Poussée Momentum Impulse MACD (Histogramme & expansion de couleur)
-   3. Alignement de tendance Macro (EMA 50 & EMA 200)
-   4. Filtre Anti-Chop / Consolidation Range Oscillator
-   5. Pression Volume & Delta / Flux acheteur ou vendeur dominant
+   Sélection Élite des entrées :
+   1. Verrouillage strict de position : tant qu'un trade (ex. VENTE) est actif,
+      AUCUNE autre pastille ne peut être générée (interdiction absolue de cumul).
+   2. Alternance stricte : un Achat doit succéder à une Vente, et inversement.
+   3. Détection de véritables pivots extrêmes (KK Bis 2 en zone critique <= -58 / >= +58
+      avec rebond/rejet franc, local peak/trough).
+   4. Confirmation par rejet de chandelier (mèche d'absorption >= 28%, englobante,
+      ou clôture directionnelle puissante).
+   5. Score de confluence multi-facteurs (Impulse MACD, Trend Macro, Range Chop, Delta Volume).
+   6. Espacement minimum paramétrable (par défaut 25 barres) pour ne garder que
+      les 1 à 3 meilleurs signaux d'élite par session / journée.
    ========================================================================== */
 function computeSuperSignals(d, ind) {
   if (!d || d.length < 25) return [];
@@ -33055,8 +33068,11 @@ function computeSuperSignals(d, ind) {
   const minScore = ind.minScore != null ? +ind.minScore : (mode === 'sniper' ? 5 : mode === 'dynamique' ? 3 : 4);
   const allowShorts = ind.allowShorts !== false;
   const alternate = ind.alternateSignals !== false;
+  const strictPos = ind.strictPositionTracking !== false;
+  const minSpacing = ind.minSpacing != null ? +ind.minSpacing : 25;
   const tpPts = +ind.tp || 300;
   const slPts = +ind.sl || 150;
+  const maxHoldBars = 60; // Timeout de sécurité d'un trade
 
   // 1. KK Bis 2 (Score de Survente / Surachat extrême)
   let kkNet = [];
@@ -33094,110 +33110,101 @@ function computeSuperSignals(d, ind) {
   }
 
   const signals = [];
-  let lastDir = 0;
-  let lastBarIdx = -20;
+  let activePos = null; // { dir: 1|-1, entryIdx: i, entryPrice: p, tp: tp, sl: sl }
+  let lastSignalDir = 0;
+  let lastSignalBarIdx = -999;
 
   for (let i = 25; i < d.length; i++) {
     const bar = d[i];
     const prevBar = d[i - 1];
     const c = bar.c, o = bar.o, h = bar.h, l = bar.l, rng = (h - l) || 0.0001;
 
-    // ----- ÉVALUATION ACHAT (LONG) -----
+    // --- Gestion du cycle de vie du trade actif (TP / SL / Sortie / Timeout) ---
+    if (activePos) {
+      const isBuy = activePos.dir === 1;
+      let hitTp = false;
+      let hitSl = false;
+      if (isBuy) {
+        if (bar.h >= activePos.tp) hitTp = true;
+        else if (bar.l <= activePos.sl) hitSl = true;
+      } else {
+        if (bar.l <= activePos.tp) hitTp = true;
+        else if (bar.h >= activePos.sl) hitSl = true;
+      }
+      const timedOut = (i - activePos.entryIdx >= maxHoldBars);
+      if (hitTp || hitSl || timedOut) {
+        activePos = null; // Trade terminé
+      }
+    }
+
+    // Si le verrouillage de position est actif et qu'un trade est en cours :
+    // INTERDICTION STRICTE d'ajouter un nouveau signal (évite toute accumulation de pastilles)
+    if (strictPos && activePos !== null) {
+      continue;
+    }
+
+    // Respect de l'espacement minimal entre signaux pour filtrer le bruit
+    if (i - lastSignalBarIdx < minSpacing) {
+      continue;
+    }
+
+    // Données techniques de la barre actuelle
+    const curKk = kkNet[i] ?? 0;
+    const prevKk = kkNet[i - 1] ?? 0;
+
+    // ----- ÉVALUATION ACHAT ÉLITE (LONG) -----
     let buyScore = 0;
     const buyReasons = [];
 
-    // Condition 1 : KK Bis Rebond depuis survente extrême
-    if (ind.useKkExtreme !== false) {
-      let minKk = 999;
-      for (let k = Math.max(0, i - 8); k <= i; k++) {
-        if (kkNet[k] != null && kkNet[k] < minKk) minKk = kkNet[k];
-      }
-      const curKk = kkNet[i] ?? 0;
-      const prevKk = kkNet[i - 1] ?? 0;
-      if (minKk <= -55 && curKk > prevKk) {
-        buyScore++;
-        buyReasons.push('KK Rebond (' + Math.round(minKk) + ')');
+    // Condition A1 (Cruciale) : Pivot KK Bis 2 depuis survente profonde
+    // Le KK doit être ou avoir été très récemment en zone critique et s'inverser nettement vers le haut
+    let minKkRecent = 999;
+    let minKkOffset = 0;
+    for (let k = Math.max(0, i - 6); k <= i; k++) {
+      if (kkNet[k] != null && kkNet[k] < minKkRecent) {
+        minKkRecent = kkNet[k];
+        minKkOffset = i - k;
       }
     }
+    const kkThresholdBuy = mode === 'sniper' ? -65 : -58;
+    const isKkBuyPivot = (minKkRecent <= kkThresholdBuy) && (curKk > prevKk + 1.0) && (minKkOffset <= 3);
 
-    // Condition 2 : Momentum Impulse MACD
-    if (ind.useImpulseMom !== false) {
-      const sh = impHist[i] ?? 0;
-      const psh = impHist[i - 1] ?? 0;
-      const clr = impCol[i] || '';
-      if (sh > 0 || (sh > psh && (psh > (impHist[i - 2] ?? 0))) || clr === 'lime' || clr === 'green') {
+    // Condition A2 (Cruciale) : Rejet d'action des prix sur la bougie
+    // Mèche basse significative (marteau / absorption acheteuse), avalement haussier, ou clôture ultra-haute
+    const lowerWickRatio = (Math.min(o, c) - l) / rng;
+    const isHammer = lowerWickRatio >= 0.28;
+    const isBullEngulf = (c > prevBar.h && c > o);
+    const isStrongBullClose = (c > o && (c - l) / rng >= 0.65);
+    const isPriceRejectionBuy = isHammer || isBullEngulf || isStrongBullClose;
+
+    // Si les conditions de pivot et de rejet ne sont pas réunies, on élimine immédiatement l'entrée
+    if (ind.useKkExtreme !== false && (!isKkBuyPivot || !isPriceRejectionBuy)) {
+      // Pas de signal d'achat valable sur cette barre
+    } else {
+      if (isKkBuyPivot) {
         buyScore++;
-        buyReasons.push('Impulse Momentum');
-      }
-    }
-
-    // Condition 3 : Alignement Macro Tendance (EMA 50 / 200)
-    if (ind.useEmaTrend !== false) {
-      const e50 = ema50[i] ?? c;
-      const e200 = ema200[i] ?? e50;
-      if (c >= e50 || e50 >= e200 || (c >= (prevBar ? prevBar.c : c) && l <= e50 && c >= e50)) {
-        buyScore++;
-        buyReasons.push('Tendance Macro');
-      }
-    }
-
-    // Condition 4 : Anti-Chop Range Oscillator
-    if (ind.useRangeChop !== false) {
-      const r = rosc[i] ?? 0;
-      const pr = rosc[i - 1] ?? 0;
-      if (r > -35 && r >= pr) {
-        buyScore++;
-        buyReasons.push('Anti-Chop OK');
-      }
-    }
-
-    // Condition 5 : Pression Volume & Delta / Clôture haute
-    if (ind.useDeltaFlow !== false) {
-      const pos = (c - l) / rng;
-      const vol = bar.v || 0;
-      const avgV = volAvg[i] || 1;
-      if (pos >= 0.52 && (c >= o) && (vol >= 0.75 * avgV)) {
-        buyScore++;
-        buyReasons.push('Pression Acheteuse');
-      }
-    }
-
-    // ----- ÉVALUATION VENTE (SHORT) -----
-    let sellScore = 0;
-    const sellReasons = [];
-    if (allowShorts) {
-      // Condition 1 : KK Bis Rejet depuis surachat extrême
-      if (ind.useKkExtreme !== false) {
-        let maxKk = -999;
-        for (let k = Math.max(0, i - 8); k <= i; k++) {
-          if (kkNet[k] != null && kkNet[k] > maxKk) maxKk = kkNet[k];
-        }
-        const curKk = kkNet[i] ?? 0;
-        const prevKk = kkNet[i - 1] ?? 0;
-        if (maxKk >= 55 && curKk < prevKk) {
-          sellScore++;
-          sellReasons.push('KK Rejet (' + Math.round(maxKk) + ')');
-        }
+        buyReasons.push('KK Rebond Pivot (' + Math.round(minKkRecent) + ')');
       }
 
-      // Condition 2 : Momentum Impulse MACD baissier
+      // Condition 2 : Momentum Impulse MACD
       if (ind.useImpulseMom !== false) {
         const sh = impHist[i] ?? 0;
         const psh = impHist[i - 1] ?? 0;
+        const ppsh = impHist[i - 2] ?? 0;
         const clr = impCol[i] || '';
-        if (sh < 0 || (sh < psh && (psh < (impHist[i - 2] ?? 0))) || clr === 'maroon' || clr === 'red') {
-          sellScore++;
-          sellReasons.push('Impulse Momentum');
+        if ((sh > 0 || (sh > psh && psh > ppsh) || clr === 'lime' || clr === 'green' || clr === 'aqua') && (sh >= psh)) {
+          buyScore++;
+          buyReasons.push('Impulse Momentum');
         }
       }
 
-      // Condition 3 : Alignement Macro Tendance Baissière
+      // Condition 3 : Alignement Macro Tendance (EMA 50 / 200)
       if (ind.useEmaTrend !== false) {
         const e50 = ema50[i] ?? c;
         const e200 = ema200[i] ?? e50;
-        if (c <= e50 || e50 <= e200 || (c <= (prevBar ? prevBar.c : c) && h >= e50 && c <= e50)) {
-          sellScore++;
-          sellReasons.push('Tendance Macro');
+        if (c >= e50 || e50 >= e200 || (l <= e50 && c >= e50)) {
+          buyScore++;
+          buyReasons.push('Tendance Macro');
         }
       }
 
@@ -33205,20 +33212,95 @@ function computeSuperSignals(d, ind) {
       if (ind.useRangeChop !== false) {
         const r = rosc[i] ?? 0;
         const pr = rosc[i - 1] ?? 0;
-        if (r < 35 && r <= pr) {
-          sellScore++;
-          sellReasons.push('Anti-Chop OK');
+        if (r > -35 && r >= pr) {
+          buyScore++;
+          buyReasons.push('Anti-Chop OK');
         }
       }
 
-      // Condition 5 : Pression Vendeuse
+      // Condition 5 : Pression Volume & Delta / Clôture haute
       if (ind.useDeltaFlow !== false) {
-        const pos = (h - c) / rng;
         const vol = bar.v || 0;
         const avgV = volAvg[i] || 1;
-        if (pos >= 0.52 && (c <= o) && (vol >= 0.75 * avgV)) {
+        if ((c >= o) && (vol >= 0.75 * avgV)) {
+          buyScore++;
+          buyReasons.push('Pression Acheteuse');
+        }
+      }
+    }
+
+    // ----- ÉVALUATION VENTE ÉLITE (SHORT) -----
+    let sellScore = 0;
+    const sellReasons = [];
+    if (allowShorts) {
+      // Condition V1 (Cruciale) : Pivot KK Bis 2 depuis surachat profond
+      let maxKkRecent = -999;
+      let maxKkOffset = 0;
+      for (let k = Math.max(0, i - 6); k <= i; k++) {
+        if (kkNet[k] != null && kkNet[k] > maxKkRecent) {
+          maxKkRecent = kkNet[k];
+          maxKkOffset = i - k;
+        }
+      }
+      const kkThresholdSell = mode === 'sniper' ? 65 : 58;
+      const isKkSellPivot = (maxKkRecent >= kkThresholdSell) && (curKk < prevKk - 1.0) && (maxKkOffset <= 3);
+
+      // Condition V2 (Cruciale) : Rejet d'action des prix sur la bougie
+      // Mèche haute significative (étoile filante / absorption vendeuse), avalement baissier, ou clôture ultra-basse
+      const upperWickRatio = (h - Math.max(o, c)) / rng;
+      const isShootingStar = upperWickRatio >= 0.28;
+      const isBearEngulf = (c < prevBar.l && c < o);
+      const isStrongBearClose = (c < o && (h - c) / rng >= 0.65);
+      const isPriceRejectionSell = isShootingStar || isBearEngulf || isStrongBearClose;
+
+      if (ind.useKkExtreme !== false && (!isKkSellPivot || !isPriceRejectionSell)) {
+        // Pas de signal de vente valable sur cette barre
+      } else {
+        if (isKkSellPivot) {
           sellScore++;
-          sellReasons.push('Pression Vendeuse');
+          sellReasons.push('KK Rejet Pivot (' + Math.round(maxKkRecent) + ')');
+        }
+
+        // Condition 2 : Momentum Impulse MACD baissier
+        if (ind.useImpulseMom !== false) {
+          const sh = impHist[i] ?? 0;
+          const psh = impHist[i - 1] ?? 0;
+          const ppsh = impHist[i - 2] ?? 0;
+          const clr = impCol[i] || '';
+          if ((sh < 0 || (sh < psh && psh < ppsh) || clr === 'maroon' || clr === 'red' || clr === 'orange') && (sh <= psh)) {
+            sellScore++;
+            sellReasons.push('Impulse Momentum');
+          }
+        }
+
+        // Condition 3 : Alignement Macro Tendance Baissière
+        if (ind.useEmaTrend !== false) {
+          const e50 = ema50[i] ?? c;
+          const e200 = ema200[i] ?? e50;
+          if (c <= e50 || e50 <= e200 || (h >= e50 && c <= e50)) {
+            sellScore++;
+            sellReasons.push('Tendance Macro');
+          }
+        }
+
+        // Condition 4 : Anti-Chop Range Oscillator
+        if (ind.useRangeChop !== false) {
+          const r = rosc[i] ?? 0;
+          const pr = rosc[i - 1] ?? 0;
+          if (r < 35 && r <= pr) {
+            sellScore++;
+            sellReasons.push('Anti-Chop OK');
+          }
+        }
+
+        // Condition 5 : Pression Vendeuse
+        if (ind.useDeltaFlow !== false) {
+          const vol = bar.v || 0;
+          const avgV = volAvg[i] || 1;
+          if ((c <= o) && (vol >= 0.75 * avgV)) {
+            sellScore++;
+            sellReasons.push('Pression Vendeuse');
+          }
         }
       }
     }
@@ -33242,8 +33324,10 @@ function computeSuperSignals(d, ind) {
     }
 
     if (finalDir !== 0) {
-      if (alternate && finalDir === lastDir) continue;
-      if (i - lastBarIdx < 4) continue;
+      // Alternance stricte : interdiction formelle d'avoir 2 Ventes ou 2 Achats consécutifs
+      if (alternate && finalDir === lastSignalDir) {
+        continue;
+      }
 
       const prob = finalScore >= 5 ? '97% 🔥' : finalScore >= 4 ? '92% 🏆' : '86% ⚡';
       const entryPrice = c;
@@ -33266,8 +33350,16 @@ function computeSuperSignals(d, ind) {
         high: h
       });
 
-      lastDir = finalDir;
-      lastBarIdx = i;
+      // Enregistre la position active pour verrouillage immédiat
+      activePos = {
+        dir: finalDir,
+        entryIdx: i,
+        entryPrice: entryPrice,
+        tp: tp,
+        sl: sl
+      };
+      lastSignalDir = finalDir;
+      lastSignalBarIdx = i;
     }
   }
 
@@ -36276,7 +36368,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0150';
+  window.__LUMEN_BUILD = 'B-0909-0155';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
