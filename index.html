@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0055</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0115</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -3344,7 +3344,7 @@ const TwoIndicator = (function (root, factory) {
     // Ligne de signal
     ctx.strokeStyle = hexA(CSIG, 1); ctx.lineWidth = 1; ctx.beginPath();
     let started = false;
-    for (let i = Math.max(0, s - 1); i < e; i++) {
+    for (let i = Math.max(0, s - 1); i <= e && i < sig.length; i++) {
       if (sig[i] == null) { started = false; continue; }
       const x = xOf(i), y = yOf(sig[i]);
       started ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), started = true);
@@ -3358,7 +3358,7 @@ const TwoIndicator = (function (root, factory) {
     const SC_UP = col.cScoreUp || '#00FF00';
     const SC_DN = col.cScoreDn || '#FF0000';
     ctx.lineWidth = 3;
-    for (let i = Math.max(1, s - 1); i < e; i++) {
+    for (let i = Math.max(1, s - 1); i <= e && i < net.length; i++) {
       if (net[i] == null || net[i - 1] == null) continue;
       ctx.strokeStyle = (sig[i] != null && net[i] > sig[i]) ? SC_UP : SC_DN;
       ctx.beginPath(); ctx.moveTo(xOf(i - 1), yOf(net[i - 1])); ctx.lineTo(xOf(i), yOf(net[i])); ctx.stroke();
@@ -3374,7 +3374,7 @@ const TwoIndicator = (function (root, factory) {
     const UP = col.cSsUp || col.up || '#33FF00';
     const DN = col.cSsDown || col.down || '#FF1111';
     ctx.lineWidth = 2.2;
-    for (let i = Math.max(1, s - 1); i < e; i++) {
+    for (let i = Math.max(1, s - 1); i <= e && i < a.length; i++) {
       if (a[i] == null || a[i - 1] == null) continue;
       ctx.strokeStyle = a[i] >= a[i - 1] ? UP : DN;
       ctx.beginPath(); ctx.moveTo(xOf(i - 1), yOf(a[i - 1])); ctx.lineTo(xOf(i), yOf(a[i])); ctx.stroke();
@@ -4366,26 +4366,41 @@ const calc = {
     for (let i=1;i<N;i++){
       const vert = c[i] > o[i], rouge = c[i] < o[i];
       const monte = core[i] > core[i-1], baisse = core[i] < core[i-1];
-      const mods = vert
-        ? [core[i]>50&&monte, flow[i]>50, trend[i]===1, knn[i]>60, !!vagueH[i]]
-        : rouge
-        ? [core[i]<50&&baisse, flow[i]<50, trend[i]===-1, knn[i]<40, !!vagueB[i]]
-        : [false,false,false,false,false];
+      const modsBull = [core[i]>50&&monte, flow[i]>50, trend[i]===1, knn[i]>60, !!vagueH[i]];
+      const modsBear = [core[i]<50&&baisse, flow[i]<50, trend[i]===-1, knn[i]<40, !!vagueB[i]];
       const poidsMod = [W.mom, W.flow, W.trend, W.knn, W.wave];
-      let pts=0, n=0;
-      for (let q=0;q<5;q++) if (mods[q]){ pts += poidsMod[q]; n++; }
-      accord[i] = n;
-      baro[i] = n/5*100;
-      sens[i] = vert ? 1 : rouge ? -1 : 0;
-      score[i] = total>0 ? pts/total*100 : 0;
+      let ptsBull=0, nBull=0, ptsBear=0, nBear=0;
+      for (let q=0;q<5;q++){
+        if (modsBull[q]){ ptsBull += poidsMod[q]; nBull++; }
+        if (modsBear[q]){ ptsBear += poidsMod[q]; nBear++; }
+      }
+      if (nBull > nBear){
+        accord[i] = nBull;
+        baro[i] = nBull/5*100;
+        sens[i] = 1;
+        score[i] = total>0 ? ptsBull/total*100 : 0;
+      } else if (nBear > nBull){
+        accord[i] = nBear;
+        baro[i] = nBear/5*100;
+        sens[i] = -1;
+        score[i] = total>0 ? ptsBear/total*100 : 0;
+      } else {
+        const sensDef = core[i] >= 50 ? 1 : -1;
+        const nDef = sensDef === 1 ? nBull : nBear;
+        const ptsDef = sensDef === 1 ? ptsBull : ptsBear;
+        accord[i] = nDef;
+        baro[i] = nDef/5*100;
+        sens[i] = sensDef;
+        score[i] = total>0 ? ptsDef/total*100 : 0;
+      }
 
       if ((core[i]>50 && core[i-1]<=50) || (core[i]<50 && core[i-1]>=50)){ buUse=false; seUse=false; }
-      if (vert && score[i] >= seuil && (!unParVague || !buUse)){
-        buys.push({ i, t:d[i].t, price:c[i], score:score[i], accord:n });
+      if (sens[i]===1 && score[i] >= seuil && vert && (!unParVague || !buUse)){
+        buys.push({ i, t:d[i].t, price:c[i], score:score[i], accord:accord[i] });
         if (unParVague) buUse = true;
       }
-      if (rouge && score[i] >= seuil && (!unParVague || !seUse)){
-        sells.push({ i, t:d[i].t, price:c[i], score:score[i], accord:n });
+      if (sens[i]===-1 && score[i] >= seuil && rouge && (!unParVague || !seUse)){
+        sells.push({ i, t:d[i].t, price:c[i], score:score[i], accord:accord[i] });
         if (unParVague) seUse = true;
       }
     }
@@ -12085,7 +12100,7 @@ function drawFmcSub(p, s, e, cw, cle) {
       ['Noyau', (r.core[der]||0).toFixed(1), r.core[der] >= 50 ? cBull : cBear],
       ['Flux', r.flow[der] >= 50 ? 'HAUSSIER' : 'BAISSIER', r.flow[der] >= 50 ? cBull : cBear],
       ['Struct.', r.trend[der] === 1 ? 'Haussière' : 'Baissière', r.trend[der] === 1 ? cBull : cBear],
-      ['KNN', (knnB === 1 ? 'HAUSSIER ' : knnB === -1 ? 'BAISSIER ' : 'NEUTRE ') + Math.round(r.knn[der]) + ' %',
+      ['KNN', (knnB === 1 ? ('HAUSSIER ' + Math.round(r.knn[der]) + ' %') : knnB === -1 ? ('BAISSIER ' + Math.round(100 - r.knn[der]) + ' %') : ('NEUTRE ' + Math.round(r.knn[der]) + ' %')),
               knnB === 1 ? cBull : knnB === -1 ? cBear : neutre],
       ['Tension', r.strengthening[der] ? (r.tension[der] >= 0 ? 'HAUSSIÈRE +' : 'BAISSIÈRE −') : '—',
               r.strengthening[der] ? (r.tension[der] >= 0 ? cBull : cBear) : neutre],
@@ -12163,7 +12178,7 @@ function drawFmcSub(p, s, e, cw, cle) {
     ' \u00b7 noyau ' + Math.round(r.core[der]) +
     ' \u00b7 ' + (r.flow[der] >= 50 ? 'flux acheteur' : 'flux vendeur') +
     ' \u00b7 structure ' + (r.trend[der] === 1 ? 'haussière' : 'baissière') +
-    ' \u00b7 ' + knnTxt + ' (' + Math.round(r.knn[der]) + ' %)' +
+    ' \u00b7 ' + knnTxt + ' (' + (r.knn[der] < 40 ? Math.round(100 - r.knn[der]) : Math.round(r.knn[der])) + ' %)' +
     ' \u00b7 ' + vagTxt +
     ' \u00b7 score ' + Math.round(r.score[der]) + ' %' +
     ' \u00b7 confluence ' + (r.matchCount[der] || 0) + '/5 ' + bloc(r.baroPct[der] || 0) +
@@ -35699,7 +35714,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0055';
+  window.__LUMEN_BUILD = 'B-0909-0115';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
