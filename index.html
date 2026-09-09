@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0050</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0060</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -31301,7 +31301,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
     }
   }
 
-  /* 2. Pastilles Vente / Achat : Triangles KK & Ligne KK 5m ±75 */
+  /* 2. Pastilles Vente / Achat : Triangles/Losanges & Ligne KK 5m ±75 */
   if (indFmc.showKkConfluence !== false) {
     // Calcul de la ligne KK en 5 minutes ("la ligne caca c'est la ligne cinq minutes pas autre chose")
     const tfKK = 5;
@@ -31364,22 +31364,70 @@ function computeFMCSignals(cleFmc, cleStrat) {
         return (typeof idxOfTime === 'function') ? idxOfTime(srcKK[idx5].t) : idx5;
       };
 
-      const confCandidate = [];
-
-      // VENTE :
-      // 1. Un triangle rouge apparaît (sommet local KK 5m)
-      // Condition A : la ligne KK 5m est passée au-dessus de +75, puis redevient rouge et passe sous +75
-      // Condition B : la ligne KK 5m n'est PAS passée au-dessus de +75, mais passe au Rouge ET l'histogramme du milieu est rouge
+      // 1. Rassembler tous les repères VENTE (Triangles rouges KK 5m, Triangles rouges FMC, Losanges rouges FMC)
+      const repVente = [];
       for (const pk5 of peaks5) {
         const pkD = toChartIdx(pk5);
-        if (pkD == null || pkD < 1 || pkD >= d.length) continue;
+        if (pkD != null && pkD >= 1 && pkD < d.length) repVente.push({ i: pkD, type: 'triangle rouge', kind: 'triangle_kk' });
+      }
+      if (fs_) {
+        for (const g of (fs_.contraShort || [])) {
+          if (g.i != null && g.i >= 1 && g.i < d.length) repVente.push({ i: g.i, type: 'triangle rouge', kind: 'triangle_fmc' });
+        }
+        for (const g of (fs_.sells || [])) {
+          if (g.i != null && g.i >= 1 && g.i < d.length) repVente.push({ i: g.i, type: 'losange rouge', kind: 'losange_fmc' });
+        }
+      }
+      repVente.sort((a, b) => a.i - b.i);
 
+      // Règle : dès qu'un triangle ou losange rouge apparaît, le premier qui apparaît juste avant n'est plus actif, on attend le dernier
+      const repVenteFiltres = [];
+      for (let idx = 0; idx < repVente.length; idx++) {
+        const r = repVente[idx];
+        const suivant = repVente[idx + 1];
+        if (suivant && (suivant.i - r.i <= 20)) {
+          continue; // le premier est ignoré, on attend le suivant !
+        }
+        repVenteFiltres.push(r);
+      }
+
+      // 2. Rassembler tous les repères ACHAT (Triangles verts KK 5m, Triangles verts FMC, Losanges verts FMC)
+      const repAchat = [];
+      for (const tr5 of troughs5) {
+        const trD = toChartIdx(tr5);
+        if (trD != null && trD >= 1 && trD < d.length) repAchat.push({ i: trD, type: 'triangle vert', kind: 'triangle_kk' });
+      }
+      if (fs_) {
+        for (const g of (fs_.contraLong || [])) {
+          if (g.i != null && g.i >= 1 && g.i < d.length) repAchat.push({ i: g.i, type: 'triangle vert', kind: 'triangle_fmc' });
+        }
+        for (const g of (fs_.buys || [])) {
+          if (g.i != null && g.i >= 1 && g.i < d.length) repAchat.push({ i: g.i, type: 'losange vert', kind: 'losange_fmc' });
+        }
+      }
+      repAchat.sort((a, b) => a.i - b.i);
+
+      // Règle : dès qu'un triangle ou losange vert apparaît, le premier qui apparaît juste avant n'est plus actif, on attend le dernier
+      const repAchatFiltres = [];
+      for (let idx = 0; idx < repAchat.length; idx++) {
+        const r = repAchat[idx];
+        const suivant = repAchat[idx + 1];
+        if (suivant && (suivant.i - r.i <= 20)) {
+          continue; // le premier est ignoré, on attend le suivant !
+        }
+        repAchatFiltres.push(r);
+      }
+
+      const confCandidate = [];
+
+      // DÉCLENCHEMENT VENTE à partir du dernier triangle/losange rouge actif
+      for (const rep of repVenteFiltres) {
         let passed75 = false;
-        for (let j = Math.max(0, pk5 - 6); j <= Math.min(rawKK.net.length - 1, pk5 + 3); j++) {
-          if (rawKK.net[j] != null && rawKK.net[j] >= seuilH) { passed75 = true; break; }
+        for (let j = Math.max(0, rep.i - 10); j <= Math.min(d.length - 1, rep.i + 4); j++) {
+          if (net[j] != null && net[j] >= seuilH) { passed75 = true; break; }
         }
 
-        for (let k = pkD; k <= Math.min(d.length - 1, pkD + 35); k++) {
+        for (let k = rep.i; k <= Math.min(d.length - 1, rep.i + 35); k++) {
           if (net[k] == null) continue;
           const isRed = (sig[k] != null) ? (net[k] <= sig[k]) : (net[k] <= (net[k-1] || net[k]));
           if (!isRed) continue;
@@ -31402,12 +31450,12 @@ function computeFMCSignals(cleFmc, cleStrat) {
               isConfluenceKK: true,
               price: bougie.c, low: bougie.l, high: bougie.h,
               score: net[k],
-              reason: condClassique ? '▼ Triangle Rouge + KK 5m < +75' : '▼ Triangle Rouge + KK 5m & Hist Rouges',
+              reason: condClassique ? ('▼ ' + rep.type + ' + KK 5m < +75') : ('▼ ' + rep.type + ' + KK 5m & Hist Rouges'),
               label: 'VENTE FMC × KK',
               badge: '⚡ VENTE FMC × KK',
               sub: condClassique
-                ? ('▼ Triangle Rouge · KK 5m=' + Math.round(net[k]) + ' (< +' + seuilH + ') · Ligne Rouge')
-                : ('▼ Triangle Rouge (sans > +75) · KK 5m=' + Math.round(net[k]) + ' · Hist Rouge'),
+                ? ('▼ ' + rep.type + ' · KK 5m=' + Math.round(net[k]) + ' (< +' + seuilH + ') · Ligne Rouge')
+                : ('▼ ' + rep.type + ' (sans > +75) · KK 5m=' + Math.round(net[k]) + ' · Hist Rouge'),
               color: cSell,
               bgFill: 'rgba(44, 10, 24, 0.95)'
             });
@@ -31416,20 +31464,14 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // ACHAT :
-      // 1. Un triangle vert apparaît (creux local KK 5m)
-      // Condition A : la ligne KK 5m est passée sous -75, puis devient verte et sort au-dessus de -75
-      // Condition B : la ligne KK 5m n'est PAS descendue sous -75, mais devient verte ET l'histogramme du milieu est vert
-      for (const tr5 of troughs5) {
-        const trD = toChartIdx(tr5);
-        if (trD == null || trD < 1 || trD >= d.length) continue;
-
+      // DÉCLENCHEMENT ACHAT à partir du dernier triangle/losange vert actif
+      for (const rep of repAchatFiltres) {
         let passedM75 = false;
-        for (let j = Math.max(0, tr5 - 6); j <= Math.min(rawKK.net.length - 1, tr5 + 3); j++) {
-          if (rawKK.net[j] != null && rawKK.net[j] <= seuilB) { passedM75 = true; break; }
+        for (let j = Math.max(0, rep.i - 10); j <= Math.min(d.length - 1, rep.i + 4); j++) {
+          if (net[j] != null && net[j] <= seuilB) { passedM75 = true; break; }
         }
 
-        for (let k = trD; k <= Math.min(d.length - 1, trD + 35); k++) {
+        for (let k = rep.i; k <= Math.min(d.length - 1, rep.i + 35); k++) {
           if (net[k] == null) continue;
           const isGreen = (sig[k] != null) ? (net[k] > sig[k]) : (net[k] >= (net[k-1] || net[k]));
           if (!isGreen) continue;
@@ -31452,12 +31494,12 @@ function computeFMCSignals(cleFmc, cleStrat) {
               isConfluenceKK: true,
               price: bougie.c, low: bougie.l, high: bougie.h,
               score: net[k],
-              reason: condClassique ? '▲ Triangle Vert + KK 5m > -75' : '▲ Triangle Vert + KK 5m & Hist Verts',
+              reason: condClassique ? ('▲ ' + rep.type + ' + KK 5m > -75') : ('▲ ' + rep.type + ' + KK 5m & Hist Verts'),
               label: 'ACHAT FMC × KK',
               badge: '⚡ ACHAT FMC × KK',
               sub: condClassique
-                ? ('▲ Triangle Vert · KK 5m=' + Math.round(net[k]) + ' (> ' + seuilB + ') · Ligne Verte')
-                : ('▲ Triangle Vert (sans < -75) · KK 5m=' + Math.round(net[k]) + ' · Hist Vert'),
+                ? ('▲ ' + rep.type + ' · KK 5m=' + Math.round(net[k]) + ' (> ' + seuilB + ') · Ligne Verte')
+                : ('▲ ' + rep.type + ' (sans < -75) · KK 5m=' + Math.round(net[k]) + ' · Hist Vert'),
               color: cBuy,
               bgFill: 'rgba(6, 36, 32, 0.95)'
             });
@@ -37406,7 +37448,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0050';
+  window.__LUMEN_BUILD = 'B-0910-0060';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
