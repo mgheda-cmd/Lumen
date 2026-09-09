@@ -499,7 +499,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0140</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0909-0145</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -544,9 +544,12 @@ footer{
     </div>
 
     <div class="ind-menu" id="ind-menu" role="menu">
-      <div style="padding:8px 10px;border-bottom:1px solid var(--line);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+      <div style="padding:8px 10px;border-bottom:1px solid var(--line);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
         <span style="font-weight:600;font-size:12px;color:var(--text)">Stratégie & Indicateurs</span>
-        <button class="btn" id="btn-enable-strat" style="font-size:11px;padding:4px 9px;border-color:var(--accent);color:var(--accent);font-weight:600">⚡ Tout afficher</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn" id="btn-restore-bottom-inds" onclick="window.restaurerIndicateursBas()" style="font-size:11px;padding:4px 8px;border-color:#10B981;color:#10B981;font-weight:600" title="Rétablit et fusionne les 4 indicateurs du volet bas (Impulse MACD, KK Bis 2, Range Osc, MACD S/R)">⚡ Restaurer volet bas</button>
+          <button class="btn" id="btn-enable-strat" style="font-size:11px;padding:4px 9px;border-color:var(--accent);color:var(--accent);font-weight:600">⚡ Tout afficher</button>
+        </div>
       </div>
 <div class="ind-item" data-ind="signal_triple" id="item-signal_triple" style="background:linear-gradient(135deg,rgba(0,230,118,0.12),rgba(6,182,212,0.08));border:1.5px solid #00E676;border-radius:8px;padding:9px 10px;margin-top:10px;margin-bottom:6px">
         <span class="dot" style="background:#00E676;box-shadow:0 0 7px #00E676;flex:none"></span>
@@ -1310,6 +1313,9 @@ footer{
         </button>
         <button class="btn" id="exhaust-all-btn" title="Pastilles épuisement et sortie : afficher seulement la dernière de chaque unité de temps, ou toutes" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start">
           <span style="font-size:14px">🪫</span> Épuisement
+        </button>
+        <button class="btn" id="btn-restore-bottom-tools" onclick="window.restaurerIndicateursBas()" title="Rétablir et regrouper les 4 indicateurs du volet bas (Impulse MACD, KK Bis 2, Range Osc, MACD S/R)" style="font-size:11px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;justify-content:flex-start;grid-column:span 2;border-color:rgba(16,185,129,0.5);color:#10B981;background:rgba(16,185,129,0.08)">
+          <span style="font-size:14px">⚡</span> Restaurer les 4 indicateurs du bas
         </button>
       </div>
 
@@ -5717,6 +5723,18 @@ function mergeConfig(c){
       const s=c.indicators[k]; if(!s)continue;
       Object.assign(state.indicators[k], s);
     }
+    // Récupération automatique si un des 4 indicateurs clés du bas a été éteint par mégarde
+    ['imp', 'kk_bis2', 'rosc', 'macdsr'].forEach(k => {
+      if(state.indicators[k] && !state.indicators[k].on){
+        state.indicators[k].on = true;
+        state.indicators[k].hidden = false;
+      }
+    });
+    if(state.subMergeUp){
+      if(state.subMergeUp.kk_bis2 === undefined) state.subMergeUp.kk_bis2 = true;
+      if(state.subMergeUp.rosc === undefined) state.subMergeUp.rosc = true;
+      if(state.subMergeUp.macdsr === undefined) state.subMergeUp.macdsr = true;
+    }
   } else {
     // Si aucune configuration sauvegardée n'existe dans le navigateur, activer la stratégie par défaut
     const stratKeys=['signal','signal_inv','signal_ema_ha','almasd','sha','fvg','ob','sr','bos','lrc','smc_lite','emacloud','ema','ema2','volume','rsi','macd','rangeDet','rangeDet2','exhaustion'];
@@ -8310,7 +8328,13 @@ function render(){
            leurs pointillés non plus, et le prix continuait d'avancer seul.
            On isole chaque panneau et on signale le fautif. */
         try{
-          if(DR[mk]) DR[mk](p,s,e,cw,mk);
+          if(state.indicators[mk] && state.indicators[mk].hidden){
+            const meta=IND_META[mk];
+            const txt=(meta?meta.label():mk)+subTfSuffix(mk);
+            subLabel(p, txt, '(masqué)', meta?meta.color:null);
+          } else if(DR[mk]) {
+            DR[mk](p,s,e,cw,mk);
+          }
         }catch(err){
           window.__panneauxEnErreur = window.__panneauxEnErreur || {};
           if(!window.__panneauxEnErreur[mk]){
@@ -13997,11 +14021,11 @@ function applyPaneCtrl(key,act){
   }
   if(act==='toggle_ind_eye'){
     if(state.indicators && state.indicators[key]){
-      state.indicators[key].on = !state.indicators[key].on;
-      state.indicators[key].hidden = false;
+      state.indicators[key].hidden = !state.indicators[key].hidden;
+      if(typeof toast==='function'){
+        toast(state.indicators[key].hidden ? 'Indicateur « '+key+' » masqué (cliquez sur 🚫 pour réafficher)' : 'Indicateur « '+key+' » réaffiché');
+      }
     }
-    if(typeof syncMenu==='function')syncMenu();
-    if(typeof updateChips==='function')updateChips();
     saveConfig(); scheduleRender(); return;
   }
   // construire l'ordre courant des sous-panneaux visibles
@@ -14055,11 +14079,80 @@ function applyPaneCtrl(key,act){
     if(typeof updateChips==='function')updateChips();
     saveConfig(); render(); return;
   }
-  const i=cur.indexOf(key); if(i<0)return;
-  if(act==='up'&&i>0){ [cur[i-1],cur[i]]=[cur[i],cur[i-1]]; state.subMergeUp[key]=false; }
-  else if(act==='down'&&i<cur.length-1){ [cur[i+1],cur[i]]=[cur[i],cur[i+1]]; }
-  state.subOrder=cur; saveConfig(); render();
+
+  const subPanes = (state.lastPanes || []).filter(p => p.key !== 'price');
+  const targetPane = subPanes.find(p => (p.members || [p.key]).includes(key));
+  if(!targetPane) return;
+  const members = (targetPane.members || [targetPane.key]).slice();
+  const mIdx = members.indexOf(key);
+  const pIdx = subPanes.indexOf(targetPane);
+
+  if(act === 'up'){
+    if(mIdx > 0){
+      // Déplacement vers le haut À L'INTÉRIEUR du même volet fusionné
+      [members[mIdx - 1], members[mIdx]] = [members[mIdx], members[mIdx - 1]];
+      targetPane.members = members;
+    } else if(pIdx > 0){
+      // Déplacement du volet complet vers le haut
+      [subPanes[pIdx - 1], subPanes[pIdx]] = [subPanes[pIdx], subPanes[pIdx - 1]];
+    }
+  } else if(act === 'down'){
+    if(mIdx < members.length - 1){
+      // Déplacement vers le bas À L'INTÉRIEUR du même volet fusionné
+      [members[mIdx + 1], members[mIdx]] = [members[mIdx], members[mIdx + 1]];
+      targetPane.members = members;
+    } else if(pIdx < subPanes.length - 1){
+      // Déplacement du volet complet vers le bas
+      [subPanes[pIdx + 1], subPanes[pIdx]] = [subPanes[pIdx], subPanes[pIdx + 1]];
+    }
+  }
+
+  // Reconstituer subOrder et subMergeUp pour respecter strictement le regroupement sans scission
+  const newSubOrder = [];
+  const newSubMergeUp = Object.assign({}, state.subMergeUp);
+  subPanes.forEach(p => {
+    const mm = p.members || [p.key];
+    mm.forEach((mk, idx) => {
+      newSubOrder.push(mk);
+      newSubMergeUp[mk] = (idx > 0);
+    });
+  });
+
+  state.subOrder = newSubOrder;
+  state.subMergeUp = newSubMergeUp;
+  saveConfig();
 }
+window.restaurerIndicateursBas = function() {
+  const keys = ['imp', 'kk_bis2', 'rosc', 'macdsr'];
+  state.indicators = state.indicators || {};
+  state.subMergeUp = state.subMergeUp || {};
+  state.subOrder = Array.isArray(state.subOrder) ? state.subOrder.slice() : [];
+
+  // 1. Activer et démasquer chaque indicateur du volet du bas
+  keys.forEach(k => {
+    if (!state.indicators[k]) state.indicators[k] = {};
+    state.indicators[k].on = true;
+    state.indicators[k].hidden = false;
+  });
+
+  // 2. Assurer les fusions : imp commence le panneau, les autres fusionnent vers le haut
+  state.subMergeUp.imp = false;
+  state.subMergeUp.kk_bis2 = true;
+  state.subMergeUp.rosc = true;
+  state.subMergeUp.macdsr = true;
+
+  // 3. Réorganiser subOrder pour que ces 4 soient groupés dans cet ordre
+  let filtered = state.subOrder.filter(k => !keys.includes(k));
+  state.subOrder = filtered.concat(keys);
+
+  if (typeof syncMenu === 'function') syncMenu();
+  if (typeof updateChips === 'function') updateChips();
+  saveConfig();
+  if (typeof render === 'function') render();
+  if (typeof toast === 'function') {
+    toast('✅ Les 4 indicateurs du bas (Impulse, KK Bis 2, Range Osc, MACD S/R) ont été rétablis et regroupés !');
+  }
+};
 function toggleGhostKeep(g){
   state.tripleKeep = state.tripleKeep || {};
   const cle = String(g.t);
@@ -35676,7 +35769,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0909-0140';
+  window.__LUMEN_BUILD = 'B-0909-0145';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
