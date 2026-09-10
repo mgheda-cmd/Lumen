@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2210</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2225</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16265,41 +16265,69 @@ function setSyncStatus(txt,ok){
   syncBtn.style.borderColor=syncToken?'#25D0A4':'';
 }
 async function syncPull(force){
-  if(!syncToken)return false;
+  const t = document.getElementById('sync-token')?.value?.trim() || syncToken;
+  if(t) syncToken = t;
+  if(!syncToken) return { ok: false, msg: 'Colle d\'abord ton jeton GitHub' };
   try{
     const r=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}?ref=main&_=${Date.now()}`,
       {headers:{Authorization:'Bearer '+syncToken,Accept:'application/vnd.github+json'}});
-    if(r.status===404){syncSha=null;return false;}
-    if(!r.ok)throw new Error(r.status);
+    if(r.status===404){syncSha=null;return { ok: false, msg: 'Fichier config.json non trouvé (404)' };}
+    if(!r.ok)throw new Error('GitHub API HTTP ' + r.status);
     const j=await r.json();
     syncSha=j.sha;
-    let remote;
+    let remote = null;
+
+    // 1. Si le contenu base64 est directement présent (fichiers < 1 Mo)
     if(j.content){
-      remote=JSON.parse(decodeURIComponent(escape(atob((j.content||'').replace(/\n/g,'')))));
-    }else if(j.download_url){
-      const dlHeaders = syncToken ? {Authorization:'Bearer '+syncToken} : {};
-      const dr = await fetch(j.download_url + (j.download_url.includes('?') ? '&' : '?') + '_=' + Date.now(), {headers: dlHeaders});
-      if(!dr.ok) throw new Error('téléchargement direct HTTP ' + dr.status);
-      remote = await dr.json();
-    }else if(j.git_url){
-      const gr = await fetch(j.git_url, {headers:{Authorization:'Bearer '+syncToken,Accept:'application/vnd.github+json'}});
-      if(!gr.ok) throw new Error('blob HTTP ' + gr.status);
-      const gj = await gr.json();
-      remote = JSON.parse(decodeURIComponent(escape(atob((gj.content||'').replace(/\n/g,'')))));
-    }else{
-      throw new Error('fichier vide');
+      try {
+        const bin = atob((j.content||'').replace(/\s+/g, ''));
+        const bytes = new Uint8Array(bin.length);
+        for(let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        remote = JSON.parse(new TextDecoder().decode(bytes));
+      } catch(e){}
     }
-    if(!force&&remote.ts&&cfgTs&&remote.ts<cfgTs){
-      setSyncStatus('Réglages locaux plus récents — conservés',true);
+
+    // 2. Si fichier volumineux (> 1 Mo) : téléchargement direct SANS header Authorization (évite le blocage CORS de raw.githubusercontent)
+    if(!remote && j.download_url){
+      try {
+        const dr = await fetch(j.download_url + (j.download_url.includes('?') ? '&' : '?') + '_=' + Date.now());
+        if(dr.ok) {
+          remote = await dr.json();
+        }
+      } catch(e){}
+    }
+
+    // 3. Si échec ou dépôt privé : Git Blob API via api.github.com (CORS autorisé avec Authorization)
+    if(!remote && j.git_url){
+      const gr = await fetch(j.git_url, {headers:{Authorization:'Bearer '+syncToken,Accept:'application/vnd.github+json'}});
+      if(!gr.ok) throw new Error('Git Blob HTTP ' + gr.status);
+      const gj = await gr.json();
+      if(gj.content){
+        const bin = atob(gj.content.replace(/\s+/g, ''));
+        const bytes = new Uint8Array(bin.length);
+        for(let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        remote = JSON.parse(new TextDecoder().decode(bytes));
+      }
+    }
+
+    if(!remote){
+      throw new Error('Impossible de lire le contenu de config.json');
+    }
+
+    if(!force && remote.ts && cfgTs && remote.ts < cfgTs){
+      setSyncStatus('Réglages locaux plus récents — conservés', true);
       syncPushNow(false);
-      return false;
+      return { ok: false, msg: 'Réglages locaux plus récents conservés' };
     }
     mergeConfig(remote);
-    cfgTs=remote.ts||Date.now();
-    try{localStorage.setItem('lumen-cfg-ts',cfgTs);}catch(e){}
-    setSyncStatus('Synchro active — réglages récupérés',true);
-    return true;
-  }catch(e){setSyncStatus('Synchro : lecture impossible ('+e.message+')',false);return false;}
+    cfgTs = remote.ts || Date.now();
+    try{localStorage.setItem('lumen-cfg-ts', cfgTs);}catch(e){}
+    setSyncStatus('✅ Synchro active — réglages récupérés', true);
+    return { ok: true };
+  }catch(e){
+    setSyncStatus('Erreur : ' + e.message, false);
+    return { ok: false, msg: 'Erreur : ' + e.message };
+  }
 }
 async function syncPushNow(retry){
   if(!syncToken||syncBusy)return;
@@ -16368,24 +16396,29 @@ document.getElementById('sync-on')?.addEventListener('click',async()=>{
   syncToken=t;
   try{localStorage.setItem('lumen-sync-token',t);}catch(e){}
   setSyncStatus('Vérification…');
-  const found=await syncPull(true);
-  if(found){
+  const res=await syncPull(true);
+  if(res && res.ok){
     applyConfigToUI(); saveConfigLocal(); state.cache={};
     setSyncStatus('✅ Réglages trouvés ! Application...', true);
     setTimeout(()=>{ window.location.reload(); }, 400);
   }else{
-    setSyncStatus('Connecté au dépôt. Clique sur Récupérer pour charger vos réglages.', true);
+    setSyncStatus(res && res.msg ? res.msg : 'Vérifiez le jeton GitHub', false);
   }
 });
 document.getElementById('sync-get').addEventListener('click',async()=>{
-  if(!syncToken){setSyncStatus('Active d\'abord la synchro',false);return;}
-  setSyncStatus('Récupération…');
-  const ok=await syncPull(true);   // force : la version du dépôt gagne
-  if(ok){
+  const t=document.getElementById('sync-token')?.value?.trim() || syncToken;
+  if(t) {
+    syncToken = t;
+    try{localStorage.setItem('lumen-sync-token',t);}catch(e){}
+  }
+  if(!syncToken){setSyncStatus('Colle d\'abord un jeton',false);return;}
+  setSyncStatus('⏳ Récupération…');
+  const res=await syncPull(true);   // force : la version du dépôt gagne
+  if(res && res.ok){
     applyConfigToUI(); saveConfigLocal(false); state.cache={};
     setSyncStatus('✅ Réglages appliqués ! Rechargement...', true);
     setTimeout(()=>{ window.location.reload(); }, 400);
-  }else setSyncStatus('Aucun réglage trouvé dans le dépôt',false);
+  }else setSyncStatus(res && res.msg ? res.msg : 'Aucun réglage trouvé', false);
 });
 document.getElementById('sync-put').addEventListener('click',async()=>{
   if(!syncToken){setSyncStatus('Active d\'abord la synchro',false);return;}
@@ -39261,7 +39294,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2210';
+  window.__LUMEN_BUILD = 'B-0910-2225';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
