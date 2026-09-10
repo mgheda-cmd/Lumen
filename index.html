@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2300</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2315</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -39307,7 +39307,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2300';
+  window.__LUMEN_BUILD = 'B-0910-2315';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -42270,7 +42270,7 @@ window.balayerMM_MTF = async function(){
       </button>
     </div>
     <div id="source-benchmark-info" style="display:none;font-size:9.5px;padding:4px 8px;border-radius:4px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);color:#38BDF8;text-align:center">
-      📅 <b>Benchmark (8 000 bougies 1m = 5 jours 13h)</b> : du <b>24/12 01:26</b> au <b>29/12 14:45</b>
+      📅 <b>Benchmark 8 000 bougies réelles Binance (du 05/09 au 10/09 aujourd'hui)</b>
     </div>
     <!-- Strategy selector filter: Élite (Avec ALMA) vs Sans ALMA -->
     <div style="display:flex;gap:5px">
@@ -42610,7 +42610,7 @@ window.setEliteJournalSource = async function(src) {
     if (infoEl) infoEl.style.display = 'block';
     // Graphique 100% indépendant : on ne touche ni à state.data, ni au zoom ni au canvas
     if (!window.__benchmarkData) {
-      if (typeof toast === 'function') toast('⏳ Chargement du benchmark (8 000 bougies = 5,5 j)...', '#38BDF8');
+      if (typeof toast === 'function') toast('⏳ Chargement du benchmark réel (8 000 bougies Binance)...', '#38BDF8');
       try {
         const r = await fetch('./benchmark_trades.json?_=' + Date.now());
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -42619,10 +42619,14 @@ window.setEliteJournalSource = async function(src) {
         if (typeof toast === 'function') toast('Erreur benchmark : ' + e.message, '#F87171');
       }
     }
+    if (window.__benchmarkData && window.__benchmarkData.period && infoEl) {
+      const p = window.__benchmarkData.period;
+      infoEl.innerHTML = `📅 <b>8 000 bougies réelles Binance (${p.startDate} au ${p.endDate})</b><br/>Séance réelle des 5,5 derniers jours jusqu'à maintenant`;
+    }
     window._eliteJournalLimit = 0; // Afficher 'Tous' par défaut pour voir tous les trades
     setEliteJournalLimit(0);
     renderEliteJournal();
-    if (typeof toast === 'function') toast('📚 Benchmark affiché dans le tableau (Graphique indépendant et intact)', '#10B981');
+    if (typeof toast === 'function') toast('📚 Benchmark 8 000 bougies réelles (05/09 au 10/09) affiché', '#10B981');
   } else {
     if (bLive) { bLive.style.background = '#38BDF8'; bLive.style.color = '#0F172A'; bLive.style.fontWeight = '800'; }
     if (bHist) { bHist.style.background = 'transparent'; bHist.style.color = 'var(--muted)'; bHist.style.fontWeight = '700'; }
@@ -42634,6 +42638,10 @@ window.setEliteJournalSource = async function(src) {
 
 window.setEliteJournalStrat = function(strat) {
   window._eliteJournalStrat = strat;
+  // Si l'utilisateur passe en SANS ALMA alors que le mode actif était ALMA 4m, basculer sur KK Crois
+  if (strat === 'pure' && window._eliteJournalMode === 'alma') {
+    window._eliteJournalMode = 'kk_cross';
+  }
   const bElite = document.getElementById('tab-strat-elite');
   const bPure = document.getElementById('tab-strat-pure');
   if (bElite) {
@@ -42683,6 +42691,11 @@ window.toggleEliteJournalPanel = function(forceState) {
 
 window.setEliteJournalMode = function(mode) {
   window._eliteJournalMode = mode;
+  // Si l'utilisateur clique sur ALMA 4m alors qu'il est en SANS ALMA, basculer sur ÉLITE (avec ALMA)
+  if (mode === 'alma' && window._eliteJournalStrat === 'pure') {
+    setEliteJournalStrat('elite');
+    return;
+  }
   ['kk_cross', 'kk_zero', 'alma'].forEach(m => {
     const btn = document.getElementById('tab-mode-' + (m === 'kk_cross' ? 'kk-cross' : m === 'kk_zero' ? 'kk-zero' : 'alma'));
     if (!btn) return;
