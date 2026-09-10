@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0150</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0200</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5669,7 +5669,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,filterAlma:true,kkLookback:25,maxDelay:2,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -19041,7 +19041,7 @@ const SCHEMA={
     {k:'showKkConfluence',t:'bool',lab:'Activer la Confluence FMC × KK (Triangles ±75)',def:true},
     {k:'requireFmcColors',t:'bool',lab:'Exiger Ligne & Histogramme FMC du même sens (Vert: Achat / Rouge: Vente)',def:true},
     {k:'kkLookback',t:'num',lab:'Historique bougies seuil KK (1 à 25)',min:1,max:25,def:10,ind:1},
-    {k:'maxDelay',t:'num',lab:'Délai max confirmation après triangle (1 à 25 bougies)',min:1,max:25,def:12,ind:1},
+    {k:'maxDelay',t:'num',lab:'Délai max confirmation après repère (1 à 3 bougies, déf: 2)',min:1,max:3,def:2,ind:1},
     {k:'source',t:'choice',lab:'Source des signaux FMC autonomes',opts:[
       {v:'tout',t:'Les trois (Score + Contrarien + Divergence)'},
       {v:'score',t:'Score composite uniquement'},
@@ -31476,280 +31476,188 @@ function computeFMCSignals(cleFmc, cleStrat) {
         return fs_.core[idx] < fs_.bal[idx];
       };
 
-      // 1. Repères TRIANGLES FMC stricts (aucun faux triangle 'peaks5' / 'troughs5') :
-      // Triangles d'achat : contraLong (contrarien) + divBull (divergence Div ▲)
-      const triAchat = [];
+      // 1. Repères stricts FMC (triangles et losanges visibles dans le sous-panneau FMC)
+      // Aucun faux repère 'peaks5' / 'troughs5'.
+      // Achat : contraLong (contrarien ▲), divBull (divergence Div ▲), buys (score ◆)
+      // Vente : contraShort (contrarien ▼), divBear (divergence Div ▼), sells (score ◆)
+      const greenMarkerMap = new Map();
+      const redMarkerMap = new Map();
+
       if (fs_ && Array.isArray(fs_.contraLong)) {
-        for (const g of fs_.contraLong) if (g.i != null && g.i >= 1 && g.i < d.length) triAchat.push(g.i);
+        for (const g of fs_.contraLong) if (g.i != null && g.i >= 0 && g.i < d.length) greenMarkerMap.set(g.i, { i: g.i, dir: 1, type: 'triangle', sub: 'contrarien' });
       }
       if (fs_ && Array.isArray(fs_.divBull)) {
-        for (const g of fs_.divBull) if (g.i != null && g.i >= 1 && g.i < d.length) triAchat.push(g.i);
+        for (const g of fs_.divBull) if (g.i != null && g.i >= 0 && g.i < d.length) greenMarkerMap.set(g.i, { i: g.i, dir: 1, type: 'triangle', sub: 'divergence' });
       }
-      triAchat.sort((a, b) => a - b);
+      if (fs_ && Array.isArray(fs_.buys)) {
+        for (const g of fs_.buys) {
+          if (g.i != null && g.i >= 0 && g.i < d.length && !greenMarkerMap.has(g.i)) {
+            greenMarkerMap.set(g.i, { i: g.i, dir: 1, type: 'losange', sub: 'score' });
+          }
+        }
+      }
 
-      // Triangles de vente : contraShort (contrarien) + divBear (divergence Div ▼)
-      const triVente = [];
       if (fs_ && Array.isArray(fs_.contraShort)) {
-        for (const g of fs_.contraShort) if (g.i != null && g.i >= 1 && g.i < d.length) triVente.push(g.i);
+        for (const g of fs_.contraShort) if (g.i != null && g.i >= 0 && g.i < d.length) redMarkerMap.set(g.i, { i: g.i, dir: -1, type: 'triangle', sub: 'contrarien' });
       }
       if (fs_ && Array.isArray(fs_.divBear)) {
-        for (const g of fs_.divBear) if (g.i != null && g.i >= 1 && g.i < d.length) triVente.push(g.i);
+        for (const g of fs_.divBear) if (g.i != null && g.i >= 0 && g.i < d.length) redMarkerMap.set(g.i, { i: g.i, dir: -1, type: 'triangle', sub: 'divergence' });
       }
-      triVente.sort((a, b) => a - b);
-
-      // 2. Repères LOSANGES FMC (score / continuation) : pour rappels de confirmation
-      const losAchat = [];
-      if (fs_ && Array.isArray(fs_.buys)) {
-        for (const g of fs_.buys) if (g.i != null && g.i >= 1 && g.i < d.length) losAchat.push(g.i);
-      }
-      losAchat.sort((a, b) => a - b);
-
-      const losVente = [];
       if (fs_ && Array.isArray(fs_.sells)) {
-        for (const g of fs_.sells) if (g.i != null && g.i >= 1 && g.i < d.length) losVente.push(g.i);
-      }
-      losVente.sort((a, b) => a - b);
-
-      // Ensembles pour annulation immédiate par repères opposés :
-      // Un signal de vente est IMMÉDIATEMENT annulé si un triangle ou losange vert apparaît
-      // Un signal d'achat est IMMÉDIATEMENT annulé si un triangle ou losange rouge apparaît
-      const allGreenMarkers = new Set([...triAchat, ...losAchat]);
-      const allRedMarkers = new Set([...triVente, ...losVente]);
-
-      const allCandidates = [];
-
-      // A) Candidats Entrée Vente à partir des triangles rouges FMC :
-      // Déclenchement immédiat (bougie repI ou repI + 1) si KK rouge et FMC rouge
-      // Annulé d'office si Alma est vert ou si un repère vert apparaît
-      if (indFmc.showKkSell !== false) {
-        for (const repI of triVente) {
-          for (let k = repI; k <= Math.min(d.length - 1, repI + 1); k++) {
-            let cancelled = false;
-            for (let chk = repI; chk <= k; chk++) {
-              if (allGreenMarkers.has(chk)) { cancelled = true; break; }
-            }
-            if (cancelled) break;
-
-            if (isKkRed(k) && isFmcRed(k)) {
-              if (isAlmaGreen(k)) continue;
-              const b = d[k];
-              if (!b) break;
-              allCandidates.push({
-                i: k, t: b.t, dir: -1,
-                originType: 'triangle',
-                originIdx: repI,
-                price: b.c, low: b.l, high: b.h,
-                score: net[k] ?? 0,
-                reason: '▼ Triangle rouge + Ligne KK rouge'
-              });
-              break;
-            }
+        for (const g of fs_.sells) {
+          if (g.i != null && g.i >= 0 && g.i < d.length && !redMarkerMap.has(g.i)) {
+            redMarkerMap.set(g.i, { i: g.i, dir: -1, type: 'losange', sub: 'score' });
           }
         }
       }
 
-      // B) Candidats Entrée Achat à partir des triangles verts FMC :
-      // Déclenchement immédiat (bougie repI ou repI + 1) si KK verte et FMC verte
-      // Annulé d'office si Alma est violet ou si un repère rouge apparaît
-      if (indFmc.showKkBuy !== false) {
-        for (const repI of triAchat) {
-          for (let k = repI; k <= Math.min(d.length - 1, repI + 1); k++) {
-            let cancelled = false;
-            for (let chk = repI; chk <= k; chk++) {
-              if (allRedMarkers.has(chk)) { cancelled = true; break; }
-            }
-            if (cancelled) break;
+      // 2. Règle impérative de proximité & caducité stricte :
+      // - Pour un Achat : il faut impérativement qu'il y ait juste avant de la pastille un triangle ou losange vert.
+      // - Si un repère rouge est apparu depuis, les apparitions d'avant sont caduques et la pastille n'apparaît pas.
+      // - Même logique symétrique pour la Vente.
+      const maxDelay = (indFmc.maxDelay != null && indFmc.maxDelay <= 3) ? Math.max(1, indFmc.maxDelay) : 2;
 
-            if (isKkGreen(k) && isFmcGreen(k)) {
-              if (isAlmaViolet(k)) continue;
-              const b = d[k];
-              if (!b) break;
-              allCandidates.push({
-                i: k, t: b.t, dir: 1,
-                originType: 'triangle',
-                originIdx: repI,
-                price: b.c, low: b.l, high: b.h,
-                score: net[k] ?? 0,
-                reason: '▲ Triangle vert + Ligne KK verte'
-              });
-              break;
-            }
-          }
-        }
-      }
+      let lastGreenIdx = -999;
+      let lastGreenMarker = null;
+      let lastRedIdx = -999;
+      let lastRedMarker = null;
 
-      // C) Candidats Rappels Achat (Losanges verts FMC) :
-      // Règle : uniquement si KK verte et FMC verte à l'apparition du losange (repI ou repI + 1)
-      // et pas de pastille si Alma violet ou repère rouge opposé
-      if (indFmc.showKkBuy !== false && indFmc.showRappels !== false) {
-        for (const repI of losAchat) {
-          let kFound = null;
-          if (isKkGreen(repI) && isFmcGreen(repI) && !isAlmaViolet(repI) && !allRedMarkers.has(repI)) kFound = repI;
-          else if (isKkGreen(repI + 1) && isFmcGreen(repI + 1) && !isAlmaViolet(repI + 1) && !allRedMarkers.has(repI) && !allRedMarkers.has(repI + 1)) kFound = repI + 1;
-          if (kFound != null) {
-            const b = d[kFound];
-            if (b) {
-              allCandidates.push({
-                i: kFound, t: b.t, dir: 1,
-                originType: 'losange',
-                originIdx: repI,
-                price: b.c, low: b.l, high: b.h,
-                score: net[kFound] ?? 0,
-                reason: '▲ Losange vert + Ligne KK verte'
-              });
-            }
-          }
-        }
-      }
+      let lastTriggeredGreenMarkerIdx = -999;
+      let lastTriggeredRedMarkerIdx = -999;
 
-      // D) Candidats Rappels Vente (Losanges rouges FMC) :
-      // Règle : uniquement si KK rouge et FMC rouge à l'apparition du losange (repI ou repI + 1)
-      // et pas de pastille si Alma vert ou repère vert opposé
-      if (indFmc.showKkSell !== false && indFmc.showRappels !== false) {
-        for (const repI of losVente) {
-          let kFound = null;
-          if (isKkRed(repI) && isFmcRed(repI) && !isAlmaGreen(repI) && !allGreenMarkers.has(repI)) kFound = repI;
-          else if (isKkRed(repI + 1) && isFmcRed(repI + 1) && !isAlmaGreen(repI + 1) && !allGreenMarkers.has(repI) && !allGreenMarkers.has(repI + 1)) kFound = repI + 1;
-          if (kFound != null) {
-            const b = d[kFound];
-            if (b) {
-              allCandidates.push({
-                i: kFound, t: b.t, dir: -1,
-                originType: 'losange',
-                originIdx: repI,
-                price: b.c, low: b.l, high: b.h,
-                score: net[kFound] ?? 0,
-                reason: '▼ Losange rouge + Ligne KK rouge'
-              });
-            }
-          }
-        }
-      }
-
-      // Tri chronologique
-      allCandidates.sort((a, b) => a.i - b.i);
-
-      // Déduplication locale
-      const filteredCandidates = [];
-      let lastCandI = -999, lastCandDir = 0;
-      for (const c of allCandidates) {
-        if (c.dir === lastCandDir && (c.i - lastCandI < 3)) continue;
-        lastCandDir = c.dir;
-        lastCandI = c.i;
-        filteredCandidates.push(c);
-      }
-
-      // Attribution : Entrée initiale de cycle (Triangle requis) vs Rappels de confirmation
       let currentActiveDir = 0;
-      let lastTriangleIdx = -999;
-      let lastRappelI = -999;
-      for (const cand of filteredCandidates) {
-        if (cand.dir === 1 && (!isKkGreen(cand.i) || !isFmcGreen(cand.i) || isAlmaViolet(cand.i))) continue;
-        if (cand.dir === -1 && (!isKkRed(cand.i) || !isFmcRed(cand.i) || isAlmaGreen(cand.i))) continue;
+      let lastSignalI = -999;
 
-        if (cand.dir === 1) {
-          // Si un repère rouge est intervenu depuis le dernier triangle d'achat, cycle annulé
-          if (currentActiveDir === 1 && lastTriangleIdx >= 0) {
-            let oppBetween = false;
-            for (const redI of allRedMarkers) {
-              if (redI > lastTriangleIdx && redI <= cand.i) { oppBetween = true; break; }
-            }
-            if (oppBetween) currentActiveDir = 0;
-          }
+      for (let k = 0; k < d.length; k++) {
+        // Enregistrement des repères sur la bougie k
+        if (greenMarkerMap.has(k)) {
+          lastGreenIdx = k;
+          lastGreenMarker = greenMarkerMap.get(k);
+        }
+        if (redMarkerMap.has(k)) {
+          lastRedIdx = k;
+          lastRedMarker = redMarkerMap.get(k);
+        }
 
-          if (currentActiveDir !== 1) {
-            // Premier Achat du cycle : UNIQUEMENT initié par un TRIANGLE réel FMC !
-            if (cand.originType !== 'triangle') continue;
-            currentActiveDir = 1;
-            lastTriangleIdx = cand.originIdx ?? cand.i;
-            signals.push({
-              i: cand.i, t: cand.t, dir: 1,
-              type: 'ACHAT',
-              optKey: 'fmc_kk_confluence',
-              isConfluenceKK: true,
-              isRappel: false,
-              price: cand.price, low: cand.low, high: cand.high,
-              score: cand.score,
-              reason: cand.reason,
-              label: 'ACHAT FMC × KK',
-              badge: '⚡ ACHAT FMC × KK',
-              sub: '▲ Triangle vert · KK 5m=' + Math.round(cand.score) + ' · Ligne Verte',
-              color: cBuy,
-              bgFill: 'rgba(6, 36, 32, 0.95)'
-            });
-          } else {
-            // Achat déjà actif : Rappel de confirmation uniquement sur Losange vert avec KK verte
-            if (cand.originType === 'losange' && (cand.i - lastRappelI >= 5)) {
-              lastRappelI = cand.i;
+        // CADUCITÉ :
+        // Si un repère rouge est apparu plus récemment que le vert, tout le cycle d'achat est rendu caduque
+        if (currentActiveDir === 1 && lastRedIdx > lastGreenIdx) {
+          currentActiveDir = 0;
+        }
+        // Si un repère vert est apparu plus récemment que le rouge, tout le cycle de vente est rendu caduque
+        if (currentActiveDir === -1 && lastGreenIdx > lastRedIdx) {
+          currentActiveDir = 0;
+        }
+
+        const b = d[k];
+        if (!b) continue;
+
+        // --- TEST CONDITION ACHAT ---
+        // Impératif :
+        // 1. Le dernier repère doit être STRICTEMENT vert (aucun rouge intervening : lastGreenIdx > lastRedIdx)
+        // 2. Le repère vert doit être "juste avant de la pastille" (k - lastGreenIdx <= maxDelay)
+        // 3. Ce repère n'a pas déjà déclenché de pastille (lastTriggeredGreenMarkerIdx !== lastGreenIdx)
+        if (indFmc.showKkBuy !== false &&
+            lastGreenIdx > lastRedIdx &&
+            (k - lastGreenIdx) <= maxDelay &&
+            lastTriggeredGreenMarkerIdx !== lastGreenIdx) {
+
+          if (isKkGreen(k) && isFmcGreen(k) && !isAlmaViolet(k)) {
+            lastTriggeredGreenMarkerIdx = lastGreenIdx;
+            const candScore = net[k] ?? 0;
+            const isEntry = (currentActiveDir !== 1);
+
+            if (isEntry) {
+              currentActiveDir = 1;
               signals.push({
-                i: cand.i, t: cand.t, dir: 1,
+                i: k, t: b.t, dir: 1,
+                type: 'ACHAT',
+                optKey: 'fmc_kk_confluence',
+                isConfluenceKK: true,
+                isRappel: false,
+                price: b.c, low: b.l, high: b.h,
+                score: candScore,
+                reason: (lastGreenMarker.type === 'triangle' ? '▲ Triangle vert' : '◆ Losange vert') + ' + Ligne KK verte',
+                label: 'ACHAT FMC × KK',
+                badge: '⚡ ACHAT FMC × KK',
+                sub: (lastGreenMarker.type === 'triangle' ? '▲ Triangle vert' : '◆ Losange vert') + ' · KK 5m=' + Math.round(candScore) + ' · Ligne Verte',
+                color: cBuy,
+                bgFill: 'rgba(6, 36, 32, 0.95)'
+              });
+            } else if (indFmc.showRappels !== false && (k - lastSignalI >= 3)) {
+              signals.push({
+                i: k, t: b.t, dir: 1,
                 type: 'RAPPEL ACHAT',
                 optKey: 'fmc_kk_confluence',
                 isConfluenceKK: true,
                 isRappel: true,
-                price: cand.price, low: cand.low, high: cand.high,
-                score: cand.score,
-                reason: '▲ Confirmation Achat (Losange vert + KK verte)',
+                price: b.c, low: b.l, high: b.h,
+                score: candScore,
+                reason: (lastGreenMarker.type === 'triangle' ? '▲ Rappel Triangle vert' : '◆ Rappel Losange vert') + ' + KK verte',
                 label: 'RAPPEL ACHAT FMC × KK',
                 badge: '⚡ RAPPEL ACHAT',
-                sub: 'Rappel confirmation · KK 5m=' + Math.round(cand.score) + ' · Ligne Verte',
+                sub: (lastGreenMarker.type === 'triangle' ? '▲ Triangle vert' : '◆ Losange vert') + ' · KK 5m=' + Math.round(candScore) + ' · Ligne Verte',
                 color: indFmc.cRappel || '#94A3B8',
                 borderCol: indFmc.cRappelBorder || '#64748B',
                 bgFill: indFmc.cRappelBg || 'rgba(25, 33, 44, 0.94)'
               });
             }
+            lastSignalI = k;
+            continue;
           }
-        } else if (cand.dir === -1) {
-          // Si un repère vert est intervenu depuis le dernier triangle de vente, cycle annulé
-          if (currentActiveDir === -1 && lastTriangleIdx >= 0) {
-            let oppBetween = false;
-            for (const greenI of allGreenMarkers) {
-              if (greenI > lastTriangleIdx && greenI <= cand.i) { oppBetween = true; break; }
-            }
-            if (oppBetween) currentActiveDir = 0;
-          }
+        }
 
-          if (currentActiveDir !== -1) {
-            // Première Vente du cycle : UNIQUEMENT initiée par un TRIANGLE réel FMC !
-            if (cand.originType !== 'triangle') continue;
-            currentActiveDir = -1;
-            lastTriangleIdx = cand.originIdx ?? cand.i;
-            signals.push({
-              i: cand.i, t: cand.t, dir: -1,
-              type: 'VENTE',
-              optKey: 'fmc_kk_confluence',
-              isConfluenceKK: true,
-              isRappel: false,
-              price: cand.price, low: cand.low, high: cand.high,
-              score: cand.score,
-              reason: cand.reason,
-              label: 'VENTE FMC × KK',
-              badge: '⚡ VENTE FMC × KK',
-              sub: '▼ Triangle rouge · KK 5m=' + Math.round(cand.score) + ' · Ligne Rouge',
-              color: cSell,
-              bgFill: 'rgba(44, 10, 24, 0.95)'
-            });
-          } else {
-            // Vente déjà active : Rappel de confirmation uniquement sur Losange rouge avec KK rouge
-            if (cand.originType === 'losange' && (cand.i - lastRappelI >= 5)) {
-              lastRappelI = cand.i;
+        // --- TEST CONDITION VENTE ---
+        // Impératif :
+        // 1. Le dernier repère doit être STRICTEMENT rouge (aucun vert intervening : lastRedIdx > lastGreenIdx)
+        // 2. Le repère rouge doit être "juste avant de la pastille" (k - lastRedIdx <= maxDelay)
+        // 3. Ce repère n'a pas déjà déclenché de pastille (lastTriggeredRedMarkerIdx !== lastRedIdx)
+        if (indFmc.showKkSell !== false &&
+            lastRedIdx > lastGreenIdx &&
+            (k - lastRedIdx) <= maxDelay &&
+            lastTriggeredRedMarkerIdx !== lastRedIdx) {
+
+          if (isKkRed(k) && isFmcRed(k) && !isAlmaGreen(k)) {
+            lastTriggeredRedMarkerIdx = lastRedIdx;
+            const candScore = net[k] ?? 0;
+            const isEntry = (currentActiveDir !== -1);
+
+            if (isEntry) {
+              currentActiveDir = -1;
               signals.push({
-                i: cand.i, t: cand.t, dir: -1,
+                i: k, t: b.t, dir: -1,
+                type: 'VENTE',
+                optKey: 'fmc_kk_confluence',
+                isConfluenceKK: true,
+                isRappel: false,
+                price: b.c, low: b.l, high: b.h,
+                score: candScore,
+                reason: (lastRedMarker.type === 'triangle' ? '▼ Triangle rouge' : '◆ Losange rouge') + ' + Ligne KK rouge',
+                label: 'VENTE FMC × KK',
+                badge: '⚡ VENTE FMC × KK',
+                sub: (lastRedMarker.type === 'triangle' ? '▼ Triangle rouge' : '◆ Losange rouge') + ' · KK 5m=' + Math.round(candScore) + ' · Ligne Rouge',
+                color: cSell,
+                bgFill: 'rgba(44, 10, 24, 0.95)'
+              });
+            } else if (indFmc.showRappels !== false && (k - lastSignalI >= 3)) {
+              signals.push({
+                i: k, t: b.t, dir: -1,
                 type: 'RAPPEL VENTE',
                 optKey: 'fmc_kk_confluence',
                 isConfluenceKK: true,
                 isRappel: true,
-                price: cand.price, low: cand.low, high: cand.high,
-                score: cand.score,
-                reason: '▼ Confirmation Vente (Losange rouge + KK rouge)',
+                price: b.c, low: b.l, high: b.h,
+                score: candScore,
+                reason: (lastRedMarker.type === 'triangle' ? '▼ Rappel Triangle rouge' : '◆ Rappel Losange rouge') + ' + KK rouge',
                 label: 'RAPPEL VENTE FMC × KK',
                 badge: '⚡ RAPPEL VENTE',
-                sub: 'Rappel confirmation · KK 5m=' + Math.round(cand.score) + ' · Ligne Rouge',
+                sub: (lastRedMarker.type === 'triangle' ? '▼ Triangle rouge' : '◆ Losange rouge') + ' · KK 5m=' + Math.round(candScore) + ' · Ligne Rouge',
                 color: indFmc.cRappel || '#94A3B8',
                 borderCol: indFmc.cRappelBorder || '#64748B',
                 bgFill: indFmc.cRappelBg || 'rgba(25, 33, 44, 0.94)'
               });
             }
+            lastSignalI = k;
           }
         }
       }
@@ -37710,7 +37618,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0150';
+  window.__LUMEN_BUILD = 'B-0910-0200';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
