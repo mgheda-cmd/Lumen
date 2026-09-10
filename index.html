@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1345</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1425</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -720,6 +720,16 @@ footer{
             style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #00E5FF;background:rgba(0,229,255,0.22);color:#00E5FF;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
             title="Activer / Désactiver les pastilles de sortie V2 Runner (avertissement triangle + confirmation Div/KK/ALMA)">
             🎯 Sorties V2 : ON
+          </button>
+          <button id="btn-toggle-fmc-kk-cross" onclick="event.stopPropagation();window.toggleFmcKkCross && window.toggleFmcKkCross()"
+            style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #38BDF8;background:rgba(56,189,248,0.22);color:#38BDF8;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
+            title="Activer / Désactiver la pastille ronde Sortie KK 10m (Croisement Net/Signal — PF 41.7)">
+            ⨂ KK Cross : ON
+          </button>
+          <button id="btn-toggle-fmc-kk-zero" onclick="event.stopPropagation();window.toggleFmcKkZero && window.toggleFmcKkZero()"
+            style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #F59E0B;background:rgba(245,158,11,0.22);color:#F59E0B;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
+            title="Activer / Désactiver la pastille ronde Sortie KK 10m (Ligne Zéro — Sécurité Max WR 81.5%)">
+            Ø KK Zéro : ON
           </button>
         </div>
         <div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(34,211,238,0.2);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -5705,7 +5715,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,showElite:true,showEliteExits:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,showElite:true,showEliteExits:true,showEliteKkExitCross:true,showEliteKkExitZero:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -5947,12 +5957,14 @@ function loadConfig(){
   /* Stratégie FMC autonome & Confluence KK : initialisation propre */
   try{
     if(!state.indicators.strat_fmc){
-      state.indicators.strat_fmc = {on:true,showElite:true,showEliteExits:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:false,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
+      state.indicators.strat_fmc = {on:true,showElite:true,showEliteExits:true,showEliteKkExitCross:true,showEliteKkExitZero:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:false,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
     } else {
       state.indicators.strat_fmc.on = true;
       state.indicators.strat_fmc.showKkConfluence = true;
       if(state.indicators.strat_fmc.showElite === undefined) state.indicators.strat_fmc.showElite = true;
       if(state.indicators.strat_fmc.showEliteExits === undefined) state.indicators.strat_fmc.showEliteExits = true;
+      if(state.indicators.strat_fmc.showEliteKkExitCross === undefined) state.indicators.strat_fmc.showEliteKkExitCross = true;
+      if(state.indicators.strat_fmc.showEliteKkExitZero === undefined) state.indicators.strat_fmc.showEliteKkExitZero = true;
       if(state.indicators.strat_fmc.eliteExitTf === undefined) state.indicators.strat_fmc.eliteExitTf = 4;
       if(state.indicators.strat_fmc.showKkBuy === undefined) state.indicators.strat_fmc.showKkBuy = true;
       if(state.indicators.strat_fmc.showKkSell === undefined) state.indicators.strat_fmc.showKkSell = true;
@@ -15123,6 +15135,36 @@ const PASTILLES_CATALOG = [
         }
       },
       {
+        id: 'fmc_elite_exit_kk_cross',
+        icon: '⨂',
+        label: 'Sortie Ronde KK 10m (Croisement Net/Signal)',
+        desc: 'Pastille ronde cyan au croisement inverse KK 10m (Validée : +11 252 pts, Profit Factor 41.71, Win Rate 74.1%)',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_fmc?.showEliteKkExitCross !== false && !!state.indicators?.strat_fmc?.on,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.showEliteKkExitCross = v;
+          if (v) state.indicators.strat_fmc.on = true;
+          if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
+        }
+      },
+      {
+        id: 'fmc_elite_exit_kk_zero',
+        icon: 'Ø',
+        label: 'Sortie Ronde KK 10m (Ligne Zéro - Sécurité Max)',
+        desc: 'Pastille ronde dorée au franchissement du zéro KK 10m (Win Rate record 81.5%, Profit Factor 146.54, perte moy. -9.8 pts)',
+        accent: '#F59E0B',
+        def: true,
+        get: () => state.indicators?.strat_fmc?.showEliteKkExitZero !== false && !!state.indicators?.strat_fmc?.on,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.showEliteKkExitZero = v;
+          if (v) state.indicators.strat_fmc.on = true;
+          if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
+        }
+      },
+      {
         id: 'fmc_strict_caducite',
         icon: '🛡️',
         label: 'Règle Stricte (ON / OFF)',
@@ -19369,6 +19411,8 @@ const SCHEMA={
       {v:'10',t:'10 minutes (PF 28.7)'},
       {v:'15',t:'15 minutes (PF 28.7)'}
     ],def:'4'},
+    {k:'showEliteKkExitCross',t:'bool',lab:'⨂ Sortie Ronde KK 10m (Croisement Net/Signal — PF 41.7)',def:true},
+    {k:'showEliteKkExitZero',t:'bool',lab:'Ø Sortie Ronde KK 10m (Ligne Zéro — Record 81.5% WR / PF 146.5)',def:true},
     {k:'strictCaducite',t:'bool',lab:'🛡️ Condition Stricte : Repère juste avant (≤2b) & Annulation par repère opposé',def:false},
     {k:'fastTrigger',t:'bool',lab:'⚡ Déclencheur Rapide : Achat (FMC vert OU KK vert) & Vente (KK rouge)',def:false},
     {k:'showKkBuy',t:'bool',lab:'Afficher la Pastille Achat FMC × KK (Verte)',def:true},
@@ -32364,7 +32408,11 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // 5. Génération des pastilles de SORTIE ÉLITE (Optimal : retournement ALMA 4m par défaut, sélectionnable)
+      // 5. Génération des pastilles de SORTIE ÉLITE (Rondes KK 10m Croisement & Ligne 0 + ALMA classique)
+      const showAlmaExits = (indFmc.showEliteExits !== false);
+      const showKkCrossExits = (indFmc.showEliteKkExitCross !== false);
+      const showKkZeroExits = (indFmc.showEliteKkExitZero !== false);
+
       const eliteExitTf = +(indFmc.eliteExitTf != null ? indFmc.eliteExitTf : 4);
       let asdExit = null;
       if (eliteExitTf === 2) {
@@ -32385,52 +32433,138 @@ function computeFMCSignals(cleFmc, cleStrat) {
         entry.num = tradeNum;
         const nextEntry = eliteEntries[eIdx + 1];
         const maxK = nextEntry ? nextEntry.i : (d.length - 1);
+        const isLong = (entry.dir === 1);
 
-        let exitFound = false;
-        let wasAligned = (entry.dir === 1 ? isExitGreen(entry.i) : isExitViolet(entry.i));
-        for (let k = entry.i + 1; k <= maxK; k++) {
-          if (entry.dir === 1 && isExitGreen(k)) wasAligned = true;
-          if (entry.dir === -1 && isExitViolet(k)) wasAligned = true;
-          const isExitTriggered = wasAligned && ((entry.dir === 1) ? isExitViolet(k) : isExitGreen(k));
-          if (isExitTriggered) {
-            const b = d[k];
-            if (b) {
-              const isLong = (entry.dir === 1);
-              const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
-              const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-              const isInversion = !!(nextEntry && k === nextEntry.i);
-              signals.push({
-                i: k, t: b.t, dir: isLong ? -1 : 1,
-                type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
-                optKey: 'fmc_elite_exits',
-                isExit: true,
-                isElite: true,
-                isEliteExit: true,
-                exitOf: isLong ? 'ACHAT' : 'VENTE',
-                tradeNum: tradeNum,
-                entryI: entry.i,
-                entryPrice: entry.price,
-                pnl: pnl,
-                pnlStr: pnlStr,
-                price: b.c, low: b.l, high: b.h,
-                label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
-                badge: isInversion ? ('🔄 #' + tradeNum + ' CLÔTURE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE') : ('🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE'),
-                sub: isInversion ? ('Inversion (' + nextEntry.type + ') · ' + pnlStr) : ('Retournement ALMA ' + eliteExitTf + 'm · ' + pnlStr),
-                color: '#FACC15',
-                borderCol: '#EAB308',
-                bgFill: 'rgba(38, 28, 6, 0.96)'
-              });
+        let tradeHasAnyExit = false;
+
+        // A. Sortie Ronde KK 10m (Croisement Net vs Signal opposé — PF 41.71)
+        if (showKkCrossExits) {
+          for (let k = entry.i + 1; k <= maxK; k++) {
+            const isCrossTriggered = isLong
+              ? (net10[k] != null && sig10[k] != null && net10[k] < sig10[k])
+              : (net10[k] != null && sig10[k] != null && net10[k] > sig10[k]);
+            if (isCrossTriggered) {
+              const b = d[k];
+              if (b) {
+                const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                signals.push({
+                  i: k, t: b.t, dir: isLong ? -1 : 1,
+                  type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                  optKey: 'fmc_elite_exit_kk_cross',
+                  isExit: true,
+                  isElite: true,
+                  isEliteKkCross: true,
+                  isRound: true,
+                  icon: '⨂',
+                  exitType: 'kk_cross',
+                  exitOf: isLong ? 'ACHAT' : 'VENTE',
+                  tradeNum: tradeNum,
+                  entryI: entry.i,
+                  entryPrice: entry.price,
+                  pnl: pnl,
+                  pnlStr: pnlStr,
+                  price: b.c, low: b.l, high: b.h,
+                  label: 'SORTIE KK 10m (Croisement)',
+                  badge: '⨂ SORTIE',
+                  sub: 'Croisement KK 10m · ' + pnlStr,
+                  color: '#38BDF8',
+                  borderCol: '#0284C7',
+                  bgFill: 'rgba(7, 43, 62, 0.96)'
+                });
+                tradeHasAnyExit = true;
+              }
+              break;
             }
-            exitFound = true;
-            break; // 1ère sortie trouvée pour ce trade Élite
           }
         }
 
-        // Si aucune sortie ALMA n'a eu lieu avant le signal opposé suivant, clôture impérative à l'inversion
-        if (!exitFound && nextEntry) {
+        // B. Sortie Ronde KK 10m (Franchissement Ligne Zéro — Sécurité Max WR 81.5% / PF 146.5)
+        if (showKkZeroExits) {
+          for (let k = entry.i + 1; k <= maxK; k++) {
+            const isZeroTriggered = isLong
+              ? (net10[k] != null && net10[k] <= 0)
+              : (net10[k] != null && net10[k] >= 0);
+            if (isZeroTriggered) {
+              const b = d[k];
+              if (b) {
+                const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                signals.push({
+                  i: k, t: b.t, dir: isLong ? -1 : 1,
+                  type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                  optKey: 'fmc_elite_exit_kk_zero',
+                  isExit: true,
+                  isElite: true,
+                  isEliteKkZero: true,
+                  isRound: true,
+                  icon: 'Ø',
+                  exitType: 'kk_zero',
+                  exitOf: isLong ? 'ACHAT' : 'VENTE',
+                  tradeNum: tradeNum,
+                  entryI: entry.i,
+                  entryPrice: entry.price,
+                  pnl: pnl,
+                  pnlStr: pnlStr,
+                  price: b.c, low: b.l, high: b.h,
+                  label: 'SORTIE KK 10m (Ligne 0)',
+                  badge: 'Ø SORTIE',
+                  sub: 'Ligne Zéro KK 10m · ' + pnlStr,
+                  color: '#F59E0B',
+                  borderCol: '#D97706',
+                  bgFill: 'rgba(55, 30, 3, 0.96)'
+                });
+                tradeHasAnyExit = true;
+              }
+              break;
+            }
+          }
+        }
+
+        // C. Sortie Rectangulaire Classique ALMA Élite
+        if (showAlmaExits) {
+          let wasAligned = (isLong ? isExitGreen(entry.i) : isExitViolet(entry.i));
+          for (let k = entry.i + 1; k < maxK; k++) {
+            if (isLong && isExitGreen(k)) wasAligned = true;
+            if (!isLong && isExitViolet(k)) wasAligned = true;
+            const isExitTriggered = wasAligned && (isLong ? isExitViolet(k) : isExitGreen(k));
+            if (isExitTriggered) {
+              const b = d[k];
+              if (b) {
+                const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                signals.push({
+                  i: k, t: b.t, dir: isLong ? -1 : 1,
+                  type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                  optKey: 'fmc_elite_exits',
+                  isExit: true,
+                  isElite: true,
+                  isEliteExit: true,
+                  exitOf: isLong ? 'ACHAT' : 'VENTE',
+                  tradeNum: tradeNum,
+                  entryI: entry.i,
+                  entryPrice: entry.price,
+                  pnl: pnl,
+                  pnlStr: pnlStr,
+                  price: b.c, low: b.l, high: b.h,
+                  label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
+                  badge: '🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE',
+                  sub: 'Retournement ALMA ' + eliteExitTf + 'm · ' + pnlStr,
+                  color: '#FACC15',
+                  borderCol: '#EAB308',
+                  bgFill: 'rgba(38, 28, 6, 0.96)'
+                });
+                tradeHasAnyExit = true;
+              }
+              break;
+            }
+          }
+        }
+
+        // D. Clôture de secours STRICTEMENT réservée aux vrais orphelins (aucune sortie survenue)
+        if (!tradeHasAnyExit && nextEntry) {
           const b = d[nextEntry.i];
           if (b) {
-            const isLong = (entry.dir === 1);
             const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
             const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
             signals.push({
@@ -32669,7 +32803,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   cleStrat = cleStrat || 'strat_fmc';
   const indFmc = state.indicators[cleStrat];
   if (!indFmc || !indFmc.on) return;
-  if (indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showElite === false && indFmc.showEliteExits === false && indFmc.showExits === false && indFmc.showExitsV2 === false) return;
+  if (indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showElite === false && indFmc.showEliteExits === false && indFmc.showEliteKkExitCross === false && indFmc.showEliteKkExitZero === false && indFmc.showExits === false && indFmc.showExitsV2 === false) return;
 
   const signals = fmcRes.signals || [];
   if (!signals.length) return;
@@ -32691,8 +32825,10 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       if (sig.i < s || sig.i >= e) continue;
       if (sig.isExit) {
         if (sig.isEliteExit && indFmc.showEliteExits === false) continue;
-        if (!sig.isEliteExit && !sig.isRunnerExit && indFmc.showExits === false) continue;
-        if (!sig.isEliteExit && sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
+        if (sig.isEliteKkCross && indFmc.showEliteKkExitCross === false) continue;
+        if (sig.isEliteKkZero && indFmc.showEliteKkExitZero === false) continue;
+        if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && !sig.isRunnerExit && indFmc.showExits === false) continue;
+        if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
       }
       if (!sig.isExit) {
         if (sig.isElite && indFmc.showElite === false) continue;
@@ -32705,6 +32841,47 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
         if (!sig.isElite && sig.dir === -1 && isAlmaGreen(sig.i)) continue;
       }
 
+      const x = xOf(sig.i);
+      const isLong = sig.dir === 1;
+      const isPlacedAbove = sig.isExit ? (sig.type === 'SORTIE ACHAT') : !isLong;
+
+      // Dessin des pastilles RONDES (Sorties KK 10m Croisement & Ligne 0)
+      if (sig.isRound) {
+        const rad = Math.round(11 * kT);
+        const anchorY = yOf(isPlacedAbove ? sig.high : sig.low);
+        const rawBy = isPlacedAbove ? (anchorY - rad - 20) : (anchorY + rad + 20);
+        const by = (typeof placeBadge === 'function') ? placeBadge(x - rad, rad * 2, rawBy - rad, rad * 2, isPlacedAbove ? -1 : 1) + rad : rawBy;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, by, rad, 0, Math.PI * 2);
+        ctx.fillStyle = sig.bgFill || 'rgba(15, 23, 42, 0.95)';
+        ctx.fill();
+        ctx.strokeStyle = sig.borderCol || sig.color;
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = sig.borderCol || sig.color;
+        ctx.shadowBlur = 6;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Icône centrale (⨂ ou Ø)
+        ctx.font = 'bold ' + Math.round(11 * kT) + 'px "IBM Plex Sans", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = sig.color;
+        ctx.fillText(sig.icon || (sig.exitType === 'kk_cross' ? '⨂' : 'Ø'), x, by);
+
+        // Petit tag PnL au-dessus ou en-dessous
+        if (sig.pnl != null) {
+          ctx.font = 'bold ' + (7.5 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
+          ctx.fillStyle = sig.pnl >= 0 ? '#34D399' : '#F87171';
+          const pnlText = (sig.pnl >= 0 ? '+' : '') + sig.pnl.toFixed(1);
+          ctx.fillText(pnlText, x, isPlacedAbove ? (by - rad - 4) : (by + rad + 10));
+        }
+        ctx.restore();
+        continue;
+      }
+
       const isConf = !!sig.isConfluenceKK;
       const isElite = !!sig.isElite;
       const isRappel = !!sig.isRappel;
@@ -32712,9 +32889,6 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       const bw = Math.round((isExit ? (sig.isEliteExit ? 156 : 132) : (isElite ? 158 : (isConf ? 136 : 112))) * kT);
       const bh = Math.round((isExit ? 27 : 44) * kT);
 
-      const x = xOf(sig.i);
-      const isLong = sig.dir === 1;
-      const isPlacedAbove = isExit ? (sig.type === 'SORTIE ACHAT') : !isLong;
       const color = isRappel ? (indFmc.cRappel || '#94A3B8') : (sig.color || (isLong ? '#00E676' : '#FF0055'));
       const borderCol = isRappel ? (indFmc.cRappelBorder || '#64748B') : (sig.borderCol || color);
       const anchorY = yOf(isPlacedAbove ? sig.high : sig.low);
@@ -38745,6 +38919,22 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       sideBtnV2.style.borderColor = showExitsV2 ? '#00E5FF' : '#64748B';
       sideBtnV2.style.color = showExitsV2 ? '#00E5FF' : '#94A3B8';
     }
+    const showKkCross = (state.indicators?.strat_fmc?.showEliteKkExitCross !== false);
+    const btnKkCross = document.getElementById('btn-toggle-fmc-kk-cross');
+    if (btnKkCross) {
+      btnKkCross.textContent = showKkCross ? '⨂ KK Cross : ON' : '⨂ KK Cross : OFF';
+      btnKkCross.style.background = showKkCross ? 'rgba(56,189,248,0.22)' : 'rgba(100,116,139,0.2)';
+      btnKkCross.style.borderColor = showKkCross ? '#38BDF8' : '#64748B';
+      btnKkCross.style.color = showKkCross ? '#38BDF8' : '#94A3B8';
+    }
+    const showKkZero = (state.indicators?.strat_fmc?.showEliteKkExitZero !== false);
+    const btnKkZero = document.getElementById('btn-toggle-fmc-kk-zero');
+    if (btnKkZero) {
+      btnKkZero.textContent = showKkZero ? 'Ø KK Zéro : ON' : 'Ø KK Zéro : OFF';
+      btnKkZero.style.background = showKkZero ? 'rgba(245,158,11,0.22)' : 'rgba(100,116,139,0.2)';
+      btnKkZero.style.borderColor = showKkZero ? '#F59E0B' : '#64748B';
+      btnKkZero.style.color = showKkZero ? '#F59E0B' : '#94A3B8';
+    }
     if (typeof window.updateEliteExitTfUI === 'function') window.updateEliteExitTfUI();
     if (typeof updatePastillesHubCheckboxesOnly === 'function') updatePastillesHubCheckboxesOnly();
   };
@@ -38777,6 +38967,30 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if (typeof render === 'function') render();
   };
 
+  window.toggleFmcKkCross = function(){
+    if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+    const cur = !(state.indicators.strat_fmc.showEliteKkExitCross !== false);
+    state.indicators.strat_fmc.showEliteKkExitCross = cur;
+    window.updateFmcExitsUI();
+    try { if (typeof saveConfig === 'function') saveConfig(); } catch(e) {}
+    if (typeof toast === 'function') {
+      toast(cur ? '⨂ Sortie Ronde KK 10m (Croisement) : ACTIVÉE' : '⨂ Sortie Ronde KK 10m : DÉSACTIVÉE', cur ? '#38BDF8' : '#94A3B8');
+    }
+    if (typeof render === 'function') render();
+  };
+
+  window.toggleFmcKkZero = function(){
+    if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+    const cur = !(state.indicators.strat_fmc.showEliteKkExitZero !== false);
+    state.indicators.strat_fmc.showEliteKkExitZero = cur;
+    window.updateFmcExitsUI();
+    try { if (typeof saveConfig === 'function') saveConfig(); } catch(e) {}
+    if (typeof toast === 'function') {
+      toast(cur ? 'Ø Sortie Ronde KK 10m (Ligne Zéro) : ACTIVÉE' : 'Ø Sortie Ronde KK 10m : DÉSACTIVÉE', cur ? '#F59E0B' : '#94A3B8');
+    }
+    if (typeof render === 'function') render();
+  };
+
   try{
     const a = document.getElementById('nouv-btn') || document.getElementById('inv-btn');
     if(a && !document.getElementById('norosc-btn')){
@@ -38798,7 +39012,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-1345';
+  window.__LUMEN_BUILD = 'B-0910-1425';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
