@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0300</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0310</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -705,11 +705,6 @@ footer{
             style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #64748B;background:rgba(100,116,139,0.2);color:#94A3B8;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
             title="Activer / Désactiver la condition stricte : repère vert/rouge immédiatement avant la pastille (≤ 2 bougies) et annulation par repères opposés">
             🛡️ Règle Stricte : OFF
-          </button>
-          <button id="btn-toggle-fmc-exits" onclick="event.stopPropagation();window.toggleFmcExits && window.toggleFmcExits()"
-            style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #FF007A;background:rgba(255,0,122,0.18);color:#FF007A;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
-            title="Masquer / Afficher les pastilles de sortie dès l'apparition d'un triangle ou losange opposé (SORTIE ACHAT / SORTIE VENTE)">
-            🏁 Sorties: ON
           </button>
           <button id="btn-toggle-fmc-fast" onclick="event.stopPropagation();window.toggleFmcFast && window.toggleFmcFast()"
             style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #64748B;background:rgba(100,116,139,0.2);color:#94A3B8;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
@@ -5686,7 +5681,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -5941,7 +5936,6 @@ function loadConfig(){
       if(state.indicators.strat_fmc.maxDelay === undefined) state.indicators.strat_fmc.maxDelay = 30;
       if(state.indicators.strat_fmc.strictCaducite === undefined) state.indicators.strat_fmc.strictCaducite = false;
       if(state.indicators.strat_fmc.fastTrigger === undefined) state.indicators.strat_fmc.fastTrigger = false;
-      if(state.indicators.strat_fmc.showExits === undefined) state.indicators.strat_fmc.showExits = true;
       state.indicators.strat_fmc.requireFmcColors = false;
     }
     if(state.indicators.strat_mm){
@@ -15081,22 +15075,6 @@ const PASTILLES_CATALOG = [
         }
       },
       {
-        id: 'fmc_exits',
-        icon: '🏁',
-        label: 'Pastilles de Sortie (Repère Opposé)',
-        desc: 'Signale la sortie de trade dès qu\'un repère opposé (triangle ou losange) apparaît (SORTIE ACHAT / SORTIE VENTE)',
-        accent: '#FF007A',
-        def: true,
-        get: () => state.indicators?.strat_fmc?.showExits !== false,
-        set: (v) => {
-          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
-          state.indicators.strat_fmc.showExits = v;
-          if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
-          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
-          if (typeof render === 'function') render();
-        }
-      },
-      {
         id: 'fmc_badges',
         icon: '🌊',
         label: 'Pastilles FMC Autonomes',
@@ -18080,7 +18058,7 @@ function checkAutoTrade(inputSignals){
         const mEnt = (strat && strat.mEnt) ? strat.mEnt : (document.getElementById('paper-ent')?.value || 'mm_all');
         if (mEnt.startsWith('fmc_') || mEnt === 'mm_fmc_solo' || mEnt === 'fmc_solo') {
           const fmcRes = typeof computeFMCSignals === 'function' ? computeFMCSignals() : null;
-          candidateSignals = (fmcRes && fmcRes.signals) ? fmcRes.signals.filter(s => !s.isExit) : [];
+          candidateSignals = (fmcRes && fmcRes.signals) ? fmcRes.signals : [];
           if (mEnt === 'fmc_score') candidateSignals = candidateSignals.filter(s => s.optKey === 'score');
           else if (mEnt === 'fmc_contrarien') candidateSignals = candidateSignals.filter(s => s.optKey === 'contrarien');
           else if (mEnt === 'fmc_divergence') candidateSignals = candidateSignals.filter(s => s.optKey === 'divergence');
@@ -19106,7 +19084,6 @@ const SCHEMA={
     {k:'showKkBuy',t:'bool',lab:'Afficher la Pastille Achat FMC × KK (Verte)',def:true},
     {k:'showKkSell',t:'bool',lab:'Afficher la Pastille Vente FMC × KK (Rouge)',def:true},
     {k:'showRappels',t:'bool',lab:'Afficher les pastilles de rappel grisées (confirmations)',def:true},
-    {k:'showExits',t:'bool',lab:'Afficher les pastilles de Sortie (🏁 SORTIE ACHAT / SORTIE VENTE)',def:true},
     {k:'filterAlma',t:'bool',lab:'Filtre Alma SD (si Alma actif : Pas de Vente si Vert, Pas d\'Achat si Violet)',def:true},
     {k:'showKkConfluence',t:'bool',lab:'Activer la Confluence FMC × KK (Triangles ±75)',def:true},
     {k:'requireFmcColors',t:'bool',lab:'Exiger Ligne & Histogramme FMC du même sens (Vert: Achat / Rouge: Vente)',def:true},
@@ -19690,7 +19667,6 @@ function setStyle(ind,key,val,recalc){
   if(recalc)state.cache={};
   saveConfig(); syncMenu(); updateChips();
   if(typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
-  if(typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
   if(typeof window.updateFmcFastUI === 'function') window.updateFmcFastUI();
   render();
 }
@@ -19698,7 +19674,6 @@ document.getElementById('cfg-close').addEventListener('click',()=>{
   document.getElementById('cfg-back').classList.remove('open');
   saveConfig();
   if(typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
-  if(typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
   if(typeof window.updateFmcFastUI === 'function') window.updateFmcFastUI();
   render();
 });
@@ -19706,7 +19681,6 @@ document.getElementById('cfg-ok').addEventListener('click',()=>{
   document.getElementById('cfg-back').classList.remove('open');
   saveConfig();
   if(typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
-  if(typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
   if(typeof window.updateFmcFastUI === 'function') window.updateFmcFastUI();
   render();
 });
@@ -19716,7 +19690,6 @@ document.getElementById('cfg-back').addEventListener('click',e=>{
     document.getElementById('cfg-back').classList.remove('open');
     saveConfig();
     if(typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
-    if(typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
     if(typeof window.updateFmcFastUI === 'function') window.updateFmcFastUI();
     render();
   }
@@ -20991,9 +20964,7 @@ function checkAllAlerts(){
       const fmcData = computeFMCSignals('fmc', 'strat_fmc');
       if(fmcData && Array.isArray(fmcData.signals)){
         fmcData.signals.forEach(s => {
-          if (s.isExit) {
-            if (indFmc.showExits === false) return;
-          } else if (s.isConfluenceKK) {
+          if (s.isConfluenceKK) {
             if (indFmc.showKkConfluence === false) return;
             if (s.dir === 1 && indFmc.showKkBuy === false) return;
             if (s.dir === -1 && indFmc.showKkSell === false) return;
@@ -21002,8 +20973,7 @@ function checkAllAlerts(){
             if (indFmc.showBadges === false) return;
           }
           let optTag = '🌊 Pastille FMC';
-          if (s.isExit) optTag = s.badge || ('🏁 ' + s.type);
-          else if(s.isRappel) optTag = (s.dir === 1 ? '⚡ Rappel Achat FMC × KK' : '⚡ Rappel Vente FMC × KK');
+          if(s.isRappel) optTag = (s.dir === 1 ? '⚡ Rappel Achat FMC × KK' : '⚡ Rappel Vente FMC × KK');
           else if(s.isConfluenceKK) optTag = (s.dir === 1 ? '⚡ Achat FMC × KK' : '⚡ Vente FMC × KK');
           else if(s.optKey === 'contrarien') optTag = '🌊 FMC ▲▼ Contrarien';
           else if(s.optKey === 'score') optTag = '🌊 FMC ◆ Continuation';
@@ -31926,82 +31896,6 @@ function computeFMCSignals(cleFmc, cleStrat) {
     }
   }
 
-  // --- GÉNÉRATION DES SORTIES FMC (sur apparition d'un repère opposé) ---
-  if (indFmc.showExits !== false) {
-    const redMarkers = new Map();
-    for (const i of triVente) redMarkers.set(i, 'triangle');
-    for (const i of losVente) { if (!redMarkers.has(i)) redMarkers.set(i, 'losange'); }
-
-    const greenMarkers = new Map();
-    for (const i of triAchat) greenMarkers.set(i, 'triangle');
-    for (const i of losAchat) { if (!greenMarkers.has(i)) greenMarkers.set(i, 'losange'); }
-
-    // On récupère les entrées principales (non-rappels, non-exits)
-    const mainEntries = signals.filter(s => (s.type === 'ACHAT' || s.type === 'VENTE') && !s.isRappel && !s.isExit).sort((a, b) => a.i - b.i);
-
-    for (let eIdx = 0; eIdx < mainEntries.length; eIdx++) {
-      const entry = mainEntries[eIdx];
-      const nextEntry = mainEntries[eIdx + 1];
-      const maxK = nextEntry ? nextEntry.i : (d.length - 1);
-
-      for (let k = entry.i + 1; k <= maxK; k++) {
-        if (entry.type === 'ACHAT') {
-          if (redMarkers.has(k)) {
-            const b = d[k];
-            if (b) {
-              const markerType = redMarkers.get(k);
-              const pnl = b.c - entry.price;
-              const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-              signals.push({
-                i: k, t: b.t, dir: -1,
-                type: 'SORTIE ACHAT',
-                optKey: 'fmc_exits',
-                isExit: true,
-                exitOf: 'ACHAT',
-                entryPrice: entry.price,
-                pnl: pnl,
-                price: b.c, low: b.l, high: b.h,
-                label: 'SORTIE ACHAT',
-                badge: '🏁 SORTIE ACHAT',
-                sub: (markerType === 'triangle' ? '▼ Triangle rouge' : '▼ Losange rouge') + ' · ' + pnlStr,
-                color: '#FF007A',
-                borderCol: '#FF55A3',
-                bgFill: 'rgba(50, 10, 30, 0.95)'
-              });
-            }
-            break; // Sortie trouvée, trade clôturé
-          }
-        } else if (entry.type === 'VENTE') {
-          if (greenMarkers.has(k)) {
-            const b = d[k];
-            if (b) {
-              const markerType = greenMarkers.get(k);
-              const pnl = entry.price - b.c;
-              const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-              signals.push({
-                i: k, t: b.t, dir: 1,
-                type: 'SORTIE VENTE',
-                optKey: 'fmc_exits',
-                isExit: true,
-                exitOf: 'VENTE',
-                entryPrice: entry.price,
-                pnl: pnl,
-                price: b.c, low: b.l, high: b.h,
-                label: 'SORTIE VENTE',
-                badge: '🏁 SORTIE VENTE',
-                sub: (markerType === 'triangle' ? '▲ Triangle vert' : '▲ Losange vert') + ' · ' + pnlStr,
-                color: '#FFD700',
-                borderCol: '#FFE55C',
-                bgFill: 'rgba(45, 38, 10, 0.95)'
-              });
-            }
-            break; // Sortie trouvée, trade clôturé
-          }
-        }
-      }
-    }
-  }
-
   signals.sort((a, b) => a.i - b.i);
   return { signals };
 }
@@ -32032,32 +31926,27 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
 
   for (const sig of signals) {
     if (sig.i < s || sig.i >= e) continue;
-    if (sig.isExit && indFmc.showExits === false) continue;
-    if (!sig.isExit) {
-      if (sig.isConfluenceKK && indFmc.showKkConfluence === false) continue;
-      if (sig.isConfluenceKK && sig.dir === 1 && indFmc.showKkBuy === false) continue;
-      if (sig.isConfluenceKK && sig.dir === -1 && indFmc.showKkSell === false) continue;
-      if (!sig.isConfluenceKK && indFmc.showBadges === false) continue;
-      if (sig.isRappel && indFmc.showRappels === false) continue;
-      if (sig.dir === 1 && isAlmaViolet(sig.i)) continue;
-      if (sig.dir === -1 && isAlmaGreen(sig.i)) continue;
-    }
+    if (sig.isConfluenceKK && indFmc.showKkConfluence === false) continue;
+    if (sig.isConfluenceKK && sig.dir === 1 && indFmc.showKkBuy === false) continue;
+    if (sig.isConfluenceKK && sig.dir === -1 && indFmc.showKkSell === false) continue;
+    if (!sig.isConfluenceKK && indFmc.showBadges === false) continue;
+    if (sig.isRappel && indFmc.showRappels === false) continue;
+    if (sig.dir === 1 && isAlmaViolet(sig.i)) continue;
+    if (sig.dir === -1 && isAlmaGreen(sig.i)) continue;
 
     const isConf = !!sig.isConfluenceKK;
     const isRappel = !!sig.isRappel;
-    const isExit = !!sig.isExit;
-    const bw = Math.round((isExit ? 132 : (isConf ? 128 : 108)) * kT);
+    const bw = Math.round((isConf ? 128 : 108) * kT);
     const bh = Math.round(44 * kT);
 
     const x = xOf(sig.i);
     const isLong = sig.dir === 1;
-    const isPlacedAbove = isExit ? (sig.type === 'SORTIE ACHAT') : !isLong;
     const color = isRappel ? (indFmc.cRappel || '#94A3B8') : (sig.color || (isLong ? '#00E676' : '#FF0055'));
-    const borderCol = isRappel ? (indFmc.cRappelBorder || '#64748B') : (sig.borderCol || color);
-    const anchorY = yOf(isPlacedAbove ? sig.high : sig.low);
+    const borderCol = isRappel ? (indFmc.cRappelBorder || '#64748B') : color;
+    const anchorY = yOf(isLong ? sig.low : sig.high);
     const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
-    const rawBy = isPlacedAbove ? (anchorY - bh - 80) : (anchorY + 80);
-    const by = (typeof placeBadge === 'function') ? placeBadge(bx, bw, rawBy, bh, isPlacedAbove ? -1 : 1) : rawBy;
+    const rawBy = isLong ? (anchorY + 80) : (anchorY - bh - 80);
+    const by = (typeof placeBadge === 'function') ? placeBadge(bx, bw, rawBy, bh, isLong ? 1 : -1) : rawBy;
 
     ctx.save();
     // Fond
@@ -32078,21 +31967,19 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
 
     // Bordure
     ctx.strokeStyle = borderCol;
-    ctx.lineWidth = isRappel ? 1.3 : (isExit ? 2.2 : (isConf ? 2.0 : 1.5));
+    ctx.lineWidth = isRappel ? 1.3 : (isConf ? 2.0 : 1.5);
     if (isRappel) {
       ctx.setLineDash([3, 2]);
     }
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Ligne 1 : type (ACHAT / VENTE FMC × KK ou RAPPEL ACHAT / RAPPEL VENTE ou SORTIE ACHAT / SORTIE VENTE)
+    // Ligne 1 : type (ACHAT / VENTE FMC × KK ou RAPPEL ACHAT / RAPPEL VENTE)
     ctx.font = 'bold ' + (10 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = isRappel ? '#CBD5E1' : color;
     let titleTxt = '';
-    if (isExit) {
-      titleTxt = sig.badge || sig.label || sig.type;
-    } else if (isRappel) {
+    if (isRappel) {
       titleTxt = isLong ? '⚡ RAPPEL ACHAT' : '⚡ RAPPEL VENTE';
     } else if (isConf) {
       titleTxt = isLong ? ('⚡ ACHAT ' + nomFmc + ' × KK') : ('⚡ VENTE ' + nomFmc + ' × KK');
@@ -32101,19 +31988,15 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     }
     ctx.fillText(titleTxt, bx + bw / 2, by + 13 * kT);
 
-    // Ligne 2 : motif / nature / PnL
+    // Ligne 2 : motif / nature
     ctx.font = 'bold ' + (8.5 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
-    if (isExit) {
-      ctx.fillStyle = (sig.pnl != null && sig.pnl >= 0) ? '#34D399' : '#F87171';
-    } else {
-      ctx.fillStyle = isRappel ? '#94A3B8' : (isConf ? '#FCD34D' : '#CBD5E1');
-    }
-    const natureLabel = isExit ? (sig.sub || '') : (isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || ''));
+    ctx.fillStyle = isRappel ? '#94A3B8' : (isConf ? '#FCD34D' : '#CBD5E1');
+    const natureLabel = isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || '');
     ctx.fillText(natureLabel, bx + bw / 2, by + 25 * kT);
 
     // Ligne 3 : prix
     ctx.font = (8 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
-    ctx.fillStyle = isExit ? '#E2E8F0' : (isRappel ? '#64748B' : '#94A3B8');
+    ctx.fillStyle = isRappel ? '#64748B' : '#94A3B8';
     ctx.fillText('$' + fmt(sig.price, 1), bx + bw / 2, by + 37 * kT);
 
     // Tige (lien pastille → bougie)
@@ -32122,14 +32005,14 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     ctx.setLineDash([2, 2]);
     ctx.beginPath();
     ctx.moveTo(x, anchorY);
-    ctx.lineTo(x, isPlacedAbove ? (by + bh) : by);
+    ctx.lineTo(x, by + (isLong ? 0 : bh));
     ctx.stroke();
     ctx.setLineDash([]);
 
     ctx.restore();
 
-    // Ligne verticale (uniquement pour entrées et rappels, pas pour sorties)
-    if (!isExit && indFmc.showVerticalLines !== false) {
+    // Ligne verticale
+    if (indFmc.showVerticalLines !== false) {
       if (!Array.isArray(window.__zzVerticales)) window.__zzVerticales = [];
       const startY = isLong ? (by + bh) : anchorY;
       window.__zzVerticales.push({ x: x, y: startY, col: isRappel ? 'rgba(148, 163, 184, 0.35)' : color });
@@ -37979,32 +37862,6 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if (typeof render === 'function') render();
   };
 
-  window.updateFmcExitsUI = function(){
-    const showExits = (state.indicators?.strat_fmc?.showExits !== false);
-    const sideBtn = document.getElementById('btn-toggle-fmc-exits');
-    if (sideBtn) {
-      sideBtn.textContent = showExits ? '🏁 Sorties FMC : ON' : '🏁 Sorties FMC : OFF';
-      sideBtn.style.background = showExits ? 'rgba(255,0,122,0.22)' : 'rgba(100,116,139,0.2)';
-      sideBtn.style.borderColor = showExits ? '#FF007A' : '#64748B';
-      sideBtn.style.color = showExits ? '#FF55A3' : '#94A3B8';
-    }
-    if (typeof updatePastillesHubCheckboxesOnly === 'function') updatePastillesHubCheckboxesOnly();
-  };
-
-  window.toggleFmcExits = function(){
-    if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
-    const cur = !(state.indicators.strat_fmc.showExits !== false);
-    state.indicators.strat_fmc.showExits = cur;
-    window.updateFmcExitsUI();
-    try {
-      if (typeof saveConfig === 'function') saveConfig();
-    } catch(e) {}
-    if (typeof toast === 'function') {
-      toast(cur ? '🏁 Sorties FMC : ACTIVÉES (Pastilles sortie sur repère opposé)' : '🏁 Sorties FMC : DÉSACTIVÉES', cur ? '#FF007A' : '#94A3B8');
-    }
-    if (typeof render === 'function') render();
-  };
-
   window.updateFmcFastUI = function(){
     const isFast = !!(state.indicators?.strat_fmc?.fastTrigger);
     const topBtn = document.getElementById('fmc-fast-top-btn');
@@ -38059,14 +37916,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0300';
+  window.__LUMEN_BUILD = 'B-0910-0310';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
     const hTag = document.getElementById('header-build-tag');
     if (hTag) hTag.textContent = 'Build ' + window.__LUMEN_BUILD;
     if (typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
-    if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
     if (typeof window.updateFmcFastUI === 'function') window.updateFmcFastUI();
   }, 100);
   console.log('%c[Lumen] version ' + window.__LUMEN_BUILD, 'color:#00E5FF;font-weight:700');
