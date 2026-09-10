@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0080</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0090</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -31417,206 +31417,243 @@ function computeFMCSignals(cleFmc, cleStrat) {
         return (typeof idxOfTime === 'function') ? idxOfTime(srcKK[idx5].t) : idx5;
       };
 
-      // 1. Rassembler tous les repères VENTE (Triangles rouges KK 5m, Triangles rouges FMC, Losanges rouges FMC)
-      const repVente = [];
+      const isKkGreen = (idx) => {
+        if (idx < 0 || idx >= net.length || net[idx] == null) return false;
+        return (sig[idx] != null) ? (net[idx] > sig[idx]) : (net[idx] >= (net[idx - 1] ?? net[idx]));
+      };
+      const isKkRed = (idx) => {
+        if (idx < 0 || idx >= net.length || net[idx] == null) return false;
+        return (sig[idx] != null) ? (net[idx] <= sig[idx]) : (net[idx] <= (net[idx - 1] ?? net[idx]));
+      };
+
+      // 1. Repères TRIANGLES : pour initialiser / inverser les entrées de cycle
+      const triVente = [];
       for (const pk5 of peaks5) {
         const pkD = toChartIdx(pk5);
-        if (pkD != null && pkD >= 1 && pkD < d.length) repVente.push({ i: pkD, type: 'triangle rouge', kind: 'triangle_kk' });
+        if (pkD != null && pkD >= 1 && pkD < d.length) triVente.push(pkD);
       }
-      if (fs_) {
-        for (const g of (fs_.contraShort || [])) {
-          if (g.i != null && g.i >= 1 && g.i < d.length) repVente.push({ i: g.i, type: 'triangle rouge', kind: 'triangle_fmc' });
-        }
-        for (const g of (fs_.sells || [])) {
-          if (g.i != null && g.i >= 1 && g.i < d.length) repVente.push({ i: g.i, type: 'losange rouge', kind: 'losange_fmc' });
+      if (fs_ && Array.isArray(fs_.contraShort)) {
+        for (const g of fs_.contraShort) {
+          if (g.i != null && g.i >= 1 && g.i < d.length) triVente.push(g.i);
         }
       }
-      repVente.sort((a, b) => a.i - b.i);
+      triVente.sort((a, b) => a - b);
 
-      // Règle : dès qu'un triangle ou losange rouge apparaît, le premier qui apparaît juste avant n'est plus actif, on attend le dernier
-      const repVenteFiltres = [];
-      for (let idx = 0; idx < repVente.length; idx++) {
-        const r = repVente[idx];
-        const suivant = repVente[idx + 1];
-        if (suivant && (suivant.i - r.i <= 20)) {
-          continue; // le premier est ignoré, on attend le suivant !
-        }
-        repVenteFiltres.push(r);
-      }
-
-      // 2. Rassembler tous les repères ACHAT (Triangles verts KK 5m, Triangles verts FMC, Losanges verts FMC)
-      const repAchat = [];
+      const triAchat = [];
       for (const tr5 of troughs5) {
         const trD = toChartIdx(tr5);
-        if (trD != null && trD >= 1 && trD < d.length) repAchat.push({ i: trD, type: 'triangle vert', kind: 'triangle_kk' });
+        if (trD != null && trD >= 1 && trD < d.length) triAchat.push(trD);
       }
-      if (fs_) {
-        for (const g of (fs_.contraLong || [])) {
-          if (g.i != null && g.i >= 1 && g.i < d.length) repAchat.push({ i: g.i, type: 'triangle vert', kind: 'triangle_fmc' });
-        }
-        for (const g of (fs_.buys || [])) {
-          if (g.i != null && g.i >= 1 && g.i < d.length) repAchat.push({ i: g.i, type: 'losange vert', kind: 'losange_fmc' });
+      if (fs_ && Array.isArray(fs_.contraLong)) {
+        for (const g of fs_.contraLong) {
+          if (g.i != null && g.i >= 1 && g.i < d.length) triAchat.push(g.i);
         }
       }
-      repAchat.sort((a, b) => a.i - b.i);
+      triAchat.sort((a, b) => a - b);
 
-      // Règle : dès qu'un triangle ou losange vert apparaît, le premier qui apparaît juste avant n'est plus actif, on attend le dernier
-      const repAchatFiltres = [];
-      for (let idx = 0; idx < repAchat.length; idx++) {
-        const r = repAchat[idx];
-        const suivant = repAchat[idx + 1];
-        if (suivant && (suivant.i - r.i <= 20)) {
-          continue; // le premier est ignoré, on attend le suivant !
+      // 2. Repères LOSANGES FMC (score / continuation) : pour rappels de confirmation
+      const losVente = [];
+      if (fs_ && Array.isArray(fs_.sells)) {
+        for (const g of fs_.sells) {
+          if (g.i != null && g.i >= 1 && g.i < d.length) losVente.push(g.i);
         }
-        repAchatFiltres.push(r);
       }
+      losVente.sort((a, b) => a - b);
 
-      const confCandidate = [];
-
-      // DÉCLENCHEMENT VENTE à partir du dernier triangle/losange rouge actif
-      for (const rep of repVenteFiltres) {
-        let passed75 = false;
-        for (let j = Math.max(0, rep.i - 10); j <= Math.min(d.length - 1, rep.i + 4); j++) {
-          if (net[j] != null && net[j] >= seuilH) { passed75 = true; break; }
+      const losAchat = [];
+      if (fs_ && Array.isArray(fs_.buys)) {
+        for (const g of fs_.buys) {
+          if (g.i != null && g.i >= 1 && g.i < d.length) losAchat.push(g.i);
         }
+      }
+      losAchat.sort((a, b) => a - b);
 
-        for (let k = rep.i; k <= Math.min(d.length - 1, rep.i + 35); k++) {
-          if (net[k] == null) continue;
-          const isRed = (sig[k] != null) ? (net[k] <= sig[k]) : (net[k] <= (net[k-1] || net[k]));
-          if (!isRed) continue;
+      const allCandidates = [];
 
-          // Histogramme du milieu (FMC)
-          const fmcHistRed = (fs_ && fs_.tension && fs_.tension[k] != null)
-            ? (fs_.tension[k] < 0)
-            : ((fs_ && fs_.waveHist && fs_.waveHist[k] != null) ? (fs_.waveHist[k] < 50) : true);
-
-          const condClassique = passed75 && (net[k] < seuilH);
-          const condAlternatif = !passed75 && fmcHistRed;
-
-          if (condClassique || condAlternatif) {
-            const bougie = d[k];
-            if (!bougie) break;
-            confCandidate.push({
-              i: k, t: bougie.t, dir: -1,
-              type: 'VENTE',
-              optKey: 'fmc_kk_confluence',
-              isConfluenceKK: true,
-              price: bougie.c, low: bougie.l, high: bougie.h,
-              score: net[k],
-              reason: condClassique ? ('▼ ' + rep.type + ' + KK 5m < +75') : ('▼ ' + rep.type + ' + KK 5m & Hist Rouges'),
-              label: 'VENTE FMC × KK',
-              badge: '⚡ VENTE FMC × KK',
-              sub: condClassique
-                ? ('▼ ' + rep.type + ' · KK 5m=' + Math.round(net[k]) + ' (< +' + seuilH + ') · Ligne Rouge')
-                : ('▼ ' + rep.type + ' (sans > +75) · KK 5m=' + Math.round(net[k]) + ' · Hist Rouge'),
-              color: cSell,
-              bgFill: 'rgba(44, 10, 24, 0.95)'
+      // A) Candidats Entrée Vente à partir des triangles rouges :
+      // Déclenchement dès que la ligne KK est rouge (sans retard, 1 bougie max)
+      for (const repI of triVente) {
+        for (let k = repI; k <= Math.min(d.length - 1, repI + 25); k++) {
+          if (isKkRed(k)) {
+            const b = d[k];
+            if (!b) break;
+            allCandidates.push({
+              i: k, t: b.t, dir: -1,
+              originType: 'triangle',
+              price: b.c, low: b.l, high: b.h,
+              score: net[k] ?? 0,
+              reason: '▼ Triangle rouge + Ligne KK rouge'
             });
-            break;
+            break; // Dès la 1ère bougie rouge, pas de retard !
           }
         }
       }
 
-      // DÉCLENCHEMENT ACHAT à partir du dernier triangle/losange vert actif
-      for (const rep of repAchatFiltres) {
-        let passedM75 = false;
-        for (let j = Math.max(0, rep.i - 10); j <= Math.min(d.length - 1, rep.i + 4); j++) {
-          if (net[j] != null && net[j] <= seuilB) { passedM75 = true; break; }
+      // B) Candidats Entrée Achat à partir des triangles verts :
+      // Déclenchement dès que la ligne KK est verte (sans retard, 1 bougie max)
+      for (const repI of triAchat) {
+        for (let k = repI; k <= Math.min(d.length - 1, repI + 25); k++) {
+          if (isKkGreen(k)) {
+            const b = d[k];
+            if (!b) break;
+            allCandidates.push({
+              i: k, t: b.t, dir: 1,
+              originType: 'triangle',
+              price: b.c, low: b.l, high: b.h,
+              score: net[k] ?? 0,
+              reason: '▲ Triangle vert + Ligne KK verte'
+            });
+            break; // Dès la 1ère bougie verte, pas de retard !
+          }
         }
+      }
 
-        for (let k = rep.i; k <= Math.min(d.length - 1, rep.i + 35); k++) {
-          if (net[k] == null) continue;
-          const isGreen = (sig[k] != null) ? (net[k] > sig[k]) : (net[k] >= (net[k-1] || net[k]));
-          if (!isGreen) continue;
+      // C) Candidats Rappels Achat (Losanges verts) :
+      // Règle : uniquement si la ligne KK est verte à l'apparition du losange (ou 1 bougie après max)
+      // "pas la peine qu’il apparaît à chaque fois que il y a un losange qui est plus tard, la ligne passe du rouge ou vert celle de KK"
+      for (const repI of losAchat) {
+        let kFound = null;
+        if (isKkGreen(repI)) kFound = repI;
+        else if (isKkGreen(repI + 1)) kFound = repI + 1;
+        if (kFound != null) {
+          const b = d[kFound];
+          if (b) {
+            allCandidates.push({
+              i: kFound, t: b.t, dir: 1,
+              originType: 'losange',
+              price: b.c, low: b.l, high: b.h,
+              score: net[kFound] ?? 0,
+              reason: '▲ Losange vert + Ligne KK verte'
+            });
+          }
+        }
+      }
 
-          // Histogramme du milieu (FMC)
-          const fmcHistGreen = (fs_ && fs_.tension && fs_.tension[k] != null)
-            ? (fs_.tension[k] >= 0)
-            : ((fs_ && fs_.waveHist && fs_.waveHist[k] != null) ? (fs_.waveHist[k] >= 50) : true);
+      // D) Candidats Rappels Vente (Losanges rouges) :
+      // Règle : uniquement si la ligne KK est rouge à l'apparition du losange (ou 1 bougie après max)
+      for (const repI of losVente) {
+        let kFound = null;
+        if (isKkRed(repI)) kFound = repI;
+        else if (isKkRed(repI + 1)) kFound = repI + 1;
+        if (kFound != null) {
+          const b = d[kFound];
+          if (b) {
+            allCandidates.push({
+              i: kFound, t: b.t, dir: -1,
+              originType: 'losange',
+              price: b.c, low: b.l, high: b.h,
+              score: net[kFound] ?? 0,
+              reason: '▼ Losange rouge + Ligne KK rouge'
+            });
+          }
+        }
+      }
 
-          const condClassique = passedM75 && (net[k] > seuilB);
-          const condAlternatif = !passedM75 && fmcHistGreen;
+      // Tri chronologique
+      allCandidates.sort((a, b) => a.i - b.i);
 
-          if (condClassique || condAlternatif) {
-            const bougie = d[k];
-            if (!bougie) break;
-            confCandidate.push({
-              i: k, t: bougie.t, dir: 1,
+      // Déduplication locale
+      const filteredCandidates = [];
+      let lastCandI = -999, lastCandDir = 0;
+      for (const c of allCandidates) {
+        if (c.dir === lastCandDir && (c.i - lastCandI < 3)) continue;
+        lastCandDir = c.dir;
+        lastCandI = c.i;
+        filteredCandidates.push(c);
+      }
+
+      // Attribution : Entrée initiale de cycle vs Rappels (Grisés)
+      let currentActiveDir = 0;
+      let lastRappelI = -999;
+      for (const cand of filteredCandidates) {
+        if (cand.dir === 1) {
+          if (currentActiveDir !== 1) {
+            // Premier Achat du cycle : Pastille Achat de base
+            currentActiveDir = 1;
+            signals.push({
+              i: cand.i, t: cand.t, dir: 1,
               type: 'ACHAT',
               optKey: 'fmc_kk_confluence',
               isConfluenceKK: true,
-              price: bougie.c, low: bougie.l, high: bougie.h,
-              score: net[k],
-              reason: condClassique ? ('▲ ' + rep.type + ' + KK 5m > -75') : ('▲ ' + rep.type + ' + KK 5m & Hist Verts'),
+              isRappel: false,
+              price: cand.price, low: cand.low, high: cand.high,
+              score: cand.score,
+              reason: cand.reason,
               label: 'ACHAT FMC × KK',
               badge: '⚡ ACHAT FMC × KK',
-              sub: condClassique
-                ? ('▲ ' + rep.type + ' · KK 5m=' + Math.round(net[k]) + ' (> ' + seuilB + ') · Ligne Verte')
-                : ('▲ ' + rep.type + ' (sans < -75) · KK 5m=' + Math.round(net[k]) + ' · Hist Vert'),
+              sub: (cand.originType === 'triangle' ? '▲ Triangle vert' : '▲ Losange vert') + ' · KK 5m=' + Math.round(cand.score) + ' · Ligne Verte',
               color: cBuy,
               bgFill: 'rgba(6, 36, 32, 0.95)'
             });
-            break;
+          } else {
+            // Achat déjà actif : Rappel de confirmation uniquement sur Losange vert avec KK verte
+            if (cand.originType === 'losange' && (cand.i - lastRappelI >= 5)) {
+              lastRappelI = cand.i;
+              signals.push({
+                i: cand.i, t: cand.t, dir: 1,
+                type: 'RAPPEL ACHAT',
+                optKey: 'fmc_kk_confluence',
+                isConfluenceKK: true,
+                isRappel: true,
+                price: cand.price, low: cand.low, high: cand.high,
+                score: cand.score,
+                reason: '▲ Confirmation Achat (Losange vert + KK verte)',
+                label: 'RAPPEL ACHAT FMC × KK',
+                badge: '⚡ RAPPEL ACHAT',
+                sub: 'Rappel confirmation · KK 5m=' + Math.round(cand.score) + ' · Ligne Verte',
+                color: indFmc.cRappel || '#94A3B8',
+                borderCol: indFmc.cRappelBorder || '#64748B',
+                bgFill: indFmc.cRappelBg || 'rgba(25, 33, 44, 0.94)'
+              });
+            }
+          }
+        } else if (cand.dir === -1) {
+          if (currentActiveDir !== -1) {
+            // Première Vente du cycle : Pastille Vente de base
+            currentActiveDir = -1;
+            signals.push({
+              i: cand.i, t: cand.t, dir: -1,
+              type: 'VENTE',
+              optKey: 'fmc_kk_confluence',
+              isConfluenceKK: true,
+              isRappel: false,
+              price: cand.price, low: cand.low, high: cand.high,
+              score: cand.score,
+              reason: cand.reason,
+              label: 'VENTE FMC × KK',
+              badge: '⚡ VENTE FMC × KK',
+              sub: (cand.originType === 'triangle' ? '▼ Triangle rouge' : '▼ Losange rouge') + ' · KK 5m=' + Math.round(cand.score) + ' · Ligne Rouge',
+              color: cSell,
+              bgFill: 'rgba(44, 10, 24, 0.95)'
+            });
+          } else {
+            // Vente déjà active : Rappel de confirmation uniquement sur Losange rouge avec KK rouge
+            if (cand.originType === 'losange' && (cand.i - lastRappelI >= 5)) {
+              lastRappelI = cand.i;
+              signals.push({
+                i: cand.i, t: cand.t, dir: -1,
+                type: 'RAPPEL VENTE',
+                optKey: 'fmc_kk_confluence',
+                isConfluenceKK: true,
+                isRappel: true,
+                price: cand.price, low: cand.low, high: cand.high,
+                score: cand.score,
+                reason: '▼ Confirmation Vente (Losange rouge + KK rouge)',
+                label: 'RAPPEL VENTE FMC × KK',
+                badge: '⚡ RAPPEL VENTE',
+                sub: 'Rappel confirmation · KK 5m=' + Math.round(cand.score) + ' · Ligne Rouge',
+                color: indFmc.cRappel || '#94A3B8',
+                borderCol: indFmc.cRappelBorder || '#64748B',
+                bgFill: indFmc.cRappelBg || 'rgba(25, 33, 44, 0.94)'
+              });
+            }
           }
         }
-      }
-
-      confCandidate.sort((a, b) => a.i - b.i);
-      let lastDir = 0, lastI = -999;
-      for (const cand of confCandidate) {
-        if (cand.i === lastI) continue;
-        if (cand.dir === lastDir && (cand.i - lastI < 5)) continue;
-        lastDir = cand.dir;
-        lastI = cand.i;
-        signals.push(cand);
       }
     }
   }
 
   signals.sort((a, b) => a.i - b.i);
-
-  // Gestion des pastilles de base vs rappels :
-  // "Quand il y a déjà une pastille Achat ou Vente existante, on n'enclenche pas une autre pastille Achat de base,
-  // en tout cas on met une pastille Achat de rappel qui est grisée pour confirmer l'achat mais sinon on ne cumule pas les pastilles Achat de base, ça marche aussi pour les ventes"
-  let currentActiveDir = 0;
-  for (const sig of signals) {
-    if (sig.dir === 1) {
-      if (currentActiveDir === 1) {
-        // Achat déjà actif : devient une Pastille Achat de rappel (grisée) pour confirmation
-        sig.isRappel = true;
-        sig.type = 'RAPPEL ACHAT';
-        sig.badge = '⚡ RAPPEL ACHAT';
-        sig.label = 'RAPPEL ACHAT FMC × KK';
-        sig.reason = '▲ Confirmation Achat';
-        sig.sub = 'Rappel confirmation (Achat déjà actif)';
-        sig.color = indFmc.cRappel || '#94A3B8';
-        sig.borderCol = indFmc.cRappelBorder || '#64748B';
-        sig.bgFill = indFmc.cRappelBg || 'rgba(25, 33, 44, 0.94)';
-      } else {
-        // Premier Achat après Vente ou initial : Pastille Achat de base
-        currentActiveDir = 1;
-        sig.isRappel = false;
-      }
-    } else if (sig.dir === -1) {
-      if (currentActiveDir === -1) {
-        // Vente déjà active : devient une Pastille Vente de rappel (grisée) pour confirmation
-        sig.isRappel = true;
-        sig.type = 'RAPPEL VENTE';
-        sig.badge = '⚡ RAPPEL VENTE';
-        sig.label = 'RAPPEL VENTE FMC × KK';
-        sig.reason = '▼ Confirmation Vente';
-        sig.sub = 'Rappel confirmation (Vente déjà active)';
-        sig.color = indFmc.cRappel || '#94A3B8';
-        sig.borderCol = indFmc.cRappelBorder || '#64748B';
-        sig.bgFill = indFmc.cRappelBg || 'rgba(25, 33, 44, 0.94)';
-      } else {
-        // Première Vente après Achat ou initial : Pastille Vente de base
-        currentActiveDir = -1;
-        sig.isRappel = false;
-      }
-    }
-  }
-
   return { signals };
 }
 
@@ -37560,7 +37597,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0080';
+  window.__LUMEN_BUILD = 'B-0910-0090';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
