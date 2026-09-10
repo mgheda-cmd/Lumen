@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2225</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2230</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16322,6 +16322,7 @@ async function syncPull(force){
     mergeConfig(remote);
     cfgTs = remote.ts || Date.now();
     try{localStorage.setItem('lumen-cfg-ts', cfgTs);}catch(e){}
+    window.__hasSyncedWithRemote = true;
     setSyncStatus('✅ Synchro active — réglages récupérés', true);
     return { ok: true };
   }catch(e){
@@ -16329,8 +16330,12 @@ async function syncPull(force){
     return { ok: false, msg: 'Erreur : ' + e.message };
   }
 }
-async function syncPushNow(retry){
+async function syncPushNow(retry, isExplicit){
   if(!syncToken||syncBusy)return;
+  // Ne jamais écraser automatiquement GitHub depuis un appareil qui n'a pas encore synchronisé ses réglages
+  if(!isExplicit && !window.__hasSyncedWithRemote){
+    return;
+  }
   syncBusy=true;
   /* Watchdog de sécurité : si le fetch est interrompu (Safari arrière-plan iPad),
      syncBusy resterait true indéfiniment. On le force à false après 15 secondes max. */
@@ -16340,11 +16345,18 @@ async function syncPushNow(retry){
     const curWithoutTs = Object.assign({}, cur);
     delete curWithoutTs.ts;
     const curStr = JSON.stringify(curWithoutTs);
-    if(!retry && window.__lastPushedConfigContent === curStr){
+    if(!retry && !isExplicit && window.__lastPushedConfigContent === curStr){
       return;
     }
+    const jsonStr = JSON.stringify(cur);
+    const bytes = new TextEncoder().encode(jsonStr);
+    let bin = '';
+    const chunk = 8192;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
     const body={message:'Réglages Lumen [skip ci]',branch:'main',
-      content:btoa(unescape(encodeURIComponent(JSON.stringify(cur))))};
+      content:btoa(bin)};
     if(syncSha)body.sha=syncSha;
     const r=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}`,
       {method:'PUT',
@@ -16355,6 +16367,7 @@ async function syncPushNow(retry){
       const j=await r.json();
       syncSha=j.content.sha;
       window.__lastPushedConfigContent = curStr;
+      window.__hasSyncedWithRemote = true;
       setSyncStatus('✅ Synchro active — réglages enregistrés',true);
     }else if((r.status===409||r.status===422)&&!retry){
       // sha périmé (modifié depuis un autre appareil) : on récupère et on réessaie
@@ -16363,7 +16376,7 @@ async function syncPushNow(retry){
       const g=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}?ref=main&_=${Date.now()}`,
         {headers:{Authorization:'Bearer '+syncToken,Accept:'application/vnd.github+json'}});
       if(g.ok)syncSha=(await g.json()).sha;
-      return syncPushNow(true);
+      return syncPushNow(true, isExplicit);
     }else setSyncStatus('Synchro : écriture refusée ('+r.status+')',false);
   }catch(e){setSyncStatus('Synchro : hors ligne — vérifier connexion',false);}
   finally{
@@ -16428,7 +16441,7 @@ document.getElementById('sync-put').addEventListener('click',async()=>{
   cfgTs=Date.now();
   try{localStorage.setItem('lumen-cfg-ts',cfgTs);}catch(e){}
   setSyncStatus('⏳ Envoi en cours…');
-  await syncPushNow(false);
+  await syncPushNow(false, true);
   // Si toujours en statut "Envoi", c'est que quelque chose a silencieusement échoué
   if(syncStatus && syncStatus.textContent && syncStatus.textContent.includes('Envoi')){
     setSyncStatus('❌ Échec réseau — vérifier connexion et jeton GitHub', false);
@@ -24728,8 +24741,8 @@ setTimeout(resize,500);
 (async()=>{
   if(!syncToken)return;
   setSyncStatus('Synchro active');
-  const ok=await syncPull();
-  if(ok){
+  const res=await syncPull();
+  if(res && res.ok){
     applyConfigToUI(); saveConfigLocal();
     loadData();
   }
@@ -39294,7 +39307,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2225';
+  window.__LUMEN_BUILD = 'B-0910-2230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
