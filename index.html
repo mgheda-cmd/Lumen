@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2205</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2210</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6144,6 +6144,7 @@ function applyConfigToUI(){
   });
   syncMenu();
   if(typeof updateChips==='function') updateChips();
+  if(typeof renderPastillesManager==='function') renderPastillesManager();
 }
 
 /* ---------- Flux Binance & MEXC (Temps Réel Haute Disponibilité) ---------- */
@@ -16367,28 +16368,23 @@ document.getElementById('sync-on')?.addEventListener('click',async()=>{
   syncToken=t;
   try{localStorage.setItem('lumen-sync-token',t);}catch(e){}
   setSyncStatus('Vérification…');
-  const before=state.symbol+'|'+state.tf;
-  const found=await syncPull();
+  const found=await syncPull(true);
   if(found){
-    applyConfigToUI(); saveConfigLocal();
-    if(state.symbol+'|'+state.tf!==before)loadData(); else render();
+    applyConfigToUI(); saveConfigLocal(); state.cache={};
+    setSyncStatus('✅ Réglages trouvés ! Application...', true);
+    setTimeout(()=>{ window.location.reload(); }, 400);
   }else{
-    await syncPushNow(false); // premier appareil : on publie la config actuelle
+    setSyncStatus('Connecté au dépôt. Clique sur Récupérer pour charger vos réglages.', true);
   }
 });
 document.getElementById('sync-get').addEventListener('click',async()=>{
   if(!syncToken){setSyncStatus('Active d\'abord la synchro',false);return;}
   setSyncStatus('Récupération…');
-  const before=state.symbol+'|'+state.tf+'|'+state.market;
   const ok=await syncPull(true);   // force : la version du dépôt gagne
   if(ok){
     applyConfigToUI(); saveConfigLocal(false); state.cache={};
-    loadData();
-    setSyncStatus('✅ Réglages récupérés et appliqués !',true);
-    setTimeout(()=>{
-      const menuModal = document.getElementById('sync-menu');
-      if(menuModal) menuModal.style.display='none';
-    }, 800);
+    setSyncStatus('✅ Réglages appliqués ! Rechargement...', true);
+    setTimeout(()=>{ window.location.reload(); }, 400);
   }else setSyncStatus('Aucun réglage trouvé dans le dépôt',false);
 });
 document.getElementById('sync-put').addEventListener('click',async()=>{
@@ -39265,7 +39261,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2205';
+  window.__LUMEN_BUILD = 'B-0910-2210';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
