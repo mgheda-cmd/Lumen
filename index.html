@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0110</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0120</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -31453,17 +31453,27 @@ function computeFMCSignals(cleFmc, cleStrat) {
         return (typeof idxOfTime === 'function') ? idxOfTime(srcKK[idx5].t) : idx5;
       };
 
+      // Couleur réelle de la ligne KK : strictement verte si net > sig, strictement rouge si net <= sig
       const isKkGreen = (idx) => {
         if (idx < 0 || idx >= net.length || net[idx] == null) return false;
-        const isAsc = (idx > 0 && net[idx] > net[idx - 1]);
-        const isAboveSig = (sig[idx] != null ? net[idx] > sig[idx] : isAsc);
-        return isAboveSig || isAsc;
+        if (sig[idx] != null) return net[idx] > sig[idx];
+        return (idx > 0 && net[idx] > net[idx - 1]);
       };
       const isKkRed = (idx) => {
         if (idx < 0 || idx >= net.length || net[idx] == null) return false;
-        const isDesc = (idx > 0 && net[idx] < net[idx - 1]);
-        const isBelowSig = (sig[idx] != null ? net[idx] <= sig[idx] : isDesc);
-        return isBelowSig || isDesc;
+        if (sig[idx] != null) return net[idx] <= sig[idx];
+        return (idx > 0 && net[idx] < net[idx - 1]);
+      };
+
+      // Couleur de la ligne FMC si disponible et exigée
+      const requireFmc = (indFmc.requireFmcColors !== false) && fs_ && Array.isArray(fs_.core) && Array.isArray(fs_.bal);
+      const isFmcGreen = (idx) => {
+        if (!requireFmc || idx == null || idx < 0 || idx >= fs_.core.length) return true;
+        return fs_.core[idx] >= fs_.bal[idx];
+      };
+      const isFmcRed = (idx) => {
+        if (!requireFmc || idx == null || idx < 0 || idx >= fs_.core.length) return true;
+        return fs_.core[idx] < fs_.bal[idx];
       };
 
       // 1. Repères TRIANGLES : pour initialiser / inverser les entrées de cycle
@@ -31511,11 +31521,11 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const allCandidates = [];
 
       // A) Candidats Entrée Vente à partir des triangles rouges :
-      // Déclenchement dès que la ligne KK est rouge (sans retard, 0 à 1 bougie max)
+      // Déclenchement dès que la ligne KK est rouge (net <= sig)
       // Condition Alma : si Alma est actif et vert, pas de pastille vente !
       for (const repI of triVente) {
         for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
-          if (isKkRed(k)) {
+          if (isKkRed(k) && isFmcRed(k)) {
             if (isAlmaGreen(k)) continue;
             const b = d[k];
             if (!b) break;
@@ -31532,11 +31542,11 @@ function computeFMCSignals(cleFmc, cleStrat) {
       }
 
       // B) Candidats Entrée Achat à partir des triangles verts :
-      // Déclenchement dès que la ligne KK est verte (sans retard, 0 à 1 bougie max)
+      // Déclenchement dès que la ligne KK est verte (net > sig)
       // Condition Alma : si Alma est actif et violet, pas de pastille achat !
       for (const repI of triAchat) {
         for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
-          if (isKkGreen(k)) {
+          if (isKkGreen(k) && isFmcGreen(k)) {
             if (isAlmaViolet(k)) continue;
             const b = d[k];
             if (!b) break;
@@ -31553,12 +31563,12 @@ function computeFMCSignals(cleFmc, cleStrat) {
       }
 
       // C) Candidats Rappels Achat (Losanges verts) :
-      // Règle : uniquement si la ligne KK est verte à l'apparition du losange (ou 1 bougie après max)
+      // Règle : uniquement si la ligne KK est verte (net > sig) à l'apparition du losange
       // et pas de pastille achat si Alma est violet
       for (const repI of losAchat) {
         let kFound = null;
-        if (isKkGreen(repI) && !isAlmaViolet(repI)) kFound = repI;
-        else if (isKkGreen(repI + 1) && !isAlmaViolet(repI + 1)) kFound = repI + 1;
+        if (isKkGreen(repI) && isFmcGreen(repI) && !isAlmaViolet(repI)) kFound = repI;
+        else if (isKkGreen(repI + 1) && isFmcGreen(repI + 1) && !isAlmaViolet(repI + 1)) kFound = repI + 1;
         if (kFound != null) {
           const b = d[kFound];
           if (b) {
@@ -31574,12 +31584,12 @@ function computeFMCSignals(cleFmc, cleStrat) {
       }
 
       // D) Candidats Rappels Vente (Losanges rouges) :
-      // Règle : uniquement si la ligne KK est rouge à l'apparition du losange (ou 1 bougie après max)
+      // Règle : uniquement si la ligne KK est rouge (net <= sig) à l'apparition du losange
       // et pas de pastille vente si Alma est vert
       for (const repI of losVente) {
         let kFound = null;
-        if (isKkRed(repI) && !isAlmaGreen(repI)) kFound = repI;
-        else if (isKkRed(repI + 1) && !isAlmaGreen(repI + 1)) kFound = repI + 1;
+        if (isKkRed(repI) && isFmcRed(repI) && !isAlmaGreen(repI)) kFound = repI;
+        else if (isKkRed(repI + 1) && isFmcRed(repI + 1) && !isAlmaGreen(repI + 1)) kFound = repI + 1;
         if (kFound != null) {
           const b = d[kFound];
           if (b) {
@@ -31611,8 +31621,8 @@ function computeFMCSignals(cleFmc, cleStrat) {
       let currentActiveDir = 0;
       let lastRappelI = -999;
       for (const cand of filteredCandidates) {
-        if (cand.dir === 1 && isAlmaViolet(cand.i)) continue;
-        if (cand.dir === -1 && isAlmaGreen(cand.i)) continue;
+        if (cand.dir === 1 && (!isKkGreen(cand.i) || !isFmcGreen(cand.i) || isAlmaViolet(cand.i))) continue;
+        if (cand.dir === -1 && (!isKkRed(cand.i) || !isFmcRed(cand.i) || isAlmaGreen(cand.i))) continue;
         if (cand.dir === 1) {
           if (currentActiveDir !== 1) {
             // Premier Achat du cycle : Pastille Achat de base
@@ -37654,7 +37664,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0110';
+  window.__LUMEN_BUILD = 'B-0910-0120';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
