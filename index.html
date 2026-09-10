@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1300</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1310</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -9063,14 +9063,22 @@ function render(){
      « sommets & creux sur le prix » dans son panneau ne montrait rien.
      Il traite maintenant les deux indicateurs, chacun avec ses propres
      réglages, et seulement s'il est affiché. */
+  const drawnSeuilCandles = new Set();
+  const drawnDivCandles = new Set();
+  const drawnCrossCandles = new Set();
+  const drawnPivotCandles = new Set();
+
   for(const KK of ['kk_bis', 'kk_bis2']){
-    const hasPricePastilles = !!(state.indicators && state.indicators[KK] && (
-      state.indicators[KK].showSeuilOnPrice !== false || 
-      state.indicators[KK].showDivOnPrice || 
-      state.indicators[KK].showCrossOnPrice
-    ));
+    if(state.hideBadges) continue;
+    const indKK = state.indicators && state.indicators[KK];
+    if(!indKK) continue;
+    const hasPricePastilles = !!(
+      (indKK.showSeuilOnPrice !== false && indKK.showExits !== false) || 
+      (indKK.showDivOnPrice && indKK.showDiv !== false) || 
+      (indKK.showCrossOnPrice && indKK.showCross !== false) ||
+      (indKK.showPivotsOnPrice)
+    );
     if(!vis(KK) && !hasPricePastilles) continue;
-    if(!state.indicators[KK]) continue;
 
     try{
       const kb = getInd(KK);
@@ -9094,11 +9102,14 @@ function render(){
         }
 
         // 1. Sorties par seuil (Pastilles Jaunes SORTIE VENTE et Roses SORTIE ACHAT)
-        if(Array.isArray(kb.exits) && S(KK,'showSeuilOnPrice') !== false){
+        if(Array.isArray(kb.exits) && indKK.showSeuilOnPrice !== false && indKK.showExits !== false){
           for(const ex of kb.exits){
             if(ex.div) continue; // Les divergences ont leur propre boucle ci-dessous
             const ci = (ex.t != null ? idxOfTime(ex.t) : null) ?? ex.i;
             if(ci == null || ci < s || ci > e) continue;
+            const candleKey = ci + '_' + ex.type;
+            if(drawnSeuilCandles.has(candleKey)) continue;
+            drawnSeuilCandles.add(candleKey);
             const isSell = (ex.type === 'SORTIE_ACHAT');
             const col = isSell ? '#FF007A' : '#FFD700'; // Jaune #FFD700 pour SORTIE VENTE
             const bar = state.data[ci]; if(!bar) continue;
@@ -9159,9 +9170,12 @@ function render(){
         // 3. Croisements des deux unités de temps reportés sur le prix.
         //    La ligne principale traverse la seconde : les deux échelles
         //    basculent ensemble. Vers le haut potentiel achat, vers le bas vente.
-        if(Array.isArray(window.__kkCross) && S(KK,'showCrossOnPrice') !== false){
+        if(Array.isArray(window.__kkCross) && indKK.showCrossOnPrice !== false && indKK.showCross !== false){
           for(const cx of window.__kkCross){
             if(cx.i < s || cx.i > e) continue;
+            const cKey = cx.i + '_' + (cx.monte ? 1 : -1);
+            if(drawnCrossCandles.has(cKey)) continue;
+            drawnCrossCandles.add(cKey);
             const bar = state.data[cx.i]; if(!bar) continue;
             const monte = cx.monte;
             const ccol = monte ? '#00C853' : '#D50000';
@@ -9211,10 +9225,13 @@ function render(){
         }
 
         // 2. Divergences reportées sur le prix
-        if(Array.isArray(kb.divs) && S(KK,'showDivOnPrice') !== false){
+        if(Array.isArray(kb.divs) && indKK.showDivOnPrice !== false && indKK.showDiv !== false){
           for(const dv of kb.divs){
             const ci = (dv.t != null ? idxOfTime(dv.t) : null) ?? dv.i2;
             if(ci == null || ci < s || ci > e) continue;
+            const dKey = ci + '_' + dv.dir;
+            if(drawnDivCandles.has(dKey)) continue;
+            drawnDivCandles.add(dKey);
             const x = xOf(ci);
             const isSell = (dv.dir === 1);
             const col = isSell ? '#FF007A' : '#FFD700'; // Jaune pour sortie Vente
@@ -9273,12 +9290,15 @@ function render(){
         }
 
         // 3. Sommets (triangles orange) et Creux (triangles vert) du score kk bis sur le prix
-        if(S(KK,'showPivotsOnPrice') !== false){
+        if(indKK.showPivotsOnPrice !== false && indKK.showPivotsOnPrice){
           // Sommets (Orange #FF9F1C)
           if(Array.isArray(kb.peaks)){
             for(const pk of kb.peaks){
               const idx = (typeof pk === 'object' && pk.t != null) ? idxOfTime(pk.t) : ((typeof pk === 'number') ? pk : (pk?.i ?? pk));
               if(idx == null || idx < s || idx > e) continue;
+              const pKey = idx + '_peak';
+              if(drawnPivotCandles.has(pKey)) continue;
+              drawnPivotCandles.add(pKey);
               const bar = state.data[idx]; if(!bar) continue;
               const x = xOf(idx);
               const anchorY = yOf(bar.h) - 8;
@@ -9335,6 +9355,9 @@ function render(){
             for(const tr of kb.troughs){
               const idx = (typeof tr === 'object' && tr.t != null) ? idxOfTime(tr.t) : ((typeof tr === 'number') ? tr : (tr?.i ?? tr));
               if(idx == null || idx < s || idx > e) continue;
+              const tKey = idx + '_trough';
+              if(drawnPivotCandles.has(tKey)) continue;
+              drawnPivotCandles.add(tKey);
               const bar = state.data[idx]; if(!bar) continue;
               const x = xOf(idx);
               const anchorY = yOf(bar.l) + 8;
@@ -15260,19 +15283,22 @@ const PASTILLES_CATALOG = [
     ]
   },
   {
-    category: '🎯 SORTIES & PIVOTS KK BIS 2 SUR PRIX',
+    category: '🎯 SORTIES & PIVOTS KK SUR LE PRIX (Seuil & Pente)',
     color: '#FF007A',
     items: [
       {
         id: 'kk_seuil',
         icon: '🔻🔺',
-        label: 'Sorties par Seuil sur Prix',
-        desc: 'Pastilles Jaunes SORTIE VENTE et Roses SORTIE ACHAT',
-        accent: '#FF007A',
+        label: 'Sorties Seuil + Pente (▲ SORTIE VENTE / ▼ SORTIE ACHAT)',
+        desc: 'Pastilles Jaunes SORTIE VENTE et Roses SORTIE ACHAT (Seuil + pente)',
+        accent: '#FFD700',
         def: true,
-        get: () => state.indicators?.kk_bis2?.showSeuilOnPrice !== false,
+        get: () => (state.indicators?.kk_bis?.showSeuilOnPrice !== false && state.indicators?.kk_bis?.showExits !== false) || (state.indicators?.kk_bis2?.showSeuilOnPrice !== false && state.indicators?.kk_bis2?.showExits !== false),
         set: (v) => {
+          if (!state.indicators.kk_bis) state.indicators.kk_bis = {};
           if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
+          state.indicators.kk_bis.showSeuilOnPrice = v;
+          state.indicators.kk_bis.showExits = v;
           state.indicators.kk_bis2.showSeuilOnPrice = v;
           state.indicators.kk_bis2.showExits = v;
         }
@@ -15280,13 +15306,16 @@ const PASTILLES_CATALOG = [
       {
         id: 'kk_div',
         icon: '〰️',
-        label: 'Divergences KK sur Prix',
-        desc: 'Pastilles de divergence haussière / baissière sur bougies',
+        label: 'Divergences KK sur Prix (🔻 / 🔺)',
+        desc: 'Pastilles de divergence haussière / baissière sur bougies (Divergence kk bis)',
         accent: '#F59E0B',
         def: false,
-        get: () => !!state.indicators?.kk_bis2?.showDivOnPrice,
+        get: () => !!((state.indicators?.kk_bis?.showDivOnPrice && state.indicators?.kk_bis?.showDiv !== false) || (state.indicators?.kk_bis2?.showDivOnPrice && state.indicators?.kk_bis2?.showDiv !== false)),
         set: (v) => {
+          if (!state.indicators.kk_bis) state.indicators.kk_bis = {};
           if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
+          state.indicators.kk_bis.showDivOnPrice = v;
+          state.indicators.kk_bis.showDiv = v;
           state.indicators.kk_bis2.showDivOnPrice = v;
           state.indicators.kk_bis2.showDiv = v;
         }
@@ -15294,15 +15323,87 @@ const PASTILLES_CATALOG = [
       {
         id: 'kk_cross',
         icon: '✖️',
-        label: 'Croisements MTF sur Prix',
-        desc: 'Mini pastilles ▲ Pot. Achat / ▼ Pot. Vente',
+        label: 'Croisements MTF sur Prix (▲ / ▼ POT.)',
+        desc: 'Mini pastilles ▲ Pot. Achat / ▼ Pot. Vente (croisement lignes MTF)',
         accent: '#00C853',
         def: false,
-        get: () => !!state.indicators?.kk_bis2?.showCrossOnPrice,
+        get: () => !!((state.indicators?.kk_bis?.showCrossOnPrice && state.indicators?.kk_bis?.showCross !== false) || (state.indicators?.kk_bis2?.showCrossOnPrice && state.indicators?.kk_bis2?.showCross !== false)),
         set: (v) => {
+          if (!state.indicators.kk_bis) state.indicators.kk_bis = {};
           if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
+          state.indicators.kk_bis.showCrossOnPrice = v;
+          state.indicators.kk_bis.showCross = v;
           state.indicators.kk_bis2.showCrossOnPrice = v;
           state.indicators.kk_bis2.showCross = v;
+        }
+      },
+      {
+        id: 'kk_pivots',
+        icon: '🟧🟩',
+        label: 'Sommets & Creux KK sur Prix (🟧 / 🟩)',
+        desc: 'Pastilles de pivots 🟧 SOMMET et 🟩 CREUX sur les bougies',
+        accent: '#FF9F1C',
+        def: false,
+        get: () => !!(state.indicators?.kk_bis?.showPivotsOnPrice || state.indicators?.kk_bis2?.showPivotsOnPrice),
+        set: (v) => {
+          if (!state.indicators.kk_bis) state.indicators.kk_bis = {};
+          if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
+          state.indicators.kk_bis.showPivotsOnPrice = v;
+          state.indicators.kk_bis2.showPivotsOnPrice = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '🎯 STRATÉGIE EMA 9 / HA 5m + MACD S/R',
+    color: '#00E5FF',
+    items: [
+      {
+        id: 'ema_ha_badges',
+        icon: '⚡',
+        label: 'Pastilles Entrée EMA 9 / HA 5m',
+        desc: 'Pastilles ⚡ ACHAT (LONG) / ⚡ VENTE (SHORT) avec prix d\'entrée',
+        accent: '#00E5FF',
+        def: false,
+        get: () => !!state.indicators?.signal_ema_ha?.on,
+        set: (v) => {
+          if (!state.indicators.signal_ema_ha) state.indicators.signal_ema_ha = {};
+          state.indicators.signal_ema_ha.on = v;
+        }
+      },
+      {
+        id: 'ema_ha_exits',
+        icon: '🏁',
+        label: 'Pastilles Sortie HA 5m (🏁 SORTIE)',
+        desc: 'Sorties de trade au croisement inverse EMA/HA ou MACD S/R 3m',
+        accent: '#FF007A',
+        def: true,
+        get: () => state.indicators?.signal_ema_ha?.showExits !== false && !!state.indicators?.signal_ema_ha?.on,
+        set: (v) => {
+          if (!state.indicators.signal_ema_ha) state.indicators.signal_ema_ha = {};
+          state.indicators.signal_ema_ha.showExits = v;
+          if (v) state.indicators.signal_ema_ha.on = true;
+        }
+      }
+    ]
+  },
+  {
+    category: '🪫 ESSOUFFLEMENT & ÉPUISEMENT (SMART FLOW)',
+    color: '#F59E0B',
+    items: [
+      {
+        id: 'exhaustion_badges',
+        icon: '🪫',
+        label: 'Pastilles Essoufflement & Épuisement',
+        desc: 'Pastilles multi-UT d\'essoufflement et d\'épuisement de liquidité',
+        accent: '#F59E0B',
+        def: false,
+        get: () => !!(state.indicators?.exhaustion?.on || state.indicators?.exhaustion_pro?.on),
+        set: (v) => {
+          if (!state.indicators.exhaustion) state.indicators.exhaustion = {};
+          if (!state.indicators.exhaustion_pro) state.indicators.exhaustion_pro = {};
+          state.indicators.exhaustion.on = v;
+          state.indicators.exhaustion_pro.on = v;
         }
       }
     ]
@@ -38586,7 +38687,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-1300';
+  window.__LUMEN_BUILD = 'B-0910-1310';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
