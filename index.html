@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0435</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0439</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6337,6 +6337,12 @@ function applyTickPrice(px){
          terminé. Le prix reste fluide, les indicateurs suivent avec un léger
          décalage plutôt que de rester immobiles. */
       const _now2 = Date.now();
+      /* Watchdog sur __recalcEnCours : si le flag reste bloqué plus de 3 secondes
+         (ex. iPad/Safari qui suspend les setTimeout), on le force à false pour
+         garantir que le cache sera vidé et les pastilles recalculées. */
+      if(window.__recalcEnCours && _now2 - (window.__dernierRecalc || 0) > 3000){
+        window.__recalcEnCours = false;
+      }
       if(!window.__recalcEnCours && _now2 - (window.__dernierRecalc || 0) > 1500){
         window.__dernierRecalc = _now2;
         window.__recalcEnCours = true;
@@ -15999,17 +16005,19 @@ async function syncPull(force){
 async function syncPushNow(retry){
   if(!syncToken||syncBusy)return;
   syncBusy=true;
+  /* Watchdog de sécurité : si le fetch est interrompu (Safari arrière-plan iPad),
+     syncBusy resterait true indéfiniment. On le force à false après 15 secondes max. */
+  const _safetyRelease = setTimeout(()=>{ syncBusy=false; }, 15000);
   try{
     const cur = currentConfig();
     const curWithoutTs = Object.assign({}, cur);
     delete curWithoutTs.ts;
     const curStr = JSON.stringify(curWithoutTs);
     if(!retry && window.__lastPushedConfigContent === curStr){
-      syncBusy=false;
       return;
     }
     const body={message:'Réglages Lumen [skip ci]',branch:'main',
-      content:btoa(JSON.stringify(cur))};
+      content:btoa(unescape(encodeURIComponent(JSON.stringify(cur))))};
     if(syncSha)body.sha=syncSha;
     const r=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}`,
       {method:'PUT',
@@ -16020,17 +16028,21 @@ async function syncPushNow(retry){
       const j=await r.json();
       syncSha=j.content.sha;
       window.__lastPushedConfigContent = curStr;
-      setSyncStatus('Synchro active — réglages enregistrés',true);
+      setSyncStatus('✅ Synchro active — réglages enregistrés',true);
     }else if((r.status===409||r.status===422)&&!retry){
       // sha périmé (modifié depuis un autre appareil) : on récupère et on réessaie
+      clearTimeout(_safetyRelease);
       syncBusy=false;
       const g=await fetch(`https://api.github.com/repos/${SYNC_REPO}/contents/${SYNC_FILE}?ref=main&_=${Date.now()}`,
         {headers:{Authorization:'Bearer '+syncToken,Accept:'application/vnd.github+json'}});
       if(g.ok)syncSha=(await g.json()).sha;
       return syncPushNow(true);
     }else setSyncStatus('Synchro : écriture refusée ('+r.status+')',false);
-  }catch(e){setSyncStatus('Synchro : hors ligne',false);}
-  syncBusy=false;
+  }catch(e){setSyncStatus('Synchro : hors ligne — vérifier connexion',false);}
+  finally{
+    clearTimeout(_safetyRelease);
+    syncBusy=false;
+  }
 }
 function syncPush(){
   if(!syncToken)return;
@@ -21016,7 +21028,8 @@ function checkAllAlerts(){
       if(fmcData && Array.isArray(fmcData.signals)){
         fmcData.signals.forEach(s => {
           if (s.isExit) {
-            if (indFmc.showExits === false) return;
+            if (!s.isRunnerExit && indFmc.showExits === false) return;
+            if (s.isRunnerExit && indFmc.showExitsV2 === false) return;
           } else if (s.isConfluenceKK) {
             if (indFmc.showKkConfluence === false) return;
             if (s.dir === 1 && indFmc.showKkBuy === false) return;
@@ -21062,6 +21075,21 @@ if(!window.__checkAlertsPeriodicInterval) {
       if(typeof checkAllAlerts === 'function') checkAllAlerts();
     } catch(e){}
   }, 2500);
+}
+
+// Watchdog recalcul forcé toutes les 30 secondes (iPad/Safari : garantit que les
+// pastilles apparaissent même si le tick WebSocket est suspendu ou lent)
+if(!window.__forcedRecalcInterval) {
+  window.__forcedRecalcInterval = setInterval(() => {
+    try {
+      if(typeof state !== 'undefined' && state && state.data && state.data.length) {
+        // Forcer la libération du flag si bloqué
+        window.__recalcEnCours = false;
+        if(typeof state.cache !== 'undefined') state.cache = {};
+        if(typeof scheduleRender === 'function') scheduleRender();
+      }
+    } catch(e){}
+  }, 30000);
 }
 
 window.testerNotificationNavigateur = function() {
