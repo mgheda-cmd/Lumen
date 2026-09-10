@@ -517,9 +517,10 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0140</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0210</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
+  <button id="fmc-strict-top-btn" class="btn" onclick="window.toggleFmcStrict && window.toggleFmcStrict()" title="Activer / Désactiver la condition stricte : repère vert/rouge immédiatement avant la pastille (≤ 2 bougies) et annulation par repères opposés pour comparer la différence" style="font-size:11px;padding:3px 8px;background:rgba(100,116,139,.2);border:1.5px solid #64748B;color:#94A3B8;font-weight:800;display:inline-flex;align-items:center;gap:4px">🛡️ RÈGLE STRICTE : OFF</button>
 
   <button class="btn" id="btn-balayage" onclick="window.lancerBalayageStrat && window.lancerBalayageStrat(true)"
     title="Lancer le balayage des combinaisons MM et mettre à jour la stratégie du moment"
@@ -699,6 +700,13 @@ footer{
             <span class="name" style="font-weight:800;color:var(--text);font-size:12.5px">Stratégie FMC 🌊 <span style="background:#22D3EE;color:#0F172A;font-size:9.5px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:800">✨ SÉPARÉE</span><br><span class="desc" style="color:#A5F3FC;font-size:10.5px">Pastilles FMC Autonomes & Confluence KK</span></span>
           </div>
           <span class="state">on</span>
+        </div>
+        <div style="margin-top:7px;display:flex;align-items:center;gap:6px">
+          <button id="btn-toggle-fmc-strict" onclick="event.stopPropagation();window.toggleFmcStrict && window.toggleFmcStrict()"
+            style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #64748B;background:rgba(100,116,139,0.2);color:#94A3B8;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
+            title="Activer / Désactiver la condition stricte : repère vert/rouge immédiatement avant la pastille (≤ 2 bougies) et annulation par repères opposés">
+            🛡️ Règle Stricte : OFF
+          </button>
         </div>
       </div>
       <div class="ind-item" data-ind="strat_zz2" id="item-strat_zz2" style="background:linear-gradient(135deg, rgba(56,189,248,0.16), rgba(16,185,129,0.12));border:1.5px solid #38BDF8;border-radius:10px;padding:10px 12px;margin-bottom:10px;box-shadow:0 3px 12px rgba(56,189,248,0.22);display:flex;flex-direction:column;align-items:stretch;gap:8px">
@@ -5669,7 +5677,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,strictCaducite:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -5922,6 +5930,7 @@ function loadConfig(){
       if(state.indicators.strat_fmc.cRappel === undefined) state.indicators.strat_fmc.cRappel = '#94A3B8';
       if(state.indicators.strat_fmc.kkLookback === undefined) state.indicators.strat_fmc.kkLookback = 25;
       if(state.indicators.strat_fmc.maxDelay === undefined) state.indicators.strat_fmc.maxDelay = 30;
+      if(state.indicators.strat_fmc.strictCaducite === undefined) state.indicators.strat_fmc.strictCaducite = false;
       state.indicators.strat_fmc.requireFmcColors = false;
     }
     if(state.indicators.strat_mm){
@@ -15030,6 +15039,21 @@ const PASTILLES_CATALOG = [
         }
       },
       {
+        id: 'fmc_strict_caducite',
+        icon: '🛡️',
+        label: 'Condition Stricte (Annulation par repère opposé)',
+        desc: 'Exige un repère vert/rouge juste avant la pastille (≤ 2 bougies). Tout repère opposé survenu annule immédiatement la pastille.',
+        accent: '#22D3EE',
+        def: false,
+        get: () => !!state.indicators?.strat_fmc?.strictCaducite,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.strictCaducite = v;
+          if (typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
+          if (typeof render === 'function') render();
+        }
+      },
+      {
         id: 'fmc_badges',
         icon: '🌊',
         label: 'Pastilles FMC Autonomes',
@@ -19034,6 +19058,7 @@ const SCHEMA={
     {k:'cSell',t:'col',lab:'Couleur Pastille Vente',def:'#FF0055'}
   ]},
   strat_fmc:{title:'Stratégie FMC 🌊 (Pastilles & Confluence KK)',fields:[
+    {k:'strictCaducite',t:'bool',lab:'🛡️ Condition Stricte : Repère juste avant (≤2b) & Annulation par repère opposé',def:false},
     {k:'showKkBuy',t:'bool',lab:'Afficher la Pastille Achat FMC × KK (Verte)',def:true},
     {k:'showKkSell',t:'bool',lab:'Afficher la Pastille Vente FMC × KK (Rouge)',def:true},
     {k:'showRappels',t:'bool',lab:'Afficher les pastilles de rappel grisées (confirmations)',def:true},
@@ -19618,15 +19643,21 @@ function setStyle(ind,key,val,recalc){
     state.indicators[ind][key]=val;
   }
   if(recalc)state.cache={};
-  saveConfig(); syncMenu(); updateChips(); render();
+  saveConfig(); syncMenu(); updateChips();
+  if(typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
+  render();
 }
 document.getElementById('cfg-close').addEventListener('click',()=>{
   document.getElementById('cfg-back').classList.remove('open');
-  saveConfig(); render();
+  saveConfig();
+  if(typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
+  render();
 });
 document.getElementById('cfg-ok').addEventListener('click',()=>{
   document.getElementById('cfg-back').classList.remove('open');
-  saveConfig(); render();
+  saveConfig();
+  if(typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
+  render();
 });
 document.getElementById('cfg-back').addEventListener('click',e=>{
   if(Date.now() - _cfgOpenTime < 400) return;
@@ -31541,87 +31572,150 @@ function computeFMCSignals(cleFmc, cleStrat) {
       losAchat.sort((a, b) => a - b);
 
       const allCandidates = [];
+      const isStrict = !!indFmc.strictCaducite;
+      const markers = [];
 
-      // A) Candidats Entrée Vente à partir des triangles rouges :
-      // Déclenchement dès que la ligne KK est rouge (net <= sig)
-      // Condition Alma : si Alma est actif et vert, pas de pastille vente !
-      for (const repI of triVente) {
-        for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
-          if (isKkRed(k) && isFmcRed(k)) {
-            if (isAlmaGreen(k)) continue;
-            const b = d[k];
-            if (!b) break;
-            allCandidates.push({
-              i: k, t: b.t, dir: -1,
-              originType: 'triangle',
-              price: b.c, low: b.l, high: b.h,
-              score: net[k] ?? 0,
-              reason: '▼ Triangle rouge + Ligne KK rouge'
-            });
-            break; // Dès la 1ère bougie rouge valide, pas de retard !
+      if (isStrict) {
+        // --- MODE STRICT : Repère vert/rouge immédiatement avant la pastille (≤ 2 bougies) ---
+        // et annulation (caducité) de tout signal antérieur dès l'apparition d'un repère opposé.
+        for (const i of triVente) markers.push({ i, dir: -1, type: 'triangle', desc: '▼ Triangle rouge' });
+        for (const i of losVente) markers.push({ i, dir: -1, type: 'losange', desc: '▼ Losange rouge' });
+        for (const i of triAchat) markers.push({ i, dir: 1, type: 'triangle', desc: '▲ Triangle vert' });
+        for (const i of losAchat) markers.push({ i, dir: 1, type: 'losange', desc: '▲ Losange vert' });
+
+        markers.sort((a, b) => a.i - b.i);
+
+        for (let mIdx = 0; mIdx < markers.length; mIdx++) {
+          const m = markers[mIdx];
+          const minK = Math.max(0, m.i - 1);
+          const maxK = Math.min(d.length - 1, m.i + 2);
+
+          for (let k = minK; k <= maxK; k++) {
+            // Caducité : si un repère opposé est apparu entre m.i et k inclus, ce repère m est caduc
+            let oppBetween = false;
+            for (let nextM = 0; nextM < markers.length; nextM++) {
+              const om = markers[nextM];
+              if (om.dir !== m.dir && om.i >= m.i && om.i <= k) {
+                oppBetween = true;
+                break;
+              }
+            }
+            if (oppBetween) break;
+
+            if (m.dir === 1) {
+              if (isKkGreen(k) && isFmcGreen(k)) {
+                if (isAlmaViolet(k)) continue;
+                const b = d[k];
+                if (!b) break;
+                allCandidates.push({
+                  i: k, t: b.t, dir: 1,
+                  originType: m.type,
+                  price: b.c, low: b.l, high: b.h,
+                  score: net[k] ?? 0,
+                  reason: `${m.desc} + Ligne KK verte (≤2b)`
+                });
+                break; // Première bougie valide dans la fenêtre stricte ≤ 2 bougies
+              }
+            } else if (m.dir === -1) {
+              if (isKkRed(k) && isFmcRed(k)) {
+                if (isAlmaGreen(k)) continue;
+                const b = d[k];
+                if (!b) break;
+                allCandidates.push({
+                  i: k, t: b.t, dir: -1,
+                  originType: m.type,
+                  price: b.c, low: b.l, high: b.h,
+                  score: net[k] ?? 0,
+                  reason: `${m.desc} + Ligne KK rouge (≤2b)`
+                });
+                break; // Première bougie valide dans la fenêtre stricte ≤ 2 bougies
+              }
+            }
           }
         }
-      }
-
-      // B) Candidats Entrée Achat à partir des triangles verts :
-      // Déclenchement dès que la ligne KK est verte (net > sig)
-      // Condition Alma : si Alma est actif et violet, pas de pastille achat !
-      for (const repI of triAchat) {
-        for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
-          if (isKkGreen(k) && isFmcGreen(k)) {
-            if (isAlmaViolet(k)) continue;
-            const b = d[k];
-            if (!b) break;
-            allCandidates.push({
-              i: k, t: b.t, dir: 1,
-              originType: 'triangle',
-              price: b.c, low: b.l, high: b.h,
-              score: net[k] ?? 0,
-              reason: '▲ Triangle vert + Ligne KK verte'
-            });
-            break; // Dès la 1ère bougie verte valide, pas de retard !
+      } else {
+        // --- MODE STANDARD (Version 140) ---
+        // A) Candidats Entrée Vente à partir des triangles rouges :
+        // Déclenchement dès que la ligne KK est rouge (net <= sig)
+        // Condition Alma : si Alma est actif et vert, pas de pastille vente !
+        for (const repI of triVente) {
+          for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
+            if (isKkRed(k) && isFmcRed(k)) {
+              if (isAlmaGreen(k)) continue;
+              const b = d[k];
+              if (!b) break;
+              allCandidates.push({
+                i: k, t: b.t, dir: -1,
+                originType: 'triangle',
+                price: b.c, low: b.l, high: b.h,
+                score: net[k] ?? 0,
+                reason: '▼ Triangle rouge + Ligne KK rouge'
+              });
+              break; // Dès la 1ère bougie rouge valide, pas de retard !
+            }
           }
         }
-      }
 
-      // C) Candidats Rappels Achat (Losanges verts) :
-      // Règle : uniquement si la ligne KK est verte (net > sig) à l'apparition du losange
-      // et pas de pastille achat si Alma est violet
-      for (const repI of losAchat) {
-        let kFound = null;
-        if (isKkGreen(repI) && isFmcGreen(repI) && !isAlmaViolet(repI)) kFound = repI;
-        else if (isKkGreen(repI + 1) && isFmcGreen(repI + 1) && !isAlmaViolet(repI + 1)) kFound = repI + 1;
-        if (kFound != null) {
-          const b = d[kFound];
-          if (b) {
-            allCandidates.push({
-              i: kFound, t: b.t, dir: 1,
-              originType: 'losange',
-              price: b.c, low: b.l, high: b.h,
-              score: net[kFound] ?? 0,
-              reason: '▲ Losange vert + Ligne KK verte'
-            });
+        // B) Candidats Entrée Achat à partir des triangles verts :
+        // Déclenchement dès que la ligne KK est verte (net > sig)
+        // Condition Alma : si Alma est actif et violet, pas de pastille achat !
+        for (const repI of triAchat) {
+          for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
+            if (isKkGreen(k) && isFmcGreen(k)) {
+              if (isAlmaViolet(k)) continue;
+              const b = d[k];
+              if (!b) break;
+              allCandidates.push({
+                i: k, t: b.t, dir: 1,
+                originType: 'triangle',
+                price: b.c, low: b.l, high: b.h,
+                score: net[k] ?? 0,
+                reason: '▲ Triangle vert + Ligne KK verte'
+              });
+              break; // Dès la 1ère bougie verte valide, pas de retard !
+            }
           }
         }
-      }
 
-      // D) Candidats Rappels Vente (Losanges rouges) :
-      // Règle : uniquement si la ligne KK est rouge (net <= sig) à l'apparition du losange
-      // et pas de pastille vente si Alma est vert
-      for (const repI of losVente) {
-        let kFound = null;
-        if (isKkRed(repI) && isFmcRed(repI) && !isAlmaGreen(repI)) kFound = repI;
-        else if (isKkRed(repI + 1) && isFmcRed(repI + 1) && !isAlmaGreen(repI + 1)) kFound = repI + 1;
-        if (kFound != null) {
-          const b = d[kFound];
-          if (b) {
-            allCandidates.push({
-              i: kFound, t: b.t, dir: -1,
-              originType: 'losange',
-              price: b.c, low: b.l, high: b.h,
-              score: net[kFound] ?? 0,
-              reason: '▼ Losange rouge + Ligne KK rouge'
-            });
+        // C) Candidats Rappels Achat (Losanges verts) :
+        // Règle : uniquement si la ligne KK est verte (net > sig) à l'apparition du losange
+        // et pas de pastille achat si Alma est violet
+        for (const repI of losAchat) {
+          let kFound = null;
+          if (isKkGreen(repI) && isFmcGreen(repI) && !isAlmaViolet(repI)) kFound = repI;
+          else if (isKkGreen(repI + 1) && isFmcGreen(repI + 1) && !isAlmaViolet(repI + 1)) kFound = repI + 1;
+          if (kFound != null) {
+            const b = d[kFound];
+            if (b) {
+              allCandidates.push({
+                i: kFound, t: b.t, dir: 1,
+                originType: 'losange',
+                price: b.c, low: b.l, high: b.h,
+                score: net[kFound] ?? 0,
+                reason: '▲ Losange vert + Ligne KK verte'
+              });
+            }
+          }
+        }
+
+        // D) Candidats Rappels Vente (Losanges rouges) :
+        // Règle : uniquement si la ligne KK est rouge (net <= sig) à l'apparition du losange
+        // et pas de pastille vente si Alma est vert
+        for (const repI of losVente) {
+          let kFound = null;
+          if (isKkRed(repI) && isFmcRed(repI) && !isAlmaGreen(repI)) kFound = repI;
+          else if (isKkRed(repI + 1) && isFmcRed(repI + 1) && !isAlmaGreen(repI + 1)) kFound = repI + 1;
+          if (kFound != null) {
+            const b = d[kFound];
+            if (b) {
+              allCandidates.push({
+                i: kFound, t: b.t, dir: -1,
+                originType: 'losange',
+                price: b.c, low: b.l, high: b.h,
+                score: net[kFound] ?? 0,
+                reason: '▼ Losange rouge + Ligne KK rouge'
+              });
+            }
           }
         }
       }
@@ -31642,13 +31736,22 @@ function computeFMCSignals(cleFmc, cleStrat) {
       // Attribution : Entrée initiale de cycle vs Rappels (Grisés)
       let currentActiveDir = 0;
       let lastRappelI = -999;
+      let lastSigI = -999;
       for (const cand of filteredCandidates) {
         if (cand.dir === 1 && (!isKkGreen(cand.i) || !isFmcGreen(cand.i) || isAlmaViolet(cand.i))) continue;
         if (cand.dir === -1 && (!isKkRed(cand.i) || !isFmcRed(cand.i) || isAlmaGreen(cand.i))) continue;
+
+        if (isStrict && lastSigI >= 0 && currentActiveDir === cand.dir) {
+          // Si un repère opposé est survenu depuis le dernier signal, le cycle précédent est caduc
+          const oppSince = markers.some(m => m.dir === -cand.dir && m.i >= lastSigI && m.i <= cand.i);
+          if (oppSince) currentActiveDir = 0;
+        }
+
         if (cand.dir === 1) {
           if (currentActiveDir !== 1) {
             // Premier Achat du cycle : Pastille Achat de base
             currentActiveDir = 1;
+            lastSigI = cand.i;
             signals.push({
               i: cand.i, t: cand.t, dir: 1,
               type: 'ACHAT',
@@ -31690,6 +31793,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
           if (currentActiveDir !== -1) {
             // Première Vente du cycle : Pastille Vente de base
             currentActiveDir = -1;
+            lastSigI = cand.i;
             signals.push({
               i: cand.i, t: cand.t, dir: -1,
               type: 'VENTE',
@@ -37665,6 +37769,38 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if(typeof render === 'function') render();
   };
 
+  window.updateFmcStrictUI = function(){
+    const isStrict = !!(state.indicators?.strat_fmc?.strictCaducite);
+    const topBtn = document.getElementById('fmc-strict-top-btn');
+    if (topBtn) {
+      topBtn.textContent = isStrict ? '🛡️ RÈGLE STRICTE : ON' : '🛡️ RÈGLE STRICTE : OFF';
+      topBtn.style.background = isStrict ? 'rgba(34,211,238,0.22)' : 'rgba(100,116,139,0.2)';
+      topBtn.style.borderColor = isStrict ? '#22D3EE' : '#64748B';
+      topBtn.style.color = isStrict ? '#22D3EE' : '#94A3B8';
+    }
+    const sideBtn = document.getElementById('btn-toggle-fmc-strict');
+    if (sideBtn) {
+      sideBtn.textContent = isStrict ? '🛡️ Règle Stricte : ON' : '🛡️ Règle Stricte : OFF';
+      sideBtn.style.background = isStrict ? 'rgba(34,211,238,0.22)' : 'rgba(100,116,139,0.2)';
+      sideBtn.style.borderColor = isStrict ? '#22D3EE' : '#64748B';
+      sideBtn.style.color = isStrict ? '#22D3EE' : '#94A3B8';
+    }
+  };
+
+  window.toggleFmcStrict = function(){
+    if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+    const cur = !state.indicators.strat_fmc.strictCaducite;
+    state.indicators.strat_fmc.strictCaducite = cur;
+    window.updateFmcStrictUI();
+    try {
+      if (typeof saveConfig === 'function') saveConfig();
+    } catch(e) {}
+    if (typeof toast === 'function') {
+      toast(cur ? '🛡️ FMC : Condition stricte ACTIVÉE (Repère ≤2b & Caducité)' : '🛡️ FMC : Condition stricte DÉSACTIVÉE (Mode v140 standard)', cur ? '#22D3EE' : '#94A3B8');
+    }
+    if (typeof render === 'function') render();
+  };
+
   try{
     const a = document.getElementById('nouv-btn') || document.getElementById('inv-btn');
     if(a && !document.getElementById('norosc-btn')){
@@ -37686,12 +37822,13 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0140';
+  window.__LUMEN_BUILD = 'B-0910-0210';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
     const hTag = document.getElementById('header-build-tag');
     if (hTag) hTag.textContent = 'Build ' + window.__LUMEN_BUILD;
+    if (typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
   }, 100);
   console.log('%c[Lumen] version ' + window.__LUMEN_BUILD, 'color:#00E5FF;font-weight:700');
 
