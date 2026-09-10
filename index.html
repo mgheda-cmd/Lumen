@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0130</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0140</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -8342,9 +8342,10 @@ function getCandleEnvelope(bx, bw) {
   const cw = (W - AXIS_W) / state.view.count;
   if (cw <= 0) return null;
 
-  // Marge horizontale pour analyser toutes les mèches et corps sous la largeur de la pastille
-  const leftX = bx - 10;
-  const rightX = bx + bw + 10;
+  // Marge horizontale large pour englober toutes les mèches et corps : sous la pastille, ainsi qu'avant et après
+  const horizMargin = Math.max(65, cw * 4);
+  const leftX = bx - horizMargin;
+  const rightX = bx + bw + horizMargin;
 
   const iMin = Math.max(0, Math.floor(state.view.start + (leftX - cw / 2) / cw));
   const iMax = Math.min(state.data.length - 1, Math.ceil(state.view.start + (rightX + cw / 2) / cw));
@@ -8368,9 +8369,9 @@ function getCandleEnvelope(bx, bw) {
 }
 
 function placeBadge(bx, bw, by, bh, dir) {
-  const GAP = 5, MAXTRY = 100;
-  // Dégagement dynamique franc : la pastille flotte toujours à au moins 42px de la bougie la plus proche
-  const CLEARANCE = 42;
+  const GAP = 8, MAXTRY = 100;
+  // Dégagement dynamique franc et généreux : la pastille flotte toujours à bonne distance (au moins 70px) des mèches
+  const CLEARANCE = 70;
 
   const minY = 6;
   const maxY = (_priceBot > 0) ? (_priceBot - bh - 6) : (H - AXIS_H - bh - 6);
@@ -8422,15 +8423,15 @@ function placeBadge(bx, bw, by, bh, dir) {
     n++;
   }
 
-  // Contrôle absolu de non-contact : aucune pastille ne peut jamais toucher ni cacher une bougie
+  // Contrôle absolu de non-contact : aucune pastille ne peut jamais toucher ni s'approcher d'une bougie (avant, pendant ou après)
   if (env) {
     if (currentDir < 0 && isFinite(env.highestY)) {
-      if (y + bh > env.highestY - 14) {
-        y = Math.max(minY, env.highestY - 14 - bh);
+      if (y + bh > env.highestY - CLEARANCE) {
+        y = env.highestY - CLEARANCE - bh;
       }
     } else if (currentDir > 0 && isFinite(env.lowestY)) {
-      if (y < env.lowestY + 14) {
-        y = Math.min(maxY, env.lowestY + 14);
+      if (y < env.lowestY + CLEARANCE) {
+        y = env.lowestY + CLEARANCE;
       }
     }
   }
@@ -9517,7 +9518,7 @@ function drawPrice(p,s,e,cw,sharedXStack){
     for(const arr of [ic.T,ic.K,ic.A,ic.B])
       for(let i=s;i<e;i++)if(arr[i]!=null){lo=Math.min(lo,arr[i]);hi=Math.max(hi,arr[i]);}}
   const hasBadges = vis('strat_super') || vis('strat_zz') || vis('strat_zz2') || vis('strat_mm') || vis('strat_fmc') || vis('signal_ema_ha') || vis('signal_triple') || vis('exhaustion') || vis('exhaustion_pro') || vis('signal_inv');
-  const padRatio = hasBadges ? 0.22 : 0.10;
+  const padRatio = hasBadges ? 0.30 : 0.10;
   const pad = (isFinite(hi) && isFinite(lo) && hi > lo) ? ((hi - lo) * padRatio || 1) : 1;
   lo -= pad; hi += pad;
   if(!state.yScale.auto && isFinite(state.yScale.lo) && isFinite(state.yScale.hi) && state.yScale.hi > state.yScale.lo){
@@ -31779,9 +31780,9 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     const color = isRappel ? (indFmc.cRappel || '#94A3B8') : (sig.color || (isLong ? '#00E676' : '#FF0055'));
     const borderCol = isRappel ? (indFmc.cRappelBorder || '#64748B') : color;
     const anchorY = yOf(isLong ? sig.low : sig.high);
-    const off = isLong ? 18 : -(bh + 18);
-    const by = anchorY + off;
-    const bx = x - bw / 2;
+    const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
+    const rawBy = isLong ? (anchorY + 80) : (anchorY - bh - 80);
+    const by = (typeof placeBadge === 'function') ? placeBadge(bx, bw, rawBy, bh, isLong ? 1 : -1) : rawBy;
 
     ctx.save();
     // Fond
@@ -37685,7 +37686,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0130';
+  window.__LUMEN_BUILD = 'B-0910-0140';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
