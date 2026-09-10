@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0140</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0150</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -31448,32 +31448,10 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const cBuy = indFmc.cBuyKk || '#00E676';
       const cSell = indFmc.cSellKk || '#FF0055';
 
-      // S'assurer que les données FMC pour l'histogramme du milieu sont disponibles
+      // S'assurer que les données FMC pour l'histogramme et les repères sont disponibles
       if (!fs_ || !Array.isArray(fs_.core) || !fs_.core.length) {
-        try { fs_ = calc.fmc(d, state.indicators.fmc || {}); } catch(e) {}
+        try { fs_ = (typeof getInd === 'function' ? getInd(cleFmc) : null) || calc.fmc(d, state.indicators.fmc || {}); } catch(e) {}
       }
-
-      // Triangles sommets (rouge) et creux (vert) calculés sur KK 5m
-      const L = 2;
-      const peaks5 = [], troughs5 = [];
-      for (let j = L; j < rawKK.net.length - L; j++) {
-        const v = rawKK.net[j];
-        if (v == null) continue;
-        let isP = true, isT = true;
-        for (let q = 1; q <= L; q++) {
-          const a = rawKK.net[j - q], b = rawKK.net[j + q];
-          if (a == null || b == null) { isP = false; isT = false; break; }
-          if (!(v >= a && v >= b)) isP = false;
-          if (!(v <= a && v <= b)) isT = false;
-        }
-        if (isP) peaks5.push(j);
-        if (isT) troughs5.push(j);
-      }
-
-      const toChartIdx = (idx5) => {
-        if (!srcKK[idx5]) return null;
-        return (typeof idxOfTime === 'function') ? idxOfTime(srcKK[idx5].t) : idx5;
-      };
 
       // Couleur réelle de la ligne KK : strictement verte si net > sig, strictement rouge si net <= sig
       const isKkGreen = (idx) => {
@@ -31498,130 +31476,152 @@ function computeFMCSignals(cleFmc, cleStrat) {
         return fs_.core[idx] < fs_.bal[idx];
       };
 
-      // 1. Repères TRIANGLES : pour initialiser / inverser les entrées de cycle
-      const triVente = [];
-      for (const pk5 of peaks5) {
-        const pkD = toChartIdx(pk5);
-        if (pkD != null && pkD >= 1 && pkD < d.length) triVente.push(pkD);
-      }
-      if (fs_ && Array.isArray(fs_.contraShort)) {
-        for (const g of fs_.contraShort) {
-          if (g.i != null && g.i >= 1 && g.i < d.length) triVente.push(g.i);
-        }
-      }
-      triVente.sort((a, b) => a - b);
-
+      // 1. Repères TRIANGLES FMC stricts (aucun faux triangle 'peaks5' / 'troughs5') :
+      // Triangles d'achat : contraLong (contrarien) + divBull (divergence Div ▲)
       const triAchat = [];
-      for (const tr5 of troughs5) {
-        const trD = toChartIdx(tr5);
-        if (trD != null && trD >= 1 && trD < d.length) triAchat.push(trD);
-      }
       if (fs_ && Array.isArray(fs_.contraLong)) {
-        for (const g of fs_.contraLong) {
-          if (g.i != null && g.i >= 1 && g.i < d.length) triAchat.push(g.i);
-        }
+        for (const g of fs_.contraLong) if (g.i != null && g.i >= 1 && g.i < d.length) triAchat.push(g.i);
+      }
+      if (fs_ && Array.isArray(fs_.divBull)) {
+        for (const g of fs_.divBull) if (g.i != null && g.i >= 1 && g.i < d.length) triAchat.push(g.i);
       }
       triAchat.sort((a, b) => a - b);
 
-      // 2. Repères LOSANGES FMC (score / continuation) : pour rappels de confirmation
-      const losVente = [];
-      if (fs_ && Array.isArray(fs_.sells)) {
-        for (const g of fs_.sells) {
-          if (g.i != null && g.i >= 1 && g.i < d.length) losVente.push(g.i);
-        }
+      // Triangles de vente : contraShort (contrarien) + divBear (divergence Div ▼)
+      const triVente = [];
+      if (fs_ && Array.isArray(fs_.contraShort)) {
+        for (const g of fs_.contraShort) if (g.i != null && g.i >= 1 && g.i < d.length) triVente.push(g.i);
       }
-      losVente.sort((a, b) => a - b);
+      if (fs_ && Array.isArray(fs_.divBear)) {
+        for (const g of fs_.divBear) if (g.i != null && g.i >= 1 && g.i < d.length) triVente.push(g.i);
+      }
+      triVente.sort((a, b) => a - b);
 
+      // 2. Repères LOSANGES FMC (score / continuation) : pour rappels de confirmation
       const losAchat = [];
       if (fs_ && Array.isArray(fs_.buys)) {
-        for (const g of fs_.buys) {
-          if (g.i != null && g.i >= 1 && g.i < d.length) losAchat.push(g.i);
-        }
+        for (const g of fs_.buys) if (g.i != null && g.i >= 1 && g.i < d.length) losAchat.push(g.i);
       }
       losAchat.sort((a, b) => a - b);
 
+      const losVente = [];
+      if (fs_ && Array.isArray(fs_.sells)) {
+        for (const g of fs_.sells) if (g.i != null && g.i >= 1 && g.i < d.length) losVente.push(g.i);
+      }
+      losVente.sort((a, b) => a - b);
+
+      // Ensembles pour annulation immédiate par repères opposés :
+      // Un signal de vente est IMMÉDIATEMENT annulé si un triangle ou losange vert apparaît
+      // Un signal d'achat est IMMÉDIATEMENT annulé si un triangle ou losange rouge apparaît
+      const allGreenMarkers = new Set([...triAchat, ...losAchat]);
+      const allRedMarkers = new Set([...triVente, ...losVente]);
+
       const allCandidates = [];
 
-      // A) Candidats Entrée Vente à partir des triangles rouges :
-      // Déclenchement dès que la ligne KK est rouge (net <= sig)
-      // Condition Alma : si Alma est actif et vert, pas de pastille vente !
-      for (const repI of triVente) {
-        for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
-          if (isKkRed(k) && isFmcRed(k)) {
-            if (isAlmaGreen(k)) continue;
-            const b = d[k];
-            if (!b) break;
-            allCandidates.push({
-              i: k, t: b.t, dir: -1,
-              originType: 'triangle',
-              price: b.c, low: b.l, high: b.h,
-              score: net[k] ?? 0,
-              reason: '▼ Triangle rouge + Ligne KK rouge'
-            });
-            break; // Dès la 1ère bougie rouge valide, pas de retard !
+      // A) Candidats Entrée Vente à partir des triangles rouges FMC :
+      // Déclenchement immédiat (bougie repI ou repI + 1) si KK rouge et FMC rouge
+      // Annulé d'office si Alma est vert ou si un repère vert apparaît
+      if (indFmc.showKkSell !== false) {
+        for (const repI of triVente) {
+          for (let k = repI; k <= Math.min(d.length - 1, repI + 1); k++) {
+            let cancelled = false;
+            for (let chk = repI; chk <= k; chk++) {
+              if (allGreenMarkers.has(chk)) { cancelled = true; break; }
+            }
+            if (cancelled) break;
+
+            if (isKkRed(k) && isFmcRed(k)) {
+              if (isAlmaGreen(k)) continue;
+              const b = d[k];
+              if (!b) break;
+              allCandidates.push({
+                i: k, t: b.t, dir: -1,
+                originType: 'triangle',
+                originIdx: repI,
+                price: b.c, low: b.l, high: b.h,
+                score: net[k] ?? 0,
+                reason: '▼ Triangle rouge + Ligne KK rouge'
+              });
+              break;
+            }
           }
         }
       }
 
-      // B) Candidats Entrée Achat à partir des triangles verts :
-      // Déclenchement dès que la ligne KK est verte (net > sig)
-      // Condition Alma : si Alma est actif et violet, pas de pastille achat !
-      for (const repI of triAchat) {
-        for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
-          if (isKkGreen(k) && isFmcGreen(k)) {
-            if (isAlmaViolet(k)) continue;
-            const b = d[k];
-            if (!b) break;
-            allCandidates.push({
-              i: k, t: b.t, dir: 1,
-              originType: 'triangle',
-              price: b.c, low: b.l, high: b.h,
-              score: net[k] ?? 0,
-              reason: '▲ Triangle vert + Ligne KK verte'
-            });
-            break; // Dès la 1ère bougie verte valide, pas de retard !
+      // B) Candidats Entrée Achat à partir des triangles verts FMC :
+      // Déclenchement immédiat (bougie repI ou repI + 1) si KK verte et FMC verte
+      // Annulé d'office si Alma est violet ou si un repère rouge apparaît
+      if (indFmc.showKkBuy !== false) {
+        for (const repI of triAchat) {
+          for (let k = repI; k <= Math.min(d.length - 1, repI + 1); k++) {
+            let cancelled = false;
+            for (let chk = repI; chk <= k; chk++) {
+              if (allRedMarkers.has(chk)) { cancelled = true; break; }
+            }
+            if (cancelled) break;
+
+            if (isKkGreen(k) && isFmcGreen(k)) {
+              if (isAlmaViolet(k)) continue;
+              const b = d[k];
+              if (!b) break;
+              allCandidates.push({
+                i: k, t: b.t, dir: 1,
+                originType: 'triangle',
+                originIdx: repI,
+                price: b.c, low: b.l, high: b.h,
+                score: net[k] ?? 0,
+                reason: '▲ Triangle vert + Ligne KK verte'
+              });
+              break;
+            }
           }
         }
       }
 
-      // C) Candidats Rappels Achat (Losanges verts) :
-      // Règle : uniquement si la ligne KK est verte (net > sig) à l'apparition du losange
-      // et pas de pastille achat si Alma est violet
-      for (const repI of losAchat) {
-        let kFound = null;
-        if (isKkGreen(repI) && isFmcGreen(repI) && !isAlmaViolet(repI)) kFound = repI;
-        else if (isKkGreen(repI + 1) && isFmcGreen(repI + 1) && !isAlmaViolet(repI + 1)) kFound = repI + 1;
-        if (kFound != null) {
-          const b = d[kFound];
-          if (b) {
-            allCandidates.push({
-              i: kFound, t: b.t, dir: 1,
-              originType: 'losange',
-              price: b.c, low: b.l, high: b.h,
-              score: net[kFound] ?? 0,
-              reason: '▲ Losange vert + Ligne KK verte'
-            });
+      // C) Candidats Rappels Achat (Losanges verts FMC) :
+      // Règle : uniquement si KK verte et FMC verte à l'apparition du losange (repI ou repI + 1)
+      // et pas de pastille si Alma violet ou repère rouge opposé
+      if (indFmc.showKkBuy !== false && indFmc.showRappels !== false) {
+        for (const repI of losAchat) {
+          let kFound = null;
+          if (isKkGreen(repI) && isFmcGreen(repI) && !isAlmaViolet(repI) && !allRedMarkers.has(repI)) kFound = repI;
+          else if (isKkGreen(repI + 1) && isFmcGreen(repI + 1) && !isAlmaViolet(repI + 1) && !allRedMarkers.has(repI) && !allRedMarkers.has(repI + 1)) kFound = repI + 1;
+          if (kFound != null) {
+            const b = d[kFound];
+            if (b) {
+              allCandidates.push({
+                i: kFound, t: b.t, dir: 1,
+                originType: 'losange',
+                originIdx: repI,
+                price: b.c, low: b.l, high: b.h,
+                score: net[kFound] ?? 0,
+                reason: '▲ Losange vert + Ligne KK verte'
+              });
+            }
           }
         }
       }
 
-      // D) Candidats Rappels Vente (Losanges rouges) :
-      // Règle : uniquement si la ligne KK est rouge (net <= sig) à l'apparition du losange
-      // et pas de pastille vente si Alma est vert
-      for (const repI of losVente) {
-        let kFound = null;
-        if (isKkRed(repI) && isFmcRed(repI) && !isAlmaGreen(repI)) kFound = repI;
-        else if (isKkRed(repI + 1) && isFmcRed(repI + 1) && !isAlmaGreen(repI + 1)) kFound = repI + 1;
-        if (kFound != null) {
-          const b = d[kFound];
-          if (b) {
-            allCandidates.push({
-              i: kFound, t: b.t, dir: -1,
-              originType: 'losange',
-              price: b.c, low: b.l, high: b.h,
-              score: net[kFound] ?? 0,
-              reason: '▼ Losange rouge + Ligne KK rouge'
-            });
+      // D) Candidats Rappels Vente (Losanges rouges FMC) :
+      // Règle : uniquement si KK rouge et FMC rouge à l'apparition du losange (repI ou repI + 1)
+      // et pas de pastille si Alma vert ou repère vert opposé
+      if (indFmc.showKkSell !== false && indFmc.showRappels !== false) {
+        for (const repI of losVente) {
+          let kFound = null;
+          if (isKkRed(repI) && isFmcRed(repI) && !isAlmaGreen(repI) && !allGreenMarkers.has(repI)) kFound = repI;
+          else if (isKkRed(repI + 1) && isFmcRed(repI + 1) && !isAlmaGreen(repI + 1) && !allGreenMarkers.has(repI) && !allGreenMarkers.has(repI + 1)) kFound = repI + 1;
+          if (kFound != null) {
+            const b = d[kFound];
+            if (b) {
+              allCandidates.push({
+                i: kFound, t: b.t, dir: -1,
+                originType: 'losange',
+                originIdx: repI,
+                price: b.c, low: b.l, high: b.h,
+                score: net[kFound] ?? 0,
+                reason: '▼ Losange rouge + Ligne KK rouge'
+              });
+            }
           }
         }
       }
@@ -31639,16 +31639,29 @@ function computeFMCSignals(cleFmc, cleStrat) {
         filteredCandidates.push(c);
       }
 
-      // Attribution : Entrée initiale de cycle vs Rappels (Grisés)
+      // Attribution : Entrée initiale de cycle (Triangle requis) vs Rappels de confirmation
       let currentActiveDir = 0;
+      let lastTriangleIdx = -999;
       let lastRappelI = -999;
       for (const cand of filteredCandidates) {
         if (cand.dir === 1 && (!isKkGreen(cand.i) || !isFmcGreen(cand.i) || isAlmaViolet(cand.i))) continue;
         if (cand.dir === -1 && (!isKkRed(cand.i) || !isFmcRed(cand.i) || isAlmaGreen(cand.i))) continue;
+
         if (cand.dir === 1) {
+          // Si un repère rouge est intervenu depuis le dernier triangle d'achat, cycle annulé
+          if (currentActiveDir === 1 && lastTriangleIdx >= 0) {
+            let oppBetween = false;
+            for (const redI of allRedMarkers) {
+              if (redI > lastTriangleIdx && redI <= cand.i) { oppBetween = true; break; }
+            }
+            if (oppBetween) currentActiveDir = 0;
+          }
+
           if (currentActiveDir !== 1) {
-            // Premier Achat du cycle : Pastille Achat de base
+            // Premier Achat du cycle : UNIQUEMENT initié par un TRIANGLE réel FMC !
+            if (cand.originType !== 'triangle') continue;
             currentActiveDir = 1;
+            lastTriangleIdx = cand.originIdx ?? cand.i;
             signals.push({
               i: cand.i, t: cand.t, dir: 1,
               type: 'ACHAT',
@@ -31660,7 +31673,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
               reason: cand.reason,
               label: 'ACHAT FMC × KK',
               badge: '⚡ ACHAT FMC × KK',
-              sub: (cand.originType === 'triangle' ? '▲ Triangle vert' : '▲ Losange vert') + ' · KK 5m=' + Math.round(cand.score) + ' · Ligne Verte',
+              sub: '▲ Triangle vert · KK 5m=' + Math.round(cand.score) + ' · Ligne Verte',
               color: cBuy,
               bgFill: 'rgba(6, 36, 32, 0.95)'
             });
@@ -31687,9 +31700,20 @@ function computeFMCSignals(cleFmc, cleStrat) {
             }
           }
         } else if (cand.dir === -1) {
+          // Si un repère vert est intervenu depuis le dernier triangle de vente, cycle annulé
+          if (currentActiveDir === -1 && lastTriangleIdx >= 0) {
+            let oppBetween = false;
+            for (const greenI of allGreenMarkers) {
+              if (greenI > lastTriangleIdx && greenI <= cand.i) { oppBetween = true; break; }
+            }
+            if (oppBetween) currentActiveDir = 0;
+          }
+
           if (currentActiveDir !== -1) {
-            // Première Vente du cycle : Pastille Vente de base
+            // Première Vente du cycle : UNIQUEMENT initiée par un TRIANGLE réel FMC !
+            if (cand.originType !== 'triangle') continue;
             currentActiveDir = -1;
+            lastTriangleIdx = cand.originIdx ?? cand.i;
             signals.push({
               i: cand.i, t: cand.t, dir: -1,
               type: 'VENTE',
@@ -31701,7 +31725,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
               reason: cand.reason,
               label: 'VENTE FMC × KK',
               badge: '⚡ VENTE FMC × KK',
-              sub: (cand.originType === 'triangle' ? '▼ Triangle rouge' : '▼ Losange rouge') + ' · KK 5m=' + Math.round(cand.score) + ' · Ligne Rouge',
+              sub: '▼ Triangle rouge · KK 5m=' + Math.round(cand.score) + ' · Ligne Rouge',
               color: cSell,
               bgFill: 'rgba(44, 10, 24, 0.95)'
             });
@@ -37686,7 +37710,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0140';
+  window.__LUMEN_BUILD = 'B-0910-0150';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
