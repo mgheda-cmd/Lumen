@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0120</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0130</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6722,10 +6722,26 @@ function ensureMTF(tf){
      ce que le code sait déjà faire ailleurs. */
   if(!TF_MAP[tf]){
     mtfStore.data[tf] = null;
-    try{
-      const agg = (typeof aggregateData==='function') ? aggregateData(state.data, tf) : null;
-      mtfStore.data[tf] = (agg && agg.length) ? agg : null;
-    }catch(e){ mtfStore.data[tf] = null; }
+    if(state.tf === 1 && state.data && state.data.length){
+      try{
+        const agg = (typeof aggregateData==='function') ? aggregateData(state.data, tf, 1) : null;
+        if(agg && agg.length){ mtfStore.data[tf] = agg; return; }
+      }catch(e){}
+    }
+    fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=1m&limit=1000`)
+      .then(rows=>{
+        if(mtfStore.key!==k||!Array.isArray(rows))return;
+        const b1m = rows.map(r=>({t:+r[0],o:+r[1],h:+r[2],l:+r[3],c:+r[4],v:+r[5]}));
+        const agg = (typeof aggregateData==='function') ? aggregateData(b1m, tf, 1) : b1m;
+        mtfStore.data[tf] = (agg && agg.length) ? agg : b1m;
+        state.cache={};render();
+      })
+      .catch(()=>{
+        try{
+          const agg = (typeof aggregateData==='function') ? aggregateData(state.data, tf) : null;
+          mtfStore.data[tf] = (agg && agg.length) ? agg : null;
+        }catch(e){ delete mtfStore.data[tf]; }
+      });
     return;
   }
   mtfStore.data[tf]=null; // chargement en cours
@@ -13759,7 +13775,11 @@ const IND_META={
     ?({'15':'15m','60':'1H','240':'4H'}[state.indicators.obm.tf]||'')
     :(HTF_NAME[state.tf]||'')),color:'#FF9D66'},
   sr:{label:()=>'S/R MTF',color:'#A8B8D8'},
-  almasd:{label:()=>'Alma SD ST',color:'#00E5D0'},
+  almasd:{label:()=>{
+    const ut = state.indicators?.almasd?.tf;
+    const tfStr = (!ut || ut === 'chart') ? '' : ' (' + (ut === '0.5' ? '30s' : (+ut >= 60 ? (+ut / 60) + 'H' : ut + 'm')) + ')';
+    return 'Alma SD ST' + tfStr;
+  },color:'#00E5D0'},
   bos:{label:()=>'Structure BOS/CHoCH',color:'#FFD166'},
   signal:{label:()=>'Signaux A/V',color:'#FFE24D'},
   signal_inv:{label:()=>'Confluence INVERSÉE 🏆',color:'#25D0A4'},
@@ -19146,7 +19166,8 @@ const SCHEMA={
     {k:'tpRR',t:'num',lab:'Objectif de gain (× le risque)',min:1,max:20,ind:1,def:2.5},
     {k:'allowShort',t:'bool',lab:'Autoriser les positions vendeuses (Shorts)',def:true}
   ]},
-  almasd:{title:'Alma SD SuperTrend',fields:[{k:'tf',t:'choice',lab:'Unité de temps',opts:[{v:'chart',t:'Graphique'},{v:'0.5',t:'30 secondes'},{v:'1',t:'1 minute'},{v:'3',t:'3 minutes'},{v:'5',t:'5 minutes'},{v:'15',t:'15 minutes'},{v:'30',t:'30 minutes'},{v:'60',t:'1 heure'},{v:'240',t:'4 heures'}]},
+  almasd:{title:'Alma SD SuperTrend',fields:[
+    {k:'tf',t:'tf',lab:'Unité de temps'},
     {k:'fac',t:'num',lab:'Facteur',min:0.1,max:10,ind:1},
     {k:'sd',t:'num',lab:'SD Length',min:2,max:200,ind:1},
     {k:'alen',t:'num',lab:'Alma Length',min:2,max:200,ind:1},
@@ -19505,7 +19526,7 @@ function openCfg(ind){
       /* Série complète, reprise du dépôt Google- : les minutes intermédiaires
          manquaient, or ce sont elles qui servent à régler l'Impulse MACD de
          la stratégie MM, où une minute d'écart déplace le prix d'entrée. */
-      const opts=[['chart','UT'],['1','1m'],['2','2m'],['3','3m'],['4','4m'],['5','5m'],
+      const opts=[['chart','UT'],['0.5','30s'],['1','1m'],['2','2m'],['3','3m'],['4','4m'],['5','5m'],
                   ['6','6m'],['7','7m'],['8','8m'],['9','9m'],['10','10m'],['12','12m'],
                   ['15','15m'],['20','20m'],['30','30m'],['60','1H'],['240','4H']];
       return `<div class="cfg-row"><label>${f.lab || "Unité de temps"}</label>
@@ -37664,7 +37685,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0120';
+  window.__LUMEN_BUILD = 'B-0910-0130';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
