@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2460</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2470</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5740,7 +5740,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_11_11:{on:true,showBuy:true,showSell:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
+    strat_11_11:{on:true,showBuy:true,showSell:true,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
     strat_fmc:{on:true,showPureNoAlma:true,showElite:true,showEliteExits:true,showEliteKkExitCross:true,showEliteKkExitZero:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
@@ -5983,7 +5983,7 @@ function loadConfig(){
   /* Stratégie FMC autonome & Confluence KK : initialisation propre */
   try{
     if(!state.indicators.strat_11_11){
-      state.indicators.strat_11_11 = {on:true,showBuy:true,showSell:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'};
+      state.indicators.strat_11_11 = {on:true,showBuy:true,showSell:true,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'};
     }
     if(!state.indicators.strat_fmc){
       state.indicators.strat_fmc = {on:true,showElite:true,showEliteExits:true,showEliteKkExitCross:true,showEliteKkExitZero:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:false,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
@@ -9534,20 +9534,41 @@ function render(){
     ctx.save();
     const basV = H - AXIS_H;
     const drawnX = [];
-    const sortedVert = [...window.__zzVerticales].sort((a, b) => (b.isElite ? 1 : 0) - (a.isElite ? 1 : 0));
+    const sortedVert = [...window.__zzVerticales].sort((a, b) => {
+      const pA = a.isStrat1111 ? 3 : (a.isElite ? 2 : 1);
+      const pB = b.isStrat1111 ? 3 : (b.isElite ? 2 : 1);
+      return pB - pA;
+    });
     for(const v of sortedVert){
       if(v.x < 0 || v.x > W - AXIS_W) continue;
-      if(drawnX.some(px => Math.abs(px - v.x) < 12)) continue;
+      if(drawnX.some(px => Math.abs(px - v.x) < 8)) continue;
       drawnX.push(v.x);
 
-      // Pointillés identiques à la liaison pastille/bougie (dash [3, 2], largeur 1.4, sans ombre grise)
+      // Pointillés identiques à la liaison pastille/bougie (dash [3, 2], largeur 1.5, sans ombre grise)
       ctx.setLineDash([3, 2]);
-      ctx.strokeStyle = hexA(v.col || '#00E676', 0.85);
-      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = hexA(v.col || '#00E676', 0.90);
+      ctx.lineWidth = v.isStrat1111 ? 1.6 : 1.4;
       ctx.beginPath();
       ctx.moveTo(v.x, v.y);
       ctx.lineTo(v.x, basV);
       ctx.stroke();
+
+      // Sur les volets d'indicateurs du bas, dessiner également un point repère net là où passe la ligne !
+      if(v.isStrat1111 && Array.isArray(panes)){
+        for(const pn of panes){
+          if(pn.key === 'price') continue;
+          const pyMid = pn.y + pn.h / 2;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.arc(v.x, pyMid, 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = v.col;
+          ctx.fill();
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          ctx.setLineDash([3, 2]);
+        }
+      }
     }
     ctx.setLineDash([]);
     ctx.restore();
@@ -14929,6 +14950,7 @@ const PASTILLES_CATALOG = [
           if (v) {
             state.indicators.strat_11_11.showBuy = true;
             state.indicators.strat_11_11.showSell = true;
+            state.indicators.strat_11_11.showVerticalLines = true;
           }
         }
       },
@@ -14957,6 +14979,20 @@ const PASTILLES_CATALOG = [
         set: (v) => {
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
           state.indicators.strat_11_11.showSell = v;
+          if (v) state.indicators.strat_11_11.on = true;
+        }
+      },
+      {
+        id: 'strat_11_11_lines',
+        icon: '📏',
+        label: 'Pointillés verticaux (Passage sur indicateurs du bas)',
+        desc: 'Prolonge les pointillés d\'achat (vert) et de vente (rouge) à travers tous les indicateurs du volet bas',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_11_11?.showVerticalLines !== false && !!state.indicators?.strat_11_11?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
+          state.indicators.strat_11_11.showVerticalLines = v;
           if (v) state.indicators.strat_11_11.on = true;
         }
       }
@@ -33005,23 +33041,30 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
       let curDir1111 = 0;
       let count1111 = 0;
-      let lastFmcSwitch = -999;
-      let lastFmcDir = 0;
 
       for (let k = 1; k < d.length; k++) {
-        if (isFMC11Green(k) && !isFMC11Green(k - 1)) {
-          lastFmcSwitch = k;
-          lastFmcDir = 1;
-        } else if (isFMC11Red(k) && !isFMC11Red(k - 1)) {
-          lastFmcSwitch = k;
-          lastFmcDir = -1;
-        }
-
         const b = d[k];
         if (!b) continue;
 
-        // Déclenchement Achat 11 11 : FMC 3m vert avec confluence KK 2m verte
-        if (ind1111.showBuy !== false && lastFmcDir === 1 && curDir1111 !== 1 && (k - lastFmcSwitch <= 3) && isFMC11Green(k) && isKK11Green(k)) {
+        const fmcGreenNow = isFMC11Green(k);
+        const kkGreenNow  = isKK11Green(k);
+        const fmcGreenPrev = isFMC11Green(k - 1);
+        const kkGreenPrev  = isKK11Green(k - 1);
+
+        const fmcRedNow = isFMC11Red(k);
+        const kkRedNow  = isKK11Red(k);
+        const fmcRedPrev = isFMC11Red(k - 1);
+        const kkRedPrev  = isKK11Red(k - 1);
+
+        // Confluence Achat : FMC 3m et KK 2m sont tous deux VERT à la bougie k,
+        // et ne l'étaient pas à k-1 (ex: FMC était vert mais KK rouge, et KK devient vert à k).
+        const triggerBuy11 = fmcGreenNow && kkGreenNow && !(fmcGreenPrev && kkGreenPrev);
+
+        // Confluence Vente : FMC 3m et KK 2m sont tous deux ROUGE à la bougie k,
+        // et ne l'étaient pas à k-1 (ex: FMC était rouge mais KK vert, et KK devient rouge à k).
+        const triggerSell11 = fmcRedNow && kkRedNow && !(fmcRedPrev && kkRedPrev);
+
+        if (ind1111.showBuy !== false && triggerBuy11 && curDir1111 !== 1) {
           curDir1111 = 1;
           count1111++;
           signals.push({
@@ -33042,8 +33085,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
             bgFill: 'rgba(6, 36, 30, 0.96)'
           });
         }
-        // Déclenchement Vente 11 11 : FMC 3m rouge avec confluence KK 2m rouge
-        else if (ind1111.showSell !== false && lastFmcDir === -1 && curDir1111 !== -1 && (k - lastFmcSwitch <= 3) && isFMC11Red(k) && isKK11Red(k)) {
+        else if (ind1111.showSell !== false && triggerSell11 && curDir1111 !== -1) {
           curDir1111 = -1;
           count1111++;
           signals.push({
@@ -33502,14 +33544,39 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       ctx.stroke();
       ctx.setLineDash([]);
 
+      // Point repère d'ancrage sur la bougie pour Stratégie 11 11
+      if (isStrat1111) {
+        ctx.beginPath();
+        ctx.arc(x, anchorY, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = isLong ? '#00E676' : '#FF0055';
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+
       ctx.restore();
 
-      // Ligne verticale (uniquement pour entrées et rappels, pas pour sorties)
-      if (!isExit && indFmc.showVerticalLines !== false) {
-        if (!Array.isArray(window.__zzVerticales)) window.__zzVerticales = [];
-        const startY = isLong ? (by + bh) : anchorY;
-        const lineCol = isElite ? '#FACC15' : (isRappel ? 'rgba(148, 163, 184, 0.45)' : (sig.borderCol || color));
-        window.__zzVerticales.push({ x: x, y: startY, col: lineCol, isElite: isElite });
+      // Ligne verticale de repère (pointillés traversant les indicateurs du bas)
+      if (!isExit) {
+        const showVert = isStrat1111
+          ? (state.indicators && state.indicators.strat_11_11 && state.indicators.strat_11_11.showVerticalLines !== false)
+          : (indFmc.showVerticalLines !== false);
+
+        if (showVert) {
+          if (!Array.isArray(window.__zzVerticales)) window.__zzVerticales = [];
+          const startY = isLong ? (by + bh) : anchorY;
+          const lineCol = isStrat1111
+            ? (isLong ? '#00E676' : '#FF0055')
+            : (isElite ? '#FACC15' : (isRappel ? 'rgba(148, 163, 184, 0.45)' : (sig.borderCol || color)));
+          window.__zzVerticales.push({
+            x: x,
+            y: startY,
+            col: lineCol,
+            isElite: isElite,
+            isStrat1111: isStrat1111
+          });
+        }
       }
     } catch(errSig) {
       try { ctx.restore(); } catch(e){}
@@ -39538,7 +39605,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2460';
+  window.__LUMEN_BUILD = 'B-0910-2470';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
