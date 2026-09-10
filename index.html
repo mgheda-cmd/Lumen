@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1250</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1255</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -9062,14 +9062,37 @@ function render(){
      Il traite maintenant les deux indicateurs, chacun avec ses propres
      réglages, et seulement s'il est affiché. */
   for(const KK of ['kk_bis', 'kk_bis2']){
-    if(!vis(KK)) continue;
+    const hasPricePastilles = !!(state.indicators && state.indicators[KK] && (
+      state.indicators[KK].showSeuilOnPrice !== false || 
+      state.indicators[KK].showDivOnPrice || 
+      state.indicators[KK].showCrossOnPrice
+    ));
+    if(!vis(KK) && !hasPricePastilles) continue;
     if(!state.indicators[KK]) continue;
 
     try{
       const kb = getInd(KK);
       if(kb){
+        // Si les croisements sur le prix sont demandés mais pas encore calculés (ex: oscillateur masqué)
+        if((!window.__kkCross || !window.__kkCross.length) && kb && kb.net2 && kb.tf2){
+          window.__kkCross = [];
+          const tfP = (S(KK,'tf') === 'chart' || !S(KK,'tf')) ? state.tf : +S(KK,'tf');
+          const tfS = +kb.tf2;
+          const inverser = (tfS < tfP);
+          const courte = inverser ? kb.net2 : kb.net;
+          const longue = inverser ? kb.net  : kb.net2;
+          window.__kkCrossInfo = { courte: inverser ? tfS : tfP, longue: inverser ? tfP : tfS };
+          for (let i = 1; i < courte.length; i++) {
+            const p1 = courte[i-1], p2 = courte[i], q1 = longue[i-1], q2 = longue[i];
+            if (p1 == null || p2 == null || q1 == null || q2 == null) continue;
+            const av = p1 - q1, ap = p2 - q2;
+            if (av === 0 || (av > 0) === (ap > 0)) continue;
+            window.__kkCross.push({ i: i, monte: (ap > 0), price: state.data[i] ? state.data[i].c : null });
+          }
+        }
+
         // 1. Sorties par seuil (Pastilles Jaunes SORTIE VENTE et Roses SORTIE ACHAT)
-        if(Array.isArray(kb.exits) && S(KK,'showSeuilOnPrice') !== false && S(KK,'showExits') !== false){
+        if(Array.isArray(kb.exits) && S(KK,'showSeuilOnPrice') !== false){
           for(const ex of kb.exits){
             if(ex.div) continue; // Les divergences ont leur propre boucle ci-dessous
             const ci = (ex.t != null ? idxOfTime(ex.t) : null) ?? ex.i;
@@ -14812,11 +14835,11 @@ const PASTILLES_CATALOG = [
         desc: 'Pastilles néon ACHAT (#00E676) et VENTE (#FF0055)',
         accent: '#00E676',
         def: true,
-        get: () => state.indicators?.strat_super?.showBadges !== false,
+        get: () => state.indicators?.strat_super?.showBadges !== false && !!state.indicators?.strat_super?.on,
         set: (v) => {
           if (!state.indicators.strat_super) state.indicators.strat_super = {};
           state.indicators.strat_super.showBadges = v;
-          if (v && state.indicators.strat_super.on === false) state.indicators.strat_super.on = true;
+          if (v) state.indicators.strat_super.on = true;
         }
       },
       {
@@ -14826,10 +14849,11 @@ const PASTILLES_CATALOG = [
         desc: '2e et 3e entrées dans le même sens (#1, #2...)',
         accent: '#94A3B8',
         def: true,
-        get: () => state.indicators?.strat_super?.showRenforts !== false,
+        get: () => state.indicators?.strat_super?.showRenforts !== false && !!state.indicators?.strat_super?.on,
         set: (v) => {
           if (!state.indicators.strat_super) state.indicators.strat_super = {};
           state.indicators.strat_super.showRenforts = v;
+          if (v) state.indicators.strat_super.on = true;
         }
       },
       {
@@ -14839,10 +14863,11 @@ const PASTILLES_CATALOG = [
         desc: 'Repères pointillés et étiquettes TP',
         accent: '#00E5FF',
         def: true,
-        get: () => state.indicators?.strat_super?.showTargets !== false,
+        get: () => state.indicators?.strat_super?.showTargets !== false && !!state.indicators?.strat_super?.on,
         set: (v) => {
           if (!state.indicators.strat_super) state.indicators.strat_super = {};
           state.indicators.strat_super.showTargets = v;
+          if (v) state.indicators.strat_super.on = true;
         }
       },
       {
@@ -14852,10 +14877,11 @@ const PASTILLES_CATALOG = [
         desc: 'Lignes verticales sous les pastilles d\'entrée',
         accent: '#38BDF8',
         def: true,
-        get: () => state.indicators?.strat_super?.showLines !== false,
+        get: () => state.indicators?.strat_super?.showLines !== false && !!state.indicators?.strat_super?.on,
         set: (v) => {
           if (!state.indicators.strat_super) state.indicators.strat_super = {};
           state.indicators.strat_super.showLines = v;
+          if (v) state.indicators.strat_super.on = true;
         }
       },
       {
@@ -14865,10 +14891,11 @@ const PASTILLES_CATALOG = [
         desc: 'Activation générale du moteur de calcul',
         accent: '#00E676',
         def: true,
-        get: () => state.indicators?.strat_super?.on !== false,
+        get: () => !!state.indicators?.strat_super?.on,
         set: (v) => {
           if (!state.indicators.strat_super) state.indicators.strat_super = {};
           state.indicators.strat_super.on = v;
+          if (v) state.indicators.strat_super.showBadges = true;
         }
       }
     ]
@@ -14884,11 +14911,11 @@ const PASTILLES_CATALOG = [
         desc: 'Signaux d\'entrée Base & Options 1 à 6',
         accent: '#00E676',
         def: true,
-        get: () => state.indicators?.strat_mm?.showBadges !== false,
+        get: () => state.indicators?.strat_mm?.showBadges !== false && !!state.indicators?.strat_mm?.on,
         set: (v) => {
           if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
           state.indicators.strat_mm.showBadges = v;
-          if (v && state.indicators.strat_mm.on === false) state.indicators.strat_mm.on = true;
+          if (v) state.indicators.strat_mm.on = true;
         }
       },
       {
@@ -14898,10 +14925,11 @@ const PASTILLES_CATALOG = [
         desc: 'Entrées secondaires du même sens (#1, #2...)',
         accent: '#94A3B8',
         def: true,
-        get: () => state.indicators?.strat_mm?.showRenforts !== false,
+        get: () => state.indicators?.strat_mm?.showRenforts !== false && !!state.indicators?.strat_mm?.on,
         set: (v) => {
           if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
           state.indicators.strat_mm.showRenforts = v;
+          if (v) state.indicators.strat_mm.on = true;
         }
       },
       {
@@ -14911,10 +14939,11 @@ const PASTILLES_CATALOG = [
         desc: 'Pastille longue tendance calculée en 15 minutes',
         accent: '#F59E0B',
         def: false,
-        get: () => !!state.indicators?.strat_mm?.show15m,
+        get: () => !!state.indicators?.strat_mm?.show15m && !!state.indicators?.strat_mm?.on,
         set: (v) => {
           if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
           state.indicators.strat_mm.show15m = v;
+          if (v) state.indicators.strat_mm.on = true;
         }
       },
       {
@@ -14924,10 +14953,11 @@ const PASTILLES_CATALOG = [
         desc: 'Triangles sous creux (-75) et sur sommets (+75)',
         accent: '#EC4899',
         def: true,
-        get: () => state.indicators?.strat_mm?.showCreuxMarkers !== false,
+        get: () => state.indicators?.strat_mm?.showCreuxMarkers !== false && !!state.indicators?.strat_mm?.on,
         set: (v) => {
           if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
           state.indicators.strat_mm.showCreuxMarkers = v;
+          if (v) state.indicators.strat_mm.on = true;
         }
       },
       {
@@ -14937,10 +14967,11 @@ const PASTILLES_CATALOG = [
         desc: 'Activation générale de la stratégie MM',
         accent: '#38BDF8',
         def: true,
-        get: () => state.indicators?.strat_mm?.on !== false,
+        get: () => !!state.indicators?.strat_mm?.on,
         set: (v) => {
           if (!state.indicators.strat_mm) state.indicators.strat_mm = {};
           state.indicators.strat_mm.on = v;
+          if (v) state.indicators.strat_mm.showBadges = true;
         }
       }
     ]
@@ -14969,10 +15000,11 @@ const PASTILLES_CATALOG = [
         desc: 'Potentiel Achat/Vente quand 3 conditions sur 4 sont prêtes',
         accent: '#FBBF24',
         def: false,
-        get: () => state.indicators?.strat_zz?.showPending !== false,
+        get: () => state.indicators?.strat_zz?.showPending !== false && !!state.indicators?.strat_zz?.on,
         set: (v) => {
           if (!state.indicators.strat_zz) state.indicators.strat_zz = {};
           state.indicators.strat_zz.showPending = v;
+          if (v) state.indicators.strat_zz.on = true;
         }
       },
       {
@@ -14982,8 +15014,12 @@ const PASTILLES_CATALOG = [
         desc: 'Affichage des signaux contraires de contrôle',
         accent: '#94A3B8',
         def: false,
-        get: () => !!window.__invOn,
-        set: (v) => { window.__invOn = v; }
+        get: () => !!window.__invOn && !!state.indicators?.strat_zz?.on,
+        set: (v) => {
+          window.__invOn = v;
+          if (!state.indicators.strat_zz) state.indicators.strat_zz = {};
+          if (v) state.indicators.strat_zz.on = true;
+        }
       },
       {
         id: 'zz_corrected',
@@ -14992,8 +15028,12 @@ const PASTILLES_CATALOG = [
         desc: 'Couche de validation temps réel sans projection future',
         accent: '#10B981',
         def: false,
-        get: () => !!window.__zzShowCorrected,
-        set: (v) => { window.__zzShowCorrected = v; }
+        get: () => !!window.__zzShowCorrected && !!state.indicators?.strat_zz?.on,
+        set: (v) => {
+          window.__zzShowCorrected = v;
+          if (!state.indicators.strat_zz) state.indicators.strat_zz = {};
+          if (v) state.indicators.strat_zz.on = true;
+        }
       },
       {
         id: 'zz2_on',
@@ -15021,13 +15061,11 @@ const PASTILLES_CATALOG = [
         desc: 'Configuration optimale validée : 66.7% Win Rate, Profit Factor 15.44, Max DD 0.3%',
         accent: '#FACC15',
         def: true,
-        get: () => state.indicators?.strat_fmc?.showElite !== false,
+        get: () => state.indicators?.strat_fmc?.showElite !== false && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showElite = v;
-          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
-          try { saveConfig(); } catch(e) {}
-          if (typeof render === 'function') render();
+          if (v) state.indicators.strat_fmc.on = true;
         }
       },
       {
@@ -15037,12 +15075,12 @@ const PASTILLES_CATALOG = [
         desc: 'Condition Stricte : repère vert/rouge immédiatement avant la pastille (≤ 2 bougies) et annulation par repère opposé',
         accent: '#22D3EE',
         def: false,
-        get: () => !!state.indicators?.strat_fmc?.strictCaducite,
+        get: () => !!state.indicators?.strat_fmc?.strictCaducite && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.strictCaducite = v;
+          if (v) state.indicators.strat_fmc.on = true;
           if (typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
-          if (typeof render === 'function') render();
         }
       },
       {
@@ -15052,13 +15090,12 @@ const PASTILLES_CATALOG = [
         desc: 'À l\'Achat : déclenche dès que l\'oscillateur FMC OU la ligne KK devient verte. À la Vente : déclenche dès que la ligne KK passe au rouge.',
         accent: '#FACC15',
         def: false,
-        get: () => !!state.indicators?.strat_fmc?.fastTrigger,
+        get: () => !!state.indicators?.strat_fmc?.fastTrigger && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.fastTrigger = v;
+          if (v) state.indicators.strat_fmc.on = true;
           if (typeof window.updateFmcFastUI === 'function') window.updateFmcFastUI();
-          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
-          if (typeof render === 'function') render();
         }
       },
       {
@@ -15068,13 +15105,13 @@ const PASTILLES_CATALOG = [
         desc: 'Pastille verte Achat : Triangle vert + KK sort au-dessus de -75',
         accent: '#00E676',
         def: true,
-        get: () => state.indicators?.strat_fmc?.showKkBuy !== false && state.indicators?.strat_fmc?.showKkConfluence !== false,
+        get: () => state.indicators?.strat_fmc?.showKkBuy !== false && state.indicators?.strat_fmc?.showKkConfluence !== false && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showKkBuy = v;
           if (v) {
             state.indicators.strat_fmc.showKkConfluence = true;
-            if (state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
+            state.indicators.strat_fmc.on = true;
           }
         }
       },
@@ -15085,13 +15122,13 @@ const PASTILLES_CATALOG = [
         desc: 'Pastille rouge Vente : Triangle rouge + KK passe sous +75',
         accent: '#FF0055',
         def: true,
-        get: () => state.indicators?.strat_fmc?.showKkSell !== false && state.indicators?.strat_fmc?.showKkConfluence !== false,
+        get: () => state.indicators?.strat_fmc?.showKkSell !== false && state.indicators?.strat_fmc?.showKkConfluence !== false && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showKkSell = v;
           if (v) {
             state.indicators.strat_fmc.showKkConfluence = true;
-            if (state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
+            state.indicators.strat_fmc.on = true;
           }
         }
       },
@@ -15102,11 +15139,11 @@ const PASTILLES_CATALOG = [
         desc: 'Pastilles grisées de confirmation : nouveaux signaux dans le même sens (sans cumul d\'achats/ventes de base)',
         accent: '#94A3B8',
         def: true,
-        get: () => state.indicators?.strat_fmc?.showRappels !== false,
+        get: () => state.indicators?.strat_fmc?.showRappels !== false && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showRappels = v;
-          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
+          if (v) state.indicators.strat_fmc.on = true;
         }
       },
       {
@@ -15116,13 +15153,12 @@ const PASTILLES_CATALOG = [
         desc: 'Sortie rapide dès l\'apparition du 1er triangle/losange opposé (numérotée #N)',
         accent: '#FF9F1C',
         def: true,
-        get: () => state.indicators?.strat_fmc?.showExits !== false,
+        get: () => state.indicators?.strat_fmc?.showExits !== false && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showExits = v;
+          if (v) state.indicators.strat_fmc.on = true;
           if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
-          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
-          if (typeof render === 'function') render();
         }
       },
       {
@@ -15132,13 +15168,12 @@ const PASTILLES_CATALOG = [
         desc: 'Laisse courir la 1ère impulsion et sort au 2e triangle opposé (même numéro #N)',
         accent: '#00E5FF',
         def: true,
-        get: () => state.indicators?.strat_fmc?.showExitsV2 !== false,
+        get: () => state.indicators?.strat_fmc?.showExitsV2 !== false && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showExitsV2 = v;
+          if (v) state.indicators.strat_fmc.on = true;
           if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
-          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
-          if (typeof render === 'function') render();
         }
       },
       {
@@ -15148,11 +15183,11 @@ const PASTILLES_CATALOG = [
         desc: 'Score composite de liquidité et flux (Score · Contrarien · Div)',
         accent: '#00E5FF',
         def: false,
-        get: () => !!state.indicators?.strat_fmc?.showBadges,
+        get: () => !!state.indicators?.strat_fmc?.showBadges && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showBadges = v;
-          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
+          if (v) state.indicators.strat_fmc.on = true;
         }
       },
       {
@@ -15162,10 +15197,11 @@ const PASTILLES_CATALOG = [
         desc: 'Lignes verticales sous les pastilles d\'entrée FMC et FMC × KK',
         accent: '#38BDF8',
         def: true,
-        get: () => state.indicators?.strat_fmc?.showVerticalLines !== false,
+        get: () => state.indicators?.strat_fmc?.showVerticalLines !== false && !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showVerticalLines = v;
+          if (v) state.indicators.strat_fmc.on = true;
         }
       },
       {
@@ -15175,10 +15211,14 @@ const PASTILLES_CATALOG = [
         desc: 'Activation générale du moteur de calcul FMC',
         accent: '#00E5FF',
         def: true,
-        get: () => state.indicators?.strat_fmc?.on !== false,
+        get: () => !!state.indicators?.strat_fmc?.on,
         set: (v) => {
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.on = v;
+          if (v) {
+            state.indicators.strat_fmc.showElite = true;
+            state.indicators.strat_fmc.showKkConfluence = true;
+          }
         }
       }
     ]
@@ -15217,6 +15257,7 @@ const PASTILLES_CATALOG = [
         set: (v) => {
           if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
           state.indicators.kk_bis2.showSeuilOnPrice = v;
+          state.indicators.kk_bis2.showExits = v;
         }
       },
       {
@@ -15230,6 +15271,7 @@ const PASTILLES_CATALOG = [
         set: (v) => {
           if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
           state.indicators.kk_bis2.showDivOnPrice = v;
+          state.indicators.kk_bis2.showDiv = v;
         }
       },
       {
@@ -15243,6 +15285,7 @@ const PASTILLES_CATALOG = [
         set: (v) => {
           if (!state.indicators.kk_bis2) state.indicators.kk_bis2 = {};
           state.indicators.kk_bis2.showCrossOnPrice = v;
+          state.indicators.kk_bis2.showCross = v;
         }
       }
     ]
@@ -15356,8 +15399,8 @@ function renderPastillesList(forceRebuild) {
       if (isChecked) activeCount++;
 
       html += `
-        <label id="row-pastille-${item.id}" class="pastille-row" data-pastille-id="${item.id}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;margin-bottom:5px;background:${isChecked ? 'rgba(255,180,0,0.10)' : 'rgba(255,255,255,0.025)'};border:1px solid ${isChecked ? 'rgba(255,180,0,0.35)' : 'rgba(255,255,255,0.06)'};border-radius:8px;cursor:pointer;transition:background 0.15s, border-color 0.15s">
-          <div style="display:flex;align-items:center;gap:9px;min-width:0">
+        <label id="row-pastille-${item.id}" class="pastille-row" data-pastille-id="${item.id}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;margin-bottom:5px;background:${isChecked ? 'rgba(255,180,0,0.10)' : 'rgba(255,255,255,0.025)'};border:1px solid ${isChecked ? 'rgba(255,180,0,0.35)' : 'rgba(255,255,255,0.06)'};border-radius:8px;cursor:pointer;transition:background 0.15s, border-color 0.15s;user-select:none;-webkit-user-select:none">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0;pointer-events:none">
             <span style="font-size:15px;flex:none">${item.icon}</span>
             <div style="min-width:0">
               <div style="font-size:12px;font-weight:700;color:${isChecked ? '#F8FAFC' : 'var(--text)'};line-height:1.25">${item.label}</div>
@@ -15373,11 +15416,18 @@ function renderPastillesList(forceRebuild) {
 
   container.innerHTML = html;
 
-  container.querySelectorAll('input[data-pid]').forEach(chk => {
+  container.querySelectorAll('.pastille-row').forEach(row => {
+    const chk = row.querySelector('input[data-pid]');
+    if (!chk) return;
+    row.addEventListener('click', (e) => {
+      if (e.target === chk) return;
+      e.preventDefault();
+      chk.checked = !chk.checked;
+      togglePastilleById(chk.dataset.pid, chk.checked);
+    });
     chk.addEventListener('change', (e) => {
       e.stopPropagation();
-      const pid = chk.dataset.pid;
-      togglePastilleById(pid, chk.checked);
+      togglePastilleById(chk.dataset.pid, chk.checked);
     });
   });
 
@@ -15424,6 +15474,11 @@ function togglePastilleById(id, val) {
     for (const item of cat.items) {
       if (item.id === id) {
         item.set(val);
+        if (val && typeof state !== 'undefined' && state) {
+          state.hideBadges = false;
+          if (typeof applyCleanBtn === 'function') applyCleanBtn();
+        }
+        if (typeof state !== 'undefined' && state) state.cache = {};
         try { saveConfig(); } catch(e) {}
         if (typeof syncMenu === 'function') syncMenu();
         if (typeof updateChips === 'function') updateChips();
@@ -15442,6 +15497,11 @@ function setAllPastilles(val) {
       item.set(val);
     }
   }
+  if (val && typeof state !== 'undefined' && state) {
+    state.hideBadges = false;
+    if (typeof applyCleanBtn === 'function') applyCleanBtn();
+  }
+  if (typeof state !== 'undefined' && state) state.cache = {};
   try { saveConfig(); } catch(e) {}
   if (typeof syncMenu === 'function') syncMenu();
   if (typeof updateChips === 'function') updateChips();
@@ -15458,6 +15518,11 @@ function resetDefaultPastilles() {
     for (const item of cat.items) {
       item.set(item.def);
     }
+  }
+  if (typeof state !== 'undefined' && state) {
+    state.hideBadges = false;
+    state.cache = {};
+    if (typeof applyCleanBtn === 'function') applyCleanBtn();
   }
   try { saveConfig(); } catch(e) {}
   if (typeof syncMenu === 'function') syncMenu();
@@ -38457,7 +38522,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-1250';
+  window.__LUMEN_BUILD = 'B-0910-1255';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
