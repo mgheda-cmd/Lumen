@@ -29877,7 +29877,7 @@ function computeMMSignals(d, ind) {
   const netRob = mtf ? mapHTF(bars, twoRob.net || [], d) : (twoRob.net || []);
   const sigRob = mtf ? mapHTF(bars, twoRob.signal || [], d) : (twoRob.signal || []);
 
-  const signals = [];
+  let signals = [];
   const creuxList = [];
   const sommetsList = [];
 
