@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1310</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1325</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -721,6 +721,19 @@ footer{
             title="Activer / Désactiver les pastilles de sortie V2 Runner (avertissement triangle + confirmation Div/KK/ALMA)">
             🎯 Sorties V2 : ON
           </button>
+        </div>
+        <div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(34,211,238,0.2);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:10.5px;font-weight:800;color:#FACC15;display:inline-flex;align-items:center;gap:4px" title="Unité de temps du retournement de tendance ALMA SD déclenchant la pastille Sortie Élite">🏁 Sortie ALMA Élite :</span>
+          <div style="display:inline-flex;align-items:center;gap:3px;background:rgba(0,0,0,0.3);border:1px solid rgba(250,204,21,0.25);border-radius:6px;padding:2px">
+            <span class="srtf srtf-elite-exit" data-tf="1" onclick="event.stopPropagation();window.setEliteExitTf && window.setEliteExitTf(1)" style="font-size:10px;padding:2px 6px;cursor:pointer;border-radius:4px" title="1 minute (Scalp ultra-rapide — PF 18.5)">1m</span>
+            <span class="srtf srtf-elite-exit" data-tf="2" onclick="event.stopPropagation();window.setEliteExitTf && window.setEliteExitTf(2)" style="font-size:10px;padding:2px 6px;cursor:pointer;border-radius:4px" title="2 minutes (Standard — PF 32.5)">2m</span>
+            <span class="srtf srtf-elite-exit" data-tf="3" onclick="event.stopPropagation();window.setEliteExitTf && window.setEliteExitTf(3)" style="font-size:10px;padding:2px 6px;cursor:pointer;border-radius:4px" title="3 minutes (PF 31.6)">3m</span>
+            <span class="srtf srtf-elite-exit on" data-tf="4" onclick="event.stopPropagation();window.setEliteExitTf && window.setEliteExitTf(4)" style="font-size:10px;padding:2px 6px;cursor:pointer;border-radius:4px;font-weight:800;color:#FACC15;border:1px solid #FACC15;background:rgba(250,204,21,0.22)" title="4 minutes 🏆 (Recommandé — Record PF 39.5 / +19 776 pts)">4m 🏆</span>
+            <span class="srtf srtf-elite-exit" data-tf="5" onclick="event.stopPropagation();window.setEliteExitTf && window.setEliteExitTf(5)" style="font-size:10px;padding:2px 6px;cursor:pointer;border-radius:4px" title="5 minutes (Intermédiaire — PF 35.1)">5m</span>
+            <span class="srtf srtf-elite-exit" data-tf="6" onclick="event.stopPropagation();window.setEliteExitTf && window.setEliteExitTf(6)" style="font-size:10px;padding:2px 6px;cursor:pointer;border-radius:4px" title="6 minutes">6m</span>
+            <span class="srtf srtf-elite-exit" data-tf="8" onclick="event.stopPropagation();window.setEliteExitTf && window.setEliteExitTf(8)" style="font-size:10px;padding:2px 6px;cursor:pointer;border-radius:4px" title="8 minutes">8m</span>
+            <span class="srtf srtf-elite-exit" data-tf="10" onclick="event.stopPropagation();window.setEliteExitTf && window.setEliteExitTf(10)" style="font-size:10px;padding:2px 6px;cursor:pointer;border-radius:4px" title="10 minutes">10m</span>
+          </div>
         </div>
       </div>
       <div class="ind-item" data-ind="strat_zz2" id="item-strat_zz2" style="background:linear-gradient(135deg, rgba(56,189,248,0.16), rgba(16,185,129,0.12));border:1.5px solid #38BDF8;border-radius:10px;padding:10px 12px;margin-bottom:10px;box-shadow:0 3px 12px rgba(56,189,248,0.22);display:flex;flex-direction:column;align-items:stretch;gap:8px">
@@ -5692,7 +5705,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,showElite:true,showEliteExits:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,showElite:true,showEliteExits:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -5934,12 +5947,13 @@ function loadConfig(){
   /* Stratégie FMC autonome & Confluence KK : initialisation propre */
   try{
     if(!state.indicators.strat_fmc){
-      state.indicators.strat_fmc = {on:true,showElite:true,showEliteExits:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:false,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
+      state.indicators.strat_fmc = {on:true,showElite:true,showEliteExits:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:false,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
     } else {
       state.indicators.strat_fmc.on = true;
       state.indicators.strat_fmc.showKkConfluence = true;
       if(state.indicators.strat_fmc.showElite === undefined) state.indicators.strat_fmc.showElite = true;
       if(state.indicators.strat_fmc.showEliteExits === undefined) state.indicators.strat_fmc.showEliteExits = true;
+      if(state.indicators.strat_fmc.eliteExitTf === undefined) state.indicators.strat_fmc.eliteExitTf = 4;
       if(state.indicators.strat_fmc.showKkBuy === undefined) state.indicators.strat_fmc.showKkBuy = true;
       if(state.indicators.strat_fmc.showKkSell === undefined) state.indicators.strat_fmc.showKkSell = true;
       if(state.indicators.strat_fmc.showRappels === undefined) state.indicators.strat_fmc.showRappels = true;
@@ -15096,8 +15110,8 @@ const PASTILLES_CATALOG = [
       {
         id: 'fmc_elite_exits',
         icon: '🏁',
-        label: 'Sorties Pastilles Élite (ALMA 2m)',
-        desc: 'Sortie optimale au 1ᵉʳ retournement ALMA 2m (Validée : +315.92 $, Profit Factor 20.74, Max DD 3.7%)',
+        label: 'Sorties Pastilles Élite (Retournement ALMA — 4m Recommandé)',
+        desc: 'Sortie optimale au 1ᵉʳ retournement ALMA (4m par défaut — Validée : +19 776 pts, Profit Factor 39.5, Win Rate 70.4%)',
         accent: '#FACC15',
         def: true,
         get: () => state.indicators?.strat_fmc?.showEliteExits !== false && !!state.indicators?.strat_fmc?.on,
@@ -19343,7 +19357,18 @@ const SCHEMA={
   ]},
   strat_fmc:{title:'Stratégie FMC 🌊 (Pastilles & Confluence KK)',fields:[
     {k:'showElite',t:'bool',lab:'🏆 Pastilles Élite (ALMA 2m · KK 10m · FMC 2m — WR 66.7%)',def:true},
-    {k:'showEliteExits',t:'bool',lab:'🏁 Sorties Pastilles Élite (Retournement ALMA 2m — PF 20.7)',def:true},
+    {k:'showEliteExits',t:'bool',lab:'🏁 Sorties Pastilles Élite (Retournement ALMA — Record PF 39.5)',def:true},
+    {k:'eliteExitTf',t:'choice',lab:'⏱️ TF Sortie ALMA Élite (4m Recommandé)',opts:[
+      {v:'1',t:'1 minute (Scalp ultra-rapide — PF 18.5)'},
+      {v:'2',t:'2 minutes (Standard — PF 32.5)'},
+      {v:'3',t:'3 minutes (PF 31.6)'},
+      {v:'4',t:'4 minutes 🏆 (Recommandé — Record PF 39.5 / +19 776 pts)'},
+      {v:'5',t:'5 minutes (Intermédiaire rapide — PF 35.1)'},
+      {v:'6',t:'6 minutes (PF 30.0)'},
+      {v:'8',t:'8 minutes (PF 28.7)'},
+      {v:'10',t:'10 minutes (PF 28.7)'},
+      {v:'15',t:'15 minutes (PF 28.7)'}
+    ],def:'4'},
     {k:'strictCaducite',t:'bool',lab:'🛡️ Condition Stricte : Repère juste avant (≤2b) & Annulation par repère opposé',def:false},
     {k:'fastTrigger',t:'bool',lab:'⚡ Déclencheur Rapide : Achat (FMC vert OU KK vert) & Vente (KK rouge)',def:false},
     {k:'showKkBuy',t:'bool',lab:'Afficher la Pastille Achat FMC × KK (Verte)',def:true},
@@ -32339,7 +32364,19 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // 5. Génération des pastilles de SORTIE ÉLITE (Optimal : 1er retournement ALMA 2m)
+      // 5. Génération des pastilles de SORTIE ÉLITE (Optimal : retournement ALMA 4m par défaut, sélectionnable)
+      const eliteExitTf = +(indFmc.eliteExitTf != null ? indFmc.eliteExitTf : 4);
+      let asdExit = null;
+      if (eliteExitTf === 2) {
+        asdExit = asd2m;
+      } else {
+        const barsExit = (state.tf === eliteExitTf) ? d : ((typeof getMTFBars === 'function') ? getMTFBars(eliteExitTf) : null) || d;
+        const rExit = calc.almaSD(barsExit, indAlma.fac ?? 1.8, indAlma.sd ?? 33, indAlma.alen ?? 35, indAlma.asig ?? 4, indAlma.aoff ?? 0.85);
+        asdExit = (barsExit === d) ? rExit : ((typeof mapHTF === 'function') ? { dir: mapHTF(barsExit, rExit.dir || [], d) } : rExit);
+      }
+      const isExitGreen = (idx) => (asdExit && Array.isArray(asdExit.dir) && asdExit.dir[idx] === 1);
+      const isExitViolet = (idx) => (asdExit && Array.isArray(asdExit.dir) && asdExit.dir[idx] === -1);
+
       const eliteEntries = signals.filter(s => s.isElite && !s.isExit).sort((a, b) => a.i - b.i);
       for (let eIdx = 0; eIdx < eliteEntries.length; eIdx++) {
         const entry = eliteEntries[eIdx];
@@ -32349,8 +32386,11 @@ function computeFMCSignals(cleFmc, cleStrat) {
         const nextEntry = eliteEntries[eIdx + 1];
         const maxK = nextEntry ? nextEntry.i : (d.length - 1);
 
+        let wasAligned = (entry.dir === 1 ? isExitGreen(entry.i) : isExitViolet(entry.i));
         for (let k = entry.i + 1; k <= maxK; k++) {
-          const isExitTriggered = (entry.dir === 1) ? isA2Violet(k) : isA2Green(k);
+          if (entry.dir === 1 && isExitGreen(k)) wasAligned = true;
+          if (entry.dir === -1 && isExitViolet(k)) wasAligned = true;
+          const isExitTriggered = wasAligned && ((entry.dir === 1) ? isExitViolet(k) : isExitGreen(k));
           if (isExitTriggered) {
             const b = d[k];
             if (b) {
@@ -32373,7 +32413,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
                 price: b.c, low: b.l, high: b.h,
                 label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
                 badge: '🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE',
-                sub: 'Retournement ALMA 2m · ' + pnlStr,
+                sub: 'Retournement ALMA ' + eliteExitTf + 'm · ' + pnlStr,
                 color: '#FACC15',
                 borderCol: '#EAB308',
                 bgFill: 'rgba(38, 28, 6, 0.96)'
@@ -38618,6 +38658,42 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     if (typeof render === 'function') render();
   };
 
+  window.updateEliteExitTfUI = function(){
+    const cur = +(state.indicators?.strat_fmc?.eliteExitTf || 4);
+    document.querySelectorAll('.srtf-elite-exit').forEach(el => {
+      const elTf = +el.dataset.tf;
+      if (elTf === cur) {
+        el.classList.add('on');
+        el.style.borderColor = '#FACC15';
+        el.style.color = '#FACC15';
+        el.style.background = 'rgba(250, 204, 21, 0.22)';
+        el.style.fontWeight = '800';
+      } else {
+        el.classList.remove('on');
+        el.style.borderColor = 'transparent';
+        el.style.color = 'var(--muted)';
+        el.style.background = 'transparent';
+        el.style.fontWeight = '500';
+      }
+    });
+  };
+
+  window.setEliteExitTf = function(tf){
+    tf = +tf || 4;
+    if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+    state.indicators.strat_fmc.eliteExitTf = tf;
+    state.cache = {};
+    if (typeof window.updateEliteExitTfUI === 'function') window.updateEliteExitTfUI();
+    try {
+      if (typeof saveConfig === 'function') saveConfig();
+    } catch(e) {}
+    if (typeof toast === 'function') {
+      const rec = (tf === 4) ? ' 🏆 (Recommandé — Record PF 39.5)' : '';
+      toast(`⏱️ Sortie Élite ALMA : ${tf}m${rec}`, '#FACC15');
+    }
+    if (typeof render === 'function') render();
+  };
+
   window.updateFmcExitsUI = function(){
     const showExits = (state.indicators?.strat_fmc?.showExits !== false);
     const sideBtn = document.getElementById('btn-toggle-fmc-exits');
@@ -38635,6 +38711,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       sideBtnV2.style.borderColor = showExitsV2 ? '#00E5FF' : '#64748B';
       sideBtnV2.style.color = showExitsV2 ? '#00E5FF' : '#94A3B8';
     }
+    if (typeof window.updateEliteExitTfUI === 'function') window.updateEliteExitTfUI();
     if (typeof updatePastillesHubCheckboxesOnly === 'function') updatePastillesHubCheckboxesOnly();
   };
 
@@ -38687,7 +38764,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-1310';
+  window.__LUMEN_BUILD = 'B-0910-1325';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
