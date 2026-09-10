@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0340</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0350</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -713,8 +713,13 @@ footer{
           </button>
           <button id="btn-toggle-fmc-exits" onclick="event.stopPropagation();window.toggleFmcExits && window.toggleFmcExits()"
             style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #FF9F1C;background:rgba(255,159,28,0.22);color:#FF9F1C;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
-            title="Activer / Désactiver les pastilles de sortie dès qu'un repère opposé (triangle ou losange) apparaît">
-            🏁 Sorties FMC : ON
+            title="Activer / Désactiver les pastilles de sortie V1 (rapide dès repère opposé)">
+            🏁 Sorties V1 : ON
+          </button>
+          <button id="btn-toggle-fmc-exits-v2" onclick="event.stopPropagation();window.toggleFmcExitsV2 && window.toggleFmcExitsV2()"
+            style="font-size:10.5px;padding:3px 8px;border-radius:6px;font-weight:800;border:1px solid #00E5FF;background:rgba(0,229,255,0.22);color:#00E5FF;cursor:pointer;display:inline-flex;align-items:center;gap:4px"
+            title="Activer / Désactiver les pastilles de sortie V2 Runner (avertissement triangle + confirmation Div/KK/ALMA)">
+            🎯 Sorties V2 : ON
           </button>
         </div>
       </div>
@@ -5686,7 +5691,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,showTradeLines:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -15083,8 +15088,8 @@ const PASTILLES_CATALOG = [
       {
         id: 'fmc_exits',
         icon: '🏁',
-        label: 'Pastilles de Sortie (Repère Opposé)',
-        desc: 'Signale la sortie de trade dès qu\'un repère opposé (triangle ou losange) apparaît (SORTIE ACHAT / SORTIE VENTE)',
+        label: 'Pastilles de Sortie V1 (Repère Opposé)',
+        desc: 'Signale la sortie rapide dès qu\'un repère opposé (triangle ou losange) apparaît (SORTIE ACHAT / SORTIE VENTE)',
         accent: '#FF9F1C',
         def: true,
         get: () => state.indicators?.strat_fmc?.showExits !== false,
@@ -15093,6 +15098,36 @@ const PASTILLES_CATALOG = [
           state.indicators.strat_fmc.showExits = v;
           if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
           if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
+          if (typeof render === 'function') render();
+        }
+      },
+      {
+        id: 'fmc_exits_v2',
+        icon: '🎯',
+        label: 'Pastilles de Sortie V2 Runner (Confirmation)',
+        desc: 'Sortie sur avertissement triangle + confirmation (Divergence KK, ligne KK rouge/verte ou ALMA)',
+        accent: '#00E5FF',
+        def: true,
+        get: () => state.indicators?.strat_fmc?.showExitsV2 !== false,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.showExitsV2 = v;
+          if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
+          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
+          if (typeof render === 'function') render();
+        }
+      },
+      {
+        id: 'fmc_trade_lines',
+        icon: '🔗',
+        label: 'Lignes Trade Entrée ➔ Sortie',
+        desc: 'Relie graphiquement chaque entrée à sa pastille de sortie avec le PnL',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_fmc?.showTradeLines !== false,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.showTradeLines = v;
           if (typeof render === 'function') render();
         }
       },
@@ -19105,7 +19140,9 @@ const SCHEMA={
     {k:'fastTrigger',t:'bool',lab:'⚡ Déclencheur Rapide : Achat (FMC vert OU KK vert) & Vente (KK rouge)',def:false},
     {k:'showKkBuy',t:'bool',lab:'Afficher la Pastille Achat FMC × KK (Verte)',def:true},
     {k:'showKkSell',t:'bool',lab:'Afficher la Pastille Vente FMC × KK (Rouge)',def:true},
-    {k:'showExits',t:'bool',lab:'Afficher les pastilles de Sortie (🏁 SORTIE ACHAT / SORTIE VENTE)',def:true},
+    {k:'showExits',t:'bool',lab:'Afficher les pastilles de Sortie V1 (🏁 Repère opposé rapide)',def:true},
+    {k:'showExitsV2',t:'bool',lab:'Afficher les pastilles de Sortie V2 Runner (🎯 Warning + Confirmations)',def:true},
+    {k:'showTradeLines',t:'bool',lab:'Tracer une ligne reliant Entrée ➔ Sortie',def:true},
     {k:'showRappels',t:'bool',lab:'Afficher les pastilles de rappel grisées (confirmations)',def:true},
     {k:'filterAlma',t:'bool',lab:'Filtre Alma SD (si Alma actif : Pas de Vente si Vert, Pas d\'Achat si Violet)',def:true},
     {k:'showKkConfluence',t:'bool',lab:'Activer la Confluence FMC × KK (Triangles ±75)',def:true},
@@ -19126,7 +19163,8 @@ const SCHEMA={
     {k:'cScore',t:'col',lab:'Couleur Continuation (Score)',def:'#A78BFA'},
     {k:'cContrarien',t:'col',lab:'Couleur Contrarien',def:'#22D3EE'},
     {k:'cDivergence',t:'col',lab:'Couleur Divergence',def:'#F59E0B'},
-    {k:'cExit',t:'col',lab:'Couleur unique Pastilles Sortie (🏁)',def:'#FF9F1C'}
+    {k:'cExit',t:'col',lab:'Couleur unique Pastilles Sortie V1 (🏁)',def:'#FF9F1C'},
+    {k:'cExitV2',t:'col',lab:'Couleur unique Pastilles Sortie V2 Runner (🎯)',def:'#00E5FF'}
   ]},
   strat_mm:{title:'Stratégie Ligne Principale & Confluences Élite',fields:[{k:'taillePastilles',t:'choice',lab:'Taille des pastilles',opts:[{v:'normale',t:'Normale'},{v:'compacte',t:'Compacte'},{v:'minimale',t:'Minimale'}]},{k:'opacitePastilles',t:'num',lab:'Opacité du fond des pastilles (0,3 à 1)',def:0.78},{k:'showRenforts',t:'bool',lab:'Afficher les renforts grisés (entrées du même sens, numérotées)',def:true},{k:'filterAlma',t:'bool',lab:'Filtre Alma SD (si Alma actif : Pas de Vente si Vert, Pas d\'Achat si Violet)',def:true},{k:'showOpt15mZone',t:'bool',lab:'Option 15M — variante sortie de zone',def:true},{k:'opt6IgnoreMss',t:'bool',lab:'Option 6 — ignorer les cassures marquées MSS',def:false},{k:'resetSurStructure',t:'bool',lab:'Remettre le cycle à zéro sur CHoCH (mesuré perdant sur 1 semaine BTC)',def:false},
     {k:'tf',t:'tf',lab:"Unité de temps de la ligne",def:'chart'},
@@ -31508,6 +31546,9 @@ function computeFMCSignals(cleFmc, cleStrat) {
   const triAchat = [];
   const losVente = [];
   const losAchat = [];
+  let isKkGreen = (idx) => false;
+  let isKkRed = (idx) => false;
+  let allDivs = [];
   if (indFmc.showKkConfluence !== false) {
     // Calcul de la ligne KK en 5 minutes ("la ligne caca c'est la ligne cinq minutes pas autre chose")
     const tfKK = 5;
@@ -31570,13 +31611,15 @@ function computeFMCSignals(cleFmc, cleStrat) {
         return (typeof idxOfTime === 'function') ? idxOfTime(srcKK[idx5].t) : idx5;
       };
 
+      if (Array.isArray(rawKK.divs)) allDivs = rawKK.divs;
+
       // Couleur réelle de la ligne KK : strictement verte si net > sig, strictement rouge si net <= sig
-      const isKkGreen = (idx) => {
+      isKkGreen = (idx) => {
         if (idx < 0 || idx >= net.length || net[idx] == null) return false;
         if (sig[idx] != null) return net[idx] > sig[idx];
         return (idx > 0 && net[idx] > net[idx - 1]);
       };
-      const isKkRed = (idx) => {
+      isKkRed = (idx) => {
         if (idx < 0 || idx >= net.length || net[idx] == null) return false;
         if (sig[idx] != null) return net[idx] <= sig[idx];
         return (idx > 0 && net[idx] < net[idx - 1]);
@@ -31948,9 +31991,18 @@ function computeFMCSignals(cleFmc, cleStrat) {
     }
   }
 
-  // --- GÉNÉRATION DES SORTIES FMC (sur apparition d'un repère opposé) ---
+  if (!allDivs.length) {
+    try {
+      const kbRes = (typeof getInd === 'function') ? (getInd('kk_bis2') || getInd('kk_bis') || getInd('two_ind')) : null;
+      if (kbRes && Array.isArray(kbRes.divs)) allDivs = kbRes.divs;
+    } catch(e){}
+  }
+
+  // --- GÉNÉRATION DES SORTIES FMC (V1 Rapide & V2 Runner Confirmé) ---
   try {
-    if (indFmc.showExits !== false && (triVente.length || losVente.length || triAchat.length || losAchat.length)) {
+    const showV1 = indFmc.showExits !== false;
+    const showV2 = indFmc.showExitsV2 !== false;
+    if ((showV1 || showV2) && (triVente.length || losVente.length || triAchat.length || losAchat.length)) {
       const redMarkers = new Map();
       for (const i of triVente) redMarkers.set(i, 'triangle');
       for (const i of losVente) { if (!redMarkers.has(i)) redMarkers.set(i, 'losange'); }
@@ -31959,6 +32011,17 @@ function computeFMCSignals(cleFmc, cleStrat) {
       for (const i of triAchat) greenMarkers.set(i, 'triangle');
       for (const i of losAchat) { if (!greenMarkers.has(i)) greenMarkers.set(i, 'losange'); }
 
+      // Map des divergences KK par bougie pour le critère 1
+      const divsByCandle = new Map();
+      for (const dv of allDivs) {
+        if (!dv) continue;
+        const ci = (typeof idxOfTime === 'function' && dv.t != null) ? idxOfTime(dv.t) : (dv.i2 != null ? dv.i2 : null);
+        if (ci != null && ci >= 0 && ci < d.length) {
+          if (!divsByCandle.has(ci)) divsByCandle.set(ci, []);
+          divsByCandle.get(ci).push(dv.dir);
+        }
+      }
+
       // On récupère les entrées principales (non-rappels, non-exits)
       const mainEntries = signals.filter(s => (s.type === 'ACHAT' || s.type === 'VENTE') && !s.isRappel && !s.isExit).sort((a, b) => a.i - b.i);
 
@@ -31966,65 +32029,166 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const exitBorder = indFmc.cExitBorder || '#FFB84D';
       const exitBg = indFmc.cExitBg || 'rgba(38, 22, 6, 0.95)';
 
+      const exitV2Color = indFmc.cExitV2 || '#00E5FF';
+      const exitV2Border = indFmc.cExitV2Border || '#38BDF8';
+      const exitV2Bg = indFmc.cExitV2Bg || 'rgba(6, 28, 40, 0.95)';
+
       for (let eIdx = 0; eIdx < mainEntries.length; eIdx++) {
         const entry = mainEntries[eIdx];
         const nextEntry = mainEntries[eIdx + 1];
         const maxK = nextEntry ? nextEntry.i : (d.length - 1);
 
-        for (let k = entry.i + 1; k <= maxK; k++) {
-          if (entry.type === 'ACHAT') {
-            if (redMarkers.has(k)) {
-              const b = d[k];
-              if (b) {
-                const markerType = redMarkers.get(k);
-                const pnl = b.c - entry.price;
-                const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-                signals.push({
-                  i: k, t: b.t, dir: -1,
-                  type: 'SORTIE ACHAT',
-                  optKey: 'fmc_exits',
-                  isExit: true,
-                  exitOf: 'ACHAT',
-                  entryPrice: entry.price,
-                  pnl: pnl,
-                  pnlStr: pnlStr,
-                  price: b.c, low: b.l, high: b.h,
-                  label: 'SORTIE ACHAT',
-                  badge: '🏁 SORTIE ACHAT',
-                  sub: (markerType === 'triangle' ? '▼ Triangle rouge' : '▼ Losange rouge') + ' · ' + pnlStr,
-                  color: exitColor,
-                  borderCol: exitBorder,
-                  bgFill: exitBg
-                });
+        // --- 1. SORTIE V1 : Rapide dès premier repère opposé ---
+        if (showV1) {
+          for (let k = entry.i + 1; k <= maxK; k++) {
+            if (entry.type === 'ACHAT') {
+              if (redMarkers.has(k)) {
+                const b = d[k];
+                if (b) {
+                  const markerType = redMarkers.get(k);
+                  const pnl = b.c - entry.price;
+                  const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                  signals.push({
+                    i: k, t: b.t, dir: -1,
+                    type: 'SORTIE ACHAT',
+                    optKey: 'fmc_exits',
+                    isExit: true,
+                    isRunnerExit: false,
+                    exitOf: 'ACHAT',
+                    entryI: entry.i,
+                    entryPrice: entry.price,
+                    pnl: pnl,
+                    pnlStr: pnlStr,
+                    price: b.c, low: b.l, high: b.h,
+                    label: 'SORTIE ACHAT',
+                    badge: '🏁 SORTIE ACHAT',
+                    sub: (markerType === 'triangle' ? '▼ Triangle rouge' : '▼ Losange rouge') + ' · ' + pnlStr,
+                    color: exitColor,
+                    borderCol: exitBorder,
+                    bgFill: exitBg
+                  });
+                }
+                break; // V1 sortie trouvée
               }
-              break; // Sortie trouvée, trade clôturé
+            } else if (entry.type === 'VENTE') {
+              if (greenMarkers.has(k)) {
+                const b = d[k];
+                if (b) {
+                  const markerType = greenMarkers.get(k);
+                  const pnl = entry.price - b.c;
+                  const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                  signals.push({
+                    i: k, t: b.t, dir: 1,
+                    type: 'SORTIE VENTE',
+                    optKey: 'fmc_exits',
+                    isExit: true,
+                    isRunnerExit: false,
+                    exitOf: 'VENTE',
+                    entryI: entry.i,
+                    entryPrice: entry.price,
+                    pnl: pnl,
+                    pnlStr: pnlStr,
+                    price: b.c, low: b.l, high: b.h,
+                    label: 'SORTIE VENTE',
+                    badge: '🏁 SORTIE VENTE',
+                    sub: (markerType === 'triangle' ? '▲ Triangle vert' : '▲ Losange vert') + ' · ' + pnlStr,
+                    color: exitColor,
+                    borderCol: exitBorder,
+                    bgFill: exitBg
+                  });
+                }
+                break; // V1 sortie trouvée
+              }
             }
-          } else if (entry.type === 'VENTE') {
-            if (greenMarkers.has(k)) {
+          }
+        }
+
+        // --- 2. SORTIE V2 RUNNER : Triangle = avertissement, sortie sur confirmation (Divergence / Ligne KK / ALMA) ---
+        if (showV2) {
+          let warningK = null;
+          let warningType = null;
+          for (let k = entry.i + 1; k <= maxK; k++) {
+            if (entry.type === 'ACHAT' && redMarkers.has(k)) {
+              warningK = k;
+              warningType = redMarkers.get(k);
+              break;
+            } else if (entry.type === 'VENTE' && greenMarkers.has(k)) {
+              warningK = k;
+              warningType = greenMarkers.get(k);
+              break;
+            }
+          }
+
+          if (warningK != null) {
+            // À partir de la bougie d'avertissement, on surveille la première confirmation
+            for (let k = warningK; k <= maxK; k++) {
               const b = d[k];
-              if (b) {
-                const markerType = greenMarkers.get(k);
-                const pnl = entry.price - b.c;
+              if (!b) continue;
+
+              let triggered = false;
+              const motifs = [];
+
+              if (entry.type === 'ACHAT') {
+                // Confirmations sortie Achat :
+                // 1) Divergence KK sur sommets (dir === 1)
+                const hasDiv = (divsByCandle.get(k) || []).includes(1);
+                if (hasDiv) motifs.push('Divergence KK');
+
+                // 2) Ligne KK rouge
+                if (typeof isKkRed === 'function' && isKkRed(k)) {
+                  motifs.push('Ligne KK rouge');
+                }
+
+                // 3) ALMA violet
+                if (typeof isAlmaViolet === 'function' && isAlmaViolet(k)) {
+                  motifs.push('ALMA violet');
+                }
+
+                if (motifs.length > 0) triggered = true;
+              } else if (entry.type === 'VENTE') {
+                // Confirmations sortie Vente :
+                // 1) Divergence KK sur creux (dir === -1)
+                const hasDiv = (divsByCandle.get(k) || []).includes(-1);
+                if (hasDiv) motifs.push('Divergence KK');
+
+                // 2) Ligne KK verte
+                if (typeof isKkGreen === 'function' && isKkGreen(k)) {
+                  motifs.push('Ligne KK verte');
+                }
+
+                // 3) ALMA vert
+                if (typeof isAlmaGreen === 'function' && isAlmaGreen(k)) {
+                  motifs.push('ALMA vert');
+                }
+
+                if (motifs.length > 0) triggered = true;
+              }
+
+              if (triggered) {
+                const pnl = (entry.type === 'ACHAT') ? (b.c - entry.price) : (entry.price - b.c);
                 const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
                 signals.push({
-                  i: k, t: b.t, dir: 1,
-                  type: 'SORTIE VENTE',
-                  optKey: 'fmc_exits',
+                  i: k, t: b.t, dir: (entry.type === 'ACHAT' ? -1 : 1),
+                  type: (entry.type === 'ACHAT' ? 'SORTIE ACHAT' : 'SORTIE VENTE'),
+                  optKey: 'fmc_exits_v2',
                   isExit: true,
-                  exitOf: 'VENTE',
+                  isRunnerExit: true,
+                  exitOf: entry.type,
+                  entryI: entry.i,
                   entryPrice: entry.price,
+                  warningI: warningK,
                   pnl: pnl,
                   pnlStr: pnlStr,
                   price: b.c, low: b.l, high: b.h,
-                  label: 'SORTIE VENTE',
-                  badge: '🏁 SORTIE VENTE',
-                  sub: (markerType === 'triangle' ? '▲ Triangle vert' : '▲ Losange vert') + ' · ' + pnlStr,
-                  color: exitColor,
-                  borderCol: exitBorder,
-                  bgFill: exitBg
+                  label: (entry.type === 'ACHAT' ? 'SORTIE ACHAT' : 'SORTIE VENTE'),
+                  badge: (entry.type === 'ACHAT' ? '🎯 SORTIE ACHAT' : '🎯 SORTIE VENTE'),
+                  sub: motifs.join(' + ') + ' · ' + pnlStr,
+                  color: exitV2Color,
+                  borderCol: exitV2Border,
+                  bgFill: exitV2Bg
                 });
+                break; // V2 sortie trouvée
               }
-              break; // Sortie trouvée, trade clôturé
             }
           }
         }
@@ -32045,7 +32209,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   cleStrat = cleStrat || 'strat_fmc';
   const indFmc = state.indicators[cleStrat];
   if (!indFmc || !indFmc.on) return;
-  if (indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showExits === false) return;
+  if (indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showExits === false && indFmc.showExitsV2 === false) return;
 
   const signals = fmcRes.signals || [];
   if (!signals.length) return;
@@ -32062,10 +32226,70 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   const isAlmaGreen = (idx) => (useAlmaFilter && asd && Array.isArray(asd.dir) && asd.dir[idx] === 1);
   const isAlmaViolet = (idx) => (useAlmaFilter && asd && Array.isArray(asd.dir) && asd.dir[idx] === -1);
 
+  // --- LIGNES DE TRADE RELIANT ENTRÉE ➔ SORTIE (V1 & V2) ---
+  if (indFmc.showTradeLines !== false) {
+    for (const sig of signals) {
+      if (!sig.isExit || sig.entryI == null || sig.entryPrice == null) continue;
+      if (!sig.isRunnerExit && indFmc.showExits === false) continue;
+      if (sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
+
+      const x1 = xOf(sig.entryI);
+      const y1 = yOf(sig.entryPrice);
+      const x2 = xOf(sig.i);
+      const y2 = yOf(sig.price);
+
+      if (Math.max(x1, x2) < -100 || Math.min(x1, x2) > (W - AXIS_W + 100)) continue;
+
+      ctx.save();
+      const isWin = (sig.pnl != null ? sig.pnl >= 0 : true);
+      const isV2 = !!sig.isRunnerExit;
+
+      let lineCol = '';
+      if (isV2) {
+        lineCol = isWin ? 'rgba(0, 229, 255, 0.85)' : 'rgba(244, 63, 94, 0.85)';
+      } else {
+        lineCol = isWin ? 'rgba(255, 159, 28, 0.85)' : 'rgba(239, 68, 68, 0.85)';
+      }
+
+      ctx.strokeStyle = lineCol;
+      ctx.lineWidth = isV2 ? 1.8 : 1.3;
+      ctx.setLineDash(isV2 ? [5, 4] : [3, 3]);
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Point à l'entrée
+      ctx.fillStyle = lineCol;
+      ctx.beginPath();
+      ctx.arc(x1, y1, isV2 ? 3.5 : 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Point à la sortie
+      ctx.beginPath();
+      ctx.arc(x2, y2, isV2 ? 3.5 : 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Anneau à la sortie
+      ctx.strokeStyle = isV2 ? '#38BDF8' : '#FFB84D';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(x2, y2, isV2 ? 5.5 : 4.5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+
   for (const sig of signals) {
     try {
       if (sig.i < s || sig.i >= e) continue;
-      if (sig.isExit && indFmc.showExits === false) continue;
+      if (sig.isExit) {
+        if (!sig.isRunnerExit && indFmc.showExits === false) continue;
+        if (sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
+      }
       if (!sig.isExit) {
         if (sig.isConfluenceKK && indFmc.showKkConfluence === false) continue;
         if (sig.isConfluenceKK && sig.dir === 1 && indFmc.showKkBuy === false) continue;
@@ -32079,7 +32303,8 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       const isConf = !!sig.isConfluenceKK;
       const isRappel = !!sig.isRappel;
       const isExit = !!sig.isExit;
-      const bw = Math.round((isExit ? 96 : (isConf ? 128 : 108)) * kT);
+      const isRunner = !!sig.isRunnerExit;
+      const bw = Math.round((isRunner ? 104 : (isExit ? 96 : (isConf ? 128 : 108))) * kT);
       const bh = Math.round((isExit ? 26 : 44) * kT);
 
       const x = xOf(sig.i);
@@ -38063,10 +38288,18 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     const showExits = (state.indicators?.strat_fmc?.showExits !== false);
     const sideBtn = document.getElementById('btn-toggle-fmc-exits');
     if (sideBtn) {
-      sideBtn.textContent = showExits ? '🏁 Sorties FMC : ON' : '🏁 Sorties FMC : OFF';
+      sideBtn.textContent = showExits ? '🏁 Sorties V1 : ON' : '🏁 Sorties V1 : OFF';
       sideBtn.style.background = showExits ? 'rgba(255,159,28,0.22)' : 'rgba(100,116,139,0.2)';
       sideBtn.style.borderColor = showExits ? '#FF9F1C' : '#64748B';
       sideBtn.style.color = showExits ? '#FF9F1C' : '#94A3B8';
+    }
+    const showExitsV2 = (state.indicators?.strat_fmc?.showExitsV2 !== false);
+    const sideBtnV2 = document.getElementById('btn-toggle-fmc-exits-v2');
+    if (sideBtnV2) {
+      sideBtnV2.textContent = showExitsV2 ? '🎯 Sorties V2 : ON' : '🎯 Sorties V2 : OFF';
+      sideBtnV2.style.background = showExitsV2 ? 'rgba(0,229,255,0.22)' : 'rgba(100,116,139,0.2)';
+      sideBtnV2.style.borderColor = showExitsV2 ? '#00E5FF' : '#64748B';
+      sideBtnV2.style.color = showExitsV2 ? '#00E5FF' : '#94A3B8';
     }
     if (typeof updatePastillesHubCheckboxesOnly === 'function') updatePastillesHubCheckboxesOnly();
   };
@@ -38080,7 +38313,21 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       if (typeof saveConfig === 'function') saveConfig();
     } catch(e) {}
     if (typeof toast === 'function') {
-      toast(cur ? '🏁 Sorties FMC : ACTIVÉES (Pastilles sortie sur repère opposé)' : '🏁 Sorties FMC : DÉSACTIVÉES', cur ? '#FF9F1C' : '#94A3B8');
+      toast(cur ? '🏁 Sorties V1 : ACTIVÉES (Pastilles sortie sur repère opposé)' : '🏁 Sorties V1 : DÉSACTIVÉES', cur ? '#FF9F1C' : '#94A3B8');
+    }
+    if (typeof render === 'function') render();
+  };
+
+  window.toggleFmcExitsV2 = function(){
+    if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+    const cur = !(state.indicators.strat_fmc.showExitsV2 !== false);
+    state.indicators.strat_fmc.showExitsV2 = cur;
+    window.updateFmcExitsUI();
+    try {
+      if (typeof saveConfig === 'function') saveConfig();
+    } catch(e) {}
+    if (typeof toast === 'function') {
+      toast(cur ? '🎯 Sorties V2 Runner : ACTIVÉES (Warning triangle + confirmation Div/KK/ALMA)' : '🎯 Sorties V2 Runner : DÉSACTIVÉES', cur ? '#00E5FF' : '#94A3B8');
     }
     if (typeof render === 'function') render();
   };
@@ -38106,7 +38353,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0340';
+  window.__LUMEN_BUILD = 'B-0910-0350';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
