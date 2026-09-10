@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2130</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2135</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -32559,10 +32559,13 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
           // B. Sortie Ronde KK 10m Ligne Zéro
           if (showKkZeroExits) {
+            let hasBeenInTradeZone = (isLong ? (net10[entry.i] > 0) : (net10[entry.i] < 0));
             for (let k = entry.i + 1; k <= maxK; k++) {
-              const isZeroTriggered = isLong
+              if (isLong && net10[k] > 0) hasBeenInTradeZone = true;
+              if (!isLong && net10[k] < 0) hasBeenInTradeZone = true;
+              const isZeroTriggered = hasBeenInTradeZone && (isLong
                 ? (net10[k] != null && net10[k] <= 0)
-                : (net10[k] != null && net10[k] >= 0);
+                : (net10[k] != null && net10[k] >= 0));
               if (isZeroTriggered) {
                 const b = d[k];
                 if (b) {
@@ -32666,12 +32669,15 @@ function computeFMCSignals(cleFmc, cleStrat) {
           }
         }
 
-        // B. Sortie Ronde KK 10m (Franchissement Ligne Zéro — Sécurité Max WR 81.5% / PF 146.5)
+        // B. Sortie Ronde KK 10m (Franchissement Ligne Zéro — Sécurité Max)
         if (showKkZeroExits) {
+          let hasBeenInTradeZone = (isLong ? (net10[entry.i] > 0) : (net10[entry.i] < 0));
           for (let k = entry.i + 1; k <= maxK; k++) {
-            const isZeroTriggered = isLong
+            if (isLong && net10[k] > 0) hasBeenInTradeZone = true;
+            if (!isLong && net10[k] < 0) hasBeenInTradeZone = true;
+            const isZeroTriggered = hasBeenInTradeZone && (isLong
               ? (net10[k] != null && net10[k] <= 0)
-              : (net10[k] != null && net10[k] >= 0);
+              : (net10[k] != null && net10[k] >= 0));
             if (isZeroTriggered) {
               const b = d[k];
               if (b) {
@@ -42516,7 +42522,7 @@ window.recordStratAlertInLog = function(msg, symbol) {
 // ============================================================
 // GESTION DU VOLET LATÉRAL DES TRADES ÉLITE & SANS ALMA (SORTIES RONDES & ALMA)
 // ============================================================
-window._eliteJournalStrat = 'elite'; // 'elite' | 'pure'
+window._eliteJournalStrat = 'pure'; // 'pure' | 'elite'
 window._eliteJournalMode = 'kk_cross'; // 'kk_cross' | 'kk_zero' | 'alma'
 window._eliteJournalLimit = 15;        // 10 | 15 | 0 (all)
 
@@ -42552,6 +42558,8 @@ window.toggleEliteJournalPanel = function(forceState) {
     if (typeof closeAllMenus === 'function') closeAllMenus();
     p.style.display = 'flex';
     if (tab) tab.style.display = 'none';
+    if (typeof setEliteJournalStrat === 'function') setEliteJournalStrat(window._eliteJournalStrat || 'pure');
+    if (typeof setEliteJournalMode === 'function') setEliteJournalMode(window._eliteJournalMode || 'kk_cross');
     renderEliteJournal();
   } else {
     p.style.display = 'none';
