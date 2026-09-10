@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build-mobile": "mkdir -p www && cp index.html www/ && npx cap sync",
-    "build": "vite build && cp sw.js manifest.webmanifest icone-*.png candles_synth.json dist/ 2>/dev/null || true",
+    "build": "vite build && cp sw.js manifest.webmanifest icone-*.png candles_synth.json benchmark_trades.json dist/ 2>/dev/null || true",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
