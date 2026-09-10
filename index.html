@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0320</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0330</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -31727,8 +31727,18 @@ function computeFMCSignals(cleFmc, cleStrat) {
         // A) Candidats Entrée Vente à partir des triangles rouges :
         // Déclenchement dès que la condition vente est vérifiée
         // Condition Alma : si Alma est actif et vert, pas de pastille vente !
-        for (const repI of triVente) {
-          for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
+        // Option 1 : Le triangle reste actif jusqu'au prochain repère opposé (triangle vert) ou fin des données
+        for (let idxT = 0; idxT < triVente.length; idxT++) {
+          const repI = triVente[idxT];
+          let maxK = d.length - 1;
+          for (const oppI of triAchat) {
+            if (oppI > repI) { maxK = Math.min(maxK, oppI); break; }
+          }
+          if (idxT + 1 < triVente.length && triVente[idxT + 1] > repI) {
+            maxK = Math.min(maxK, triVente[idxT + 1]);
+          }
+
+          for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
             if (isSellTriggered(k)) {
               if (isAlmaGreen(k)) continue;
               const b = d[k];
@@ -31748,8 +31758,18 @@ function computeFMCSignals(cleFmc, cleStrat) {
         // B) Candidats Entrée Achat à partir des triangles verts :
         // Déclenchement dès que la condition achat est vérifiée
         // Condition Alma : si Alma est actif et violet, pas de pastille achat !
-        for (const repI of triAchat) {
-          for (let k = Math.max(0, repI - 1); k <= Math.min(d.length - 1, repI + 25); k++) {
+        // Option 1 : Le triangle reste actif jusqu'au prochain repère opposé (triangle rouge) ou fin des données
+        for (let idxT = 0; idxT < triAchat.length; idxT++) {
+          const repI = triAchat[idxT];
+          let maxK = d.length - 1;
+          for (const oppI of triVente) {
+            if (oppI > repI) { maxK = Math.min(maxK, oppI); break; }
+          }
+          if (idxT + 1 < triAchat.length && triAchat[idxT + 1] > repI) {
+            maxK = Math.min(maxK, triAchat[idxT + 1]);
+          }
+
+          for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
             if (isBuyTriggered(k)) {
               if (isAlmaViolet(k)) continue;
               const b = d[k];
@@ -38068,7 +38088,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0320';
+  window.__LUMEN_BUILD = 'B-0910-0330';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
