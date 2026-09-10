@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2440</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2450</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -32812,39 +32812,26 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
         let currentActivePureDir = 0;
         let pureTradeNum = 0;
-        let activeBenchExitT = 0;
         for (const cand of pureCandidates) {
           if (cand.dir === 1 && (!isKK10Green(cand.i) || !isFMC2Green(cand.i))) continue;
           if (cand.dir === -1 && (!isKK10Red(cand.i) || !isFMC2Red(cand.i))) continue;
 
-          // Si un trade benchmark officiel est en cours jusqu'à activeBenchExitT, ignorer les micro-signaux opposés parasites
-          if (activeBenchExitT > 0 && cand.t < activeBenchExitT) continue;
-
           if (cand.dir !== currentActivePureDir) {
             currentActivePureDir = cand.dir;
             pureTradeNum++;
-            const maxPureBench = getMaxBenchmarkNum(true);
-            const benchItem = matchBenchmarkItem(true, cand.t, cand.price);
-            const thisTradeNum = benchItem ? benchItem.num : (maxPureBench > 0 ? (maxPureBench + pureTradeNum) : pureTradeNum);
-            if (benchItem && benchItem.exitT) {
-              activeBenchExitT = benchItem.exitT;
-            } else {
-              activeBenchExitT = 0;
-            }
             const isLong = (cand.dir === 1);
             signals.push({
               i: cand.i, t: cand.t, dir: cand.dir,
               type: isLong ? 'ACHAT SANS ALMA' : 'VENTE SANS ALMA',
               optKey: 'fmc_pure_no_alma',
               isPureNoAlma: true,
-              tradeNum: thisTradeNum,
-              num: thisTradeNum,
-              benchItem: benchItem,
+              tradeNum: pureTradeNum,
+              num: pureTradeNum,
               price: cand.price, low: cand.low, high: cand.high,
               score: cand.score,
               reason: isLong ? '▲ Tri 10m + KK 10m + FMC 2m (SANS ALMA)' : '▼ Tri 10m + KK 10m + FMC 2m (SANS ALMA)',
               label: isLong ? 'ACHAT SANS ALMA' : 'VENTE SANS ALMA',
-              badge: isLong ? ('⚡ #' + thisTradeNum + ' ACHAT SANS ALMA') : ('⚡ #' + thisTradeNum + ' VENTE SANS ALMA'),
+              badge: isLong ? ('⚡ #' + pureTradeNum + ' ACHAT SANS ALMA') : ('⚡ #' + pureTradeNum + ' VENTE SANS ALMA'),
               sub: 'KK 10m · FMC 2m (SANS ALMA)',
               color: isLong ? '#38BDF8' : '#F43F5E',
               borderCol: '#0284C7',
@@ -32863,86 +32850,38 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
           // A. Sortie Ronde KK 10m Croisement
           if (showKkCrossExits) {
-            // Si le trade est synchronisé avec le Benchmark officiel (ex: Trade #83) :
-            // Sa sortie exacte, son prix et son PnL doivent être 100% alignés avec le benchmark (+176 pts à 22:10)
-            let benchExitMatched = false;
-            if (entry.benchItem && entry.benchItem.exitT != null) {
-              const targetExitT = entry.benchItem.exitT;
-              let bestK = -1;
-              let minDiff = Infinity;
-              for (let k = entry.i + 1; k < d.length; k++) {
-                const diff = Math.abs(d[k].t - targetExitT);
-                if (diff < minDiff) {
-                  minDiff = diff;
-                  bestK = k;
+            for (let k = entry.i + 1; k <= maxK; k++) {
+              const isCrossTriggered = isLong ? (net10[k] < sig10[k]) : (net10[k] > sig10[k]);
+              if (isCrossTriggered) {
+                const b = d[k];
+                if (b) {
+                  const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                  const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                  signals.push({
+                    i: k, t: b.t, dir: isLong ? -1 : 1,
+                    type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                    optKey: 'fmc_pure_no_alma_exit_cross',
+                    isExit: true,
+                    isPureNoAlma: true,
+                    isRound: true,
+                    icon: '⨂',
+                    exitType: 'kk_cross',
+                    exitOf: isLong ? 'ACHAT' : 'VENTE',
+                    tradeNum: entry.tradeNum,
+                    num: entry.tradeNum,
+                    entryI: entry.i,
+                    entryPrice: entry.price,
+                    pnl: pnl,
+                    pnlStr: pnlStr,
+                    price: b.c, low: b.l, high: b.h,
+                    label: 'SORTIE KK 10m (Croisement)',
+                    badge: '⨂ #' + entry.tradeNum + ' SORTIE',
+                    color: '#38BDF8',
+                    borderCol: '#0284C7',
+                    bgFill: 'rgba(7, 43, 62, 0.96)'
+                  });
                 }
-              }
-              if (bestK !== -1 && minDiff <= 600000) { // dans une fenêtre de 10 min
-                const b = d[bestK];
-                const pnl = entry.benchItem.pnl != null ? entry.benchItem.pnl : (isLong ? (b.c - entry.price) : (entry.price - b.c));
-                const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-                const exPrice = entry.benchItem.exitPrice || b.c;
-                signals.push({
-                  i: bestK, t: b.t, dir: isLong ? -1 : 1,
-                  type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
-                  optKey: 'fmc_pure_no_alma_exit_cross',
-                  isExit: true,
-                  isPureNoAlma: true,
-                  isRound: true,
-                  icon: '⨂',
-                  exitType: 'kk_cross',
-                  exitOf: isLong ? 'ACHAT' : 'VENTE',
-                  tradeNum: entry.tradeNum,
-                  num: entry.tradeNum,
-                  entryI: entry.i,
-                  entryPrice: entry.price,
-                  pnl: pnl,
-                  pnlStr: pnlStr,
-                  price: exPrice, low: b.l, high: b.h,
-                  label: 'SORTIE KK 10m (Croisement)',
-                  badge: '⨂ #' + entry.tradeNum + ' SORTIE',
-                  color: '#38BDF8',
-                  borderCol: '#0284C7',
-                  bgFill: 'rgba(7, 43, 62, 0.96)'
-                });
-                benchExitMatched = true;
-              }
-            }
-
-            if (!benchExitMatched) {
-              for (let k = entry.i + 1; k <= maxK; k++) {
-                const isCrossTriggered = isLong ? (net10[k] < sig10[k]) : (net10[k] > sig10[k]);
-                if (isCrossTriggered) {
-                  const b = d[k];
-                  if (b) {
-                    const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
-                    const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-                    signals.push({
-                      i: k, t: b.t, dir: isLong ? -1 : 1,
-                      type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
-                      optKey: 'fmc_pure_no_alma_exit_cross',
-                      isExit: true,
-                      isPureNoAlma: true,
-                      isRound: true,
-                      icon: '⨂',
-                      exitType: 'kk_cross',
-                      exitOf: isLong ? 'ACHAT' : 'VENTE',
-                      tradeNum: entry.tradeNum,
-                      num: entry.tradeNum,
-                      entryI: entry.i,
-                      entryPrice: entry.price,
-                      pnl: pnl,
-                      pnlStr: pnlStr,
-                      price: b.c, low: b.l, high: b.h,
-                      label: 'SORTIE KK 10m (Croisement)',
-                      badge: '⨂ #' + entry.tradeNum + ' SORTIE',
-                      color: '#38BDF8',
-                      borderCol: '#0284C7',
-                      bgFill: 'rgba(7, 43, 62, 0.96)'
-                    });
-                  }
-                  break;
-                }
+                break;
               }
             }
           }
@@ -39595,7 +39534,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2440';
+  window.__LUMEN_BUILD = 'B-0910-2450';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -42550,25 +42489,24 @@ window.balayerMM_MTF = async function(){
 
   <!-- Selectors Toolbar -->
   <div style="padding:8px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:rgba(0,0,0,0.06)">
-    <!-- Sélecteur Source : En direct vs Benchmark 8 000 bougies -->
-    <div style="display:flex;gap:4px;background:var(--panel-2);padding:3px;border-radius:6px;border:1px solid var(--line)">
-      <button id="tab-source-live" onclick="setEliteJournalSource('live')" style="flex:1;font-size:10px;padding:5px 2px;font-weight:800;border-radius:4px;border:none;background:#38BDF8;color:#0F172A;cursor:pointer">
-        🔴 Direct (Séance ~8h)
-      </button>
-      <button id="tab-source-hist" onclick="setEliteJournalSource('hist')" style="flex:1;font-size:10px;padding:5px 2px;font-weight:700;border-radius:4px;border:none;background:transparent;color:var(--muted);cursor:pointer">
-        📚 Benchmark (8 000 b. = 5,5 j)
-      </button>
+    <!-- Bandeau Direct Graphique (100% synchronisé avec les pastilles du graphique) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(56,189,248,0.12);border:1px solid #38BDF8;padding:5px 10px;border-radius:6px;font-size:10.5px">
+      <span style="font-weight:800;color:#38BDF8;display:inline-flex;align-items:center;gap:5px">
+        <span style="width:7px;height:7px;border-radius:50%;background:#00E676;display:inline-block;box-shadow:0 0 6px #00E676"></span>
+        Direct Graphique (100% réel)
+      </span>
+      <span style="color:var(--muted);font-size:9.5px">Pastilles ➔ Tableau 1:1</span>
     </div>
-    <div id="source-benchmark-info" style="display:none;font-size:9.5px;padding:4px 8px;border-radius:4px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);color:#38BDF8;text-align:center">
-      📅 <b>Benchmark 8 000 bougies réelles Binance (du 05/09 au 10/09 aujourd'hui)</b>
-    </div>
-    <!-- Strategy selector filter: Élite (Avec ALMA) vs Sans ALMA -->
-    <div style="display:flex;gap:5px">
-      <button id="tab-strat-elite" onclick="setEliteJournalStrat('elite')" style="flex:1;font-size:10.5px;padding:5px 2px;font-weight:800;border-radius:6px;border:1.5px solid #FACC15;background:rgba(250,204,21,.18);color:#FACC15;cursor:pointer">
-        🏆 ÉLITE (AVEC ALMA)
+    <!-- Sélecteur de Stratégie : 11 11, Sans ALMA, Avec ALMA -->
+    <div style="display:flex;gap:4px">
+      <button id="tab-strat-11-11" onclick="setEliteJournalStrat('11_11')" style="flex:1;font-size:10px;padding:5px 2px;font-weight:800;border-radius:6px;border:1.5px solid #38BDF8;background:rgba(56,189,248,.18);color:#38BDF8;cursor:pointer">
+        🎯 STRAT 11 11
       </button>
-      <button id="tab-strat-pure" onclick="setEliteJournalStrat('pure')" style="flex:1;font-size:10.5px;padding:5px 2px;font-weight:700;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);cursor:pointer">
+      <button id="tab-strat-pure" onclick="setEliteJournalStrat('pure')" style="flex:1;font-size:10px;padding:5px 2px;font-weight:700;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);cursor:pointer">
         ⚡ SANS ALMA
+      </button>
+      <button id="tab-strat-elite" onclick="setEliteJournalStrat('elite')" style="flex:1;font-size:10px;padding:5px 2px;font-weight:700;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);cursor:pointer">
+        🏆 AVEC ALMA
       </button>
     </div>
     <!-- Exit mode tabs -->
@@ -42930,28 +42868,53 @@ window.setEliteJournalSource = async function(src) {
 };
 
 window.setEliteJournalStrat = function(strat) {
-  window._eliteJournalStrat = strat;
-  const bElite = document.getElementById('tab-strat-elite');
+  window._eliteJournalStrat = strat || 'pure';
+  const b11 = document.getElementById('tab-strat-11-11');
   const bPure = document.getElementById('tab-strat-pure');
-  if (bElite) {
-    const isAct = (strat === 'elite');
-    bElite.style.border = isAct ? '1.5px solid #FACC15' : '1px solid var(--line)';
-    bElite.style.background = isAct ? 'rgba(250,204,21,.18)' : 'var(--panel-2)';
-    bElite.style.color = isAct ? '#FACC15' : 'var(--muted)';
-    bElite.style.fontWeight = isAct ? '800' : '700';
+  const bElite = document.getElementById('tab-strat-elite');
+
+  if (b11) {
+    const isAct = (strat === '11_11');
+    b11.style.border = isAct ? '1.5px solid #38BDF8' : '1px solid var(--line)';
+    b11.style.background = isAct ? 'rgba(56,189,248,.22)' : 'var(--panel-2)';
+    b11.style.color = isAct ? '#38BDF8' : 'var(--muted)';
+    b11.style.fontWeight = isAct ? '800' : '700';
   }
   if (bPure) {
     const isAct = (strat === 'pure');
     bPure.style.border = isAct ? '1.5px solid #38BDF8' : '1px solid var(--line)';
-    bPure.style.background = isAct ? 'rgba(56,189,248,.18)' : 'var(--panel-2)';
+    bPure.style.background = isAct ? 'rgba(56,189,248,.22)' : 'var(--panel-2)';
     bPure.style.color = isAct ? '#38BDF8' : 'var(--muted)';
     bPure.style.fontWeight = isAct ? '800' : '700';
   }
-  // Synchronise les pastilles affichées sur le graphique
-  if (window.state && window.state.indicators && window.state.indicators.strat_fmc) {
-    window.state.indicators.strat_fmc.showPureNoAlma = (strat === 'pure');
-    window.state.indicators.strat_fmc.showElite = (strat === 'elite');
-    window.state.indicators.strat_fmc.on = true;
+  if (bElite) {
+    const isAct = (strat === 'elite');
+    bElite.style.border = isAct ? '1.5px solid #FACC15' : '1px solid var(--line)';
+    bElite.style.background = isAct ? 'rgba(250,204,21,.22)' : 'var(--panel-2)';
+    bElite.style.color = isAct ? '#FACC15' : 'var(--muted)';
+    bElite.style.fontWeight = isAct ? '800' : '700';
+  }
+
+  // Active automatiquement la stratégie correspondante sur le graphique
+  if (window.state && window.state.indicators) {
+    if (strat === '11_11') {
+      if (!window.state.indicators.strat_11_11) window.state.indicators.strat_11_11 = {};
+      window.state.indicators.strat_11_11.on = true;
+      window.state.indicators.strat_11_11.showBuy = true;
+      window.state.indicators.strat_11_11.showSell = true;
+    } else if (strat === 'pure') {
+      if (window.state.indicators.strat_fmc) {
+        window.state.indicators.strat_fmc.showPureNoAlma = true;
+        window.state.indicators.strat_fmc.showElite = false;
+        window.state.indicators.strat_fmc.on = true;
+      }
+    } else if (strat === 'elite') {
+      if (window.state.indicators.strat_fmc) {
+        window.state.indicators.strat_fmc.showElite = true;
+        window.state.indicators.strat_fmc.showPureNoAlma = false;
+        window.state.indicators.strat_fmc.on = true;
+      }
+    }
     window.state.cache = {};
     window.__lastFMCSignals = null;
     if (typeof render === 'function') render();
@@ -43165,38 +43128,52 @@ window.renderEliteJournal = function() {
 
   let trades = [];
 
-  if (isHist && window.__benchmarkData && window.__benchmarkData.modes) {
-    const key = strat + '_' + mode;
-    const rawList = window.__benchmarkData.modes[key] || window.__benchmarkData.modes['pure_kk_cross'] || [];
-    trades = rawList.map(t => ({
-      num: t.num,
-      type: t.type,
-      entryDT: t.entryDT,
-      exitDT: t.exitDT,
-      entryT: t.entryT,
-      exitT: t.exitT,
-      entryI: null,
-      exitI: null,
-      entryPrice: t.entryPrice,
-      exitPrice: t.exitPrice,
-      durBars: t.durBars,
-      pnl: t.pnl,
-      pnlStr: t.pnlStr || ((t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + ' pts'),
-      win: t.win,
-      icon: t.icon || (mode === 'kk_cross' ? '⨂' : mode === 'kk_zero' ? 'Ø' : '🏁')
-    }));
-  } else {
-    // Mode direct : calcul sur les bougies de la séance live
-    let sigs = window.__lastFMCSignals;
-    if (!sigs || !sigs.length) {
-      if (typeof computeFMCSignals === 'function') {
-        const res = computeFMCSignals();
-        sigs = res ? res.signals : [];
-        window.__lastFMCSignals = sigs;
-      }
+  // Le tableau lit TOUJOURS DIRECTEMENT les pastilles générées sur le graphique en direct
+  let sigs = window.__lastFMCSignals;
+  if (!sigs || !sigs.length) {
+    if (typeof computeFMCSignals === 'function') {
+      const res = computeFMCSignals();
+      sigs = res ? res.signals : [];
+      window.__lastFMCSignals = sigs;
     }
-    sigs = sigs || [];
+  }
+  sigs = sigs || [];
+  const d = window.state ? window.state.data : [];
 
+  if (strat === '11_11') {
+    // Mode Stratégie 11 11 (FMC 3m × KK 2m) : Paires entrée / sortie directes du graphique
+    const sigs11 = sigs.filter(s => s.isStrat1111).sort((a, b) => a.i - b.i);
+    for (let idx = 0; idx < sigs11.length; idx++) {
+      const s = sigs11[idx];
+      const nextS = sigs11[idx + 1];
+      const isLong = (s.dir === 1);
+      const exitPrice = nextS ? nextS.price : (d.length ? d[d.length - 1].c : s.price);
+      const exitT = nextS ? nextS.t : (d.length ? d[d.length - 1].t : s.t);
+      const exitI = nextS ? nextS.i : (d.length - 1);
+      const pnl = isLong ? (exitPrice - s.price) : (s.price - exitPrice);
+      const durBars = Math.max(0, exitI - s.i);
+      const isOpen = !nextS;
+      trades.push({
+        num: s.tradeNum || (idx + 1),
+        type: isLong ? 'ACHAT' : 'VENTE',
+        entryDT: formatDT(s.t),
+        exitDT: isOpen ? 'EN COURS' : formatDT(exitT),
+        entryT: s.t,
+        exitT: exitT,
+        entryI: s.i,
+        exitI: exitI,
+        entryPrice: s.price,
+        exitPrice: isOpen ? null : exitPrice,
+        durBars: durBars,
+        pnl: pnl,
+        pnlStr: isOpen ? 'EN COURS' : ((pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts'),
+        win: (pnl > 0),
+        isOpen: isOpen,
+        icon: '🎯'
+      });
+    }
+  } else {
+    // Mode Sans ALMA ou Avec ALMA : Paires entrée / sortie directes du graphique
     const entries = sigs.filter(s => (isPure ? s.isPureNoAlma : s.isElite) && !s.isExit).sort((a, b) => a.i - b.i);
     let exits = [];
     if (isPure) {
@@ -43209,21 +43186,20 @@ window.renderEliteJournal = function() {
       else exits = sigs.filter(s => s.isElite && s.isExit && s.isEliteExit);
     }
 
-    const d = window.state ? window.state.data : [];
     trades = exits.map(ex => {
       const ent = entries.find(e => e.tradeNum === ex.tradeNum);
       const dEnt = (d && ent && ent.i != null) ? d[ent.i] : null;
       const dEx = (d && ex.i != null) ? d[ex.i] : null;
-      const entryDT = dEnt && dEnt.t ? formatDT(dEnt.t) : '—';
-      const exitDT = dEx && dEx.t ? formatDT(dEx.t) : '—';
+      const entryDT = dEnt && dEnt.t ? formatDT(dEnt.t) : (ent ? formatDT(ent.t) : '—');
+      const exitDT = dEx && dEx.t ? formatDT(dEx.t) : (ex ? formatDT(ex.t) : '—');
       const durBars = ent ? (ex.i - ent.i) : 0;
       return {
         num: ex.tradeNum,
         type: ex.exitOf,
         entryDT: entryDT,
         exitDT: exitDT,
-        entryT: dEnt ? dEnt.t : null,
-        exitT: dEx ? dEx.t : null,
+        entryT: dEnt ? dEnt.t : (ent ? ent.t : null),
+        exitT: dEx ? dEx.t : (ex ? ex.t : null),
         entryI: ent ? ent.i : ex.i,
         exitI: ex.i,
         entryPrice: ent ? ent.price : null,
@@ -43264,7 +43240,7 @@ window.renderEliteJournal = function() {
   }
   if (wlEl) wlEl.textContent = wins + ' W / ' + losses + ' L';
   if (avgEl) avgEl.textContent = (parseFloat(avgPnl) >= 0 ? '+' : '') + avgPnl + ' pts';
-  if (totalCountEl) totalCountEl.textContent = displayedTrades.length + ' / ' + trades.length + ' trades' + (isHist ? ' (Benchmark 5,5 j)' : ' (Direct)');
+  if (totalCountEl) totalCountEl.textContent = displayedTrades.length + ' / ' + trades.length + ' trades (Direct Graphique)';
   if (badgeCountEl) badgeCountEl.textContent = String(displayedTrades.length);
 
   if (!sortedTrades.length) {
