@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1255</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1300</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5692,7 +5692,7 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_fmc:{on:true,showElite:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
+    strat_fmc:{on:true,showElite:true,showEliteExits:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
     strat_zz2:{on:false,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
@@ -5934,11 +5934,12 @@ function loadConfig(){
   /* Stratégie FMC autonome & Confluence KK : initialisation propre */
   try{
     if(!state.indicators.strat_fmc){
-      state.indicators.strat_fmc = {on:true,showElite:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:false,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
+      state.indicators.strat_fmc = {on:true,showElite:true,showEliteExits:true,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:false,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'};
     } else {
       state.indicators.strat_fmc.on = true;
       state.indicators.strat_fmc.showKkConfluence = true;
       if(state.indicators.strat_fmc.showElite === undefined) state.indicators.strat_fmc.showElite = true;
+      if(state.indicators.strat_fmc.showEliteExits === undefined) state.indicators.strat_fmc.showEliteExits = true;
       if(state.indicators.strat_fmc.showKkBuy === undefined) state.indicators.strat_fmc.showKkBuy = true;
       if(state.indicators.strat_fmc.showKkSell === undefined) state.indicators.strat_fmc.showKkSell = true;
       if(state.indicators.strat_fmc.showRappels === undefined) state.indicators.strat_fmc.showRappels = true;
@@ -5949,6 +5950,7 @@ function loadConfig(){
       if(state.indicators.strat_fmc.strictCaducite === undefined) state.indicators.strat_fmc.strictCaducite = false;
       if(state.indicators.strat_fmc.fastTrigger === undefined) state.indicators.strat_fmc.fastTrigger = false;
       if(state.indicators.strat_fmc.showExits === undefined) state.indicators.strat_fmc.showExits = true;
+      if(state.indicators.strat_fmc.showExitsV2 === undefined) state.indicators.strat_fmc.showExitsV2 = true;
       state.indicators.strat_fmc.requireFmcColors = false;
     }
     if(state.indicators.strat_mm){
@@ -15069,6 +15071,21 @@ const PASTILLES_CATALOG = [
         }
       },
       {
+        id: 'fmc_elite_exits',
+        icon: '🏁',
+        label: 'Sorties Pastilles Élite (ALMA 2m)',
+        desc: 'Sortie optimale au 1ᵉʳ retournement ALMA 2m (Validée : +315.92 $, Profit Factor 20.74, Max DD 3.7%)',
+        accent: '#FACC15',
+        def: true,
+        get: () => state.indicators?.strat_fmc?.showEliteExits !== false && !!state.indicators?.strat_fmc?.on,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.showEliteExits = v;
+          if (v) state.indicators.strat_fmc.on = true;
+          if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
+        }
+      },
+      {
         id: 'fmc_strict_caducite',
         icon: '🛡️',
         label: 'Règle Stricte (ON / OFF)',
@@ -19225,6 +19242,7 @@ const SCHEMA={
   ]},
   strat_fmc:{title:'Stratégie FMC 🌊 (Pastilles & Confluence KK)',fields:[
     {k:'showElite',t:'bool',lab:'🏆 Pastilles Élite (ALMA 2m · KK 10m · FMC 2m — WR 66.7%)',def:true},
+    {k:'showEliteExits',t:'bool',lab:'🏁 Sorties Pastilles Élite (Retournement ALMA 2m — PF 20.7)',def:true},
     {k:'strictCaducite',t:'bool',lab:'🛡️ Condition Stricte : Repère juste avant (≤2b) & Annulation par repère opposé',def:false},
     {k:'fastTrigger',t:'bool',lab:'⚡ Déclencheur Rapide : Achat (FMC vert OU KK vert) & Vente (KK rouge)',def:false},
     {k:'showKkBuy',t:'bool',lab:'Afficher la Pastille Achat FMC × KK (Verte)',def:true},
@@ -32096,7 +32114,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
   }
 
   /* 2b. Pastilles ÉLITE FMC × KK (ALMA 2m · KK 10m · FMC 2m) — Validée 66.7% WR / PF 15.44 */
-  if (indFmc.showElite !== false) {
+  if (indFmc.showElite !== false || indFmc.showEliteExits !== false) {
     try {
       // 1. ALMA SD 2 minutes
       let asd2m = null;
@@ -32217,6 +32235,51 @@ function computeFMCSignals(cleFmc, cleStrat) {
             borderCol: '#FACC15',
             bgFill: isLong ? 'rgba(6, 36, 26, 0.96)' : 'rgba(44, 8, 20, 0.96)'
           });
+        }
+      }
+
+      // 5. Génération des pastilles de SORTIE ÉLITE (Optimal : 1er retournement ALMA 2m)
+      const eliteEntries = signals.filter(s => s.isElite && !s.isExit).sort((a, b) => a.i - b.i);
+      for (let eIdx = 0; eIdx < eliteEntries.length; eIdx++) {
+        const entry = eliteEntries[eIdx];
+        const tradeNum = eIdx + 1;
+        entry.tradeNum = tradeNum;
+        entry.num = tradeNum;
+        const nextEntry = eliteEntries[eIdx + 1];
+        const maxK = nextEntry ? nextEntry.i : (d.length - 1);
+
+        for (let k = entry.i + 1; k <= maxK; k++) {
+          const isExitTriggered = (entry.dir === 1) ? isA2Violet(k) : isA2Green(k);
+          if (isExitTriggered) {
+            const b = d[k];
+            if (b) {
+              const isLong = (entry.dir === 1);
+              const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+              const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+              signals.push({
+                i: k, t: b.t, dir: isLong ? -1 : 1,
+                type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                optKey: 'fmc_elite_exits',
+                isExit: true,
+                isElite: true,
+                isEliteExit: true,
+                exitOf: isLong ? 'ACHAT' : 'VENTE',
+                tradeNum: tradeNum,
+                entryI: entry.i,
+                entryPrice: entry.price,
+                pnl: pnl,
+                pnlStr: pnlStr,
+                price: b.c, low: b.l, high: b.h,
+                label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
+                badge: '🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE',
+                sub: 'Retournement ALMA 2m · ' + pnlStr,
+                color: '#FACC15',
+                borderCol: '#EAB308',
+                bgFill: 'rgba(38, 28, 6, 0.96)'
+              });
+            }
+            break; // 1ère sortie trouvée pour ce trade Élite
+          }
         }
       }
     } catch(errElite) {
@@ -32431,7 +32494,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   cleStrat = cleStrat || 'strat_fmc';
   const indFmc = state.indicators[cleStrat];
   if (!indFmc || !indFmc.on) return;
-  if (indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showExits === false && indFmc.showExitsV2 === false) return;
+  if (indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showElite === false && indFmc.showEliteExits === false && indFmc.showExits === false && indFmc.showExitsV2 === false) return;
 
   const signals = fmcRes.signals || [];
   if (!signals.length) return;
@@ -32452,8 +32515,9 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     try {
       if (sig.i < s || sig.i >= e) continue;
       if (sig.isExit) {
-        if (!sig.isRunnerExit && indFmc.showExits === false) continue;
-        if (sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
+        if (sig.isEliteExit && indFmc.showEliteExits === false) continue;
+        if (!sig.isEliteExit && !sig.isRunnerExit && indFmc.showExits === false) continue;
+        if (!sig.isEliteExit && sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
       }
       if (!sig.isExit) {
         if (sig.isElite && indFmc.showElite === false) continue;
@@ -32470,7 +32534,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       const isElite = !!sig.isElite;
       const isRappel = !!sig.isRappel;
       const isExit = !!sig.isExit;
-      const bw = Math.round((isExit ? 132 : (isElite ? 158 : (isConf ? 136 : 112))) * kT);
+      const bw = Math.round((isExit ? (sig.isEliteExit ? 156 : 132) : (isElite ? 158 : (isConf ? 136 : 112))) * kT);
       const bh = Math.round((isExit ? 27 : 44) * kT);
 
       const x = xOf(sig.i);
@@ -38522,7 +38586,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-1255';
+  window.__LUMEN_BUILD = 'B-0910-1300';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
