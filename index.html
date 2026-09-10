@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1845</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2130</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -15117,7 +15117,7 @@ const PASTILLES_CATALOG = [
         id: 'fmc_elite',
         icon: '🏆',
         label: 'Pastilles Élite (ALMA 2m · KK 10m · FMC 2m)',
-        desc: 'Configuration optimale validée : 66.7% Win Rate, Profit Factor 15.44, Max DD 0.3%',
+        desc: 'Configuration avec filtre ALMA : 32 trades, 66.7% Win Rate, Profit Factor 15.44, Max DD 0.3%',
         accent: '#FACC15',
         def: true,
         get: () => state.indicators?.strat_fmc?.showElite !== false && !!state.indicators?.strat_fmc?.on,
@@ -15125,6 +15125,21 @@ const PASTILLES_CATALOG = [
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showElite = v;
           if (v) state.indicators.strat_fmc.on = true;
+        }
+      },
+      {
+        id: 'fmc_pure_no_alma',
+        icon: '⚡',
+        label: 'Pastilles FMC × KK (SANS ALMA — 94 Trades)',
+        desc: 'Signal direct sans filtre ALMA (94 trades, Win Rate 74.5% - 77.7%, +13 219 pts, durée moy. 38-62 min)',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_fmc?.showPureNoAlma !== false && !!state.indicators?.strat_fmc?.on,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.showPureNoAlma = v;
+          if (v) state.indicators.strat_fmc.on = true;
+          if (typeof window.updateFmcNoAlmaUI === 'function') window.updateFmcNoAlmaUI();
         }
       },
       {
@@ -32420,10 +32435,170 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // 5. Génération des pastilles de SORTIE ÉLITE (Rondes KK 10m Croisement & Ligne 0 + ALMA classique)
+      // 5. Paramètres d'affichage des SORTIES
       const showAlmaExits = (indFmc.showEliteExits !== false);
       const showKkCrossExits = (indFmc.showEliteKkExitCross !== false);
       const showKkZeroExits = (indFmc.showEliteKkExitZero !== false);
+
+      // 4bis. Génération des pastilles SANS ALMA (FMC 2m + KK 10m PUR — 94 trades)
+      const showPureNoAlma = (indFmc.showPureNoAlma !== false);
+      if (showPureNoAlma) {
+        const pureCandidates = [];
+        for (let idxT = 0; idxT < triVente10.length; idxT++) {
+          const repI = triVente10[idxT];
+          let maxK = d.length - 1;
+          for (const oppI of triAchat10) {
+            if (oppI > repI) { maxK = Math.min(maxK, oppI + tfSpan10); break; }
+          }
+          if (idxT + 1 < triVente10.length && triVente10[idxT + 1] > repI) {
+            maxK = Math.min(maxK, triVente10[idxT + 1] + tfSpan10);
+          }
+          for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
+            if (isKK10Red(k) && isFMC2Red(k)) {
+              const b = d[k];
+              if (!b) break;
+              pureCandidates.push({ i: k, t: b.t, dir: -1, price: b.c, low: b.l, high: b.h, score: net10[k] ?? 0 });
+              break;
+            }
+          }
+        }
+        for (let idxT = 0; idxT < triAchat10.length; idxT++) {
+          const repI = triAchat10[idxT];
+          let maxK = d.length - 1;
+          for (const oppI of triVente10) {
+            if (oppI > repI) { maxK = Math.min(maxK, oppI + tfSpan10); break; }
+          }
+          if (idxT + 1 < triAchat10.length && triAchat10[idxT + 1] > repI) {
+            maxK = Math.min(maxK, triAchat10[idxT + 1] + tfSpan10);
+          }
+          for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
+            if (isKK10Green(k) && isFMC2Green(k)) {
+              const b = d[k];
+              if (!b) break;
+              pureCandidates.push({ i: k, t: b.t, dir: 1, price: b.c, low: b.l, high: b.h, score: net10[k] ?? 0 });
+              break;
+            }
+          }
+        }
+
+        pureCandidates.sort((a, b) => a.i - b.i);
+
+        let currentActivePureDir = 0;
+        let pureTradeNum = 0;
+        for (const cand of pureCandidates) {
+          if (cand.dir === 1 && (!isKK10Green(cand.i) || !isFMC2Green(cand.i))) continue;
+          if (cand.dir === -1 && (!isKK10Red(cand.i) || !isFMC2Red(cand.i))) continue;
+
+          if (cand.dir !== currentActivePureDir) {
+            currentActivePureDir = cand.dir;
+            pureTradeNum++;
+            const isLong = (cand.dir === 1);
+            signals.push({
+              i: cand.i, t: cand.t, dir: cand.dir,
+              type: isLong ? 'ACHAT SANS ALMA' : 'VENTE SANS ALMA',
+              optKey: 'fmc_pure_no_alma',
+              isPureNoAlma: true,
+              tradeNum: pureTradeNum,
+              price: cand.price, low: cand.low, high: cand.high,
+              score: cand.score,
+              reason: isLong ? '▲ Tri 10m + KK 10m + FMC 2m (SANS ALMA)' : '▼ Tri 10m + KK 10m + FMC 2m (SANS ALMA)',
+              label: isLong ? 'ACHAT SANS ALMA' : 'VENTE SANS ALMA',
+              badge: isLong ? ('⚡ #' + pureTradeNum + ' ACHAT SANS ALMA') : ('⚡ #' + pureTradeNum + ' VENTE SANS ALMA'),
+              sub: 'KK 10m · FMC 2m · WR 74.5% - 77.7%',
+              color: isLong ? '#00E676' : '#FF0055',
+              borderCol: '#38BDF8',
+              bgFill: isLong ? 'rgba(6, 30, 36, 0.96)' : 'rgba(38, 8, 30, 0.96)'
+            });
+          }
+        }
+
+        // Sorties des trades SANS ALMA
+        const pureEntries = signals.filter(s => s.isPureNoAlma && !s.isExit).sort((a, b) => a.i - b.i);
+        for (let pIdx = 0; pIdx < pureEntries.length; pIdx++) {
+          const entry = pureEntries[pIdx];
+          const nextEntry = pureEntries[pIdx + 1];
+          const maxK = nextEntry ? nextEntry.i : (d.length - 1);
+          const isLong = (entry.dir === 1);
+
+          // A. Sortie Ronde KK 10m Croisement
+          if (showKkCrossExits) {
+            for (let k = entry.i + 1; k <= maxK; k++) {
+              const isCrossTriggered = isLong ? (net10[k] < sig10[k]) : (net10[k] > sig10[k]);
+              if (isCrossTriggered) {
+                const b = d[k];
+                if (b) {
+                  const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                  const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                  signals.push({
+                    i: k, t: b.t, dir: isLong ? -1 : 1,
+                    type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                    optKey: 'fmc_pure_no_alma_exit_cross',
+                    isExit: true,
+                    isPureNoAlma: true,
+                    isRound: true,
+                    icon: '⨂',
+                    exitType: 'kk_cross',
+                    exitOf: isLong ? 'ACHAT' : 'VENTE',
+                    tradeNum: entry.tradeNum,
+                    entryI: entry.i,
+                    entryPrice: entry.price,
+                    pnl: pnl,
+                    pnlStr: pnlStr,
+                    price: b.c, low: b.l, high: b.h,
+                    label: 'SORTIE KK 10m (Croisement)',
+                    badge: '⨂ SORTIE',
+                    color: '#38BDF8',
+                    borderCol: '#0284C7',
+                    bgFill: 'rgba(7, 43, 62, 0.96)'
+                  });
+                }
+                break;
+              }
+            }
+          }
+
+          // B. Sortie Ronde KK 10m Ligne Zéro
+          if (showKkZeroExits) {
+            for (let k = entry.i + 1; k <= maxK; k++) {
+              const isZeroTriggered = isLong
+                ? (net10[k] != null && net10[k] <= 0)
+                : (net10[k] != null && net10[k] >= 0);
+              if (isZeroTriggered) {
+                const b = d[k];
+                if (b) {
+                  const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                  const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                  signals.push({
+                    i: k, t: b.t, dir: isLong ? -1 : 1,
+                    type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                    optKey: 'fmc_pure_no_alma_exit_zero',
+                    isExit: true,
+                    isPureNoAlma: true,
+                    isRound: true,
+                    icon: 'Ø',
+                    exitType: 'kk_zero',
+                    exitOf: isLong ? 'ACHAT' : 'VENTE',
+                    tradeNum: entry.tradeNum,
+                    entryI: entry.i,
+                    entryPrice: entry.price,
+                    pnl: pnl,
+                    pnlStr: pnlStr,
+                    price: b.c, low: b.l, high: b.h,
+                    label: 'SORTIE KK 10m (Ligne 0)',
+                    badge: 'Ø SORTIE',
+                    color: '#0EA5E9',
+                    borderCol: '#0369A1',
+                    bgFill: 'rgba(12, 40, 56, 0.96)'
+                  });
+                }
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      // 5bis. Génération des pastilles de SORTIE ÉLITE (Rondes KK 10m Croisement & Ligne 0 + ALMA classique)
 
       const eliteExitTf = +(indFmc.eliteExitTf != null ? indFmc.eliteExitTf : 4);
       let asdExit = null;
@@ -32818,7 +32993,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   cleStrat = cleStrat || 'strat_fmc';
   const indFmc = state.indicators[cleStrat];
   if (!indFmc || !indFmc.on) return;
-  if (indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showElite === false && indFmc.showEliteExits === false && indFmc.showEliteKkExitCross === false && indFmc.showEliteKkExitZero === false && indFmc.showExits === false && indFmc.showExitsV2 === false) return;
+  if (indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showElite === false && indFmc.showPureNoAlma === false && indFmc.showEliteExits === false && indFmc.showEliteKkExitCross === false && indFmc.showEliteKkExitZero === false && indFmc.showExits === false && indFmc.showExitsV2 === false) return;
 
   const signals = fmcRes.signals || [];
   window.__lastFMCSignals = signals;
@@ -32841,21 +33016,25 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     try {
       if (sig.i < s || sig.i >= e) continue;
       if (sig.isExit) {
+        if (sig.isPureNoAlma && indFmc.showPureNoAlma === false) continue;
+        if (sig.isPureNoAlma && sig.exitType === 'kk_cross' && indFmc.showEliteKkExitCross === false) continue;
+        if (sig.isPureNoAlma && sig.exitType === 'kk_zero' && indFmc.showEliteKkExitZero === false) continue;
         if (sig.isEliteExit && indFmc.showEliteExits === false) continue;
         if (sig.isEliteKkCross && indFmc.showEliteKkExitCross === false) continue;
         if (sig.isEliteKkZero && indFmc.showEliteKkExitZero === false) continue;
-        if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && !sig.isRunnerExit && indFmc.showExits === false) continue;
-        if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
+        if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && !sig.isPureNoAlma && !sig.isRunnerExit && indFmc.showExits === false) continue;
+        if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && !sig.isPureNoAlma && sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
       }
       if (!sig.isExit) {
+        if (sig.isPureNoAlma && indFmc.showPureNoAlma === false) continue;
         if (sig.isElite && indFmc.showElite === false) continue;
         if (sig.isConfluenceKK && indFmc.showKkConfluence === false) continue;
         if (sig.isConfluenceKK && sig.dir === 1 && indFmc.showKkBuy === false) continue;
         if (sig.isConfluenceKK && sig.dir === -1 && indFmc.showKkSell === false) continue;
-        if (!sig.isConfluenceKK && !sig.isElite && indFmc.showBadges === false) continue;
+        if (!sig.isConfluenceKK && !sig.isElite && !sig.isPureNoAlma && indFmc.showBadges === false) continue;
         if (sig.isRappel && indFmc.showRappels === false) continue;
-        if (!sig.isElite && sig.dir === 1 && isAlmaViolet(sig.i)) continue;
-        if (!sig.isElite && sig.dir === -1 && isAlmaGreen(sig.i)) continue;
+        if (!sig.isElite && !sig.isPureNoAlma && sig.dir === 1 && isAlmaViolet(sig.i)) continue;
+        if (!sig.isElite && !sig.isPureNoAlma && sig.dir === -1 && isAlmaGreen(sig.i)) continue;
       }
 
       const x = xOf(sig.i);
@@ -32929,9 +33108,10 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
 
       const isConf = !!sig.isConfluenceKK;
       const isElite = !!sig.isElite;
+      const isPureNoAlma = !!sig.isPureNoAlma;
       const isRappel = !!sig.isRappel;
       const isExit = !!sig.isExit;
-      const bw = Math.round((isExit ? (sig.isEliteExit ? 156 : 132) : (isElite ? 158 : (isConf ? 136 : 112))) * kT);
+      const bw = Math.round((isExit ? (sig.isEliteExit || isPureNoAlma ? 156 : 132) : (isElite || isPureNoAlma ? 168 : (isConf ? 136 : 112))) * kT);
       const bh = Math.round((isExit ? 27 : 44) * kT);
 
       const color = isRappel ? (indFmc.cRappel || '#94A3B8') : (sig.color || (isLong ? '#00E676' : '#FF0055'));
@@ -32960,7 +33140,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
 
       // Bordure
       ctx.strokeStyle = borderCol;
-      ctx.lineWidth = isElite ? 2.2 : (isRappel ? 1.3 : (isExit ? 1.4 : (isConf ? 2.0 : 1.5)));
+      ctx.lineWidth = (isElite || isPureNoAlma) ? 2.2 : (isRappel ? 1.3 : (isExit ? 1.4 : (isConf ? 2.0 : 1.5)));
       if (isRappel) {
         ctx.setLineDash([3, 2]);
       }
@@ -32983,13 +33163,15 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
         ctx.fillStyle = (sig.pnl != null && sig.pnl >= 0) ? '#34D399' : (sig.pnl != null ? '#F87171' : '#E2E8F0');
         ctx.fillText(pnlPrefix + priceSuffix, bx + bw / 2, by + 21 * kT);
       } else {
-        // Ligne 1 : type (ACHAT / VENTE FMC × KK ou RAPPEL ACHAT / RAPPEL VENTE ou ÉLITE)
+        // Ligne 1 : type (ACHAT / VENTE FMC × KK ou RAPPEL ACHAT / RAPPEL VENTE ou ÉLITE ou SANS ALMA)
         ctx.font = 'bold ' + (10 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillStyle = isElite ? '#FACC15' : (isRappel ? '#CBD5E1' : color);
+        ctx.fillStyle = isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#CBD5E1' : color));
         let titleTxt = '';
         const numStr = (sig.tradeNum != null) ? ('#' + sig.tradeNum + ' ') : '';
-        if (isElite) {
+        if (isPureNoAlma) {
+          titleTxt = isLong ? ('⚡ ' + numStr + 'ACHAT SANS ALMA') : ('⚡ ' + numStr + 'VENTE SANS ALMA');
+        } else if (isElite) {
           titleTxt = isLong ? ('🏆 ' + numStr + 'ACHAT ÉLITE') : ('🏆 ' + numStr + 'VENTE ÉLITE');
         } else if (isRappel) {
           titleTxt = isLong ? '⚡ RAPPEL ACHAT' : '⚡ RAPPEL VENTE';
@@ -33002,19 +33184,19 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
 
         // Ligne 2 : motif / nature
         ctx.font = 'bold ' + (8.5 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
-        ctx.fillStyle = isElite ? '#E2E8F0' : (isRappel ? '#94A3B8' : (isConf ? '#FCD34D' : '#CBD5E1'));
-        const natureLabel = isElite ? 'ALMA 2m · KK 10m · FMC 2m' : (isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || ''));
+        ctx.fillStyle = isPureNoAlma ? '#BAE6FD' : (isElite ? '#E2E8F0' : (isRappel ? '#94A3B8' : (isConf ? '#FCD34D' : '#CBD5E1')));
+        const natureLabel = isPureNoAlma ? 'KK 10m · FMC 2m (SANS ALMA)' : (isElite ? 'ALMA 2m · KK 10m · FMC 2m' : (isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || '')));
         ctx.fillText(natureLabel, bx + bw / 2, by + 25 * kT);
 
         // Ligne 3 : prix
         ctx.font = (8 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
-        ctx.fillStyle = isElite ? '#FACC15' : (isRappel ? '#64748B' : '#94A3B8');
-        ctx.fillText('$' + fmt(sig.price, 1) + (isElite ? ' · WR 66.7%' : ''), bx + bw / 2, by + 37 * kT);
+        ctx.fillStyle = isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#64748B' : '#94A3B8'));
+        ctx.fillText('$' + fmt(sig.price, 1) + (isPureNoAlma ? ' · WR 74.5%' : (isElite ? ' · WR 66.7%' : '')), bx + bw / 2, by + 37 * kT);
       }
 
       // Tige (lien pastille → bougie)
       ctx.strokeStyle = borderCol;
-      ctx.lineWidth = isElite ? 1.8 : 1.0;
+      ctx.lineWidth = (isElite || isPureNoAlma) ? 1.8 : 1.0;
       ctx.setLineDash([2, 2]);
       ctx.beginPath();
       ctx.moveTo(x, anchorY);
@@ -39058,7 +39240,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-1845';
+  window.__LUMEN_BUILD = 'B-0910-2130';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -42011,6 +42193,15 @@ window.balayerMM_MTF = async function(){
 
   <!-- Selectors Toolbar -->
   <div style="padding:8px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:rgba(0,0,0,0.06)">
+    <!-- Strategy selector filter: Élite (Avec ALMA) vs Sans ALMA -->
+    <div style="display:flex;gap:5px">
+      <button id="tab-strat-elite" onclick="setEliteJournalStrat('elite')" style="flex:1;font-size:10.5px;padding:5px 2px;font-weight:800;border-radius:6px;border:1.5px solid #FACC15;background:rgba(250,204,21,.18);color:#FACC15;cursor:pointer">
+        🏆 ÉLITE (AVEC ALMA)
+      </button>
+      <button id="tab-strat-pure" onclick="setEliteJournalStrat('pure')" style="flex:1;font-size:10.5px;padding:5px 2px;font-weight:700;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);cursor:pointer">
+        ⚡ SANS ALMA
+      </button>
+    </div>
     <!-- Exit mode tabs -->
     <div style="display:flex;gap:5px">
       <button id="tab-mode-kk-cross" onclick="setEliteJournalMode('kk_cross')" style="flex:1;font-size:10.5px;padding:5px 2px;font-weight:800;border-radius:6px;border:1.5px solid #38BDF8;background:rgba(56,189,248,.18);color:#38BDF8;cursor:pointer">
@@ -42323,10 +42514,32 @@ window.recordStratAlertInLog = function(msg, symbol) {
 };
 
 // ============================================================
-// GESTION DU VOLET LATÉRAL DES TRADES ÉLITE (SORTIE RONDE & ALMA)
+// GESTION DU VOLET LATÉRAL DES TRADES ÉLITE & SANS ALMA (SORTIES RONDES & ALMA)
 // ============================================================
+window._eliteJournalStrat = 'elite'; // 'elite' | 'pure'
 window._eliteJournalMode = 'kk_cross'; // 'kk_cross' | 'kk_zero' | 'alma'
 window._eliteJournalLimit = 15;        // 10 | 15 | 0 (all)
+
+window.setEliteJournalStrat = function(strat) {
+  window._eliteJournalStrat = strat;
+  const bElite = document.getElementById('tab-strat-elite');
+  const bPure = document.getElementById('tab-strat-pure');
+  if (bElite) {
+    const isAct = (strat === 'elite');
+    bElite.style.border = isAct ? '1.5px solid #FACC15' : '1px solid var(--line)';
+    bElite.style.background = isAct ? 'rgba(250,204,21,.18)' : 'var(--panel-2)';
+    bElite.style.color = isAct ? '#FACC15' : 'var(--muted)';
+    bElite.style.fontWeight = isAct ? '800' : '700';
+  }
+  if (bPure) {
+    const isAct = (strat === 'pure');
+    bPure.style.border = isAct ? '1.5px solid #38BDF8' : '1px solid var(--line)';
+    bPure.style.background = isAct ? 'rgba(56,189,248,.18)' : 'var(--panel-2)';
+    bPure.style.color = isAct ? '#38BDF8' : 'var(--muted)';
+    bPure.style.fontWeight = isAct ? '800' : '700';
+  }
+  renderEliteJournal();
+};
 
 window.toggleEliteJournalPanel = function(forceState) {
   const p = document.getElementById('elite-journal-panel');
@@ -42394,6 +42607,7 @@ window.renderEliteJournal = function() {
   const tbody = document.getElementById('elite-journal-tbody');
   if (!tbody) return;
 
+  const strat = window._eliteJournalStrat || 'elite';
   const mode = window._eliteJournalMode || 'kk_cross';
   const limit = (window._eliteJournalLimit !== undefined) ? window._eliteJournalLimit : 15;
 
@@ -42407,14 +42621,25 @@ window.renderEliteJournal = function() {
   }
   sigs = sigs || [];
 
-  const entries = sigs.filter(s => s.isElite && !s.isExit).sort((a, b) => a.i - b.i);
+  const isPure = (strat === 'pure');
+  const entries = sigs.filter(s => (isPure ? s.isPureNoAlma : s.isElite) && !s.isExit).sort((a, b) => a.i - b.i);
   let exits = [];
-  if (mode === 'kk_cross') {
-    exits = sigs.filter(s => s.isElite && s.isExit && s.isEliteKkCross);
-  } else if (mode === 'kk_zero') {
-    exits = sigs.filter(s => s.isElite && s.isExit && s.isEliteKkZero);
+  if (isPure) {
+    if (mode === 'kk_cross') {
+      exits = sigs.filter(s => s.isPureNoAlma && s.isExit && s.exitType === 'kk_cross');
+    } else if (mode === 'kk_zero') {
+      exits = sigs.filter(s => s.isPureNoAlma && s.isExit && s.exitType === 'kk_zero');
+    } else {
+      exits = sigs.filter(s => s.isPureNoAlma && s.isExit && s.exitType === 'kk_cross');
+    }
   } else {
-    exits = sigs.filter(s => s.isElite && s.isExit && s.isEliteExit);
+    if (mode === 'kk_cross') {
+      exits = sigs.filter(s => s.isElite && s.isExit && s.isEliteKkCross);
+    } else if (mode === 'kk_zero') {
+      exits = sigs.filter(s => s.isElite && s.isExit && s.isEliteKkZero);
+    } else {
+      exits = sigs.filter(s => s.isElite && s.isExit && s.isEliteExit);
+    }
   }
 
   const d = window.state ? window.state.data : [];
@@ -42487,7 +42712,7 @@ window.renderEliteJournal = function() {
     html += `
       <tr onclick="focusChartOnCandle(${t.entryI})" style="cursor:pointer;border-bottom:1px solid var(--line);transition:background .15s" onmouseenter="this.style.background='rgba(56,189,248,0.1)'" onmouseleave="this.style.background='transparent'">
         <td style="padding:7px 6px;white-space:nowrap">
-          <span style="font-weight:800;color:#FACC15">#${t.num}</span>
+          <span style="font-weight:800;color:${isPure ? '#38BDF8' : '#FACC15'}">#${t.num}</span>
           <span style="font-size:9px;color:var(--muted);margin-left:3px">${t.time}</span>
         </td>
         <td style="padding:7px 4px;white-space:nowrap">
