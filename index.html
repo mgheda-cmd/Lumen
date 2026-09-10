@@ -517,11 +517,9 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0250</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-0300</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
-  <button id="fmc-strict-top-btn" class="btn" onclick="window.toggleFmcStrict && window.toggleFmcStrict()" title="Activer / Désactiver la condition stricte : repère vert/rouge immédiatement avant la pastille (≤ 2 bougies) et annulation par repères opposés pour comparer la différence" style="font-size:11px;padding:3px 8px;background:rgba(100,116,139,.2);border:1.5px solid #64748B;color:#94A3B8;font-weight:800;display:inline-flex;align-items:center;gap:4px">🛡️ RÈGLE STRICTE : OFF</button>
-  <button id="fmc-fast-top-btn" class="btn" onclick="window.toggleFmcFast && window.toggleFmcFast()" title="Activer / Désactiver : Achat dès que FMC vert OU KK vert, Vente dès que KK rouge" style="font-size:11px;padding:3px 8px;background:rgba(100,116,139,.2);border:1.5px solid #64748B;color:#94A3B8;font-weight:800;display:inline-flex;align-items:center;gap:4px">⚡ DÉCLENCHEUR : OFF</button>
 
   <button class="btn" id="btn-balayage" onclick="window.lancerBalayageStrat && window.lancerBalayageStrat(true)"
     title="Lancer le balayage des combinaisons MM et mettre à jour la stratégie du moment"
@@ -15004,6 +15002,37 @@ const PASTILLES_CATALOG = [
     color: '#00E5FF',
     items: [
       {
+        id: 'fmc_strict_caducite',
+        icon: '🛡️',
+        label: 'Règle Stricte (ON / OFF)',
+        desc: 'Condition Stricte : repère vert/rouge immédiatement avant la pastille (≤ 2 bougies) et annulation par repère opposé',
+        accent: '#22D3EE',
+        def: false,
+        get: () => !!state.indicators?.strat_fmc?.strictCaducite,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.strictCaducite = v;
+          if (typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
+          if (typeof render === 'function') render();
+        }
+      },
+      {
+        id: 'fmc_fast_trigger',
+        icon: '⚡',
+        label: 'Déclencheur Rapide Achat / Vente',
+        desc: 'À l\'Achat : déclenche dès que l\'oscillateur FMC OU la ligne KK devient verte. À la Vente : déclenche dès que la ligne KK passe au rouge.',
+        accent: '#FACC15',
+        def: false,
+        get: () => !!state.indicators?.strat_fmc?.fastTrigger,
+        set: (v) => {
+          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
+          state.indicators.strat_fmc.fastTrigger = v;
+          if (typeof window.updateFmcFastUI === 'function') window.updateFmcFastUI();
+          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
+          if (typeof render === 'function') render();
+        }
+      },
+      {
         id: 'fmc_kk_buy',
         icon: '🟢',
         label: 'Achat FMC × KK',
@@ -15052,21 +15081,6 @@ const PASTILLES_CATALOG = [
         }
       },
       {
-        id: 'fmc_strict_caducite',
-        icon: '🛡️',
-        label: 'Condition Stricte (Annulation par repère opposé)',
-        desc: 'Exige un repère vert/rouge juste avant la pastille (≤ 2 bougies). Tout repère opposé survenu annule immédiatement la pastille.',
-        accent: '#22D3EE',
-        def: false,
-        get: () => !!state.indicators?.strat_fmc?.strictCaducite,
-        set: (v) => {
-          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
-          state.indicators.strat_fmc.strictCaducite = v;
-          if (typeof window.updateFmcStrictUI === 'function') window.updateFmcStrictUI();
-          if (typeof render === 'function') render();
-        }
-      },
-      {
         id: 'fmc_exits',
         icon: '🏁',
         label: 'Pastilles de Sortie (Repère Opposé)',
@@ -15078,22 +15092,6 @@ const PASTILLES_CATALOG = [
           if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
           state.indicators.strat_fmc.showExits = v;
           if (typeof window.updateFmcExitsUI === 'function') window.updateFmcExitsUI();
-          if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
-          if (typeof render === 'function') render();
-        }
-      },
-      {
-        id: 'fmc_fast_trigger',
-        icon: '⚡',
-        label: 'Déclencheur Achat (FMC vert OU KK vert) & Vente (KK rouge)',
-        desc: 'À l\'Achat : déclenche dès que l\'oscillateur FMC OU la ligne KK devient verte. À la Vente : déclenche dès que la ligne KK passe au rouge.',
-        accent: '#FACC15',
-        def: false,
-        get: () => !!state.indicators?.strat_fmc?.fastTrigger,
-        set: (v) => {
-          if (!state.indicators.strat_fmc) state.indicators.strat_fmc = {};
-          state.indicators.strat_fmc.fastTrigger = v;
-          if (typeof window.updateFmcFastUI === 'function') window.updateFmcFastUI();
           if (v && state.indicators.strat_fmc.on === false) state.indicators.strat_fmc.on = true;
           if (typeof render === 'function') render();
         }
@@ -37964,6 +37962,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       sideBtn.style.borderColor = isStrict ? '#22D3EE' : '#64748B';
       sideBtn.style.color = isStrict ? '#22D3EE' : '#94A3B8';
     }
+    if (typeof updatePastillesHubCheckboxesOnly === 'function') updatePastillesHubCheckboxesOnly();
   };
 
   window.toggleFmcStrict = function(){
@@ -37989,6 +37988,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       sideBtn.style.borderColor = showExits ? '#FF007A' : '#64748B';
       sideBtn.style.color = showExits ? '#FF55A3' : '#94A3B8';
     }
+    if (typeof updatePastillesHubCheckboxesOnly === 'function') updatePastillesHubCheckboxesOnly();
   };
 
   window.toggleFmcExits = function(){
@@ -38021,6 +38021,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
       sideBtn.style.borderColor = isFast ? '#FACC15' : '#64748B';
       sideBtn.style.color = isFast ? '#FACC15' : '#94A3B8';
     }
+    if (typeof updatePastillesHubCheckboxesOnly === 'function') updatePastillesHubCheckboxesOnly();
   };
 
   window.toggleFmcFast = function(){
@@ -38058,7 +38059,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-0250';
+  window.__LUMEN_BUILD = 'B-0910-0300';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
