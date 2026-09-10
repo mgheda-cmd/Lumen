@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2350</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2355</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -32370,8 +32370,15 @@ function computeFMCSignals(cleFmc, cleStrat) {
     }
   }
 
-  /* 2b. Pastilles ÉLITE FMC × KK (ALMA 2m · KK 10m · FMC 2m) — Validée 66.7% WR / PF 15.44 */
-  if (indFmc.showElite !== false || indFmc.showEliteExits !== false) {
+  /* 2b. Pastilles ÉLITE & SANS ALMA FMC × KK (ALMA 2m · KK 10m · FMC 2m) */
+  const needFmcKk = (
+    indFmc.showElite !== false ||
+    indFmc.showPureNoAlma !== false ||
+    indFmc.showEliteExits !== false ||
+    indFmc.showEliteKkExitCross !== false ||
+    indFmc.showEliteKkExitZero !== false
+  );
+  if (needFmcKk) {
     try {
       // 1. ALMA SD 2 minutes
       let asd2m = null;
@@ -32426,82 +32433,233 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const isFMC2Green = (idx) => (core2[idx] != null && bal2[idx] != null) ? core2[idx] >= bal2[idx] : true;
       const isFMC2Red = (idx) => (core2[idx] != null && bal2[idx] != null) ? core2[idx] < bal2[idx] : true;
 
-      // 4. Confluence Élite
-      const tfSpan10 = Math.max(1, Math.round(10 / (state.tf || 1))) - 1;
-      const eliteCandidates = [];
-      for (let idxT = 0; idxT < triVente10.length; idxT++) {
-        const repI = triVente10[idxT];
-        let maxK = d.length - 1;
-        for (const oppI of triAchat10) {
-          if (oppI > repI) { maxK = Math.min(maxK, oppI + tfSpan10); break; }
-        }
-        if (idxT + 1 < triVente10.length && triVente10[idxT + 1] > repI) {
-          maxK = Math.min(maxK, triVente10[idxT + 1] + tfSpan10);
-        }
-        for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
-          if (isKK10Red(k) && isFMC2Red(k)) {
-            if (isA2Green(k)) continue;
-            const b = d[k];
-            if (!b) break;
-            eliteCandidates.push({ i: k, t: b.t, dir: -1, price: b.c, low: b.l, high: b.h, score: net10[k] ?? 0 });
-            break;
-          }
-        }
+      // 4. Sortie ALMA (calculé pour Élite ou Sans ALMA si demandé)
+      const eliteExitTf = +(indFmc.eliteExitTf != null ? indFmc.eliteExitTf : 4);
+      let asdExit = null;
+      if (eliteExitTf === 2) {
+        asdExit = asd2m;
+      } else {
+        const barsExit = (state.tf === eliteExitTf) ? d : ((typeof getMTFBars === 'function') ? getMTFBars(eliteExitTf) : null) || d;
+        const rExit = calc.almaSD(barsExit, indAlma.fac ?? 1.8, indAlma.sd ?? 33, indAlma.alen ?? 35, indAlma.asig ?? 4, indAlma.aoff ?? 0.85);
+        asdExit = (barsExit === d) ? rExit : ((typeof mapHTF === 'function') ? { dir: mapHTF(barsExit, rExit.dir || [], d) } : rExit);
       }
-      for (let idxT = 0; idxT < triAchat10.length; idxT++) {
-        const repI = triAchat10[idxT];
-        let maxK = d.length - 1;
-        for (const oppI of triVente10) {
-          if (oppI > repI) { maxK = Math.min(maxK, oppI + tfSpan10); break; }
-        }
-        if (idxT + 1 < triAchat10.length && triAchat10[idxT + 1] > repI) {
-          maxK = Math.min(maxK, triAchat10[idxT + 1] + tfSpan10);
-        }
-        for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
-          if (isKK10Green(k) && isFMC2Green(k)) {
-            if (isA2Violet(k)) continue;
-            const b = d[k];
-            if (!b) break;
-            eliteCandidates.push({ i: k, t: b.t, dir: 1, price: b.c, low: b.l, high: b.h, score: net10[k] ?? 0 });
-            break;
-          }
-        }
-      }
+      const isExitGreen = (idx) => (asdExit && Array.isArray(asdExit.dir) && asdExit.dir[idx] === 1);
+      const isExitViolet = (idx) => (asdExit && Array.isArray(asdExit.dir) && asdExit.dir[idx] === -1);
 
-      eliteCandidates.sort((a, b) => a.i - b.i);
-
-      let currentActiveEliteDir = 0;
-      for (const cand of eliteCandidates) {
-        if (cand.dir === 1 && (!isKK10Green(cand.i) || !isFMC2Green(cand.i) || isA2Violet(cand.i))) continue;
-        if (cand.dir === -1 && (!isKK10Red(cand.i) || !isFMC2Red(cand.i) || isA2Green(cand.i))) continue;
-
-        if (cand.dir !== currentActiveEliteDir) {
-          currentActiveEliteDir = cand.dir;
-          const isLong = (cand.dir === 1);
-          signals.push({
-            i: cand.i, t: cand.t, dir: cand.dir,
-            type: isLong ? 'ACHAT ÉLITE' : 'VENTE ÉLITE',
-            optKey: 'fmc_elite',
-            isElite: true,
-            price: cand.price, low: cand.low, high: cand.high,
-            score: cand.score,
-            reason: isLong ? '▲ Tri 10m + KK 10m + FMC 2m + ALMA 2m' : '▼ Tri 10m + KK 10m + FMC 2m + ALMA 2m',
-            label: isLong ? 'ACHAT ÉLITE' : 'VENTE ÉLITE',
-            badge: isLong ? '🏆 ACHAT ÉLITE' : '🏆 VENTE ÉLITE',
-            sub: 'ALMA 2m · KK 10m · FMC 2m · WR 66.7%',
-            color: isLong ? '#00E676' : '#FF0055',
-            borderCol: '#FACC15',
-            bgFill: isLong ? 'rgba(6, 36, 26, 0.96)' : 'rgba(44, 8, 20, 0.96)'
-          });
-        }
-      }
-
-      // 5. Paramètres d'affichage des SORTIES
       const showAlmaExits = (indFmc.showEliteExits !== false);
       const showKkCrossExits = (indFmc.showEliteKkExitCross !== false);
       const showKkZeroExits = (indFmc.showEliteKkExitZero !== false);
 
-      // 4bis. Génération des pastilles SANS ALMA (FMC 2m + KK 10m PUR — 94 trades)
+      const tfSpan10 = Math.max(1, Math.round(10 / (state.tf || 1))) - 1;
+
+      // 5. Génération des pastilles ÉLITE (si cochées)
+      if (indFmc.showElite !== false) {
+        const eliteCandidates = [];
+        for (let idxT = 0; idxT < triVente10.length; idxT++) {
+          const repI = triVente10[idxT];
+          let maxK = d.length - 1;
+          for (const oppI of triAchat10) {
+            if (oppI > repI) { maxK = Math.min(maxK, oppI + tfSpan10); break; }
+          }
+          if (idxT + 1 < triVente10.length && triVente10[idxT + 1] > repI) {
+            maxK = Math.min(maxK, triVente10[idxT + 1] + tfSpan10);
+          }
+          for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
+            if (isKK10Red(k) && isFMC2Red(k)) {
+              if (isA2Green(k)) continue;
+              const b = d[k];
+              if (!b) break;
+              eliteCandidates.push({ i: k, t: b.t, dir: -1, price: b.c, low: b.l, high: b.h, score: net10[k] ?? 0 });
+              break;
+            }
+          }
+        }
+        for (let idxT = 0; idxT < triAchat10.length; idxT++) {
+          const repI = triAchat10[idxT];
+          let maxK = d.length - 1;
+          for (const oppI of triVente10) {
+            if (oppI > repI) { maxK = Math.min(maxK, oppI + tfSpan10); break; }
+          }
+          if (idxT + 1 < triAchat10.length && triAchat10[idxT + 1] > repI) {
+            maxK = Math.min(maxK, triAchat10[idxT + 1] + tfSpan10);
+          }
+          for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
+            if (isKK10Green(k) && isFMC2Green(k)) {
+              if (isA2Violet(k)) continue;
+              const b = d[k];
+              if (!b) break;
+              eliteCandidates.push({ i: k, t: b.t, dir: 1, price: b.c, low: b.l, high: b.h, score: net10[k] ?? 0 });
+              break;
+            }
+          }
+        }
+
+        eliteCandidates.sort((a, b) => a.i - b.i);
+
+        let currentActiveEliteDir = 0;
+        for (const cand of eliteCandidates) {
+          if (cand.dir === 1 && (!isKK10Green(cand.i) || !isFMC2Green(cand.i) || isA2Violet(cand.i))) continue;
+          if (cand.dir === -1 && (!isKK10Red(cand.i) || !isFMC2Red(cand.i) || isA2Green(cand.i))) continue;
+
+          if (cand.dir !== currentActiveEliteDir) {
+            currentActiveEliteDir = cand.dir;
+            const isLong = (cand.dir === 1);
+            signals.push({
+              i: cand.i, t: cand.t, dir: cand.dir,
+              type: isLong ? 'ACHAT ÉLITE' : 'VENTE ÉLITE',
+              optKey: 'fmc_elite',
+              isElite: true,
+              price: cand.price, low: cand.low, high: cand.high,
+              score: cand.score,
+              reason: isLong ? '▲ Tri 10m + KK 10m + FMC 2m + ALMA 2m' : '▼ Tri 10m + KK 10m + FMC 2m + ALMA 2m',
+              label: isLong ? 'ACHAT ÉLITE' : 'VENTE ÉLITE',
+              badge: isLong ? '🏆 ACHAT ÉLITE' : '🏆 VENTE ÉLITE',
+              sub: 'ALMA 2m · KK 10m · FMC 2m · WR 66.7%',
+              color: isLong ? '#00E676' : '#FF0055',
+              borderCol: '#FACC15',
+              bgFill: isLong ? 'rgba(6, 36, 26, 0.96)' : 'rgba(44, 8, 20, 0.96)'
+            });
+          }
+        }
+
+        // Sorties des trades ÉLITE
+        const eliteEntries = signals.filter(s => s.isElite && !s.isExit).sort((a, b) => a.i - b.i);
+        for (let eIdx = 0; eIdx < eliteEntries.length; eIdx++) {
+          const entry = eliteEntries[eIdx];
+          const tradeNum = eIdx + 1;
+          entry.tradeNum = tradeNum;
+          entry.num = tradeNum;
+          const nextEntry = eliteEntries[eIdx + 1];
+          const maxK = nextEntry ? nextEntry.i : (d.length - 1);
+          const isLong = (entry.dir === 1);
+
+          // A. Sortie Ronde KK 10m Croisement
+          if (showKkCrossExits) {
+            for (let k = entry.i + 1; k <= maxK; k++) {
+              const isCrossTriggered = isLong
+                ? (net10[k] != null && sig10[k] != null && net10[k] < sig10[k])
+                : (net10[k] != null && sig10[k] != null && net10[k] > sig10[k]);
+              if (isCrossTriggered) {
+                const b = d[k];
+                if (b) {
+                  const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                  const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                  signals.push({
+                    i: k, t: b.t, dir: isLong ? -1 : 1,
+                    type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                    optKey: 'fmc_elite_exit_kk_cross',
+                    isExit: true,
+                    isElite: true,
+                    isEliteKkCross: true,
+                    isRound: true,
+                    icon: '⨂',
+                    exitType: 'kk_cross',
+                    exitOf: isLong ? 'ACHAT' : 'VENTE',
+                    tradeNum: tradeNum,
+                    entryI: entry.i,
+                    entryPrice: entry.price,
+                    pnl: pnl,
+                    pnlStr: pnlStr,
+                    price: b.c, low: b.l, high: b.h,
+                    label: 'SORTIE KK 10m (Croisement)',
+                    badge: '⨂ SORTIE',
+                    sub: 'Croisement KK 10m · ' + pnlStr,
+                    color: '#38BDF8',
+                    borderCol: '#0284C7',
+                    bgFill: 'rgba(7, 43, 62, 0.96)'
+                  });
+                }
+                break;
+              }
+            }
+          }
+
+          // B. Sortie Ronde KK 10m Ligne Zéro
+          if (showKkZeroExits) {
+            let hasBeenInTradeZone = (isLong ? (net10[entry.i] > 0) : (net10[entry.i] < 0));
+            for (let k = entry.i + 1; k <= maxK; k++) {
+              if (isLong && net10[k] > 0) hasBeenInTradeZone = true;
+              if (!isLong && net10[k] < 0) hasBeenInTradeZone = true;
+              const isZeroTriggered = hasBeenInTradeZone && (isLong
+                ? (net10[k] != null && net10[k] <= 0)
+                : (net10[k] != null && net10[k] >= 0));
+              if (isZeroTriggered) {
+                const b = d[k];
+                if (b) {
+                  const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                  const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                  signals.push({
+                    i: k, t: b.t, dir: isLong ? -1 : 1,
+                    type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                    optKey: 'fmc_elite_exit_kk_zero',
+                    isExit: true,
+                    isElite: true,
+                    isEliteKkZero: true,
+                    isRound: true,
+                    icon: 'Ø',
+                    exitType: 'kk_zero',
+                    exitOf: isLong ? 'ACHAT' : 'VENTE',
+                    tradeNum: tradeNum,
+                    entryI: entry.i,
+                    entryPrice: entry.price,
+                    pnl: pnl,
+                    pnlStr: pnlStr,
+                    price: b.c, low: b.l, high: b.h,
+                    label: 'SORTIE KK 10m (Ligne 0)',
+                    badge: 'Ø SORTIE',
+                    sub: 'Ligne Zéro KK 10m · ' + pnlStr,
+                    color: '#F59E0B',
+                    borderCol: '#D97706',
+                    bgFill: 'rgba(55, 30, 3, 0.96)'
+                  });
+                }
+                break;
+              }
+            }
+          }
+
+          // C. Sortie Classique ALMA Élite
+          if (showAlmaExits) {
+            let wasAligned = (isLong ? isExitGreen(entry.i) : isExitViolet(entry.i));
+            for (let k = entry.i + 1; k < maxK; k++) {
+              if (isLong && isExitGreen(k)) wasAligned = true;
+              if (!isLong && isExitViolet(k)) wasAligned = true;
+              const isExitTriggered = wasAligned && (isLong ? isExitViolet(k) : isExitGreen(k));
+              if (isExitTriggered) {
+                const b = d[k];
+                if (b) {
+                  const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+                  const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+                  signals.push({
+                    i: k, t: b.t, dir: isLong ? -1 : 1,
+                    type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                    optKey: 'fmc_elite_exits',
+                    isExit: true,
+                    isElite: true,
+                    isEliteExit: true,
+                    exitOf: isLong ? 'ACHAT' : 'VENTE',
+                    tradeNum: tradeNum,
+                    entryI: entry.i,
+                    entryPrice: entry.price,
+                    pnl: pnl,
+                    pnlStr: pnlStr,
+                    price: b.c, low: b.l, high: b.h,
+                    label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
+                    badge: '🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE',
+                    sub: 'Retournement ALMA ' + eliteExitTf + 'm · ' + pnlStr,
+                    color: '#FACC15',
+                    borderCol: '#EAB308',
+                    bgFill: 'rgba(38, 28, 6, 0.96)'
+                  });
+                }
+                break;
+              }
+            }
+          }
+        }
+      } // Fin Élite
+
+      // 6. Génération des pastilles SANS ALMA (FMC 2m + KK 10m PUR — 94 trades)
       const showPureNoAlma = (indFmc.showPureNoAlma !== false);
       if (showPureNoAlma) {
         const pureCandidates = [];
@@ -32565,10 +32723,10 @@ function computeFMCSignals(cleFmc, cleStrat) {
               reason: isLong ? '▲ Tri 10m + KK 10m + FMC 2m (SANS ALMA)' : '▼ Tri 10m + KK 10m + FMC 2m (SANS ALMA)',
               label: isLong ? 'ACHAT SANS ALMA' : 'VENTE SANS ALMA',
               badge: isLong ? ('⚡ #' + pureTradeNum + ' ACHAT SANS ALMA') : ('⚡ #' + pureTradeNum + ' VENTE SANS ALMA'),
-              sub: 'KK 10m · FMC 2m · WR 74.5% - 77.7%',
-              color: isLong ? '#00E676' : '#FF0055',
-              borderCol: '#38BDF8',
-              bgFill: isLong ? 'rgba(6, 30, 36, 0.96)' : 'rgba(38, 8, 30, 0.96)'
+              sub: 'KK 10m · FMC 2m (SANS ALMA)',
+              color: isLong ? '#38BDF8' : '#F43F5E',
+              borderCol: '#0284C7',
+              bgFill: isLong ? 'rgba(7, 43, 62, 0.96)' : 'rgba(56, 12, 24, 0.96)'
             });
           }
         }
@@ -32659,10 +32817,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
               }
             }
           }
-        }
-      }
 
-      
           // C. Sortie ALMA 4m pour Pure No Alma
           if (showAlmaExits) {
             for (let k = entry.i + 1; k <= maxK; k++) {
@@ -32699,196 +32854,13 @@ function computeFMCSignals(cleFmc, cleStrat) {
               }
             }
           }
-
-      // 5bis. Génération des pastilles de SORTIE ÉLITE (Rondes KK 10m Croisement & Ligne 0 + ALMA classique)
-
-      const eliteExitTf = +(indFmc.eliteExitTf != null ? indFmc.eliteExitTf : 4);
-      let asdExit = null;
-      if (eliteExitTf === 2) {
-        asdExit = asd2m;
-      } else {
-        const barsExit = (state.tf === eliteExitTf) ? d : ((typeof getMTFBars === 'function') ? getMTFBars(eliteExitTf) : null) || d;
-        const rExit = calc.almaSD(barsExit, indAlma.fac ?? 1.8, indAlma.sd ?? 33, indAlma.alen ?? 35, indAlma.asig ?? 4, indAlma.aoff ?? 0.85);
-        asdExit = (barsExit === d) ? rExit : ((typeof mapHTF === 'function') ? { dir: mapHTF(barsExit, rExit.dir || [], d) } : rExit);
-      }
-      const isExitGreen = (idx) => (asdExit && Array.isArray(asdExit.dir) && asdExit.dir[idx] === 1);
-      const isExitViolet = (idx) => (asdExit && Array.isArray(asdExit.dir) && asdExit.dir[idx] === -1);
-
-      const eliteEntries = signals.filter(s => s.isElite && !s.isExit).sort((a, b) => a.i - b.i);
-      for (let eIdx = 0; eIdx < eliteEntries.length; eIdx++) {
-        const entry = eliteEntries[eIdx];
-        const tradeNum = eIdx + 1;
-        entry.tradeNum = tradeNum;
-        entry.num = tradeNum;
-        const nextEntry = eliteEntries[eIdx + 1];
-        const maxK = nextEntry ? nextEntry.i : (d.length - 1);
-        const isLong = (entry.dir === 1);
-
-        let tradeHasAnyExit = false;
-
-        // A. Sortie Ronde KK 10m (Croisement Net vs Signal opposé — PF 41.71)
-        if (showKkCrossExits) {
-          for (let k = entry.i + 1; k <= maxK; k++) {
-            const isCrossTriggered = isLong
-              ? (net10[k] != null && sig10[k] != null && net10[k] < sig10[k])
-              : (net10[k] != null && sig10[k] != null && net10[k] > sig10[k]);
-            if (isCrossTriggered) {
-              const b = d[k];
-              if (b) {
-                const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
-                const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-                signals.push({
-                  i: k, t: b.t, dir: isLong ? -1 : 1,
-                  type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
-                  optKey: 'fmc_elite_exit_kk_cross',
-                  isExit: true,
-                  isElite: true,
-                  isEliteKkCross: true,
-                  isRound: true,
-                  icon: '⨂',
-                  exitType: 'kk_cross',
-                  exitOf: isLong ? 'ACHAT' : 'VENTE',
-                  tradeNum: tradeNum,
-                  entryI: entry.i,
-                  entryPrice: entry.price,
-                  pnl: pnl,
-                  pnlStr: pnlStr,
-                  price: b.c, low: b.l, high: b.h,
-                  label: 'SORTIE KK 10m (Croisement)',
-                  badge: '⨂ SORTIE',
-                  sub: 'Croisement KK 10m · ' + pnlStr,
-                  color: '#38BDF8',
-                  borderCol: '#0284C7',
-                  bgFill: 'rgba(7, 43, 62, 0.96)'
-                });
-                tradeHasAnyExit = true;
-              }
-              break;
-            }
-          }
         }
+      } // Fin Sans ALMA
 
-        // B. Sortie Ronde KK 10m (Franchissement Ligne Zéro — Sécurité Max)
-        if (showKkZeroExits) {
-          let hasBeenInTradeZone = (isLong ? (net10[entry.i] > 0) : (net10[entry.i] < 0));
-          for (let k = entry.i + 1; k <= maxK; k++) {
-            if (isLong && net10[k] > 0) hasBeenInTradeZone = true;
-            if (!isLong && net10[k] < 0) hasBeenInTradeZone = true;
-            const isZeroTriggered = hasBeenInTradeZone && (isLong
-              ? (net10[k] != null && net10[k] <= 0)
-              : (net10[k] != null && net10[k] >= 0));
-            if (isZeroTriggered) {
-              const b = d[k];
-              if (b) {
-                const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
-                const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-                signals.push({
-                  i: k, t: b.t, dir: isLong ? -1 : 1,
-                  type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
-                  optKey: 'fmc_elite_exit_kk_zero',
-                  isExit: true,
-                  isElite: true,
-                  isEliteKkZero: true,
-                  isRound: true,
-                  icon: 'Ø',
-                  exitType: 'kk_zero',
-                  exitOf: isLong ? 'ACHAT' : 'VENTE',
-                  tradeNum: tradeNum,
-                  entryI: entry.i,
-                  entryPrice: entry.price,
-                  pnl: pnl,
-                  pnlStr: pnlStr,
-                  price: b.c, low: b.l, high: b.h,
-                  label: 'SORTIE KK 10m (Ligne 0)',
-                  badge: 'Ø SORTIE',
-                  sub: 'Ligne Zéro KK 10m · ' + pnlStr,
-                  color: '#F59E0B',
-                  borderCol: '#D97706',
-                  bgFill: 'rgba(55, 30, 3, 0.96)'
-                });
-                tradeHasAnyExit = true;
-              }
-              break;
-            }
-          }
-        }
-
-        // C. Sortie Rectangulaire Classique ALMA Élite
-        if (showAlmaExits) {
-          let almaExitFound = false;
-          let wasAligned = (isLong ? isExitGreen(entry.i) : isExitViolet(entry.i));
-          for (let k = entry.i + 1; k < maxK; k++) {
-            if (isLong && isExitGreen(k)) wasAligned = true;
-            if (!isLong && isExitViolet(k)) wasAligned = true;
-            const isExitTriggered = wasAligned && (isLong ? isExitViolet(k) : isExitGreen(k));
-            if (isExitTriggered) {
-              const b = d[k];
-              if (b) {
-                const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
-                const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-                signals.push({
-                  i: k, t: b.t, dir: isLong ? -1 : 1,
-                  type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
-                  optKey: 'fmc_elite_exits',
-                  isExit: true,
-                  isElite: true,
-                  isEliteExit: true,
-                  exitOf: isLong ? 'ACHAT' : 'VENTE',
-                  tradeNum: tradeNum,
-                  entryI: entry.i,
-                  entryPrice: entry.price,
-                  pnl: pnl,
-                  pnlStr: pnlStr,
-                  price: b.c, low: b.l, high: b.h,
-                  label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
-                  badge: '🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE',
-                  sub: 'Retournement ALMA ' + eliteExitTf + 'm · ' + pnlStr,
-                  color: '#FACC15',
-                  borderCol: '#EAB308',
-                  bgFill: 'rgba(38, 28, 6, 0.96)'
-                });
-                almaExitFound = true;
-                tradeHasAnyExit = true;
-              }
-              break;
-            }
-          }
-
-          // Si aucun retournement ALMA avant la fin du trade (maxK), clôture propre à l'inversion
-          if (!almaExitFound && nextEntry) {
-            const b = d[nextEntry.i];
-            if (b) {
-              const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
-              const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
-              signals.push({
-                i: nextEntry.i, t: b.t, dir: isLong ? -1 : 1,
-                type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
-                optKey: 'fmc_elite_exits',
-                isExit: true,
-                isElite: true,
-                isEliteExit: true,
-                exitOf: isLong ? 'ACHAT' : 'VENTE',
-                tradeNum: tradeNum,
-                entryI: entry.i,
-                entryPrice: entry.price,
-                pnl: pnl,
-                pnlStr: pnlStr,
-                price: b.c, low: b.l, high: b.h,
-                label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
-                badge: '🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE',
-                sub: 'Clôture Inversion ALMA ' + eliteExitTf + 'm · ' + pnlStr,
-                color: '#FACC15',
-                borderCol: '#EAB308',
-                bgFill: 'rgba(38, 28, 6, 0.96)'
-              });
-              tradeHasAnyExit = true;
-            }
-          }
-        }
-      }
     } catch(errElite) {
-      console.error('Erreur calcul pastilles Élite:', errElite);
+      console.error('Erreur calcul pastilles Élite / Pure:', errElite);
     }
+  }
   }
 
   if (!allDivs.length) {
@@ -33124,9 +33096,10 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
         if (sig.isPureNoAlma && indFmc.showPureNoAlma === false) continue;
         if (sig.isPureNoAlma && sig.exitType === 'kk_cross' && indFmc.showEliteKkExitCross === false) continue;
         if (sig.isPureNoAlma && sig.exitType === 'kk_zero' && indFmc.showEliteKkExitZero === false) continue;
-        if (sig.isEliteExit && indFmc.showEliteExits === false) continue;
-        if (sig.isEliteKkCross && indFmc.showEliteKkExitCross === false) continue;
-        if (sig.isEliteKkZero && indFmc.showEliteKkExitZero === false) continue;
+        if (sig.isPureNoAlma && sig.exitType === 'alma' && indFmc.showEliteExits === false) continue;
+        if (sig.isEliteExit && (indFmc.showEliteExits === false || indFmc.showElite === false)) continue;
+        if (sig.isEliteKkCross && (indFmc.showEliteKkExitCross === false || indFmc.showElite === false)) continue;
+        if (sig.isEliteKkZero && (indFmc.showEliteKkExitZero === false || indFmc.showElite === false)) continue;
         if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && !sig.isPureNoAlma && !sig.isRunnerExit && indFmc.showExits === false) continue;
         if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && !sig.isPureNoAlma && sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
       }
@@ -39345,7 +39318,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2350';
+  window.__LUMEN_BUILD = 'B-0910-2355';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
