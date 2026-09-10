@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1325</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1345</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -32386,6 +32386,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
         const nextEntry = eliteEntries[eIdx + 1];
         const maxK = nextEntry ? nextEntry.i : (d.length - 1);
 
+        let exitFound = false;
         let wasAligned = (entry.dir === 1 ? isExitGreen(entry.i) : isExitViolet(entry.i));
         for (let k = entry.i + 1; k <= maxK; k++) {
           if (entry.dir === 1 && isExitGreen(k)) wasAligned = true;
@@ -32397,6 +32398,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
               const isLong = (entry.dir === 1);
               const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
               const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+              const isInversion = !!(nextEntry && k === nextEntry.i);
               signals.push({
                 i: k, t: b.t, dir: isLong ? -1 : 1,
                 type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
@@ -32412,14 +32414,46 @@ function computeFMCSignals(cleFmc, cleStrat) {
                 pnlStr: pnlStr,
                 price: b.c, low: b.l, high: b.h,
                 label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
-                badge: '🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE',
-                sub: 'Retournement ALMA ' + eliteExitTf + 'm · ' + pnlStr,
+                badge: isInversion ? ('🔄 #' + tradeNum + ' CLÔTURE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE') : ('🏁 #' + tradeNum + ' SORTIE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE'),
+                sub: isInversion ? ('Inversion (' + nextEntry.type + ') · ' + pnlStr) : ('Retournement ALMA ' + eliteExitTf + 'm · ' + pnlStr),
                 color: '#FACC15',
                 borderCol: '#EAB308',
                 bgFill: 'rgba(38, 28, 6, 0.96)'
               });
             }
+            exitFound = true;
             break; // 1ère sortie trouvée pour ce trade Élite
+          }
+        }
+
+        // Si aucune sortie ALMA n'a eu lieu avant le signal opposé suivant, clôture impérative à l'inversion
+        if (!exitFound && nextEntry) {
+          const b = d[nextEntry.i];
+          if (b) {
+            const isLong = (entry.dir === 1);
+            const pnl = isLong ? (b.c - entry.price) : (entry.price - b.c);
+            const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+            signals.push({
+              i: nextEntry.i, t: b.t, dir: isLong ? -1 : 1,
+              type: isLong ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+              optKey: 'fmc_elite_exits',
+              isExit: true,
+              isElite: true,
+              isEliteExit: true,
+              exitOf: isLong ? 'ACHAT' : 'VENTE',
+              tradeNum: tradeNum,
+              entryI: entry.i,
+              entryPrice: entry.price,
+              pnl: pnl,
+              pnlStr: pnlStr,
+              price: b.c, low: b.l, high: b.h,
+              label: isLong ? 'SORTIE ACHAT ÉLITE' : 'SORTIE VENTE ÉLITE',
+              badge: '🔄 #' + tradeNum + ' CLÔTURE ' + (isLong ? 'ACHAT' : 'VENTE') + ' ÉLITE',
+              sub: 'Inversion (' + nextEntry.type + ') · ' + pnlStr,
+              color: '#FACC15',
+              borderCol: '#EAB308',
+              bgFill: 'rgba(38, 28, 6, 0.96)'
+            });
           }
         }
       }
@@ -38764,7 +38798,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-1325';
+  window.__LUMEN_BUILD = 'B-0910-1345';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
