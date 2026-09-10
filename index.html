@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1425</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-1525</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -9501,12 +9501,16 @@ function render(){
   if(Array.isArray(window.__zzVerticales) && window.__zzVerticales.length){
     ctx.save();
     const basV = H - AXIS_H;
-    for(const v of window.__zzVerticales){
+    const drawnX = [];
+    const sortedVert = [...window.__zzVerticales].sort((a, b) => (b.isElite ? 1 : 0) - (a.isElite ? 1 : 0));
+    for(const v of sortedVert){
       if(v.x < 0 || v.x > W - AXIS_W) continue;
+      if(drawnX.some(px => Math.abs(px - v.x) < 12)) continue;
+      drawnX.push(v.x);
 
       // Pointillés identiques à la liaison pastille/bougie (dash [3, 2], largeur 1.4, sans ombre grise)
       ctx.setLineDash([3, 2]);
-      ctx.strokeStyle = hexA(v.col || '#00E676', 0.80);
+      ctx.strokeStyle = hexA(v.col || '#00E676', 0.85);
       ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.moveTo(v.x, v.y);
@@ -32340,15 +32344,16 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const isFMC2Red = (idx) => (core2[idx] != null && bal2[idx] != null) ? core2[idx] < bal2[idx] : true;
 
       // 4. Confluence Élite
+      const tfSpan10 = Math.max(1, Math.round(10 / (state.tf || 1))) - 1;
       const eliteCandidates = [];
       for (let idxT = 0; idxT < triVente10.length; idxT++) {
         const repI = triVente10[idxT];
         let maxK = d.length - 1;
         for (const oppI of triAchat10) {
-          if (oppI > repI) { maxK = Math.min(maxK, oppI); break; }
+          if (oppI > repI) { maxK = Math.min(maxK, oppI + tfSpan10); break; }
         }
         if (idxT + 1 < triVente10.length && triVente10[idxT + 1] > repI) {
-          maxK = Math.min(maxK, triVente10[idxT + 1]);
+          maxK = Math.min(maxK, triVente10[idxT + 1] + tfSpan10);
         }
         for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
           if (isKK10Red(k) && isFMC2Red(k)) {
@@ -32364,10 +32369,10 @@ function computeFMCSignals(cleFmc, cleStrat) {
         const repI = triAchat10[idxT];
         let maxK = d.length - 1;
         for (const oppI of triVente10) {
-          if (oppI > repI) { maxK = Math.min(maxK, oppI); break; }
+          if (oppI > repI) { maxK = Math.min(maxK, oppI + tfSpan10); break; }
         }
         if (idxT + 1 < triAchat10.length && triAchat10[idxT + 1] > repI) {
-          maxK = Math.min(maxK, triAchat10[idxT + 1]);
+          maxK = Math.min(maxK, triAchat10[idxT + 1] + tfSpan10);
         }
         for (let k = Math.max(0, repI - 1); k <= maxK; k++) {
           if (isKK10Green(k) && isFMC2Green(k)) {
@@ -32983,7 +32988,8 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       if (!isExit && indFmc.showVerticalLines !== false) {
         if (!Array.isArray(window.__zzVerticales)) window.__zzVerticales = [];
         const startY = isLong ? (by + bh) : anchorY;
-        window.__zzVerticales.push({ x: x, y: startY, col: isRappel ? 'rgba(148, 163, 184, 0.35)' : color });
+        const lineCol = isElite ? '#FACC15' : (isRappel ? 'rgba(148, 163, 184, 0.45)' : (sig.borderCol || color));
+        window.__zzVerticales.push({ x: x, y: startY, col: lineCol, isElite: isElite });
       }
     } catch(errSig) {
       try { ctx.restore(); } catch(e){}
@@ -39012,7 +39018,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-1425';
+  window.__LUMEN_BUILD = 'B-0910-1525';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
