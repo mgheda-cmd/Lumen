@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2610</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2620</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16223,7 +16223,10 @@ function renderPastillesList(forceRebuild) {
 
         return '<div onclick="event.stopPropagation();window.selectStrat11Exit(\'' + targetVarKey + '\', \'' + exitKey + '\')" style="margin-top:4px;padding:5px 6px;cursor:pointer;background:' + (isFocus ? 'rgba(255,255,255,0.035)' : 'transparent') + ';border:' + (isFocus ? '1.5px solid ' + accentCol : '1px dashed rgba(255,255,255,0.08)') + ';border-radius:7px;transition:all 0.15s" title="Cliquer pour afficher cette sortie sur le graphique et décocher les autres">'
           + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
+          + '<div style="display:flex;align-items:center;gap:5px">'
           + '<span style="font-size:9px;font-weight:900;color:' + accentCol + '">' + badgeLabel + '</span>'
+          + '<button type="button" onclick="event.stopPropagation();window.openStrat11TradesJournal(\'' + targetVarKey + '\', \'' + exitKey + '\')" style="font-size:7.5px;padding:1px 5px;border-radius:3px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:#E6EDF3;cursor:pointer;font-weight:700" title="Voir les trades de cette sortie">📋 Trades</button>'
+          + '</div>'
           + activeTag
           + '</div>'
           + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;font-size:8.5px;line-height:1.2">'
@@ -16254,7 +16257,8 @@ function renderPastillesList(forceRebuild) {
         + '</label>'
         + '<div style="display:flex;align-items:center;gap:6px;flex:none">'
         + '<span style="font-size:11.5px;font-weight:900;color:' + activePnlCol + '">' + activePnlStr + '</span>'
-        + '<button type="button" onclick="event.stopPropagation();window.soloStrat11(\'' + rankStats.key + '\')" style="font-size:8.5px;padding:2px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#E6EDF3;cursor:pointer;font-weight:700" title="Activer UNIQUEMENT cette stratégie et masquer toutes les autres du graphique">Afficher Seule</button>'
+        + '<button type="button" onclick="event.stopPropagation();window.soloStrat11(\'' + rankStats.key + '\')" style="font-size:8.5px;padding:2px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#E6EDF3;cursor:pointer;font-weight:700" title="Activer UNIQUEMENT cette stratégie et masquer toutes les autres du graphique">Seule</button>'
+        + '<button type="button" onclick="event.stopPropagation();window.openStrat11TradesJournal(\'' + rankStats.key + '\')" style="font-size:8.5px;padding:2px 6px;border-radius:4px;border:1px solid rgba(56,189,248,0.3);background:rgba(56,189,248,0.12);color:#38BDF8;cursor:pointer;font-weight:800" title="Ouvrir le tableau des trades détaillés">📋 Trades</button>'
         + '</div>'
         + '</div>'
         + _renderSubGrid(res1, isS1On, '#38BDF8', '🏁 Sortie 1 : Ligne 0', 'Clôture retournement', 's1', rankStats.key)
@@ -16392,10 +16396,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2610
+// Build B-0911-2620
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2610
+// Build B-0911-2620
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -16728,7 +16732,18 @@ function _backtestVariantSerious(bars8000, vDef) {
         if (exitPx == null && nxt) { exitPx = bars8000[nxt.i].c; exitT = bars8000[nxt.i].t; }
         if (exitPx == null) continue;
         const pnl = ent.dir === 1 ? (exitPx - ent.px) : (ent.px - exitPx);
-        trades.push({ pnl: pnl, entryT: ent.t, exitT: exitT });
+        trades.push({
+          num: ei + 1,
+          dir: ent.dir,
+          type: ent.dir === 1 ? 'ACHAT' : 'VENTE',
+          entryI: ent.i,
+          entryT: ent.t,
+          entryPx: ent.px,
+          exitT: exitT,
+          exitPx: exitPx,
+          pnl: Math.round(pnl * 10) / 10,
+          exitReason: (mode === 'zero' ? 'Sortie 1 (Ligne 0)' : (mode === 'extreme' ? 'Sortie 2 (Extrême)' : 'Sortie 3 (Inversion)'))
+        });
       }
 
       function _calcStats(tList) {
@@ -16757,7 +16772,8 @@ function _backtestVariantSerious(bars8000, vDef) {
       return {
         sAll: _calcStats(trades),
         s3d:  _calcStats(trades.filter(function(t) { return t.entryT >= t3Days; })),
-        sDay: _calcStats(trades.filter(function(t) { return t.entryT >= tToday; }))
+        sDay: _calcStats(trades.filter(function(t) { return t.entryT >= tToday; })),
+        trades: trades
       };
     }
 
@@ -16936,6 +16952,199 @@ function loadSavedStrat11Ranking() {
     return false;
   }
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// JOURNAL DÉTAILLÉ DES TRADES STRATÉGIES 11 11
+// ═══════════════════════════════════════════════════════════════════════════
+window.__stJournalVarKey = 'strat_11_11_ultra';
+window.__stJournalExitMode = 's1';
+window.__stJournalPeriod = '3d'; // '3d' par défaut (du dernier en cours aux 3 jours)
+
+window.openStrat11TradesJournal = function(varKey, exitKey) {
+  if (varKey) window.__stJournalVarKey = varKey;
+  if (exitKey) window.__stJournalExitMode = exitKey;
+  else if (window.__strat11ExitMode) window.__stJournalExitMode = window.__strat11ExitMode;
+
+  const panel = document.getElementById('strat11-trades-panel');
+  if (!panel) return;
+  panel.style.display = 'flex';
+
+  window.setStrat11JournalPeriod(window.__stJournalPeriod || '3d', false);
+  window.setStrat11JournalExit(window.__stJournalExitMode || 's1', false);
+  window.renderStrat11TradesJournal();
+};
+
+window.closeStrat11TradesJournal = function() {
+  const panel = document.getElementById('strat11-trades-panel');
+  if (panel) panel.style.display = 'none';
+};
+
+window.setStrat11JournalPeriod = function(p, doRender) {
+  window.__stJournalPeriod = p;
+  ['3d', 'day', 'all'].forEach(function(pid) {
+    const btn = document.getElementById('btn-st-p-' + pid);
+    if (!btn) return;
+    if (pid === p) {
+      btn.style.borderColor = '#FFB400';
+      btn.style.background = 'rgba(255,180,0,0.18)';
+      btn.style.color = '#FFB400';
+      btn.style.fontWeight = '800';
+    } else {
+      btn.style.borderColor = 'rgba(255,255,255,0.15)';
+      btn.style.background = 'rgba(255,255,255,0.05)';
+      btn.style.color = 'var(--text)';
+      btn.style.fontWeight = '700';
+    }
+  });
+  if (doRender !== false) window.renderStrat11TradesJournal();
+};
+
+window.setStrat11JournalExit = function(exitKey, doRender) {
+  window.__stJournalExitMode = exitKey;
+  [
+    { id: 's1', col: '#38BDF8', bg: 'rgba(56,189,248,0.18)' },
+    { id: 's2', col: '#FBBF24', bg: 'rgba(251,191,36,0.18)' },
+    { id: 's3', col: '#A855F7', bg: 'rgba(168,85,247,0.18)' }
+  ].forEach(function(item) {
+    const btn = document.getElementById('btn-st-ex-' + item.id);
+    if (!btn) return;
+    if (item.id === exitKey) {
+      btn.style.borderColor = item.col;
+      btn.style.background = item.bg;
+      btn.style.color = item.col;
+      btn.style.fontWeight = '800';
+    } else {
+      btn.style.borderColor = 'rgba(255,255,255,0.15)';
+      btn.style.background = 'rgba(255,255,255,0.05)';
+      btn.style.color = 'var(--text)';
+      btn.style.fontWeight = '700';
+    }
+  });
+  if (doRender !== false) window.renderStrat11TradesJournal();
+};
+
+window.renderStrat11TradesJournal = function() {
+  const tbody = document.getElementById('strat11-trades-tbody');
+  if (!tbody) return;
+
+  const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
+  const exitKey = window.__stJournalExitMode || 's1';
+  const period = window.__stJournalPeriod || '3d';
+
+  const vDef = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === varKey; }) || STRAT11_VARIANTS_DEF[0];
+  const rStats = (window.__strat11Ranking || []).find(function(r) { return r.key === varKey; });
+
+  const titleEl = document.getElementById('st-panel-title');
+  if (titleEl) {
+    titleEl.textContent = '📋 ' + vDef.name + ' [' + vDef.tfFMC + 'm×' + vDef.tfKK + 'm] · Trades';
+  }
+
+  const subEl = document.getElementById('st-panel-sub');
+  if (subEl) {
+    const pLabel = (period === 'day') ? "Aujourd'hui (depuis 00:00 UTC)" : ((period === '3d') ? '3 Derniers Jours (en cours)' : 'Historique complet (8000 bougies)');
+    const exLabel = (exitKey === 's1') ? 'Sortie 1 (Ligne 0)' : ((exitKey === 's2') ? 'Sortie 2 (Extrême)' : 'Sortie 3 (Inversion)');
+    subEl.textContent = exLabel + ' · ' + pLabel;
+  }
+
+  // Obtenir la liste des trades
+  let allTrades = [];
+  if (rStats && rStats[exitKey] && Array.isArray(rStats[exitKey].trades)) {
+    allTrades = rStats[exitKey].trades;
+  } else {
+    // Calcul direct de secours
+    const candles = window.__synth8000Candles || (typeof state !== 'undefined' && state ? state.data : []);
+    if (candles && candles.length >= 50 && typeof _backtestVariantSerious === 'function') {
+      const bRes = _backtestVariantSerious(candles, vDef);
+      if (bRes && bRes[exitKey] && Array.isArray(bRes[exitKey].trades)) {
+        allTrades = bRes[exitKey].trades;
+      }
+    }
+  }
+
+  if (!allTrades || !allTrades.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:25px;text-align:center;color:#94A3B8">Aucun trade calculé pour cette sélection. Lancez un test avec 🔬 Re-tester.</td></tr>';
+    return;
+  }
+
+  const lastT = allTrades[allTrades.length - 1].entryT || Date.now();
+  const t3Days = lastT - (3 * 24 * 3600 * 1000);
+  const startOfDay = new Date(lastT);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const tToday = startOfDay.getTime();
+
+  let filteredTrades = allTrades;
+  if (period === 'day') {
+    filteredTrades = allTrades.filter(function(t) { return t.entryT >= tToday; });
+  } else if (period === '3d') {
+    filteredTrades = allTrades.filter(function(t) { return t.entryT >= t3Days; });
+  }
+
+  // Mettre à jour les statistiques de synthèse
+  let totalPnl = 0, wins = 0, gW = 0, gL = 0;
+  filteredTrades.forEach(function(t) {
+    totalPnl += t.pnl;
+    if (t.pnl >= 0) { wins++; gW += t.pnl; }
+    else { gL += Math.abs(t.pnl); }
+  });
+  const n = filteredTrades.length;
+  const wr = n > 0 ? (wins / n) * 100 : 0;
+  const pf = gL > 0 ? (gW / gL) : (gW > 0 ? 99 : 0);
+
+  const statPnl = document.getElementById('st-stat-pnl');
+  if (statPnl) {
+    statPnl.textContent = (totalPnl >= 0 ? '+' : '') + Math.round(totalPnl) + ' pts';
+    statPnl.style.color = totalPnl >= 0 ? '#10B981' : '#F87171';
+  }
+  const statWr = document.getElementById('st-stat-wr');
+  if (statWr) statWr.textContent = wr.toFixed(0) + '%';
+  const statPf = document.getElementById('st-stat-pf');
+  if (statPf) statPf.textContent = pf > 99 ? '>99' : pf.toFixed(2);
+  const statN = document.getElementById('st-stat-n');
+  if (statN) statN.textContent = n + ' trades';
+
+  function fmtTime(t) {
+    if (!t) return '—';
+    const dt = new Date(t);
+    const j = String(dt.getDate()).padStart(2, '0');
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const h = String(dt.getHours()).padStart(2, '0');
+    const min = String(dt.getMinutes()).padStart(2, '0');
+    return j + '/' + m + ' ' + h + ':' + min;
+  }
+
+  // Afficher en ordre chronologique inversé (du plus récent au plus ancien)
+  const displayTrades = filteredTrades.slice().reverse();
+
+  let trHTML = '';
+  displayTrades.forEach(function(t) {
+    const isBuy = t.dir === 1;
+    const pnlCol = t.pnl >= 0 ? '#10B981' : '#F87171';
+    const pnlStr = (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + ' pts';
+    const badgeType = isBuy
+      ? '<span style="background:rgba(16,185,129,0.18);color:#10B981;font-weight:800;padding:1px 5px;border-radius:4px;font-size:9px">🟢 ACHAT</span>'
+      : '<span style="background:rgba(244,63,94,0.18);color:#F43F5E;font-weight:800;padding:1px 5px;border-radius:4px;font-size:9px">🔴 VENTE</span>';
+
+    trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.1s" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'transparent\'">'
+      + '<td style="padding:6px 3px;font-weight:800;color:#94A3B8;font-size:9.5px">#' + t.num + '</td>'
+      + '<td style="padding:6px 3px">' + badgeType + '</td>'
+      + '<td style="padding:6px 3px">'
+      + '<div style="font-weight:700;color:var(--text);font-size:10px">$' + (t.entryPx ? t.entryPx.toFixed(1) : '—') + '</div>'
+      + '<div style="font-size:8.5px;color:#94A3B8">' + fmtTime(t.entryT) + '</div>'
+      + '</td>'
+      + '<td style="padding:6px 3px">'
+      + '<div style="font-weight:700;color:var(--text);font-size:10px">$' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
+      + '<div style="font-size:8.5px;color:#94A3B8">' + fmtTime(t.exitT) + '</div>'
+      + '</td>'
+      + '<td style="padding:6px 3px;text-align:right;font-family:monospace;font-weight:800;color:' + pnlCol + ';font-size:10.5px">' + pnlStr + '</td>'
+      + '<td style="padding:6px 3px;text-align:center">'
+      + '<button onclick="event.stopPropagation();if(typeof window.focusChartOnCandle===\'function\')window.focusChartOnCandle(' + t.entryI + ')" style="background:rgba(56,189,248,0.12);border:1px solid #38BDF8;color:#38BDF8;border-radius:4px;padding:2px 5px;font-size:9px;cursor:pointer" title="Centrer le graphique sur ce trade">🔍</button>'
+      + '</td>'
+      + '</tr>';
+  });
+
+  tbody.innerHTML = trHTML;
+};
 
 function resetDefaultPastilles() {
   for (const cat of PASTILLES_CATALOG) {
@@ -40941,7 +41150,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2610';
+  window.__LUMEN_BUILD = 'B-0911-2620';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -43868,6 +44077,70 @@ window.balayerMM_MTF = async function(){
 })();
 
 </script>
+
+<!-- VOLET LATÉRAL JOURNAL DES TRADES STRATÉGIES 11 11 -->
+<div id="strat11-trades-panel" style="display:none;position:fixed;top:45px;right:0;width:440px;max-width:calc(100vw - 12px);height:calc(100vh - 55px);background:rgba(10,17,31,0.96);border-left:1.5px solid #38BDF8;box-shadow:-12px 0 40px rgba(0,0,0,0.65);z-index:999999;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--text);backdrop-filter:blur(16px)">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02)">
+    <div style="display:flex;align-items:center;gap:8px;min-width:0">
+      <span style="font-size:18px">📋</span>
+      <div style="min-width:0">
+        <div id="st-panel-title" style="font-weight:900;font-size:13px;color:#7AA2FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Journal des Trades</div>
+        <div id="st-panel-sub" style="font-size:10px;color:#94A3B8">Trades récents · 3 derniers jours par défaut</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button onclick="window.closeStrat11TradesJournal()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text);font-size:16px;cursor:pointer;padding:3px 8px;line-height:1;border-radius:6px" title="Fermer">✕</button>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:6px">
+    <!-- Période : 3 Jours (défaut) / Aujourd'hui / Tout (8000 bougies) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+      <span style="font-size:10px;font-weight:800;color:var(--muted)">Période :</span>
+      <div style="display:flex;gap:4px">
+        <button id="btn-st-p-3d" onclick="window.setStrat11JournalPeriod('3d')" style="font-size:10px;padding:3px 8px;border-radius:5px;font-weight:800;border:1.2px solid #FFB400;background:rgba(255,180,0,0.18);color:#FFB400;cursor:pointer">📊 3 Jours (Défaut)</button>
+        <button id="btn-st-p-day" onclick="window.setStrat11JournalPeriod('day')" style="font-size:10px;padding:3px 8px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer">📅 Aujourd'hui</button>
+        <button id="btn-st-p-all" onclick="window.setStrat11JournalPeriod('all')" style="font-size:10px;padding:3px 8px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer">🏆 Tout (8000 b.)</button>
+      </div>
+    </div>
+    <!-- Sortie : S1 / S2 / S3 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+      <span style="font-size:10px;font-weight:800;color:var(--muted)">Sortie :</span>
+      <div style="display:flex;gap:4px">
+        <button id="btn-st-ex-s1" onclick="window.setStrat11JournalExit('s1')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:800;border:1.2px solid #38BDF8;background:rgba(56,189,248,0.18);color:#38BDF8;cursor:pointer">🏁 S1: Ligne 0</button>
+        <button id="btn-st-ex-s2" onclick="window.setStrat11JournalExit('s2')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer">⚡ S2: Extrême</button>
+        <button id="btn-st-ex-s3" onclick="window.setStrat11JournalExit('s3')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer">🔄 S3: Inversion</button>
+      </div>
+    </div>
+    <!-- Mini Stats Strip -->
+    <div id="st-panel-stats" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:4px 8px;font-size:10px">
+      <span>Gain : <b id="st-stat-pnl" style="color:#10B981">+0 pts</b></span>
+      <span>WR : <b id="st-stat-wr">0%</b></span>
+      <span>PF : <b id="st-stat-pf">0.0</b></span>
+      <span>Trades : <b id="st-stat-n">0</b></span>
+    </div>
+  </div>
+
+  <!-- Table Body -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px">
+    <table style="width:100%;border-collapse:collapse;font-size:10.5px">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.12);color:#94A3B8;font-size:9px;text-transform:uppercase">
+          <th style="padding:6px 3px;text-align:left">#</th>
+          <th style="padding:6px 3px;text-align:left">Type</th>
+          <th style="padding:6px 3px;text-align:left">Entrée</th>
+          <th style="padding:6px 3px;text-align:left">Sortie</th>
+          <th style="padding:6px 3px;text-align:right">PnL</th>
+          <th style="padding:6px 3px;text-align:center">🔍</th>
+        </tr>
+      </thead>
+      <tbody id="strat11-trades-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- VOLET LATÉRAL TRADES ÉLITE (TABLEAU SUR LE CÔTÉ) -->
 <div id="elite-journal-pull-tab" onclick="toggleEliteJournalPanel()" title="Afficher le tableau des trades Élite" style="display:flex;position:fixed;right:0;top:130px;z-index:9998;background:var(--panel-2);border:1.5px solid #38BDF8;border-right:none;border-radius:8px 0 0 8px;padding:8px 5px;cursor:pointer;flex-direction:column;align-items:center;gap:5px;box-shadow:-3px 3px 12px rgba(0,0,0,0.35);color:#38BDF8;user-select:none;-webkit-user-select:none;transition:transform .2s ease">
   <span style="font-size:14px">📊</span>
