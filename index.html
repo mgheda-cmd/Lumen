@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2570</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2580</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1416,8 +1416,9 @@ footer{
         <div id="pastilles-exit-selector" style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:4px;padding:4px 6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px">
           <span style="font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap">Sortie classée :</span>
           <div style="display:flex;gap:3px;flex:1;justify-content:flex-end">
-            <button type="button" id="btn-exit-s1" onclick="setStrat11ExitMode('s1')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:800;border:1px solid #38BDF8;background:rgba(56,189,248,0.18);color:#38BDF8;cursor:pointer" title="Classer et mettre en avant la Sortie 1 (KK Ligne 0)">🏁 Sortie 1 (Ligne 0)</button>
-            <button type="button" id="btn-exit-s2" onclick="setStrat11ExitMode('s2')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer" title="Classer et mettre en avant la Sortie 2 (KK Extrême)">⚡ Sortie 2 (Extrême)</button>
+            <button type="button" id="btn-exit-s1" onclick="setStrat11ExitMode('s1')" style="font-size:9px;padding:3px 6px;border-radius:5px;font-weight:800;border:1px solid #38BDF8;background:rgba(56,189,248,0.18);color:#38BDF8;cursor:pointer" title="Classer et mettre en avant la Sortie 1 (KK Ligne 0)">🏁 S1: Ligne 0</button>
+            <button type="button" id="btn-exit-s2" onclick="setStrat11ExitMode('s2')" style="font-size:9px;padding:3px 6px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer" title="Classer et mettre en avant la Sortie 2 (KK Extrême TP)">⚡ S2: Extrême</button>
+            <button type="button" id="btn-exit-s3" onclick="setStrat11ExitMode('s3')" style="font-size:9px;padding:3px 6px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer" title="Classer et mettre en avant la Sortie 3 (Inversion Signal / Secours)">🔄 S3: Inversion</button>
           </div>
         </div>
       </div>
@@ -5758,11 +5759,11 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_11_11_elite:{on:true,showBuy:true,showSell:true,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:5,tfKK:10,tfExitKK:3,cBuy:'#10B981',cSell:'#F43F5E'},
-    strat_11_11_ultra:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:1,tfKK:6,tfExitKK:6,cBuy:'#00E5FF',cSell:'#FF0055'},
-    strat_11_11_scalp:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:2,tfKK:3,tfExitKK:3,cBuy:'#00E676',cSell:'#FF0055'},
-    strat_11_11_pro:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:5,tfKK:6,cBuy:'#10B981',cSell:'#F43F5E'},
-    strat_11_11:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
+    strat_11_11_elite:{on:true,showBuy:true,showSell:true,showExitZero:true,showExitExtreme:false,showExitReversal:true,showVerticalLines:true,tfFMC:5,tfKK:10,tfExitKK:3,cBuy:'#10B981',cSell:'#F43F5E'},
+    strat_11_11_ultra:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showExitReversal:true,showVerticalLines:true,tfFMC:1,tfKK:6,tfExitKK:6,cBuy:'#00E5FF',cSell:'#FF0055'},
+    strat_11_11_scalp:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showExitReversal:true,showVerticalLines:true,tfFMC:2,tfKK:3,tfExitKK:3,cBuy:'#00E676',cSell:'#FF0055'},
+    strat_11_11_pro:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showExitReversal:true,showVerticalLines:true,tfFMC:5,tfKK:6,cBuy:'#10B981',cSell:'#F43F5E'},
+    strat_11_11:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showExitReversal:true,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
     strat_fmc:{on:true,showPureNoAlma:true,showElite:true,showEliteExits:true,showEliteKkExitCross:true,showEliteKkExitZero:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
@@ -15094,6 +15095,19 @@ const PASTILLES_CATALOG = [
         }
       },
       {
+        id: 'strat_11_11_elite_exit_rev',
+        icon: '🔄',
+        label: 'Sortie N°3 : Inversion Opposée (Sortie de Secours)',
+        desc: 'Sortie N°3 de sécurité : Clôture sur signal inverse si aucune sortie KK n\'est survenue',
+        accent: '#A855F7',
+        def: true,
+        get: () => state.indicators?.strat_11_11_elite?.showExitReversal !== false && !!state.indicators?.strat_11_11_elite?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
+          state.indicators.strat_11_11_elite.showExitReversal = v;
+        }
+      },
+      {
         id: 'strat_11_11_elite_lines',
         icon: '📏',
         label: 'Pointillés verticaux [5m×10m]',
@@ -15164,6 +15178,19 @@ const PASTILLES_CATALOG = [
         set: (v) => {
           if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
           state.indicators.strat_11_11_ultra.showExitExtreme = v;
+        }
+      },
+      {
+        id: 'strat_11_11_ultra_exit_rev',
+        icon: '🔄',
+        label: 'Sortie N°3 : Inversion Opposée (Sortie de Secours)',
+        desc: 'Sortie N°3 de sécurité : Clôture sur signal inverse si aucune sortie KK n\'est survenue',
+        accent: '#A855F7',
+        def: true,
+        get: () => state.indicators?.strat_11_11_ultra?.showExitReversal !== false && !!state.indicators?.strat_11_11_ultra?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
+          state.indicators.strat_11_11_ultra.showExitReversal = v;
         }
       },
       {
@@ -15240,6 +15267,19 @@ const PASTILLES_CATALOG = [
         }
       },
       {
+        id: 'strat_11_11_scalp_exit_rev',
+        icon: '🔄',
+        label: 'Sortie N°3 : Inversion Opposée (Sortie de Secours)',
+        desc: 'Sortie N°3 de sécurité : Clôture sur signal inverse si aucune sortie KK n\'est survenue',
+        accent: '#A855F7',
+        def: true,
+        get: () => state.indicators?.strat_11_11_scalp?.showExitReversal !== false && !!state.indicators?.strat_11_11_scalp?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
+          state.indicators.strat_11_11_scalp.showExitReversal = v;
+        }
+      },
+      {
         id: 'strat_11_11_scalp_lines',
         icon: '📏',
         label: 'Pointillés verticaux [2m×3m]',
@@ -15313,6 +15353,19 @@ const PASTILLES_CATALOG = [
         }
       },
       {
+        id: 'strat_11_11_pro_exit_rev',
+        icon: '🔄',
+        label: 'Sortie N°3 : Inversion Opposée (Sortie de Secours)',
+        desc: 'Sortie N°3 de sécurité : Clôture sur signal inverse si aucune sortie KK n\'est survenue',
+        accent: '#A855F7',
+        def: true,
+        get: () => state.indicators?.strat_11_11_pro?.showExitReversal !== false && !!state.indicators?.strat_11_11_pro?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
+          state.indicators.strat_11_11_pro.showExitReversal = v;
+        }
+      },
+      {
         id: 'strat_11_11_pro_lines',
         icon: '📏',
         label: 'Pointillés verticaux [5m×6m]',
@@ -15383,6 +15436,19 @@ const PASTILLES_CATALOG = [
         set: (v) => {
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
           state.indicators.strat_11_11.showExitExtreme = v;
+        }
+      },
+      {
+        id: 'strat_11_11_exit_rev',
+        icon: '🔄',
+        label: 'Sortie N°3 : Inversion Opposée (Sortie de Secours)',
+        desc: 'Sortie N°3 de sécurité : Clôture sur signal inverse si aucune sortie KK n\'est survenue',
+        accent: '#A855F7',
+        def: true,
+        get: () => state.indicators?.strat_11_11?.showExitReversal !== false && !!state.indicators?.strat_11_11?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
+          state.indicators.strat_11_11.showExitReversal = v;
         }
       },
       {
@@ -16116,7 +16182,7 @@ function renderPastillesList(forceRebuild) {
     if (is11 && rankStats && (rankStats.sAll || rankStats.s1)) {
       const res1 = rankStats.s1 || rankStats;
       const res2 = rankStats.s2 || rankStats;
-      const activeObj = (curExitMode === 's2') ? res2 : res1;
+      const activeObj = (curExitMode === 's3' && rankStats.s3) ? rankStats.s3 : ((curExitMode === 's2') ? res2 : res1);
       const activeS = (curPeriod === 'day') ? activeObj.sDay : ((curPeriod === '3d') ? activeObj.s3d : activeObj.sAll);
       const activePnlCol = activeS.pnl >= 0 ? '#10B981' : '#F87171';
       const activePnlStr = (activeS.pnl >= 0 ? '+' : '') + Math.round(activeS.pnl) + ' pts';
@@ -16159,6 +16225,7 @@ function renderPastillesList(forceRebuild) {
         + '</div>'
         + _renderSubGrid(res1, curExitMode === 's1', '#38BDF8', '🏁 Sortie 1 : Ligne 0', 'Clôture retournement')
         + _renderSubGrid(res2, curExitMode === 's2', '#FBBF24', '⚡ Sortie 2 : Extrême', 'Prise TP Sommet')
+        + _renderSubGrid(rankStats.s3 || res1, curExitMode === 's3', '#A855F7', '🔄 Sortie 3 : Inversion', 'Sortie secours opposée')
         + '</div>';
     } else {
       catHeaderHTML = '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:' + cat.color + ';margin-bottom:6px">' + cat.category + '</div>';
@@ -16291,10 +16358,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2570
+// Build B-0911-2580
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2570
+// Build B-0911-2580
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -16359,32 +16426,25 @@ function setStrat11ExitMode(mode) {
   try { localStorage.setItem('strat11_active_exit', mode); } catch(e) {}
   const b1 = document.getElementById('btn-exit-s1');
   const b2 = document.getElementById('btn-exit-s2');
-  if (b1) {
-    if (mode === 's1') {
-      b1.style.borderColor = '#38BDF8';
-      b1.style.background = 'rgba(56,189,248,0.22)';
-      b1.style.color = '#38BDF8';
-      b1.style.fontWeight = '800';
+  const b3 = document.getElementById('btn-exit-s3');
+  [
+    { btn: b1, id: 's1', col: '#38BDF8', bg: 'rgba(56,189,248,0.22)' },
+    { btn: b2, id: 's2', col: '#FBBF24', bg: 'rgba(251,191,36,0.22)' },
+    { btn: b3, id: 's3', col: '#A855F7', bg: 'rgba(168,85,247,0.22)' }
+  ].forEach(function(item) {
+    if (!item.btn) return;
+    if (mode === item.id) {
+      item.btn.style.borderColor = item.col;
+      item.btn.style.background = item.bg;
+      item.btn.style.color = item.col;
+      item.btn.style.fontWeight = '800';
     } else {
-      b1.style.borderColor = 'rgba(255,255,255,0.15)';
-      b1.style.background = 'rgba(255,255,255,0.05)';
-      b1.style.color = 'var(--text)';
-      b1.style.fontWeight = '600';
+      item.btn.style.borderColor = 'rgba(255,255,255,0.15)';
+      item.btn.style.background = 'rgba(255,255,255,0.05)';
+      item.btn.style.color = 'var(--text)';
+      item.btn.style.fontWeight = '600';
     }
-  }
-  if (b2) {
-    if (mode === 's2') {
-      b2.style.borderColor = '#FBBF24';
-      b2.style.background = 'rgba(251,191,36,0.22)';
-      b2.style.color = '#FBBF24';
-      b2.style.fontWeight = '800';
-    } else {
-      b2.style.borderColor = 'rgba(255,255,255,0.15)';
-      b2.style.background = 'rgba(255,255,255,0.05)';
-      b2.style.color = 'var(--text)';
-      b2.style.fontWeight = '600';
-    }
-  }
+  });
   renderPastillesList(true);
 }
 
@@ -16396,7 +16456,7 @@ function buildOrderedCatalog() {
   const ex = window.__strat11ExitMode || 's1';
 
   function _getPnl(r) {
-    const sObj = (ex === 's2' && r.s2) ? r.s2 : (r.s1 || r);
+    const sObj = (ex === 's3' && r.s3) ? r.s3 : ((ex === 's2' && r.s2) ? r.s2 : (r.s1 || r));
     const stat = (p === 'day') ? sObj.sDay : ((p === '3d') ? sObj.s3d : sObj.sAll);
     return stat ? stat.pnl : 0;
   }
@@ -16459,7 +16519,7 @@ function _backtestVariantSerious(bars8000, vDef) {
   const empty = { pnl: 0, wr: 0, pf: 0, n: 0 };
   const emptyRes = { sAll: empty, s3d: empty, sDay: empty };
   if (!bars8000 || bars8000.length < 50) {
-    return { s1: emptyRes, s2: emptyRes, sAll: empty, s3d: empty, sDay: empty };
+    return { s1: emptyRes, s2: emptyRes, s3: emptyRes, sAll: empty, s3d: empty, sDay: empty };
   }
   try {
     const bFMC = _aggregateLocal(bars8000, vDef.tfFMC);
@@ -16557,20 +16617,22 @@ function _backtestVariantSerious(bars8000, vDef) {
 
     const resS1 = _runExitSim('zero');
     const resS2 = _runExitSim('extreme');
+    const resS3 = _runExitSim('reversal');
 
     const activeExitMode = window.__strat11ExitMode || 's1';
-    const activeRes = activeExitMode === 's2' ? resS2 : resS1;
+    const activeRes = (activeExitMode === 's3') ? resS3 : ((activeExitMode === 's2') ? resS2 : resS1);
 
     return {
       s1: resS1,
       s2: resS2,
+      s3: resS3,
       sAll: activeRes.sAll,
       s3d:  activeRes.s3d,
       sDay: activeRes.sDay
     };
   } catch(e) {
     console.error('Erreur _backtestVariantSerious:', e);
-    return { s1: emptyRes, s2: emptyRes, sAll: empty, s3d: empty, sDay: empty };
+    return { s1: emptyRes, s2: emptyRes, s3: emptyRes, sAll: empty, s3d: empty, sDay: empty };
   }
 }
 
@@ -16605,7 +16667,7 @@ async function runStrat11Backtest(isManualAction) {
     const curEx = window.__strat11ExitMode || 's1';
 
     function _getSortPnl(r) {
-      const obj = (curEx === 's2' && r.s2) ? r.s2 : (r.s1 || r);
+      const obj = (curEx === 's3' && r.s3) ? r.s3 : ((curEx === 's2' && r.s2) ? r.s2 : (r.s1 || r));
       const s = (curP === 'day') ? obj.sDay : ((curP === '3d') ? obj.s3d : obj.sAll);
       return s ? s.pnl : 0;
     }
@@ -16787,32 +16849,25 @@ if (btnPastillesMenu && pastillesMenuEl) {
       const activeEx = window.__strat11ExitMode || 's1';
       const b1 = document.getElementById('btn-exit-s1');
       const b2 = document.getElementById('btn-exit-s2');
-      if (b1) {
-        if (activeEx === 's1') {
-          b1.style.borderColor = '#38BDF8';
-          b1.style.background = 'rgba(56,189,248,0.22)';
-          b1.style.color = '#38BDF8';
-          b1.style.fontWeight = '800';
+      const b3 = document.getElementById('btn-exit-s3');
+      [
+        { btn: b1, id: 's1', col: '#38BDF8', bg: 'rgba(56,189,248,0.22)' },
+        { btn: b2, id: 's2', col: '#FBBF24', bg: 'rgba(251,191,36,0.22)' },
+        { btn: b3, id: 's3', col: '#A855F7', bg: 'rgba(168,85,247,0.22)' }
+      ].forEach(function(item) {
+        if (!item.btn) return;
+        if (activeEx === item.id) {
+          item.btn.style.borderColor = item.col;
+          item.btn.style.background = item.bg;
+          item.btn.style.color = item.col;
+          item.btn.style.fontWeight = '800';
         } else {
-          b1.style.borderColor = 'rgba(255,255,255,0.15)';
-          b1.style.background = 'rgba(255,255,255,0.05)';
-          b1.style.color = 'var(--text)';
-          b1.style.fontWeight = '600';
+          item.btn.style.borderColor = 'rgba(255,255,255,0.15)';
+          item.btn.style.background = 'rgba(255,255,255,0.05)';
+          item.btn.style.color = 'var(--text)';
+          item.btn.style.fontWeight = '600';
         }
-      }
-      if (b2) {
-        if (activeEx === 's2') {
-          b2.style.borderColor = '#FBBF24';
-          b2.style.background = 'rgba(251,191,36,0.22)';
-          b2.style.color = '#FBBF24';
-          b2.style.fontWeight = '800';
-        } else {
-          b2.style.borderColor = 'rgba(255,255,255,0.15)';
-          b2.style.background = 'rgba(255,255,255,0.05)';
-          b2.style.color = 'var(--text)';
-          b2.style.fontWeight = '600';
-        }
-      }
+      });
 
       renderPastillesList(false);
       anchorPastillesMenu(pastillesMenuEl, btnPastillesMenu);
@@ -34176,8 +34231,9 @@ function computeFMCSignals(cleFmc, cleStrat) {
             }
           }
 
-          // 3. Sortie N°3 : Fallback Reversal Exit (Garantie de sortie à 100% — ex: Trade #14)
-          if (!hasZeroExit && !hasExtremeExit && nextEnt) {
+          // 3. Sortie N°3 : Sortie de Secours / Inversion de Signal
+          const showExitReversal = cfg.showExitReversal !== false;
+          if (showExitReversal && !hasZeroExit && !hasExtremeExit && nextEnt) {
             const b = d[nextEnt.i];
             if (b) {
               const pnl = isAchat ? (b.c - ent.price) : (ent.price - b.c);
@@ -34197,11 +34253,11 @@ function computeFMCSignals(cleFmc, cleStrat) {
                 pnlStr: pnlStr,
                 price: b.c, low: b.l, high: b.h,
                 label: 'SORTIE ' + (isAchat ? 'ACHAT' : 'VENTE'),
-                badge: '🏁 #' + ent.tradeNum + ' SORTIE (Inversion Signal)',
-                sub: (pnl >= 0 ? 'Gain ' : 'Perte ') + pnlStr + ' · Inversion Signal',
-                color: pnl >= 0 ? '#38BDF8' : '#F87171',
-                borderCol: '#38BDF8',
-                bgFill: 'rgba(6, 28, 40, 0.96)'
+                badge: '🔄 #' + ent.tradeNum + ' SORTIE N°3 (Inversion)',
+                sub: (pnl >= 0 ? 'Gain ' : 'Perte ') + pnlStr + ' · Sortie N°3 Secours',
+                color: pnl >= 0 ? '#A855F7' : '#F87171',
+                borderCol: '#A855F7',
+                bgFill: 'rgba(28, 10, 44, 0.96)'
               });
             }
           }
@@ -40721,7 +40777,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2570';
+  window.__LUMEN_BUILD = 'B-0911-2580';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
