@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2540</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2550</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16086,25 +16086,53 @@ function renderPastillesList(forceRebuild) {
   let html = '';
 
   const orderedCatalog = (typeof buildOrderedCatalog === 'function') ? buildOrderedCatalog() : PASTILLES_CATALOG;
+  const curPeriod = window.__strat11Period || 'all';
   let catRank11 = 0;
 
   for (const cat of orderedCatalog) {
     const is11 = !!(cat.items && cat.items[0] && cat.items[0].id && cat.items[0].id.startsWith('strat_11_11'));
     const rankStats = (is11 && window.__strat11Ranking && window.__strat11Ranking[catRank11]) ? window.__strat11Ranking[catRank11] : null;
-    const medal = ['\u{1F947}','\u{1F948}','\u{1F949}','4\uFE0F\u20E3','5\uFE0F\u20E3'][catRank11] || '#' + (catRank11 + 1);
-    const catTitleHTML = (is11 && rankStats)
-      ? medal + ' #' + (catRank11 + 1) + ' — ' + rankStats.name + ' [' + rankStats.tfFMC + 'm×' + rankStats.tfKK + 'm]'
-        + ' &middot; <b style="color:' + (rankStats.pnl >= 0 ? '#10B981' : '#F87171') + '">' + (rankStats.pnl >= 0 ? '+' : '') + Math.round(rankStats.pnl) + ' pts</b>'
-        + ' &middot; WR <b style="color:#FBBF24">' + rankStats.winRate.toFixed(0) + '%</b>'
-        + ' &middot; PF <b style="color:#A78BFA">' + (rankStats.pf > 99 ? '&gt;99' : rankStats.pf.toFixed(2)) + '</b>'
-        + ' &middot; <span style="color:#94A3B8">' + rankStats.nTrades + ' trades</span>'
-      : cat.category;
+    const medal = ['🥇','🥈','🥉','4️⃣','5️⃣'][catRank11] || '#' + (catRank11 + 1);
+
+    let catHeaderHTML = '';
+    if (is11 && rankStats && rankStats.sAll) {
+      const sDay = rankStats.sDay || { pnl: 0, wr: 0, pf: 0, n: 0 };
+      const s3d  = rankStats.s3d  || { pnl: 0, wr: 0, pf: 0, n: 0 };
+      const sAll = rankStats.sAll || { pnl: 0, wr: 0, pf: 0, n: 0 };
+      const activeS = (curPeriod === 'day') ? sDay : ((curPeriod === '3d') ? s3d : sAll);
+      const activePnlCol = activeS.pnl >= 0 ? '#10B981' : '#F87171';
+      const activePnlStr = (activeS.pnl >= 0 ? '+' : '') + Math.round(activeS.pnl) + ' pts';
+
+      catHeaderHTML = '<div style="margin-bottom:6px">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;flex-wrap:wrap">'
+        + '<span style="font-size:11px;font-weight:900;letter-spacing:0.2px;color:' + cat.color + '">' + medal + ' #' + (catRank11 + 1) + ' — ' + rankStats.name + ' [' + rankStats.tfFMC + 'm×' + rankStats.tfKK + 'm]</span>'
+        + '<span style="font-size:11px;font-weight:900;color:' + activePnlCol + '">' + activePnlStr + '</span>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:9px;line-height:1.25">'
+        + '<div style="background:' + (curPeriod === 'day' ? 'rgba(255,180,0,0.12)' : 'rgba(255,255,255,0.025)') + ';border:1px solid ' + (curPeriod === 'day' ? '#FFB400' : 'rgba(255,255,255,0.06)') + ';border-radius:6px;padding:3px 5px">'
+        + '<div style="color:' + (curPeriod === 'day' ? '#FFB400' : 'var(--muted)') + ';font-size:8px;font-weight:800">📅 JOUR MÊME</div>'
+        + '<b style="color:' + (sDay.pnl >= 0 ? '#10B981' : '#F87171') + '">' + (sDay.pnl >= 0 ? '+' : '') + Math.round(sDay.pnl) + ' pts</b>'
+        + '<div style="color:#94A3B8;font-size:8.5px">WR ' + sDay.wr.toFixed(0) + '% · PF ' + (sDay.pf > 99 ? '>99' : sDay.pf.toFixed(2)) + ' (' + sDay.n + 't)</div>'
+        + '</div>'
+        + '<div style="background:' + (curPeriod === '3d' ? 'rgba(255,180,0,0.12)' : 'rgba(255,255,255,0.025)') + ';border:1px solid ' + (curPeriod === '3d' ? '#FFB400' : 'rgba(255,255,255,0.06)') + ';border-radius:6px;padding:3px 5px">'
+        + '<div style="color:' + (curPeriod === '3d' ? '#FFB400' : 'var(--muted)') + ';font-size:8px;font-weight:800">📊 3 JOURS</div>'
+        + '<b style="color:' + (s3d.pnl >= 0 ? '#10B981' : '#F87171') + '">' + (s3d.pnl >= 0 ? '+' : '') + Math.round(s3d.pnl) + ' pts</b>'
+        + '<div style="color:#94A3B8;font-size:8.5px">WR ' + s3d.wr.toFixed(0) + '% · PF ' + (s3d.pf > 99 ? '>99' : s3d.pf.toFixed(2)) + ' (' + s3d.n + 't)</div>'
+        + '</div>'
+        + '<div style="background:' + (curPeriod === 'all' ? 'rgba(255,180,0,0.12)' : 'rgba(255,255,255,0.025)') + ';border:1px solid ' + (curPeriod === 'all' ? '#FFB400' : 'rgba(255,255,255,0.06)') + ';border-radius:6px;padding:3px 5px">'
+        + '<div style="color:' + (curPeriod === 'all' ? '#FFB400' : 'var(--muted)') + ';font-size:8px;font-weight:800">🏆 8000 B.</div>'
+        + '<b style="color:' + (sAll.pnl >= 0 ? '#10B981' : '#F87171') + '">' + (sAll.pnl >= 0 ? '+' : '') + Math.round(sAll.pnl) + ' pts</b>'
+        + '<div style="color:#94A3B8;font-size:8.5px">WR ' + sAll.wr.toFixed(0) + '% · PF ' + (sAll.pf > 99 ? '>99' : sAll.pf.toFixed(2)) + ' (' + sAll.n + 't)</div>'
+        + '</div>'
+        + '</div>'
+        + '</div>';
+    } else {
+      catHeaderHTML = '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:' + cat.color + ';margin-bottom:6px">' + cat.category + '</div>';
+    }
     if (is11) catRank11++;
 
     html += '<div ' + (is11 ? 'data-strat11-cat="' + (catRank11 - 1) + '"' : '') + ' style="margin-bottom:10px;background:rgba(255,255,255,0.02);border:1px solid ' + (is11 && rankStats ? 'rgba(122,162,255,0.2)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;padding:8px 10px">'
-      + '<div class="' + (is11 ? 'strat11-cat-title' : '') + '" style="font-size:10px;font-weight:800;letter-spacing:0.04em;color:' + cat.color + ';margin-bottom:6px;line-height:1.5">'
-      + catTitleHTML
-      + '</div>';
+      + catHeaderHTML;
 
     for (const item of cat.items) {
       totalCount++;
@@ -16485,6 +16513,16 @@ if (btnPastillesMenu && pastillesMenuEl) {
     e.stopPropagation();
     const open = pastillesMenuEl.classList.toggle('open');
     if (open) {
+      // Règle stricte : test 8000 bougies UNIQUEMENT à la 1ère ouverture de la journée
+      const todayDateStr = new Date().toISOString().slice(0, 10);
+      const lastRunDate = localStorage.getItem('strat11_last_test_date');
+      if (lastRunDate !== todayDateStr) {
+        localStorage.setItem('strat11_last_test_date', todayDateStr);
+        setTimeout(function() { runStrat11Backtest(false); }, 150);
+      } else {
+        loadSavedStrat11Ranking();
+      }
+
       renderPastillesList(false);
       anchorPastillesMenu(pastillesMenuEl, btnPastillesMenu);
       if (menu) menu.classList.remove('open');
@@ -16535,7 +16573,7 @@ if (btnPastillesMenu && pastillesMenuEl) {
     try {
       loadSavedStrat11Ranking();
       renderPastillesList(true);
-      setTimeout(function() { try { runStrat11Backtest(false); } catch(e) {} }, 1500);
+      // AUCUN re-test automatique au chargement : uniquement au 1er clic du jour ou sur bouton Re-tester
     } catch(e) {}
   }, 200);
 }
@@ -40392,7 +40430,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2540';
+  window.__LUMEN_BUILD = 'B-0911-2550';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
