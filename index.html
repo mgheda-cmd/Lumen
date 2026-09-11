@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2520</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2540</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1387,7 +1387,7 @@ footer{
             <span style="font-size:18px;flex:none">🏷️</span>
             <div>
               <div style="font-weight:800;font-size:13px;color:#FFB400;letter-spacing:0.2px">Gestionnaire des Pastilles</div>
-              <div style="font-size:10px;color:var(--muted)">Cochez pour afficher ou masquer les signaux</div>
+              <div id="pastilles-ranking-status" style="font-size:10px;color:var(--muted)">Classement dynamique · cliquez 🔬 pour recalculer</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
@@ -1401,6 +1401,7 @@ footer{
           <button id="btn-pastilles-all-on" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(0,230,118,0.14);border:1.2px solid #00E676;color:#00E676;font-weight:800;border-radius:6px">👁️ Tout Afficher</button>
           <button id="btn-pastilles-all-off" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(255,0,85,0.14);border:1.2px solid #FF0055;color:#FF0055;font-weight:800;border-radius:6px">🚫 Tout Masquer</button>
           <button id="btn-pastilles-reset-def" class="btn" style="font-size:10.5px;padding:6px 8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:700;border-radius:6px" title="Rétablir les pastilles recommandées par défaut">⟲ Défaut</button>
+          <button id="btn-pastilles-retest" class="btn" onclick="runStrat11Backtest(true)" style="font-size:10.5px;padding:6px 9px;background:rgba(122,162,255,0.14);border:1.2px solid #7AA2FF;color:#7AA2FF;font-weight:800;border-radius:6px;white-space:nowrap" title="Recalculer le classement des 5 stratégies sur les données actuelles">🔬 Re-tester</button>
         </div>
       </div>
 
@@ -16084,13 +16085,26 @@ function renderPastillesList(forceRebuild) {
   let activeCount = 0;
   let html = '';
 
-  for (const cat of PASTILLES_CATALOG) {
-    html += `
-      <div style="margin-bottom:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:${cat.color};margin-bottom:6px;display:flex;align-items:center;gap:5px">
-          <span>${cat.category}</span>
-        </div>
-    `;
+  const orderedCatalog = (typeof buildOrderedCatalog === 'function') ? buildOrderedCatalog() : PASTILLES_CATALOG;
+  let catRank11 = 0;
+
+  for (const cat of orderedCatalog) {
+    const is11 = !!(cat.items && cat.items[0] && cat.items[0].id && cat.items[0].id.startsWith('strat_11_11'));
+    const rankStats = (is11 && window.__strat11Ranking && window.__strat11Ranking[catRank11]) ? window.__strat11Ranking[catRank11] : null;
+    const medal = ['\u{1F947}','\u{1F948}','\u{1F949}','4\uFE0F\u20E3','5\uFE0F\u20E3'][catRank11] || '#' + (catRank11 + 1);
+    const catTitleHTML = (is11 && rankStats)
+      ? medal + ' #' + (catRank11 + 1) + ' — ' + rankStats.name + ' [' + rankStats.tfFMC + 'm×' + rankStats.tfKK + 'm]'
+        + ' &middot; <b style="color:' + (rankStats.pnl >= 0 ? '#10B981' : '#F87171') + '">' + (rankStats.pnl >= 0 ? '+' : '') + Math.round(rankStats.pnl) + ' pts</b>'
+        + ' &middot; WR <b style="color:#FBBF24">' + rankStats.winRate.toFixed(0) + '%</b>'
+        + ' &middot; PF <b style="color:#A78BFA">' + (rankStats.pf > 99 ? '&gt;99' : rankStats.pf.toFixed(2)) + '</b>'
+        + ' &middot; <span style="color:#94A3B8">' + rankStats.nTrades + ' trades</span>'
+      : cat.category;
+    if (is11) catRank11++;
+
+    html += '<div ' + (is11 ? 'data-strat11-cat="' + (catRank11 - 1) + '"' : '') + ' style="margin-bottom:10px;background:rgba(255,255,255,0.02);border:1px solid ' + (is11 && rankStats ? 'rgba(122,162,255,0.2)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;padding:8px 10px">'
+      + '<div class="' + (is11 ? 'strat11-cat-title' : '') + '" style="font-size:10px;font-weight:800;letter-spacing:0.04em;color:' + cat.color + ';margin-bottom:6px;line-height:1.5">'
+      + catTitleHTML
+      + '</div>';
 
     for (const item of cat.items) {
       totalCount++;
@@ -16110,7 +16124,7 @@ function renderPastillesList(forceRebuild) {
         </label>
       `;
     }
-    html += `</div>`;
+    html += '</div>';
   }
 
   container.innerHTML = html;
@@ -16212,6 +16226,238 @@ function setAllPastilles(val) {
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
+// Build B-0911-2540
+// ═══════════════════════════════════════════════════════════════════════════
+
+const STRAT11_VARIANTS_DEF = [
+  { key: 'strat_11_11_elite', tfFMC: 5, tfKK: 10, tfExit: 3,  name: 'Élite', catIdx: 0 },
+  { key: 'strat_11_11_ultra', tfFMC: 1, tfKK: 6,  tfExit: 6,  name: 'Ultra Scalp', catIdx: 1 },
+  { key: 'strat_11_11_scalp', tfFMC: 2, tfKK: 3,  tfExit: 3,  name: 'Scalp Rapide', catIdx: 2 },
+  { key: 'strat_11_11_pro',   tfFMC: 5, tfKK: 6,  tfExit: 5,  name: 'Pro', catIdx: 3 },
+  { key: 'strat_11_11',       tfFMC: 3, tfKK: 2,  tfExit: 3,  name: 'Original', catIdx: 4 }
+];
+window.__strat11Ranking = null;
+window.__strat11RankingPrev = null;
+
+function buildOrderedCatalog() {
+  if (!window.__strat11Ranking || window.__strat11Ranking.length !== 5) return PASTILLES_CATALOG;
+  const cats11 = PASTILLES_CATALOG.slice(0, 5);
+  const catsOther = PASTILLES_CATALOG.slice(5);
+  const sorted11 = window.__strat11Ranking.map(function(r) { return cats11[r.catIdx]; });
+  return sorted11.concat(catsOther);
+}
+
+function _emaLocal(arr, period) {
+  const k = 2 / (period + 1);
+  const out = [];
+  let prev = null;
+  for (let i = 0; i < arr.length; i++) {
+    const v = arr[i];
+    if (v == null) { out.push(null); continue; }
+    prev = (prev == null) ? v : (v * k + prev * (1 - k));
+    out.push(prev);
+  }
+  return out;
+}
+
+function _aggregateLocal(bars, tfMin) {
+  if (tfMin <= 1) return bars.map(function(b) { return Object.assign({}, b); });
+  const out = [];
+  let cur = null;
+  const tfMs = tfMin * 60000;
+  for (let i = 0; i < bars.length; i++) {
+    const b = bars[i];
+    const bucket = Math.floor(b.t / tfMs) * tfMs;
+    if (!cur || cur.t !== bucket) {
+      if (cur) out.push(cur);
+      cur = { t: bucket, o: b.o, h: b.h, l: b.l, c: b.c };
+    } else {
+      if (b.h > cur.h) cur.h = b.h;
+      if (b.l < cur.l) cur.l = b.l;
+      cur.c = b.c;
+    }
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
+function _projectLocal(bars1m, barsTf, vals) {
+  const out = new Array(bars1m.length).fill(null);
+  let j = 0, lastV = null;
+  for (let i = 0; i < bars1m.length; i++) {
+    const t = bars1m[i].t;
+    while (j + 1 < barsTf.length && barsTf[j + 1].t <= t) j++;
+    if (barsTf[j] && barsTf[j].t <= t) lastV = vals[j];
+    out[i] = lastV;
+  }
+  return out;
+}
+
+function _backtestVariant(bars1m, vDef) {
+  if (!bars1m || bars1m.length < 50) return { pnl: 0, winRate: 0, pf: 0, nTrades: 0 };
+  try {
+    // FMC
+    const bFMC = _aggregateLocal(bars1m, vDef.tfFMC);
+    const cFMC = bFMC.map(function(b) { return b.c; });
+    const coreFMC = _emaLocal(cFMC, 8);
+    const balFMC  = _emaLocal(cFMC, 21);
+    const fmcG = _projectLocal(bars1m, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v >= balFMC[i]; }));
+    const fmcR = _projectLocal(bars1m, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v < balFMC[i]; }));
+    // KK
+    const bKK = _aggregateLocal(bars1m, vDef.tfKK);
+    const cKK = bKK.map(function(b) { return b.c; });
+    const fstKK = _emaLocal(cKK, 5);
+    const slwKK = _emaLocal(cKK, 13);
+    const netKKr = fstKK.map(function(v, i) { return v != null && slwKK[i] != null ? v - slwKK[i] : null; });
+    const sigKKr = _emaLocal(netKKr.map(function(v) { return v != null ? v : 0; }), 9);
+    const kkG = _projectLocal(bars1m, bKK, netKKr.map(function(v, i) { return v != null && v > sigKKr[i]; }));
+    const kkR = _projectLocal(bars1m, bKK, netKKr.map(function(v, i) { return v != null && v <= sigKKr[i]; }));
+    // Exit KK
+    const bEx = _aggregateLocal(bars1m, vDef.tfExit);
+    const cEx = bEx.map(function(b) { return b.c; });
+    const fstEx = _emaLocal(cEx, 5);
+    const slwEx = _emaLocal(cEx, 13);
+    const netEx = _projectLocal(bars1m, bEx, fstEx.map(function(v, i) { return v != null && slwEx[i] != null ? v - slwEx[i] : null; }));
+    // Simulation
+    let curDir = 0;
+    const entries = [];
+    for (let k = 1; k < bars1m.length; k++) {
+      const buy  = fmcG[k] && kkG[k] && !(fmcG[k-1] && kkG[k-1]);
+      const sell = fmcR[k] && kkR[k] && !(fmcR[k-1] && kkR[k-1]);
+      if (buy && curDir !== 1)   { curDir =  1; entries.push({ dir: 1,  i: k, px: bars1m[k].c }); }
+      else if (sell && curDir !== -1) { curDir = -1; entries.push({ dir: -1, i: k, px: bars1m[k].c }); }
+    }
+    let totalPnl = 0, wins = 0, losses = 0, grossW = 0, grossL = 0;
+    for (let ei = 0; ei < entries.length; ei++) {
+      const ent = entries[ei];
+      const nxt = entries[ei + 1];
+      const maxK = nxt ? nxt.i : bars1m.length - 1;
+      let exitPx = null;
+      for (let k = ent.i + 1; k <= maxK; k++) {
+        const cur = netEx[k] != null ? netEx[k] : 0;
+        const prv = netEx[k-1] != null ? netEx[k-1] : 0;
+        if (k - ent.i >= 2) {
+          const cross = ent.dir === 1 ? (prv > 0 && cur <= 0) : (prv < 0 && cur >= 0);
+          if (cross) { exitPx = bars1m[k].c; break; }
+        }
+      }
+      if (exitPx == null && nxt) exitPx = bars1m[nxt.i].c;
+      if (exitPx == null) continue;
+      const pnl = ent.dir === 1 ? (exitPx - ent.px) : (ent.px - exitPx);
+      totalPnl += pnl;
+      if (pnl >= 0) { wins++; grossW += pnl; } else { losses++; grossL += Math.abs(pnl); }
+    }
+    const nTrades = wins + losses;
+    return { pnl: totalPnl, winRate: nTrades > 0 ? wins / nTrades * 100 : 0, pf: grossL > 0 ? grossW / grossL : (grossW > 0 ? 99 : 0), nTrades: nTrades };
+  } catch(e) { return { pnl: 0, winRate: 0, pf: 0, nTrades: 0 }; }
+}
+
+function runStrat11Backtest(showToast) {
+  const bars1m = (typeof state !== 'undefined' && state && state.data) ? state.data : null;
+  if (!bars1m || bars1m.length < 100) {
+    if (typeof toast === 'function') toast('\u26A0\uFE0F Pas assez de donn\u00E9es pour le classement', '#FBBF24');
+    return;
+  }
+  const retestBtn = document.getElementById('btn-pastilles-retest');
+  const statusEl  = document.getElementById('pastilles-ranking-status');
+  if (retestBtn) { retestBtn.textContent = '\u23F3 Calcul\u2026'; retestBtn.disabled = true; }
+  if (statusEl)  statusEl.textContent = '\u23F3 Calcul en cours sur ' + bars1m.length + ' bougies\u2026';
+  setTimeout(function() {
+    try {
+      const results = STRAT11_VARIANTS_DEF.map(function(vDef) {
+        const stats = _backtestVariant(bars1m, vDef);
+        return Object.assign({ key: vDef.key, name: vDef.name, catIdx: vDef.catIdx, tfFMC: vDef.tfFMC, tfKK: vDef.tfKK }, stats);
+      });
+      results.sort(function(a, b) { return b.pnl - a.pnl; });
+      const prevRanking = window.__strat11Ranking;
+      const hasChanged = prevRanking && prevRanking.length === 5 && results.some(function(r, i) { return r.key !== prevRanking[i].key; });
+      window.__strat11RankingPrev = prevRanking;
+      window.__strat11Ranking = results;
+      try { localStorage.setItem('strat11Ranking', JSON.stringify(results)); } catch(e) {}
+      const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      if (statusEl) statusEl.innerHTML = '\uD83C\uDFC6 #1 : <b style="color:#10B981">' + results[0].name + ' [' + results[0].tfFMC + 'm\u00D7' + results[0].tfKK + 'm]</b>'
+        + ' &middot; <span style="color:#10B981">' + (results[0].pnl >= 0 ? '+' : '') + Math.round(results[0].pnl) + ' pts</span>'
+        + ' &middot; <span style="color:#94A3B8">Mis \u00E0 jour ' + now + '</span>';
+      if (retestBtn) { retestBtn.textContent = '\uD83D\uDD2C Re-tester'; retestBtn.disabled = false; }
+      renderPastillesList(true);
+      if (showToast) {
+        if (hasChanged) {
+          _showReclassModal(results, prevRanking);
+        } else if (typeof toast === 'function') {
+          toast('\u2705 Classement \u00E0 jour · #1 : ' + results[0].name + ' · ' + (results[0].pnl >= 0 ? '+' : '') + Math.round(results[0].pnl) + ' pts', '#10B981');
+        }
+      }
+    } catch(err) {
+      console.error('runStrat11Backtest error:', err);
+      if (retestBtn) { retestBtn.textContent = '\uD83D\uDD2C Re-tester'; retestBtn.disabled = false; }
+      if (statusEl) statusEl.textContent = '\u274C Erreur lors du calcul';
+      if (typeof toast === 'function') toast('\u274C Erreur calcul classement', '#F87171');
+    }
+  }, 60);
+}
+
+function _showReclassModal(newR, prevR) {
+  const ex = document.getElementById('reclass-modal');
+  if (ex) ex.remove();
+  const prevTop = prevR ? prevR[0] : null;
+  const newTop  = newR[0];
+  const modal = document.createElement('div');
+  modal.id = 'reclass-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,20,0.78);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#0A111F;border:2px solid #7AA2FF;border-radius:14px;max-width:360px;width:100%;padding:22px 22px 18px;box-shadow:0 16px 60px rgba(0,0,0,0.9);text-align:center';
+  const prevHtml = prevTop
+    ? '<div style="margin-bottom:6px;font-size:11px;color:#94A3B8">Avant : <b>' + prevTop.name + ' [' + prevTop.tfFMC + 'm×' + prevTop.tfKK + 'm] · ' + Math.round(prevTop.pnl) + ' pts</b></div>'
+    : '';
+  const pfStr = newTop.pf > 99 ? '>99' : newTop.pf.toFixed(2);
+  box.innerHTML = '<div style="font-size:26px;margin-bottom:8px">🔄</div>'
+    + '<div style="font-weight:800;font-size:14px;color:#7AA2FF;margin-bottom:10px">Nouveau Classement Détecté !</div>'
+    + prevHtml
+    + '<div style="font-size:12px;color:#E6EDF3;margin-bottom:14px">Nouveau #1 : <b style="color:#10B981;font-size:14px">' + newTop.name + ' [' + newTop.tfFMC + 'm×' + newTop.tfKK + 'm]</b><br>'
+    + '<span style="color:#10B981;font-weight:700">' + (newTop.pnl >= 0 ? '+' : '') + Math.round(newTop.pnl) + ' pts &middot; WR ' + newTop.winRate.toFixed(0) + '% &middot; PF ' + pfStr + '</span></div>'
+    + '<div style="display:flex;gap:8px">'
+    + '<button id="reclass-ok" style="flex:1;padding:10px;background:rgba(16,185,129,0.2);border:1.5px solid #10B981;border-radius:8px;color:#10B981;font-weight:800;font-size:12px;cursor:pointer">✅ Valider</button>'
+    + '<button id="reclass-no" style="flex:1;padding:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#94A3B8;font-weight:700;font-size:12px;cursor:pointer">↺ Garder l\'ancien</button>'
+    + '</div>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  document.getElementById('reclass-ok').addEventListener('click', function() {
+    modal.remove();
+    if (typeof toast === 'function') toast('✅ Nouveau classement validé ! #1 : ' + newTop.name, '#10B981');
+  });
+  document.getElementById('reclass-no').addEventListener('click', function() {
+    window.__strat11Ranking = window.__strat11RankingPrev;
+    modal.remove();
+    renderPastillesList(true);
+    if (typeof toast === 'function') toast('↺ Ancien classement conservé', '#94A3B8');
+  });
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      window.__strat11Ranking = window.__strat11RankingPrev;
+      modal.remove();
+      renderPastillesList(true);
+    }
+  });
+}
+
+function loadSavedStrat11Ranking() {
+  try {
+    const saved = localStorage.getItem('strat11Ranking');
+    if (!saved) return;
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed) || parsed.length !== 5) return;
+    const rebuilt = parsed.map(function(s) {
+      const vDef = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === s.key; });
+      if (!vDef) return null;
+      return Object.assign({}, vDef, s);
+    }).filter(Boolean);
+    if (rebuilt.length === 5) window.__strat11Ranking = rebuilt;
+  } catch(e) {}
+}
+
 function resetDefaultPastilles() {
   for (const cat of PASTILLES_CATALOG) {
     for (const item of cat.items) {
@@ -16286,7 +16532,11 @@ if (btnPastillesMenu && pastillesMenuEl) {
   }
 
   setTimeout(() => {
-    try { renderPastillesList(true); } catch(e) {}
+    try {
+      loadSavedStrat11Ranking();
+      renderPastillesList(true);
+      setTimeout(function() { try { runStrat11Backtest(false); } catch(e) {} }, 1500);
+    } catch(e) {}
   }, 200);
 }
 
@@ -33438,6 +33688,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
       let curDir = 0;
       let count = 0;
+      const rawEntries = [];
 
       for (let k = 1; k < d.length; k++) {
         const b = d[k];
@@ -33455,6 +33706,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
         if (trigBuy && curDir !== 1) {
           curDir = 1;
           count++;
+          rawEntries.push({ i: k, t: b.t, dir: 1, tradeNum: count, price: b.c, low: b.l, high: b.h });
           if (cfg.showBuy !== false) {
             signals.push({
               i: k, t: b.t, dir: 1,
@@ -33479,6 +33731,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
         else if (trigSell && curDir !== -1) {
           curDir = -1;
           count++;
+          rawEntries.push({ i: k, t: b.t, dir: -1, tradeNum: count, price: b.c, low: b.l, high: b.h });
           if (cfg.showSell !== false) {
             signals.push({
               i: k, t: b.t, dir: -1,
@@ -33514,9 +33767,14 @@ function computeFMCSignals(cleFmc, cleStrat) {
           ssLen: indKKCfg.ssLen != null ? indKKCfg.ssLen : 21, sigLen: indKKCfg.sigLen != null ? indKKCfg.sigLen : 20
         });
         const exitNetKK = (tfExit === tfKK) ? netKK : ((barsExitKK !== d && typeof mapHTF === 'function') ? mapHTF(barsExitKK, rawExitKK.net || [], d) : (rawExitKK.net || []));
-        const vEntries = signals.filter(s => s.isStrat1111 && !s.isExit && s.optKey === v.key).sort((a, b) => a.i - b.i);
+        const vEntries = rawEntries.sort((a, b) => a.i - b.i);
         for (let eIdx = 0; eIdx < vEntries.length; eIdx++) {
           const ent = vEntries[eIdx];
+          const isAchat = ent.dir === 1;
+          // Afficher la sortie uniquement si la pastille associée est visible
+          if (isAchat && cfg.showBuy === false) continue;
+          if (!isAchat && cfg.showSell === false) continue;
+
           const nextEnt = vEntries[eIdx + 1];
           const maxK = nextEnt ? nextEnt.i : (d.length - 1);
           let hasZeroExit = false;
@@ -33527,7 +33785,6 @@ function computeFMCSignals(cleFmc, cleStrat) {
             if (!b) continue;
             const curValKK = exitNetKK[k] ?? 0;
             const prevValKK = exitNetKK[k - 1] ?? 0;
-            const isAchat = ent.dir === 1;
             const pnl = isAchat ? (b.c - ent.price) : (ent.price - b.c);
             const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
 
@@ -33587,6 +33844,36 @@ function computeFMCSignals(cleFmc, cleStrat) {
                   bgFill: 'rgba(38, 26, 6, 0.96)'
                 });
               }
+            }
+          }
+
+          // 3. Sortie N°3 : Fallback Reversal Exit (Garantie de sortie à 100% — ex: Trade #14)
+          if (!hasZeroExit && !hasExtremeExit && nextEnt) {
+            const b = d[nextEnt.i];
+            if (b) {
+              const pnl = isAchat ? (b.c - ent.price) : (ent.price - b.c);
+              const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+              signals.push({
+                i: nextEnt.i, t: b.t, dir: isAchat ? -1 : 1,
+                type: isAchat ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                optKey: v.key,
+                isExit: true,
+                isStrat1111Exit: true,
+                exitType: 'reversal',
+                exitOf: isAchat ? 'ACHAT' : 'VENTE',
+                tradeNum: ent.tradeNum,
+                entryI: ent.i,
+                entryPrice: ent.price,
+                pnl: pnl,
+                pnlStr: pnlStr,
+                price: b.c, low: b.l, high: b.h,
+                label: 'SORTIE ' + (isAchat ? 'ACHAT' : 'VENTE'),
+                badge: '🏁 #' + ent.tradeNum + ' SORTIE (Inversion Signal)',
+                sub: (pnl >= 0 ? 'Gain ' : 'Perte ') + pnlStr + ' · Inversion Signal',
+                color: pnl >= 0 ? '#38BDF8' : '#F87171',
+                borderCol: '#38BDF8',
+                bgFill: 'rgba(6, 28, 40, 0.96)'
+              });
             }
           }
         }
@@ -40105,7 +40392,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2520';
+  window.__LUMEN_BUILD = 'B-0911-2540';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
