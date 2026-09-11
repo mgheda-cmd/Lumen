@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2510</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2520</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5740,7 +5740,9 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_11_11_scalp:{on:true,showBuy:true,showSell:true,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:2,tfKK:3,cBuy:'#00E676',cSell:'#FF0055'},
+    strat_11_11_elite:{on:true,showBuy:true,showSell:true,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:5,tfKK:10,tfExitKK:3,cBuy:'#10B981',cSell:'#F43F5E'},
+    strat_11_11_ultra:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:1,tfKK:6,tfExitKK:6,cBuy:'#00E5FF',cSell:'#FF0055'},
+    strat_11_11_scalp:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:2,tfKK:3,tfExitKK:3,cBuy:'#00E676',cSell:'#FF0055'},
     strat_11_11_pro:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:5,tfKK:6,cBuy:'#10B981',cSell:'#F43F5E'},
     strat_11_11:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
     strat_fmc:{on:true,showPureNoAlma:true,showElite:true,showEliteExits:true,showEliteKkExitCross:true,showEliteKkExitZero:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
@@ -15016,7 +15018,153 @@ const pastillesMenuEl = document.getElementById('pastilles-menu');
 
 const PASTILLES_CATALOG = [
   {
-    category: '⚡ TIME FRAME 1 : SCALPING RAPIDE (FMC 2m × KK 3m)',
+    category: '🏆 OPTION 1 : ÉLITE PRÉCISION (FMC 5m × KK 10m · Sortie KK 3m)',
+    color: '#10B981',
+    items: [
+      {
+        id: 'strat_11_11_elite_buy',
+        icon: '🟢',
+        label: 'Pastille Verte Achat [5m×10m] (PF 5.68 / WR 64.4%)',
+        desc: '🏆 Record mondial : FMC 5m Vert validé par KK 10m (+10 085 pts, Profit Factor 5.68)',
+        accent: '#10B981',
+        def: true,
+        get: () => state.indicators?.strat_11_11_elite?.showBuy !== false && !!state.indicators?.strat_11_11_elite?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
+          state.indicators.strat_11_11_elite.showBuy = v;
+          state.indicators.strat_11_11_elite.on = !!(state.indicators.strat_11_11_elite.showBuy || state.indicators.strat_11_11_elite.showSell);
+        }
+      },
+      {
+        id: 'strat_11_11_elite_sell',
+        icon: '🔴',
+        label: 'Pastille Rouge Vente [5m×10m] (PF 5.68 / WR 64.4%)',
+        desc: '🏆 Record mondial : FMC 5m Rouge validé par KK 10m (+10 085 pts, Profit Factor 5.68)',
+        accent: '#F43F5E',
+        def: true,
+        get: () => state.indicators?.strat_11_11_elite?.showSell !== false && !!state.indicators?.strat_11_11_elite?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
+          state.indicators.strat_11_11_elite.showSell = v;
+          state.indicators.strat_11_11_elite.on = !!(state.indicators.strat_11_11_elite.showBuy || state.indicators.strat_11_11_elite.showSell);
+        }
+      },
+      {
+        id: 'strat_11_11_elite_exit_zero',
+        icon: '🏁',
+        label: 'Sortie N°1 : KK 3m Ligne 0 [5m×10m] (Record Rentabilité)',
+        desc: 'Sortie agile N°1 (PF 5.68) : Clôture dès que l\'oscillateur KK 3m re-traverse la ligne 0',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_11_11_elite?.showExitZero !== false && !!state.indicators?.strat_11_11_elite?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
+          state.indicators.strat_11_11_elite.showExitZero = v;
+        }
+      },
+      {
+        id: 'strat_11_11_elite_exit_extreme',
+        icon: '⚡',
+        label: 'Sortie N°2 : KK Extrême [5m×10m] (Prise TP Sommet)',
+        desc: 'Sortie TP : Clôture dès que le KK atteint la zone extrême (±55/±70)',
+        accent: '#FBBF24',
+        def: false,
+        get: () => state.indicators?.strat_11_11_elite?.showExitExtreme === true && !!state.indicators?.strat_11_11_elite?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
+          state.indicators.strat_11_11_elite.showExitExtreme = v;
+        }
+      },
+      {
+        id: 'strat_11_11_elite_lines',
+        icon: '📏',
+        label: 'Pointillés verticaux [5m×10m]',
+        desc: 'Prolonge les pointillés verticaux et marque les points repères sur les indicateurs du bas',
+        accent: '#10B981',
+        def: true,
+        get: () => state.indicators?.strat_11_11_elite?.showVerticalLines !== false,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
+          state.indicators.strat_11_11_elite.showVerticalLines = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '⚡ OPTION 2 : SCALPING HAUTE FRÉQUENCE (FMC 1m × KK 6m · Sortie KK 6m)',
+    color: '#00E5FF',
+    items: [
+      {
+        id: 'strat_11_11_ultra_buy',
+        icon: '🟢',
+        label: 'Pastille Verte Achat [1m×6m] (+12 437 pts / 177 trades)',
+        desc: '⚡ Record de points : FMC 1m Vert validé par KK 6m (+12 437 pts, Profit Factor 3.37)',
+        accent: '#00E676',
+        def: false,
+        get: () => state.indicators?.strat_11_11_ultra?.showBuy === true && !!state.indicators?.strat_11_11_ultra?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
+          state.indicators.strat_11_11_ultra.showBuy = v;
+          state.indicators.strat_11_11_ultra.on = !!(state.indicators.strat_11_11_ultra.showBuy || state.indicators.strat_11_11_ultra.showSell);
+        }
+      },
+      {
+        id: 'strat_11_11_ultra_sell',
+        icon: '🔴',
+        label: 'Pastille Rouge Vente [1m×6m] (+12 437 pts / 177 trades)',
+        desc: '⚡ Record de points : FMC 1m Rouge validé par KK 6m (+12 437 pts, Profit Factor 3.37)',
+        accent: '#FF0055',
+        def: false,
+        get: () => state.indicators?.strat_11_11_ultra?.showSell === true && !!state.indicators?.strat_11_11_ultra?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
+          state.indicators.strat_11_11_ultra.showSell = v;
+          state.indicators.strat_11_11_ultra.on = !!(state.indicators.strat_11_11_ultra.showBuy || state.indicators.strat_11_11_ultra.showSell);
+        }
+      },
+      {
+        id: 'strat_11_11_ultra_exit_zero',
+        icon: '🏁',
+        label: 'Sortie N°1 : KK 6m Ligne 0 [1m×6m] (+12 437 pts)',
+        desc: 'Sortie N°1 : Clôture dès que le KK 6m re-traverse la ligne 0',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_11_11_ultra?.showExitZero !== false && !!state.indicators?.strat_11_11_ultra?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
+          state.indicators.strat_11_11_ultra.showExitZero = v;
+        }
+      },
+      {
+        id: 'strat_11_11_ultra_exit_extreme',
+        icon: '⚡',
+        label: 'Sortie N°2 : KK Extrême [1m×6m] (Prise TP Sommet)',
+        desc: 'Sortie TP : Clôture dès que le KK 6m atteint la zone extrême (±55/±70)',
+        accent: '#FBBF24',
+        def: false,
+        get: () => state.indicators?.strat_11_11_ultra?.showExitExtreme === true && !!state.indicators?.strat_11_11_ultra?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
+          state.indicators.strat_11_11_ultra.showExitExtreme = v;
+        }
+      },
+      {
+        id: 'strat_11_11_ultra_lines',
+        icon: '📏',
+        label: 'Pointillés verticaux [1m×6m]',
+        desc: 'Prolonge les pointillés verticaux et marque les points sur les indicateurs du bas',
+        accent: '#00E5FF',
+        def: true,
+        get: () => state.indicators?.strat_11_11_ultra?.showVerticalLines !== false,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
+          state.indicators.strat_11_11_ultra.showVerticalLines = v;
+        }
+      }
+    ]
+  },
+  {
+    category: '🎯 OPTION 3 : SCALPING RAPIDE ORIGINAL (FMC 2m × KK 3m)',
     color: '#00E5FF',
     items: [
       {
@@ -15025,8 +15173,8 @@ const PASTILLES_CATALOG = [
         label: 'Pastille Verte Achat [2m×3m]',
         desc: 'Affiche la pastille ACHAT dès que FMC 2m et KK 3m sont Verts',
         accent: '#00E676',
-        def: true,
-        get: () => state.indicators?.strat_11_11_scalp?.showBuy !== false && !!state.indicators?.strat_11_11_scalp?.on,
+        def: false,
+        get: () => state.indicators?.strat_11_11_scalp?.showBuy === true && !!state.indicators?.strat_11_11_scalp?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
           state.indicators.strat_11_11_scalp.showBuy = v;
@@ -15039,8 +15187,8 @@ const PASTILLES_CATALOG = [
         label: 'Pastille Rouge Vente [2m×3m]',
         desc: 'Affiche la pastille VENTE dès que FMC 2m et KK 3m sont Rouges',
         accent: '#FF0055',
-        def: true,
-        get: () => state.indicators?.strat_11_11_scalp?.showSell !== false && !!state.indicators?.strat_11_11_scalp?.on,
+        def: false,
+        get: () => state.indicators?.strat_11_11_scalp?.showSell === true && !!state.indicators?.strat_11_11_scalp?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
           state.indicators.strat_11_11_scalp.showSell = v;
@@ -15050,8 +15198,8 @@ const PASTILLES_CATALOG = [
       {
         id: 'strat_11_11_scalp_exit_zero',
         icon: '🏁',
-        label: 'Sortie N°1 : KK Ligne 0 [2m×3m] (+4 670 pts)',
-        desc: 'Sortie N°1 Rentabilité (PF 1.80) : Clôture dès que l\'oscillateur KK re-traverse la ligne 0',
+        label: 'Sortie N°1 : KK Ligne 0 [2m×3m]',
+        desc: 'Sortie : Clôture dès que l\'oscillateur KK re-traverse la ligne 0',
         accent: '#38BDF8',
         def: true,
         get: () => state.indicators?.strat_11_11_scalp?.showExitZero !== false && !!state.indicators?.strat_11_11_scalp?.on,
@@ -15063,8 +15211,8 @@ const PASTILLES_CATALOG = [
       {
         id: 'strat_11_11_scalp_exit_extreme',
         icon: '⚡',
-        label: 'Sortie N°2 : KK Extrême [2m×3m] (Prise TP Sommet)',
-        desc: 'Sortie N°2 Sécurisation : Clôture au sommet dès que le KK atteint la zone extrême (±55/±70)',
+        label: 'Sortie N°2 : KK Extrême [2m×3m]',
+        desc: 'Sortie TP : Clôture au sommet dès que le KK atteint la zone extrême (±55/±70)',
         accent: '#FBBF24',
         def: false,
         get: () => state.indicators?.strat_11_11_scalp?.showExitExtreme === true && !!state.indicators?.strat_11_11_scalp?.on,
@@ -15089,7 +15237,7 @@ const PASTILLES_CATALOG = [
     ]
   },
   {
-    category: '💎 TIME FRAME 2 : HAUTE PRÉCISION (FMC 5m × KK 6m)',
+    category: '💎 OPTION 4 : HAUTE PRÉCISION INITIALE (FMC 5m × KK 6m)',
     color: '#A855F7',
     items: [
       {
@@ -15162,7 +15310,7 @@ const PASTILLES_CATALOG = [
     ]
   },
   {
-    category: '🎯 TIME FRAME 3 : ALTERNATIVE (FMC 3m × KK 2m)',
+    category: '🎯 OPTION 5 : ALTERNATIVE INITIALE (FMC 3m × KK 2m)',
     color: '#38BDF8',
     items: [
       {
@@ -33250,11 +33398,13 @@ function computeFMCSignals(cleFmc, cleStrat) {
     }
   }
 
-  /* 7. STRATÉGIES 11 11 (3 VARIANTES TOTALEMENT INDÉPENDANTES) */
+  /* 7. STRATÉGIES 11 11 (5 VARIANTES TOTALEMENT INDÉPENDANTES) */
   const strat11Variants = [
-    { key: 'strat_11_11_scalp', defTfFmc: 2, defTfKk: 3, name: '11 11 [2m×3m]', icon: '🎯', cBorder: '#00E5FF', cBuy: '#00E676', cSell: '#FF0055' },
-    { key: 'strat_11_11_pro',   defTfFmc: 5, defTfKk: 6, name: '11 11 [5m×6m]', icon: '💎', cBorder: '#A855F7', cBuy: '#10B981', cSell: '#F43F5E' },
-    { key: 'strat_11_11',       defTfFmc: 3, defTfKk: 2, name: '11 11 [3m×2m]', icon: '🎯', cBorder: '#38BDF8', cBuy: '#00E676', cSell: '#FF0055' }
+    { key: 'strat_11_11_elite', defTfFmc: 5, defTfKk: 10, defTfExit: 3, name: '11 11 Élite [5m×10m]', icon: '🏆', cBorder: '#10B981', cBuy: '#10B981', cSell: '#F43F5E' },
+    { key: 'strat_11_11_ultra', defTfFmc: 1, defTfKk: 6,  defTfExit: 6, name: '11 11 Scalp [1m×6m]', icon: '⚡', cBorder: '#00E5FF', cBuy: '#00E5FF', cSell: '#FF0055' },
+    { key: 'strat_11_11_scalp', defTfFmc: 2, defTfKk: 3,  defTfExit: 3, name: '11 11 [2m×3m]',       icon: '🎯', cBorder: '#38BDF8', cBuy: '#00E676', cSell: '#FF0055' },
+    { key: 'strat_11_11_pro',   defTfFmc: 5, defTfKk: 6,  defTfExit: 5, name: '11 11 [5m×6m]',       icon: '💎', cBorder: '#A855F7', cBuy: '#10B981', cSell: '#F43F5E' },
+    { key: 'strat_11_11',       defTfFmc: 3, defTfKk: 2,  defTfExit: 3, name: '11 11 [3m×2m]',       icon: '🎯', cBorder: '#F59E0B', cBuy: '#00E676', cSell: '#FF0055' }
   ];
 
   for (const v of strat11Variants) {
@@ -33356,6 +33506,14 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const showExitZero = cfg.showExitZero !== false;
       const showExitExtreme = cfg.showExitExtreme === true;
       if (showExitZero || showExitExtreme) {
+        const tfExit = cfg.tfExitKK || v.defTfExit || tfKK;
+        const barsExitKK = (tfExit === tfKK) ? barsKK : ((state.tf === tfExit) ? d : ((typeof getMTFBars === 'function') ? getMTFBars(tfExit) : null) || d);
+        const rawExitKK = (tfExit === tfKK) ? rawKK : calc.twoIndicator(barsExitKK, {
+          src: indKKCfg.src || 'close', mode: indKKCfg.mode || 'Trend Strength', filter: indKKCfg.filter || 'PhiSmoother',
+          phase: indKKCfg.phase != null ? indKKCfg.phase : 3.7, spacing: indKKCfg.spacing != null ? indKKCfg.spacing : 3,
+          ssLen: indKKCfg.ssLen != null ? indKKCfg.ssLen : 21, sigLen: indKKCfg.sigLen != null ? indKKCfg.sigLen : 20
+        });
+        const exitNetKK = (tfExit === tfKK) ? netKK : ((barsExitKK !== d && typeof mapHTF === 'function') ? mapHTF(barsExitKK, rawExitKK.net || [], d) : (rawExitKK.net || []));
         const vEntries = signals.filter(s => s.isStrat1111 && !s.isExit && s.optKey === v.key).sort((a, b) => a.i - b.i);
         for (let eIdx = 0; eIdx < vEntries.length; eIdx++) {
           const ent = vEntries[eIdx];
@@ -33367,8 +33525,8 @@ function computeFMCSignals(cleFmc, cleStrat) {
           for (let k = ent.i + 1; k <= maxK; k++) {
             const b = d[k];
             if (!b) continue;
-            const curValKK = netKK[k] ?? 0;
-            const prevValKK = netKK[k - 1] ?? 0;
+            const curValKK = exitNetKK[k] ?? 0;
+            const prevValKK = exitNetKK[k - 1] ?? 0;
             const isAchat = ent.dir === 1;
             const pnl = isAchat ? (b.c - ent.price) : (ent.price - b.c);
             const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
@@ -33645,6 +33803,8 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   cleStrat = cleStrat || 'strat_fmc';
   const indFmc = (state.indicators && state.indicators[cleStrat]) ? state.indicators[cleStrat] : {};
   const is1111Active = !!(state.indicators && (
+    (state.indicators.strat_11_11_elite && state.indicators.strat_11_11_elite.on) ||
+    (state.indicators.strat_11_11_ultra && state.indicators.strat_11_11_ultra.on) ||
     (state.indicators.strat_11_11 && state.indicators.strat_11_11.on) ||
     (state.indicators.strat_11_11_scalp && state.indicators.strat_11_11_scalp.on) ||
     (state.indicators.strat_11_11_pro && state.indicators.strat_11_11_pro.on)
@@ -39945,7 +40105,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2510';
+  window.__LUMEN_BUILD = 'B-0910-2520';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
