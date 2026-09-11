@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2600</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2610</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -8528,6 +8528,12 @@ function placeBadge(bx, bw, by, bh, dir) {
       const nextY = r.y - bh - GAP;
       if (nextY < minY) {
         y = minY;
+        // Si bloqué en haut et toujours en collision, décaler en X pour ne jamais masquer l'autre
+        if (hit(y)) {
+          const shift = Math.round(bw * 0.45);
+          if (bx + bw + shift < W - AXIS_W - 4) bx += shift;
+          else if (bx - shift > 4) bx -= shift;
+        }
         break;
       }
       y = nextY;
@@ -8536,6 +8542,12 @@ function placeBadge(bx, bw, by, bh, dir) {
       const nextY = r.y + r.h + GAP;
       if (nextY > maxY) {
         y = maxY;
+        // Si bloqué en bas et toujours en collision, décaler en X pour ne jamais masquer l'autre
+        if (hit(y)) {
+          const shift = Math.round(bw * 0.45);
+          if (bx + bw + shift < W - AXIS_W - 4) bx += shift;
+          else if (bx - shift > 4) bx -= shift;
+        }
         break;
       }
       y = nextY;
@@ -16380,10 +16392,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2600
+// Build B-0911-2610
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2600
+// Build B-0911-2610
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -34618,10 +34630,16 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   if (!indFmc.on && !is1111Active) return;
   if (!is1111Active && indFmc.showBadges === false && indFmc.showKkConfluence === false && indFmc.showElite === false && indFmc.showPureNoAlma === false && indFmc.showEliteExits === false && indFmc.showEliteKkExitCross === false && indFmc.showEliteKkExitZero === false && indFmc.showExits === false && indFmc.showExitsV2 === false) return;
 
-  const signals = fmcRes.signals || [];
-  window.__lastFMCSignals = signals;
+  const rawSignals = fmcRes.signals || [];
+  window.__lastFMCSignals = rawSignals;
   try { if (typeof window.__updateEliteJournal === 'function') window.__updateEliteJournal(); } catch(e){}
-  if (!signals.length) return;
+  if (!rawSignals.length) return;
+
+  // Trier pour traiter d'abord les sorties (au plus près de la mèche) puis les entrées
+  const signals = rawSignals.slice().sort(function(a, b) {
+    if (a.i !== b.i) return a.i - b.i;
+    return (a.isExit ? -1 : 1);
+  });
 
   const nomFmc = 'FMC';
   const taille = 'compacte';
@@ -34634,6 +34652,9 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   }
   const isAlmaGreen = (idx) => (useAlmaFilter && asd && Array.isArray(asd.dir) && asd.dir[idx] === 1);
   const isAlmaViolet = (idx) => (useAlmaFilter && asd && Array.isArray(asd.dir) && asd.dir[idx] === -1);
+
+  // Système d'empilement dynamique anti-chevauchement (stagger) pour pastilles & sorties
+  const fmcXStack = {};
 
   for (const sig of signals) {
     try {
@@ -34681,11 +34702,16 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       const isLong = sig.dir === 1;
       const isPlacedAbove = sig.isExit ? (sig.type === 'SORTIE ACHAT') : !isLong;
 
+      const stackCol = Math.round(x / 48) + '_' + (isPlacedAbove ? 'top' : 'bot');
+      const stackIdx = fmcXStack[stackCol] || 0;
+      fmcXStack[stackCol] = stackIdx + 1;
+
       // Dessin des pastilles RONDES (Sorties KK 10m Croisement & Ligne 0)
       if (sig.isRound) {
         const rad = Math.round(30 * kT);
         const anchorY = yOf(isPlacedAbove ? sig.high : sig.low);
-        const rawBy = isPlacedAbove ? (anchorY - rad - 28) : (anchorY + rad + 28);
+        const stackOffset = stackIdx * Math.round((rad * 2 + 14) * 1.08);
+        const rawBy = isPlacedAbove ? (anchorY - rad - 28 - stackOffset) : (anchorY + rad + 28 + stackOffset);
         const by = (typeof placeBadge === 'function') ? placeBadge(x - rad, rad * 2, rawBy - rad, rad * 2, isPlacedAbove ? -1 : 1) + rad : rawBy;
 
         ctx.save();
@@ -34758,8 +34784,12 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       const color = isRappel ? (indFmc.cRappel || '#94A3B8') : (sig.color || (isLong ? '#00E676' : '#FF0055'));
       const borderCol = isRappel ? (indFmc.cRappelBorder || '#64748B') : (sig.borderCol || color);
       const anchorY = yOf(isPlacedAbove ? sig.high : sig.low);
-      const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
-      const rawBy = isPlacedAbove ? (anchorY - bh - (isExit ? 48 : 80)) : (anchorY + (isExit ? 48 : 80));
+      let bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, x - bw / 2));
+
+      // Empilement dynamique garanti : les sorties et entrées s'espacent de manière fluide sans jamais se masquer
+      const stackOffset = stackIdx * Math.round((bh + 14) * 1.08);
+      const baseClearance = isExit ? 46 : 82;
+      const rawBy = isPlacedAbove ? (anchorY - bh - baseClearance - stackOffset) : (anchorY + baseClearance + stackOffset);
       const by = (typeof placeBadge === 'function') ? placeBadge(bx, bw, rawBy, bh, isPlacedAbove ? -1 : 1) : rawBy;
 
       ctx.save();
@@ -40911,7 +40941,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2600';
+  window.__LUMEN_BUILD = 'B-0911-2610';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
