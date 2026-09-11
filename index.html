@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2490</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2500</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5740,9 +5740,9 @@ const state = {
     exhaustion_pro:{on:true,period:14,filterBySignal:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':true,'240':false}},
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
-    strat_11_11_scalp:{on:true,showBuy:true,showSell:true,showVerticalLines:true,tfFMC:2,tfKK:3,cBuy:'#00E676',cSell:'#FF0055'},
-    strat_11_11_pro:{on:false,showBuy:false,showSell:false,showVerticalLines:true,tfFMC:5,tfKK:6,cBuy:'#10B981',cSell:'#F43F5E'},
-    strat_11_11:{on:false,showBuy:false,showSell:false,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
+    strat_11_11_scalp:{on:true,showBuy:true,showSell:true,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:2,tfKK:3,cBuy:'#00E676',cSell:'#FF0055'},
+    strat_11_11_pro:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:5,tfKK:6,cBuy:'#10B981',cSell:'#F43F5E'},
+    strat_11_11:{on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
     strat_fmc:{on:true,showPureNoAlma:true,showElite:true,showEliteExits:true,showEliteKkExitCross:true,showEliteKkExitZero:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
@@ -14977,6 +14977,32 @@ const PASTILLES_CATALOG = [
         }
       },
       {
+        id: 'strat_11_11_scalp_exit_zero',
+        icon: '🏁',
+        label: 'Sortie N°1 : KK Ligne 0 [2m×3m] (+4 670 pts)',
+        desc: 'Sortie N°1 Rentabilité (PF 1.80) : Clôture dès que l\'oscillateur KK re-traverse la ligne 0',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_11_11_scalp?.showExitZero !== false && !!state.indicators?.strat_11_11_scalp?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
+          state.indicators.strat_11_11_scalp.showExitZero = v;
+        }
+      },
+      {
+        id: 'strat_11_11_scalp_exit_extreme',
+        icon: '⚡',
+        label: 'Sortie N°2 : KK Extrême [2m×3m] (Prise TP Sommet)',
+        desc: 'Sortie N°2 Sécurisation : Clôture au sommet dès que le KK atteint la zone extrême (±55/±70)',
+        accent: '#FBBF24',
+        def: false,
+        get: () => state.indicators?.strat_11_11_scalp?.showExitExtreme === true && !!state.indicators?.strat_11_11_scalp?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
+          state.indicators.strat_11_11_scalp.showExitExtreme = v;
+        }
+      },
+      {
         id: 'strat_11_11_scalp_lines',
         icon: '📏',
         label: 'Pointillés verticaux [2m×3m]',
@@ -15024,6 +15050,32 @@ const PASTILLES_CATALOG = [
         }
       },
       {
+        id: 'strat_11_11_pro_exit_zero',
+        icon: '🏁',
+        label: 'Sortie N°1 : KK Ligne 0 [5m×6m]',
+        desc: 'Sortie dès que l\'oscillateur KK 6m re-traverse la ligne 0',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_11_11_pro?.showExitZero !== false && !!state.indicators?.strat_11_11_pro?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
+          state.indicators.strat_11_11_pro.showExitZero = v;
+        }
+      },
+      {
+        id: 'strat_11_11_pro_exit_extreme',
+        icon: '⚡',
+        label: 'Sortie N°2 : KK Extrême [5m×6m]',
+        desc: 'Sortie TP dès que le KK 6m atteint la zone extrême (±55/±70)',
+        accent: '#FBBF24',
+        def: false,
+        get: () => state.indicators?.strat_11_11_pro?.showExitExtreme === true && !!state.indicators?.strat_11_11_pro?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
+          state.indicators.strat_11_11_pro.showExitExtreme = v;
+        }
+      },
+      {
         id: 'strat_11_11_pro_lines',
         icon: '📏',
         label: 'Pointillés verticaux [5m×6m]',
@@ -15068,6 +15120,32 @@ const PASTILLES_CATALOG = [
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
           state.indicators.strat_11_11.showSell = v;
           state.indicators.strat_11_11.on = !!(state.indicators.strat_11_11.showBuy || state.indicators.strat_11_11.showSell);
+        }
+      },
+      {
+        id: 'strat_11_11_exit_zero',
+        icon: '🏁',
+        label: 'Sortie N°1 : KK Ligne 0 [3m×2m]',
+        desc: 'Sortie dès que l\'oscillateur KK 2m re-traverse la ligne 0',
+        accent: '#38BDF8',
+        def: true,
+        get: () => state.indicators?.strat_11_11?.showExitZero !== false && !!state.indicators?.strat_11_11?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
+          state.indicators.strat_11_11.showExitZero = v;
+        }
+      },
+      {
+        id: 'strat_11_11_exit_extreme',
+        icon: '⚡',
+        label: 'Sortie N°2 : KK Extrême [3m×2m]',
+        desc: 'Sortie TP dès que le KK 2m atteint la zone extrême (±55/±70)',
+        accent: '#FBBF24',
+        def: false,
+        get: () => state.indicators?.strat_11_11?.showExitExtreme === true && !!state.indicators?.strat_11_11?.on,
+        set: (v) => {
+          if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
+          state.indicators.strat_11_11.showExitExtreme = v;
         }
       },
       {
@@ -33202,6 +33280,88 @@ function computeFMCSignals(cleFmc, cleStrat) {
           }
         }
       }
+
+      // --- CALCUL DES 2 MEILLEURES SORTIES 11 11 ---
+      const showExitZero = cfg.showExitZero !== false;
+      const showExitExtreme = cfg.showExitExtreme === true;
+      if (showExitZero || showExitExtreme) {
+        const vEntries = signals.filter(s => s.isStrat1111 && !s.isExit && s.optKey === v.key).sort((a, b) => a.i - b.i);
+        for (let eIdx = 0; eIdx < vEntries.length; eIdx++) {
+          const ent = vEntries[eIdx];
+          const nextEnt = vEntries[eIdx + 1];
+          const maxK = nextEnt ? nextEnt.i : (d.length - 1);
+          let hasZeroExit = false;
+          let hasExtremeExit = false;
+
+          for (let k = ent.i + 1; k <= maxK; k++) {
+            const b = d[k];
+            if (!b) continue;
+            const curValKK = netKK[k] ?? 0;
+            const prevValKK = netKK[k - 1] ?? 0;
+            const isAchat = ent.dir === 1;
+            const pnl = isAchat ? (b.c - ent.price) : (ent.price - b.c);
+            const pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + ' pts';
+
+            // 1. Sortie N°1 : KK Ligne 0 (Épuisement Momentum — +4 670 pts)
+            if (showExitZero && !hasZeroExit && (k - ent.i >= 2)) {
+              const crossZero = isAchat ? (prevValKK > 0 && curValKK <= 0) : (prevValKK < 0 && curValKK >= 0);
+              if (crossZero) {
+                hasZeroExit = true;
+                signals.push({
+                  i: k, t: b.t, dir: isAchat ? -1 : 1,
+                  type: isAchat ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                  optKey: v.key,
+                  isExit: true,
+                  isStrat1111Exit: true,
+                  exitType: 'kk_zero',
+                  exitOf: isAchat ? 'ACHAT' : 'VENTE',
+                  tradeNum: ent.tradeNum,
+                  entryI: ent.i,
+                  entryPrice: ent.price,
+                  pnl: pnl,
+                  pnlStr: pnlStr,
+                  price: b.c, low: b.l, high: b.h,
+                  label: 'SORTIE ' + (isAchat ? 'ACHAT' : 'VENTE'),
+                  badge: '🏁 #' + ent.tradeNum + ' SORTIE KK Ligne 0',
+                  sub: (pnl >= 0 ? 'Gain ' : 'Perte ') + pnlStr + ' · Ligne 0',
+                  color: pnl >= 0 ? '#38BDF8' : '#F87171',
+                  borderCol: '#38BDF8',
+                  bgFill: 'rgba(6, 28, 40, 0.96)'
+                });
+              }
+            }
+
+            // 2. Sortie N°2 : KK Extrême (Prise de Profit TP Sommet ±65/±70)
+            if (showExitExtreme && !hasExtremeExit && (k - ent.i >= 1)) {
+              const hitExtreme = isAchat ? (curValKK >= 55 && curValKK < prevValKK) : (curValKK <= -55 && curValKK > prevValKK);
+              if (hitExtreme) {
+                hasExtremeExit = true;
+                signals.push({
+                  i: k, t: b.t, dir: isAchat ? -1 : 1,
+                  type: isAchat ? 'SORTIE ACHAT' : 'SORTIE VENTE',
+                  optKey: v.key,
+                  isExit: true,
+                  isStrat1111Exit: true,
+                  exitType: 'kk_extreme',
+                  exitOf: isAchat ? 'ACHAT' : 'VENTE',
+                  tradeNum: ent.tradeNum,
+                  entryI: ent.i,
+                  entryPrice: ent.price,
+                  pnl: pnl,
+                  pnlStr: pnlStr,
+                  price: b.c, low: b.l, high: b.h,
+                  label: 'SORTIE ' + (isAchat ? 'ACHAT' : 'VENTE'),
+                  badge: '⚡ #' + ent.tradeNum + ' SORTIE KK Extrême',
+                  sub: (pnl >= 0 ? 'TP ' : 'SL ') + pnlStr + ' · Sommet KK',
+                  color: pnl >= 0 ? '#FBBF24' : '#F87171',
+                  borderCol: '#FBBF24',
+                  bgFill: 'rgba(38, 26, 6, 0.96)'
+                });
+              }
+            }
+          }
+        }
+      }
     } catch(errVar) {
       console.warn('Erreur calcul variante ' + v.name + ':', errVar);
     }
@@ -33442,7 +33602,13 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     try {
       if (sig.i < s || sig.i >= e) continue;
       if (sig.isExit) {
-        if (!indFmc.on) continue;
+        if (sig.isStrat1111Exit) {
+          const cfg11 = (state.indicators && sig.optKey && state.indicators[sig.optKey]) ? state.indicators[sig.optKey] : state.indicators.strat_11_11_scalp;
+          if (!cfg11 || !cfg11.on) continue;
+          if (sig.exitType === 'kk_zero' && cfg11.showExitZero === false) continue;
+          if (sig.exitType === 'kk_extreme' && cfg11.showExitExtreme === false) continue;
+        } else {
+          if (!indFmc.on) continue;
         if (sig.isPureNoAlma && indFmc.showPureNoAlma === false) continue;
         if (sig.isPureNoAlma && sig.exitType === 'kk_cross' && indFmc.showEliteKkExitCross === false) continue;
         if (sig.isPureNoAlma && sig.exitType === 'kk_zero' && indFmc.showEliteKkExitZero === false) continue;
@@ -33452,6 +33618,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
         if (sig.isEliteKkZero && (indFmc.showEliteKkExitZero === false || indFmc.showElite === false)) continue;
         if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && !sig.isPureNoAlma && !sig.isRunnerExit && indFmc.showExits === false) continue;
         if (!sig.isEliteExit && !sig.isEliteKkCross && !sig.isEliteKkZero && !sig.isPureNoAlma && sig.isRunnerExit && indFmc.showExitsV2 === false) continue;
+        }
       }
       if (!sig.isExit) {
         if (sig.isStrat1111) {
@@ -39707,7 +39874,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2490';
+  window.__LUMEN_BUILD = 'B-0910-2500';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
