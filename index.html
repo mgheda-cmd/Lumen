@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2580</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2590</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -15078,7 +15078,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_elite?.showExitZero !== false && !!state.indicators?.strat_11_11_elite?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
-          state.indicators.strat_11_11_elite.showExitZero = v;
+          state.indicators.strat_11_11_elite.showExitZero = v; if (v) { state.indicators.strat_11_11_elite.showExitExtreme = false; state.indicators.strat_11_11_elite.showExitReversal = false; window.__strat11ExitMode = 's1'; }
         }
       },
       {
@@ -15091,7 +15091,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_elite?.showExitExtreme === true && !!state.indicators?.strat_11_11_elite?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
-          state.indicators.strat_11_11_elite.showExitExtreme = v;
+          state.indicators.strat_11_11_elite.showExitExtreme = v; if (v) { state.indicators.strat_11_11_elite.showExitZero = false; state.indicators.strat_11_11_elite.showExitReversal = false; window.__strat11ExitMode = 's2'; }
         }
       },
       {
@@ -15104,7 +15104,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_elite?.showExitReversal !== false && !!state.indicators?.strat_11_11_elite?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_elite) state.indicators.strat_11_11_elite = {};
-          state.indicators.strat_11_11_elite.showExitReversal = v;
+          state.indicators.strat_11_11_elite.showExitReversal = v; if (v) { state.indicators.strat_11_11_elite.showExitZero = false; state.indicators.strat_11_11_elite.showExitExtreme = false; window.__strat11ExitMode = 's3'; }
         }
       },
       {
@@ -15164,7 +15164,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_ultra?.showExitZero !== false && !!state.indicators?.strat_11_11_ultra?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
-          state.indicators.strat_11_11_ultra.showExitZero = v;
+          state.indicators.strat_11_11_ultra.showExitZero = v; if (v) { state.indicators.strat_11_11_ultra.showExitExtreme = false; state.indicators.strat_11_11_ultra.showExitReversal = false; window.__strat11ExitMode = 's1'; }
         }
       },
       {
@@ -15177,7 +15177,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_ultra?.showExitExtreme === true && !!state.indicators?.strat_11_11_ultra?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
-          state.indicators.strat_11_11_ultra.showExitExtreme = v;
+          state.indicators.strat_11_11_ultra.showExitExtreme = v; if (v) { state.indicators.strat_11_11_ultra.showExitZero = false; state.indicators.strat_11_11_ultra.showExitReversal = false; window.__strat11ExitMode = 's2'; }
         }
       },
       {
@@ -15190,7 +15190,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_ultra?.showExitReversal !== false && !!state.indicators?.strat_11_11_ultra?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_ultra) state.indicators.strat_11_11_ultra = {};
-          state.indicators.strat_11_11_ultra.showExitReversal = v;
+          state.indicators.strat_11_11_ultra.showExitReversal = v; if (v) { state.indicators.strat_11_11_ultra.showExitZero = false; state.indicators.strat_11_11_ultra.showExitExtreme = false; window.__strat11ExitMode = 's3'; }
         }
       },
       {
@@ -15250,7 +15250,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_scalp?.showExitZero !== false && !!state.indicators?.strat_11_11_scalp?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
-          state.indicators.strat_11_11_scalp.showExitZero = v;
+          state.indicators.strat_11_11_scalp.showExitZero = v; if (v) { state.indicators.strat_11_11_scalp.showExitExtreme = false; state.indicators.strat_11_11_scalp.showExitReversal = false; window.__strat11ExitMode = 's1'; }
         }
       },
       {
@@ -15263,7 +15263,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_scalp?.showExitExtreme === true && !!state.indicators?.strat_11_11_scalp?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
-          state.indicators.strat_11_11_scalp.showExitExtreme = v;
+          state.indicators.strat_11_11_scalp.showExitExtreme = v; if (v) { state.indicators.strat_11_11_scalp.showExitZero = false; state.indicators.strat_11_11_scalp.showExitReversal = false; window.__strat11ExitMode = 's2'; }
         }
       },
       {
@@ -15276,7 +15276,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_scalp?.showExitReversal !== false && !!state.indicators?.strat_11_11_scalp?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
-          state.indicators.strat_11_11_scalp.showExitReversal = v;
+          state.indicators.strat_11_11_scalp.showExitReversal = v; if (v) { state.indicators.strat_11_11_scalp.showExitZero = false; state.indicators.strat_11_11_scalp.showExitExtreme = false; window.__strat11ExitMode = 's3'; }
         }
       },
       {
@@ -15336,7 +15336,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_pro?.showExitZero !== false && !!state.indicators?.strat_11_11_pro?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
-          state.indicators.strat_11_11_pro.showExitZero = v;
+          state.indicators.strat_11_11_pro.showExitZero = v; if (v) { state.indicators.strat_11_11_pro.showExitExtreme = false; state.indicators.strat_11_11_pro.showExitReversal = false; window.__strat11ExitMode = 's1'; }
         }
       },
       {
@@ -15349,7 +15349,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_pro?.showExitExtreme === true && !!state.indicators?.strat_11_11_pro?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
-          state.indicators.strat_11_11_pro.showExitExtreme = v;
+          state.indicators.strat_11_11_pro.showExitExtreme = v; if (v) { state.indicators.strat_11_11_pro.showExitZero = false; state.indicators.strat_11_11_pro.showExitReversal = false; window.__strat11ExitMode = 's2'; }
         }
       },
       {
@@ -15362,7 +15362,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11_pro?.showExitReversal !== false && !!state.indicators?.strat_11_11_pro?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
-          state.indicators.strat_11_11_pro.showExitReversal = v;
+          state.indicators.strat_11_11_pro.showExitReversal = v; if (v) { state.indicators.strat_11_11_pro.showExitZero = false; state.indicators.strat_11_11_pro.showExitExtreme = false; window.__strat11ExitMode = 's3'; }
         }
       },
       {
@@ -15422,7 +15422,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11?.showExitZero !== false && !!state.indicators?.strat_11_11?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
-          state.indicators.strat_11_11.showExitZero = v;
+          state.indicators.strat_11_11.showExitZero = v; if (v) { state.indicators.strat_11_11.showExitExtreme = false; state.indicators.strat_11_11.showExitReversal = false; window.__strat11ExitMode = 's1'; }
         }
       },
       {
@@ -15435,7 +15435,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11?.showExitExtreme === true && !!state.indicators?.strat_11_11?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
-          state.indicators.strat_11_11.showExitExtreme = v;
+          state.indicators.strat_11_11.showExitExtreme = v; if (v) { state.indicators.strat_11_11.showExitZero = false; state.indicators.strat_11_11.showExitReversal = false; window.__strat11ExitMode = 's2'; }
         }
       },
       {
@@ -15448,7 +15448,7 @@ const PASTILLES_CATALOG = [
         get: () => state.indicators?.strat_11_11?.showExitReversal !== false && !!state.indicators?.strat_11_11?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
-          state.indicators.strat_11_11.showExitReversal = v;
+          state.indicators.strat_11_11.showExitReversal = v; if (v) { state.indicators.strat_11_11.showExitZero = false; state.indicators.strat_11_11.showExitExtreme = false; window.__strat11ExitMode = 's3'; }
         }
       },
       {
@@ -16187,15 +16187,15 @@ function renderPastillesList(forceRebuild) {
       const activePnlCol = activeS.pnl >= 0 ? '#10B981' : '#F87171';
       const activePnlStr = (activeS.pnl >= 0 ? '+' : '') + Math.round(activeS.pnl) + ' pts';
 
-      function _renderSubGrid(resObj, isFocus, accentCol, badgeLabel, subDesc) {
+      function _renderSubGrid(resObj, isFocus, accentCol, badgeLabel, subDesc, exitKey, targetVarKey) {
         const dS = resObj.sDay || { pnl: 0, wr: 0, pf: 0, n: 0 };
         const d3 = resObj.s3d  || { pnl: 0, wr: 0, pf: 0, n: 0 };
         const dA = resObj.sAll || { pnl: 0, wr: 0, pf: 0, n: 0 };
 
         function _box(pKey, title, sData) {
           const isActPeriod = isFocus && (curPeriod === pKey);
-          const bg = isActPeriod ? 'rgba(255,180,0,0.14)' : (isFocus ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.015)');
-          const border = isActPeriod ? '1.5px solid #FFB400' : (isFocus ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.04)');
+          const bg = isActPeriod ? 'rgba(255,180,0,0.18)' : (isFocus ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.015)');
+          const border = isActPeriod ? '1.5px solid #FFB400' : (isFocus ? '1px solid ' + accentCol : '1px solid rgba(255,255,255,0.04)');
           const colPnl = sData.pnl >= 0 ? '#10B981' : '#F87171';
           const pfStr = (sData.pf > 99 ? '>99' : sData.pf.toFixed(2));
           return '<div style="background:' + bg + ';border:' + border + ';border-radius:5px;padding:3px 4px">'
@@ -16205,10 +16205,14 @@ function renderPastillesList(forceRebuild) {
             + '</div>';
         }
 
-        return '<div style="margin-top:4px;padding:4px 5px;background:' + (isFocus ? 'rgba(255,255,255,0.02)' : 'transparent') + ';border:' + (isFocus ? '1px solid ' + accentCol : '1px dashed rgba(255,255,255,0.06)') + ';border-radius:7px">'
+        const activeTag = isFocus
+          ? '<span style="background:' + accentCol + ';color:#060A14;font-weight:900;font-size:8px;padding:2px 6px;border-radius:4px;letter-spacing:0.3px">✓ ACTIF SUR GRAPHIQUE</span>'
+          : '<span style="color:#94A3B8;font-size:7.5px">Cliquer pour activer</span>';
+
+        return '<div onclick="event.stopPropagation();window.selectStrat11Exit(\'' + targetVarKey + '\', \'' + exitKey + '\')" style="margin-top:4px;padding:5px 6px;cursor:pointer;background:' + (isFocus ? 'rgba(255,255,255,0.035)' : 'transparent') + ';border:' + (isFocus ? '1.5px solid ' + accentCol : '1px dashed rgba(255,255,255,0.08)') + ';border-radius:7px;transition:all 0.15s" title="Cliquer pour afficher cette sortie sur le graphique et décocher les autres">'
           + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
-          + '<span style="font-size:8.5px;font-weight:800;color:' + accentCol + '">' + badgeLabel + '</span>'
-          + '<span style="font-size:7.5px;color:#94A3B8">' + subDesc + (isFocus ? ' <b style="color:#FFB400">[Actif]</b>' : '') + '</span>'
+          + '<span style="font-size:9px;font-weight:900;color:' + accentCol + '">' + badgeLabel + '</span>'
+          + activeTag
           + '</div>'
           + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;font-size:8.5px;line-height:1.2">'
           + _box('day', '📅 JOUR', dS)
@@ -16218,14 +16222,19 @@ function renderPastillesList(forceRebuild) {
           + '</div>';
       }
 
+      const varCfg = (state.indicators && state.indicators[rankStats.key]) || {};
+      const isS2On = varCfg.showExitExtreme === true;
+      const isS3On = varCfg.showExitReversal === true && !isS2On && varCfg.showExitZero === false;
+      const isS1On = (varCfg.showExitZero !== false && !isS2On && !isS3On);
+
       catHeaderHTML = '<div style="margin-bottom:6px">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;flex-wrap:wrap">'
         + '<span style="font-size:11px;font-weight:900;letter-spacing:0.2px;color:' + cat.color + '">' + medal + ' #' + (catRank11 + 1) + ' — ' + rankStats.name + ' [' + rankStats.tfFMC + 'm×' + rankStats.tfKK + 'm]</span>'
         + '<span style="font-size:11.5px;font-weight:900;color:' + activePnlCol + '">' + activePnlStr + '</span>'
         + '</div>'
-        + _renderSubGrid(res1, curExitMode === 's1', '#38BDF8', '🏁 Sortie 1 : Ligne 0', 'Clôture retournement')
-        + _renderSubGrid(res2, curExitMode === 's2', '#FBBF24', '⚡ Sortie 2 : Extrême', 'Prise TP Sommet')
-        + _renderSubGrid(rankStats.s3 || res1, curExitMode === 's3', '#A855F7', '🔄 Sortie 3 : Inversion', 'Sortie secours opposée')
+        + _renderSubGrid(res1, isS1On, '#38BDF8', '🏁 Sortie 1 : Ligne 0', 'Clôture retournement', 's1', rankStats.key)
+        + _renderSubGrid(res2, isS2On, '#FBBF24', '⚡ Sortie 2 : Extrême', 'Prise TP Sommet', 's2', rankStats.key)
+        + _renderSubGrid(rankStats.s3 || res1, isS3On, '#A855F7', '🔄 Sortie 3 : Inversion', 'Sortie secours opposée', 's3', rankStats.key)
         + '</div>';
     } else {
       catHeaderHTML = '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:' + cat.color + ';margin-bottom:6px">' + cat.category + '</div>';
@@ -16358,10 +16367,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2580
+// Build B-0911-2590
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2580
+// Build B-0911-2590
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -16421,9 +16430,20 @@ function setStrat11Period(p) {
   renderPastillesList(true);
 }
 
-function setStrat11ExitMode(mode) {
-  window.__strat11ExitMode = mode;
-  try { localStorage.setItem('strat11_active_exit', mode); } catch(e) {}
+window.selectStrat11Exit = function(varKey, exitId) {
+  const allKeys = STRAT11_VARIANTS_DEF.map(function(v) { return v.key; });
+  const targets = (varKey === 'all') ? allKeys : [varKey];
+
+  targets.forEach(function(k) {
+    if (!state.indicators[k]) state.indicators[k] = {};
+    state.indicators[k].showExitZero     = (exitId === 's1');
+    state.indicators[k].showExitExtreme  = (exitId === 's2');
+    state.indicators[k].showExitReversal = (exitId === 's3');
+  });
+
+  window.__strat11ExitMode = exitId;
+  try { localStorage.setItem('strat11_active_exit', exitId); } catch(e) {}
+
   const b1 = document.getElementById('btn-exit-s1');
   const b2 = document.getElementById('btn-exit-s2');
   const b3 = document.getElementById('btn-exit-s3');
@@ -16433,7 +16453,7 @@ function setStrat11ExitMode(mode) {
     { btn: b3, id: 's3', col: '#A855F7', bg: 'rgba(168,85,247,0.22)' }
   ].forEach(function(item) {
     if (!item.btn) return;
-    if (mode === item.id) {
+    if (exitId === item.id) {
       item.btn.style.borderColor = item.col;
       item.btn.style.background = item.bg;
       item.btn.style.color = item.col;
@@ -16445,7 +16465,30 @@ function setStrat11ExitMode(mode) {
       item.btn.style.fontWeight = '600';
     }
   });
+
+  if (typeof state !== 'undefined' && state) {
+    state.cache = {};
+  }
+  try { saveConfig(); } catch(e) {}
+  if (typeof syncMenu === 'function') syncMenu();
+  if (typeof scheduleRender === 'function') scheduleRender();
+  else if (typeof render === 'function') render();
+
   renderPastillesList(true);
+
+  const labels = {
+    s1: '🏁 Sortie 1 (KK Ligne 0)',
+    s2: '⚡ Sortie 2 (KK Extrême TP)',
+    s3: '🔄 Sortie 3 (Inversion Opposée)'
+  };
+  const colors = { s1: '#38BDF8', s2: '#FBBF24', s3: '#A855F7' };
+  if (typeof toast === 'function') {
+    toast((labels[exitId] || 'Sortie') + ' activée sur le graphique !', colors[exitId] || '#10B981');
+  }
+};
+
+function setStrat11ExitMode(mode) {
+  window.selectStrat11Exit('all', mode);
 }
 
 function buildOrderedCatalog() {
@@ -40777,7 +40820,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2580';
+  window.__LUMEN_BUILD = 'B-0911-2590';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
