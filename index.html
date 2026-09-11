@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2500</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2510</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -10300,6 +10300,77 @@ function drawPrice(p,s,e,cw,sharedXStack){
         ctx.fillStyle=c;
         ctx.font='bold 9.5px "IBM Plex Mono", monospace';
         ctx.fillText(cdText, W-AXIS_W+5, y+22);
+      }
+
+      // Nombre de points en direct (PnL en points) qui suit le prix à droite du graphique
+      let activeTrade = null;
+      if (Array.isArray(window.__lastFMCSignals) && window.__lastFMCSignals.length > 0) {
+        const sigs = window.__lastFMCSignals;
+        const entries = sigs.filter(s => !s.isExit && s.price != null && (s.isStrat1111 || s.isConfluenceKK || s.isElite || s.isPureNoAlma)).sort((a, b) => a.i - b.i);
+        if (entries.length > 0) {
+          const lastEntry = entries[entries.length - 1];
+          const hasExit = sigs.some(s => s.isExit && s.entryI === lastEntry.i && s.i >= lastEntry.i);
+          if (!hasExit) {
+            activeTrade = lastEntry;
+          }
+        }
+      }
+      if (!activeTrade && typeof paper !== 'undefined' && Array.isArray(paper.positions) && paper.positions.length > 0) {
+        const pos = paper.positions.find(posObj => (!posObj.sym || posObj.sym === state.symbol) && posObj.entry);
+        if (pos) {
+          activeTrade = {
+            price: pos.entry,
+            dir: pos.side === 'long' ? 1 : -1,
+            label: pos.side === 'long' ? 'ACHAT' : 'VENTE'
+          };
+        }
+      }
+
+      if (activeTrade && activeTrade.price != null) {
+        const isLong = activeTrade.dir === 1;
+        const pnlPts = isLong ? (last.c - activeTrade.price) : (activeTrade.price - last.c);
+        const pnlStr = (pnlPts >= 0 ? '+' : '') + pnlPts.toFixed(1) + ' pts';
+        const isGain = pnlPts >= 0;
+        const pnlCol = isGain ? '#00E676' : '#FF0055';
+        const pnlBg = isGain ? 'rgba(6, 40, 24, 0.95)' : 'rgba(48, 8, 20, 0.95)';
+        const pnlY = (cdText && cdText !== '—') ? (y + 29) : (y + 11);
+
+        ctx.save();
+        // 1. Pilule sur l'axe droit juste après le minuteur du prix
+        ctx.fillStyle = pnlBg;
+        roundRect(W - AXIS_W + 2, pnlY, AXIS_W - 4, 16, 3);
+        ctx.fill();
+        ctx.strokeStyle = pnlCol;
+        ctx.lineWidth = 1.2;
+        roundRect(W - AXIS_W + 2.5, pnlY + 0.5, AXIS_W - 5, 15, 3);
+        ctx.stroke();
+
+        ctx.fillStyle = pnlCol;
+        ctx.font = 'bold 9.5px "IBM Plex Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(pnlStr, W - AXIS_W + (AXIS_W / 2), pnlY + 11.5);
+
+        // 2. Badge dynamique flottant sur la ligne du prix en direct (suit chaque mouvement du prix)
+        const badgeTxt = (isLong ? '🟢 ACHAT ' : '🔴 VENTE ') + pnlStr;
+        ctx.font = 'bold 9.5px "IBM Plex Sans", sans-serif';
+        const txtMetrics = ctx.measureText(badgeTxt);
+        const bW = Math.max(90, Math.round(txtMetrics.width + 14));
+        const bH = 17;
+        const bX = W - AXIS_W - bW - 6;
+        const bY = y - 8.5;
+
+        ctx.fillStyle = pnlBg;
+        roundRect(bX, bY, bW, bH, 4);
+        ctx.fill();
+        ctx.strokeStyle = pnlCol;
+        ctx.lineWidth = 1.2;
+        roundRect(bX + 0.5, bY + 0.5, bW - 1, bH - 1, 4);
+        ctx.stroke();
+
+        ctx.fillStyle = pnlCol;
+        ctx.textAlign = 'center';
+        ctx.fillText(badgeTxt, bX + bW / 2, bY + 12);
+        ctx.restore();
       }
     }
   }
@@ -39874,7 +39945,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2500';
+  window.__LUMEN_BUILD = 'B-0910-2510';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
