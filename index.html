@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2480</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0910-2490</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -5741,8 +5741,8 @@ const state = {
     two_ind:{on:true,tf:'chart',src:'close',mode:'Trend Strength',filter:'PhiSmoother',phase:3.7,spacing:3,trimUp:0,trimLo:0,postFilter:'PhiSmoother',postLen:1,sigFilter:'PhiSmoother',sigLen:20,cSig:'#FFFFFF',upper:75,lower:-75,transitionEasing:50,fillBg:true,fillAlpha:85,cGold:'#FFCC00',cTrans:'#9598A1',cPurp:'#5500CC',cScoreUp:'#00FF00',cScoreDn:'#FF0000',ssLen:15,cSsUp:'#33FF00',cSsDown:'#FF1111',swing:false,showOscillator:true,showSSWMA:true},
     strat_zz:{on:true,emaPeriod:9,haTf:5,haPeriod:10,mode:'lisse',roscPeriod:50,impTf:15,impPeriod:34,showEntries:true,showExits:true,invertSignal:true,showPending:false,yellowMode:'sell',tp:0,sl:0,useImpFilter:false},
     strat_11_11_scalp:{on:true,showBuy:true,showSell:true,showVerticalLines:true,tfFMC:2,tfKK:3,cBuy:'#00E676',cSell:'#FF0055'},
-    strat_11_11_pro:{on:true,showBuy:true,showSell:true,showVerticalLines:true,tfFMC:5,tfKK:6,cBuy:'#10B981',cSell:'#F43F5E'},
-    strat_11_11:{on:true,showBuy:true,showSell:true,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
+    strat_11_11_pro:{on:false,showBuy:false,showSell:false,showVerticalLines:true,tfFMC:5,tfKK:6,cBuy:'#10B981',cSell:'#F43F5E'},
+    strat_11_11:{on:false,showBuy:false,showSell:false,showVerticalLines:true,tfFMC:3,tfKK:2,cBuy:'#00E676',cSell:'#FF0055'},
     strat_fmc:{on:true,showPureNoAlma:true,showElite:true,showEliteExits:true,showEliteKkExitCross:true,showEliteKkExitZero:true,eliteExitTf:4,source:'tout',showBadges:false,showKkConfluence:true,showKkBuy:true,showKkSell:true,showRappels:true,showExits:true,showExitsV2:true,strictCaducite:false,fastTrigger:false,filterAlma:true,kkLookback:25,maxDelay:30,requireFmcColors:true,showVerticalLines:true,cScore:'#A78BFA',cContrarien:'#22D3EE',cDivergence:'#F59E0B',cBuyKk:'#00E676',cSellKk:'#FF0055',cRappel:'#94A3B8',cExit:'#FF9F1C',cExitBorder:'#FFB84D',cExitBg:'rgba(38,22,6,0.95)',cExitV2:'#00E5FF',cExitV2Border:'#38BDF8',cExitV2Bg:'rgba(6,28,40,0.95)',cBgBull:'rgba(6,32,40,0.95)',cBgBear:'rgba(44,10,20,0.95)'},
     strat_super:{on:true,tf:'chart',mode:'elite',minScore:4,useKkExtreme:true,useImpulseMom:true,useEmaTrend:true,useRangeChop:true,useDeltaFlow:true,allowShorts:true,alternateSignals:true,strictPositionTracking:true,showRenforts:true,minSpacing:20,showBadges:true,showLines:true,showTargets:true,tp:300,sl:150,cBuy:'#00E676',cSell:'#FF0055'},
     strat_mm:{on:true,taillePastilles:'compacte',opacitePastilles:0.78,pastillesCompactes:false,showRenforts:true,showOpt15mZone:true,resetSurStructure:false,opt6IgnoreMss:false,tf:'chart',opt2Tf:'5',lineType:'kk_primary',period:21,pivotLen:2,maxBarsLookback:50,oscThreshold:-75,filterOsc:true,filterAlma:true,allowShorts:true,showBadges:true,showVerticalLines:true,showLineOnPrice:true,showCreuxMarkers:true,confluenceFilter:'all',showOpt1:true,showOpt2:true,showOpt3:true,showOpt4:true,showOpt5:true,opt6Tf:'chart',showOpt6:true,show15m:true,showBase:true,cBuy:'#00E676',cSell:'#FF3366',tp:0,sl:0},
@@ -14945,199 +14945,142 @@ const pastillesMenuEl = document.getElementById('pastilles-menu');
 
 const PASTILLES_CATALOG = [
   {
-    category: '🎯 STRATÉGIE 11 11 — SCALPING N°1 (FMC 2m × KK 3m)',
+    category: '⚡ TIME FRAME 1 : SCALPING RAPIDE (FMC 2m × KK 3m)',
     color: '#00E5FF',
     items: [
       {
-        id: 'strat_11_11_scalp_on',
-        icon: '🎯',
-        label: 'Stratégie 11 11 Scalping [2m×3m] (Activée)',
-        desc: 'Combo N°1 mondial (+12 665 pts) : Ruban FMC 2m validé par Ligne KK 3m',
-        accent: '#00E5FF',
-        def: true,
-        get: () => !!state.indicators?.strat_11_11_scalp?.on,
-        set: (v) => {
-          if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
-          state.indicators.strat_11_11_scalp.on = v;
-          if (v) {
-            state.indicators.strat_11_11_scalp.showBuy = true;
-            state.indicators.strat_11_11_scalp.showSell = true;
-            state.indicators.strat_11_11_scalp.showVerticalLines = true;
-          }
-        }
-      },
-      {
         id: 'strat_11_11_scalp_buy',
         icon: '🟢',
-        label: 'Pastille Achat 11 11 (FMC 2m Vert + KK 3m Vert)',
-        desc: 'Déclenche Achat dès que FMC 2m et KK 3m sont tous deux Verts',
+        label: 'Pastille Verte Achat [2m×3m]',
+        desc: 'Affiche la pastille ACHAT dès que FMC 2m et KK 3m sont Verts',
         accent: '#00E676',
         def: true,
         get: () => state.indicators?.strat_11_11_scalp?.showBuy !== false && !!state.indicators?.strat_11_11_scalp?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
           state.indicators.strat_11_11_scalp.showBuy = v;
-          if (v) state.indicators.strat_11_11_scalp.on = true;
+          state.indicators.strat_11_11_scalp.on = !!(state.indicators.strat_11_11_scalp.showBuy || state.indicators.strat_11_11_scalp.showSell);
         }
       },
       {
         id: 'strat_11_11_scalp_sell',
         icon: '🔴',
-        label: 'Pastille Vente 11 11 (FMC 2m Rouge + KK 3m Rouge)',
-        desc: 'Déclenche Vente dès que FMC 2m et KK 3m sont tous deux Rouges',
+        label: 'Pastille Rouge Vente [2m×3m]',
+        desc: 'Affiche la pastille VENTE dès que FMC 2m et KK 3m sont Rouges',
         accent: '#FF0055',
         def: true,
         get: () => state.indicators?.strat_11_11_scalp?.showSell !== false && !!state.indicators?.strat_11_11_scalp?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
           state.indicators.strat_11_11_scalp.showSell = v;
-          if (v) state.indicators.strat_11_11_scalp.on = true;
+          state.indicators.strat_11_11_scalp.on = !!(state.indicators.strat_11_11_scalp.showBuy || state.indicators.strat_11_11_scalp.showSell);
         }
       },
       {
         id: 'strat_11_11_scalp_lines',
         icon: '📏',
-        label: 'Pointillés verticaux 11 11 [2m×3m] (Traversée bas)',
-        desc: 'Prolonge les pointillés verticaux et marque les points repères sur les indicateurs du bas',
+        label: 'Pointillés verticaux [2m×3m]',
+        desc: 'Prolonge les pointillés verticaux et marque les points sur les indicateurs du bas',
         accent: '#00E5FF',
         def: true,
-        get: () => state.indicators?.strat_11_11_scalp?.showVerticalLines !== false && !!state.indicators?.strat_11_11_scalp?.on,
+        get: () => state.indicators?.strat_11_11_scalp?.showVerticalLines !== false,
         set: (v) => {
           if (!state.indicators.strat_11_11_scalp) state.indicators.strat_11_11_scalp = {};
           state.indicators.strat_11_11_scalp.showVerticalLines = v;
-          if (v) state.indicators.strat_11_11_scalp.on = true;
         }
       }
     ]
   },
   {
-    category: '💎 STRATÉGIE 11 11 — HAUTE PRÉCISION (FMC 5m × KK 6m)',
+    category: '💎 TIME FRAME 2 : HAUTE PRÉCISION (FMC 5m × KK 6m)',
     color: '#A855F7',
     items: [
       {
-        id: 'strat_11_11_pro_on',
-        icon: '💎',
-        label: 'Stratégie 11 11 Précision [5m×6m] (Activée)',
-        desc: 'Combo Haute Qualité (63% Win Rate / PF 4.28) : Ruban FMC 5m validé par Ligne KK 6m',
-        accent: '#A855F7',
-        def: true,
-        get: () => !!state.indicators?.strat_11_11_pro?.on,
-        set: (v) => {
-          if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
-          state.indicators.strat_11_11_pro.on = v;
-          if (v) {
-            state.indicators.strat_11_11_pro.showBuy = true;
-            state.indicators.strat_11_11_pro.showSell = true;
-            state.indicators.strat_11_11_pro.showVerticalLines = true;
-          }
-        }
-      },
-      {
         id: 'strat_11_11_pro_buy',
         icon: '🟢',
-        label: 'Pastille Achat 11 11 (FMC 5m Vert + KK 6m Vert)',
-        desc: 'Déclenche Achat dès que FMC 5m et KK 6m sont tous deux Verts',
+        label: 'Pastille Verte Achat [5m×6m]',
+        desc: 'Affiche la pastille ACHAT dès que FMC 5m et KK 6m sont Verts',
         accent: '#10B981',
-        def: true,
-        get: () => state.indicators?.strat_11_11_pro?.showBuy !== false && !!state.indicators?.strat_11_11_pro?.on,
+        def: false,
+        get: () => state.indicators?.strat_11_11_pro?.showBuy === true && !!state.indicators?.strat_11_11_pro?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
           state.indicators.strat_11_11_pro.showBuy = v;
-          if (v) state.indicators.strat_11_11_pro.on = true;
+          state.indicators.strat_11_11_pro.on = !!(state.indicators.strat_11_11_pro.showBuy || state.indicators.strat_11_11_pro.showSell);
         }
       },
       {
         id: 'strat_11_11_pro_sell',
         icon: '🔴',
-        label: 'Pastille Vente 11 11 (FMC 5m Rouge + KK 6m Rouge)',
-        desc: 'Déclenche Vente dès que FMC 5m et KK 6m sont tous deux Rouges',
+        label: 'Pastille Rouge Vente [5m×6m]',
+        desc: 'Affiche la pastille VENTE dès que FMC 5m et KK 6m sont Rouges',
         accent: '#F43F5E',
-        def: true,
-        get: () => state.indicators?.strat_11_11_pro?.showSell !== false && !!state.indicators?.strat_11_11_pro?.on,
+        def: false,
+        get: () => state.indicators?.strat_11_11_pro?.showSell === true && !!state.indicators?.strat_11_11_pro?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
           state.indicators.strat_11_11_pro.showSell = v;
-          if (v) state.indicators.strat_11_11_pro.on = true;
+          state.indicators.strat_11_11_pro.on = !!(state.indicators.strat_11_11_pro.showBuy || state.indicators.strat_11_11_pro.showSell);
         }
       },
       {
         id: 'strat_11_11_pro_lines',
         icon: '📏',
-        label: 'Pointillés verticaux 11 11 [5m×6m] (Traversée bas)',
-        desc: 'Prolonge les pointillés verticaux et marque les points repères sur les indicateurs du bas',
+        label: 'Pointillés verticaux [5m×6m]',
+        desc: 'Prolonge les pointillés verticaux et marque les points sur les indicateurs du bas',
         accent: '#A855F7',
         def: true,
-        get: () => state.indicators?.strat_11_11_pro?.showVerticalLines !== false && !!state.indicators?.strat_11_11_pro?.on,
+        get: () => state.indicators?.strat_11_11_pro?.showVerticalLines !== false,
         set: (v) => {
           if (!state.indicators.strat_11_11_pro) state.indicators.strat_11_11_pro = {};
           state.indicators.strat_11_11_pro.showVerticalLines = v;
-          if (v) state.indicators.strat_11_11_pro.on = true;
         }
       }
     ]
   },
   {
-    category: '🎯 STRATÉGIE 11 11 — ORIGINALE (FMC 3m × KK 2m)',
+    category: '🎯 TIME FRAME 3 : ALTERNATIVE (FMC 3m × KK 2m)',
     color: '#38BDF8',
     items: [
       {
-        id: 'strat_11_11_on',
-        icon: '🎯',
-        label: 'Stratégie 11 11 Originale [3m×2m] (Activée)',
-        desc: 'Configuration initiale : Ruban FMC 3m validé par Ligne KK 2m',
-        accent: '#38BDF8',
-        def: true,
-        get: () => !!state.indicators?.strat_11_11?.on,
-        set: (v) => {
-          if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
-          state.indicators.strat_11_11.on = v;
-          if (v) {
-            state.indicators.strat_11_11.showBuy = true;
-            state.indicators.strat_11_11.showSell = true;
-            state.indicators.strat_11_11.showVerticalLines = true;
-          }
-        }
-      },
-      {
         id: 'strat_11_11_buy',
         icon: '🟢',
-        label: 'Pastille Achat 11 11 (FMC 3m Vert + KK 2m Vert)',
-        desc: 'Apparaît dès que FMC 3m et KK 2m sont tous deux Verts',
+        label: 'Pastille Verte Achat [3m×2m]',
+        desc: 'Affiche la pastille ACHAT dès que FMC 3m et KK 2m sont Verts',
         accent: '#00E676',
-        def: true,
-        get: () => state.indicators?.strat_11_11?.showBuy !== false && !!state.indicators?.strat_11_11?.on,
+        def: false,
+        get: () => state.indicators?.strat_11_11?.showBuy === true && !!state.indicators?.strat_11_11?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
           state.indicators.strat_11_11.showBuy = v;
-          if (v) state.indicators.strat_11_11.on = true;
+          state.indicators.strat_11_11.on = !!(state.indicators.strat_11_11.showBuy || state.indicators.strat_11_11.showSell);
         }
       },
       {
         id: 'strat_11_11_sell',
         icon: '🔴',
-        label: 'Pastille Vente 11 11 (FMC 3m Rouge + KK 2m Rouge)',
-        desc: 'Apparaît dès que FMC 3m et KK 2m sont tous deux Rouges',
+        label: 'Pastille Rouge Vente [3m×2m]',
+        desc: 'Affiche la pastille VENTE dès que FMC 3m et KK 2m sont Rouges',
         accent: '#FF0055',
-        def: true,
-        get: () => state.indicators?.strat_11_11?.showSell !== false && !!state.indicators?.strat_11_11?.on,
+        def: false,
+        get: () => state.indicators?.strat_11_11?.showSell === true && !!state.indicators?.strat_11_11?.on,
         set: (v) => {
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
           state.indicators.strat_11_11.showSell = v;
-          if (v) state.indicators.strat_11_11.on = true;
+          state.indicators.strat_11_11.on = !!(state.indicators.strat_11_11.showBuy || state.indicators.strat_11_11.showSell);
         }
       },
       {
         id: 'strat_11_11_lines',
         icon: '📏',
-        label: 'Pointillés verticaux 11 11 [3m×2m] (Traversée bas)',
-        desc: 'Prolonge les pointillés d\'achat et de vente à travers tous les indicateurs du volet bas',
+        label: 'Pointillés verticaux [3m×2m]',
+        desc: 'Prolonge les pointillés verticaux et marque les points sur les indicateurs du bas',
         accent: '#38BDF8',
         def: true,
-        get: () => state.indicators?.strat_11_11?.showVerticalLines !== false && !!state.indicators?.strat_11_11?.on,
+        get: () => state.indicators?.strat_11_11?.showVerticalLines !== false,
         set: (v) => {
           if (!state.indicators.strat_11_11) state.indicators.strat_11_11 = {};
           state.indicators.strat_11_11.showVerticalLines = v;
-          if (v) state.indicators.strat_11_11.on = true;
         }
       }
     ]
@@ -33210,47 +33153,53 @@ function computeFMCSignals(cleFmc, cleStrat) {
         const trigBuy  = fmcG_now && kkG_now && !(fmcG_prev && kkG_prev);
         const trigSell = fmcR_now && kkR_now && !(fmcR_prev && kkR_prev);
 
-        if (cfg.showBuy !== false && trigBuy && curDir !== 1) {
+        if (trigBuy && curDir !== 1) {
           curDir = 1;
           count++;
-          signals.push({
-            i: k, t: b.t, dir: 1,
-            type: 'ACHAT ' + v.name,
-            optKey: v.key,
-            isStrat1111: true,
-            tradeNum: count,
-            num: count,
-            price: b.c, low: b.l, high: b.h,
-            score: netKK[k] ?? 0,
-            reason: 'FMC ' + tfFMC + 'm Vert + KK ' + tfKK + 'm Vert',
-            label: 'ACHAT ' + v.name,
-            badge: v.icon + ' #' + count + ' ACHAT ' + v.name,
-            sub: 'FMC ' + tfFMC + 'm Vert · KK ' + tfKK + 'm Vert',
-            color: v.cBuy,
-            borderCol: v.cBorder,
-            bgFill: 'rgba(6, 36, 30, 0.96)'
-          });
+          if (cfg.showBuy !== false) {
+            signals.push({
+              i: k, t: b.t, dir: 1,
+              type: 'ACHAT ' + v.name,
+              optKey: v.key,
+              isStrat1111: true,
+              tradeNum: count,
+              num: count,
+              price: b.c, low: b.l, high: b.h,
+              score: netKK[k] ?? 0,
+              reason: 'FMC ' + tfFMC + 'm Vert + KK ' + tfKK + 'm Vert',
+              label: 'ACHAT ' + v.name,
+              badge: v.icon + ' #' + count + ' ACHAT ' + v.name,
+              sub: 'FMC ' + tfFMC + 'm Vert · KK ' + tfKK + 'm Vert',
+              subStrategy: v.name,
+              color: v.cBuy,
+              borderCol: v.cBorder,
+              bgFill: 'rgba(6, 36, 30, 0.96)'
+            });
+          }
         }
-        else if (cfg.showSell !== false && trigSell && curDir !== -1) {
+        else if (trigSell && curDir !== -1) {
           curDir = -1;
           count++;
-          signals.push({
-            i: k, t: b.t, dir: -1,
-            type: 'VENTE ' + v.name,
-            optKey: v.key,
-            isStrat1111: true,
-            tradeNum: count,
-            num: count,
-            price: b.c, low: b.l, high: b.h,
-            score: netKK[k] ?? 0,
-            reason: 'FMC ' + tfFMC + 'm Rouge + KK ' + tfKK + 'm Rouge',
-            label: 'VENTE ' + v.name,
-            badge: v.icon + ' #' + count + ' VENTE ' + v.name,
-            sub: 'FMC ' + tfFMC + 'm Rouge · KK ' + tfKK + 'm Rouge',
-            color: v.cSell,
-            borderCol: v.cBorder,
-            bgFill: 'rgba(44, 8, 20, 0.96)'
-          });
+          if (cfg.showSell !== false) {
+            signals.push({
+              i: k, t: b.t, dir: -1,
+              type: 'VENTE ' + v.name,
+              optKey: v.key,
+              isStrat1111: true,
+              tradeNum: count,
+              num: count,
+              price: b.c, low: b.l, high: b.h,
+              score: netKK[k] ?? 0,
+              reason: 'FMC ' + tfFMC + 'm Rouge + KK ' + tfKK + 'm Rouge',
+              label: 'VENTE ' + v.name,
+              badge: v.icon + ' #' + count + ' VENTE ' + v.name,
+              sub: 'FMC ' + tfFMC + 'm Rouge · KK ' + tfKK + 'm Rouge',
+              subStrategy: v.name,
+              color: v.cSell,
+              borderCol: v.cBorder,
+              bgFill: 'rgba(44, 8, 20, 0.96)'
+            });
+          }
         }
       }
     } catch(errVar) {
@@ -33677,13 +33626,13 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
         // Ligne 2 : motif / nature
         ctx.font = 'bold ' + (8.5 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
         ctx.fillStyle = isPureNoAlma ? '#BAE6FD' : (isElite ? '#E2E8F0' : (isRappel ? '#94A3B8' : (isConf ? '#FCD34D' : '#CBD5E1')));
-        const natureLabel = isStrat1111 ? (isLong ? 'FMC 3m Vert · KK 2m Vert' : 'FMC 3m Rouge · KK 2m Rouge') : (isPureNoAlma ? 'KK 10m · FMC 2m (SANS ALMA)' : (isElite ? 'ALMA 2m · KK 10m · FMC 2m' : (isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || ''))));
+        const natureLabel = isStrat1111 ? (sig.sub || (isLong ? 'FMC Vert · KK Vert' : 'FMC Rouge · KK Rouge')) : (isPureNoAlma ? 'KK 10m · FMC 2m (SANS ALMA)' : (isElite ? 'ALMA 2m · KK 10m · FMC 2m' : (isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || ''))));
         ctx.fillText(natureLabel, bx + bw / 2, by + 25 * kT);
 
         // Ligne 3 : prix
         ctx.font = (8 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
         ctx.fillStyle = isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#64748B' : '#94A3B8'));
-        ctx.fillText('$' + fmt(sig.price, 1) + (isStrat1111 ? ' · STRAT 11 11' : (isPureNoAlma ? ' · WR 74.5%' : (isElite ? ' · WR 66.7%' : ''))), bx + bw / 2, by + 37 * kT);
+        ctx.fillText('$' + fmt(sig.price, 1) + (isStrat1111 ? (' · ' + (sig.subStrategy || '11 11')) : (isPureNoAlma ? ' · WR 74.5%' : (isElite ? ' · WR 66.7%' : ''))), bx + bw / 2, by + 37 * kT);
       }
 
       // Tige (lien pastille → bougie)
@@ -39758,7 +39707,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0910-2480';
+  window.__LUMEN_BUILD = 'B-0910-2490';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
