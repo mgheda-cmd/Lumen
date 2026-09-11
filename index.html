@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2590</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2600</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16223,14 +16223,27 @@ function renderPastillesList(forceRebuild) {
       }
 
       const varCfg = (state.indicators && state.indicators[rankStats.key]) || {};
-      const isS2On = varCfg.showExitExtreme === true;
-      const isS3On = varCfg.showExitReversal === true && !isS2On && varCfg.showExitZero === false;
-      const isS1On = (varCfg.showExitZero !== false && !isS2On && !isS3On);
+      const isStratActive = (varCfg.on !== false);
+      const isS2On = isStratActive && (varCfg.showExitExtreme === true);
+      const isS3On = isStratActive && (varCfg.showExitReversal === true && !isS2On && varCfg.showExitZero === false);
+      const isS1On = isStratActive && (varCfg.showExitZero !== false && !isS2On && !isS3On);
+
+      const checkColor = isStratActive ? cat.color : '#94A3B8';
+      const statusPill = isStratActive
+        ? '<span style="font-size:8px;font-weight:800;color:#10B981;background:rgba(16,185,129,0.15);padding:1px 5px;border-radius:4px;border:1px solid rgba(16,185,129,0.3)">ON</span>'
+        : '<span style="font-size:8px;font-weight:800;color:#F87171;background:rgba(248,113,113,0.15);padding:1px 5px;border-radius:4px;border:1px solid rgba(248,113,113,0.3)">OFF</span>';
 
       catHeaderHTML = '<div style="margin-bottom:6px">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;flex-wrap:wrap">'
-        + '<span style="font-size:11px;font-weight:900;letter-spacing:0.2px;color:' + cat.color + '">' + medal + ' #' + (catRank11 + 1) + ' — ' + rankStats.name + ' [' + rankStats.tfFMC + 'm×' + rankStats.tfKK + 'm]</span>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,0.06);flex-wrap:wrap">'
+        + '<label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;min-width:0">'
+        + '<input type="checkbox" ' + (isStratActive ? 'checked' : '') + ' onchange="event.stopPropagation();window.toggleEntireStrat11(\'' + rankStats.key + '\', this.checked)" style="width:18px;height:18px;accent-color:' + cat.color + ';cursor:pointer;flex:none">'
+        + '<span style="font-size:11.5px;font-weight:900;letter-spacing:0.2px;color:' + checkColor + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + medal + ' #' + (catRank11 + 1) + ' — ' + rankStats.name + ' [' + rankStats.tfFMC + 'm×' + rankStats.tfKK + 'm]</span>'
+        + statusPill
+        + '</label>'
+        + '<div style="display:flex;align-items:center;gap:6px;flex:none">'
         + '<span style="font-size:11.5px;font-weight:900;color:' + activePnlCol + '">' + activePnlStr + '</span>'
+        + '<button type="button" onclick="event.stopPropagation();window.soloStrat11(\'' + rankStats.key + '\')" style="font-size:8.5px;padding:2px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#E6EDF3;cursor:pointer;font-weight:700" title="Activer UNIQUEMENT cette stratégie et masquer toutes les autres du graphique">Afficher Seule</button>'
+        + '</div>'
         + '</div>'
         + _renderSubGrid(res1, isS1On, '#38BDF8', '🏁 Sortie 1 : Ligne 0', 'Clôture retournement', 's1', rankStats.key)
         + _renderSubGrid(res2, isS2On, '#FBBF24', '⚡ Sortie 2 : Extrême', 'Prise TP Sommet', 's2', rankStats.key)
@@ -16367,10 +16380,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2590
+// Build B-0911-2600
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2590
+// Build B-0911-2600
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -16430,12 +16443,89 @@ function setStrat11Period(p) {
   renderPastillesList(true);
 }
 
+window.toggleEntireStrat11 = function(varKey, isChecked) {
+  if (!state.indicators[varKey]) state.indicators[varKey] = {};
+  state.indicators[varKey].on = !!isChecked;
+  if (isChecked) {
+    state.indicators[varKey].showBuy = true;
+    state.indicators[varKey].showSell = true;
+    const curEx = window.__strat11ExitMode || 's1';
+    state.indicators[varKey].showExitZero     = (curEx === 's1');
+    state.indicators[varKey].showExitExtreme  = (curEx === 's2');
+    state.indicators[varKey].showExitReversal = (curEx === 's3');
+    state.indicators[varKey].showVerticalLines = true;
+  } else {
+    state.indicators[varKey].showBuy = false;
+    state.indicators[varKey].showSell = false;
+    state.indicators[varKey].showExitZero = false;
+    state.indicators[varKey].showExitExtreme = false;
+    state.indicators[varKey].showExitReversal = false;
+  }
+
+  if (typeof state !== 'undefined' && state) state.cache = {};
+  try { saveConfig(); } catch(e) {}
+  if (typeof syncMenu === 'function') syncMenu();
+  if (typeof updateChips === 'function') updateChips();
+  if (typeof scheduleRender === 'function') scheduleRender();
+  else if (typeof render === 'function') render();
+
+  renderPastillesList(true);
+
+  const vObj = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === varKey; });
+  const name = vObj ? vObj.name : varKey;
+  if (typeof toast === 'function') {
+    toast(isChecked ? ('✅ ' + name + ' activée sur le graphique') : ('🚫 ' + name + ' masquée du graphique'), isChecked ? '#10B981' : '#F87171');
+  }
+};
+
+window.soloStrat11 = function(varKey) {
+  STRAT11_VARIANTS_DEF.forEach(function(v) {
+    const isTarget = (v.key === varKey);
+    if (!state.indicators[v.key]) state.indicators[v.key] = {};
+    state.indicators[v.key].on = isTarget;
+    if (isTarget) {
+      state.indicators[v.key].showBuy = true;
+      state.indicators[v.key].showSell = true;
+      const curEx = window.__strat11ExitMode || 's1';
+      state.indicators[v.key].showExitZero     = (curEx === 's1');
+      state.indicators[v.key].showExitExtreme  = (curEx === 's2');
+      state.indicators[v.key].showExitReversal = (curEx === 's3');
+      state.indicators[v.key].showVerticalLines = true;
+    } else {
+      state.indicators[v.key].showBuy = false;
+      state.indicators[v.key].showSell = false;
+      state.indicators[v.key].showExitZero = false;
+      state.indicators[v.key].showExitExtreme = false;
+      state.indicators[v.key].showExitReversal = false;
+    }
+  });
+
+  if (typeof state !== 'undefined' && state) state.cache = {};
+  try { saveConfig(); } catch(e) {}
+  if (typeof syncMenu === 'function') syncMenu();
+  if (typeof updateChips === 'function') updateChips();
+  if (typeof scheduleRender === 'function') scheduleRender();
+  else if (typeof render === 'function') render();
+
+  renderPastillesList(true);
+
+  const vObj = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === varKey; });
+  const name = vObj ? vObj.name : varKey;
+  if (typeof toast === 'function') {
+    toast('🎯 Seule la stratégie ' + name + ' est affichée sur le graphique !', '#10B981');
+  }
+};
+
 window.selectStrat11Exit = function(varKey, exitId) {
   const allKeys = STRAT11_VARIANTS_DEF.map(function(v) { return v.key; });
   const targets = (varKey === 'all') ? allKeys : [varKey];
 
   targets.forEach(function(k) {
     if (!state.indicators[k]) state.indicators[k] = {};
+    // S'assurer que la stratégie ciblée est bien activée pour afficher ses pastilles
+    state.indicators[k].on = true;
+    state.indicators[k].showBuy = true;
+    state.indicators[k].showSell = true;
     state.indicators[k].showExitZero     = (exitId === 's1');
     state.indicators[k].showExitExtreme  = (exitId === 's2');
     state.indicators[k].showExitReversal = (exitId === 's3');
@@ -16471,6 +16561,7 @@ window.selectStrat11Exit = function(varKey, exitId) {
   }
   try { saveConfig(); } catch(e) {}
   if (typeof syncMenu === 'function') syncMenu();
+  if (typeof updateChips === 'function') updateChips();
   if (typeof scheduleRender === 'function') scheduleRender();
   else if (typeof render === 'function') render();
 
@@ -40820,7 +40911,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2590';
+  window.__LUMEN_BUILD = 'B-0911-2600';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
