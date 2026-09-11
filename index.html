@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2560</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2570</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1406,11 +1406,18 @@ footer{
 
         <!-- Sélecteur des 3 périodes de classement (Jour Même / 3 Jours / 8000 Bougies) -->
         <div id="pastilles-period-selector" style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:7px;padding:4px 6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px">
-          <span style="font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap">Trier par :</span>
+          <span style="font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap">Période :</span>
           <div style="display:flex;gap:3px;flex:1;justify-content:flex-end">
             <button type="button" id="btn-period-day" onclick="setStrat11Period('day')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer" title="Classer selon les gains du jour même">📅 Jour même</button>
             <button type="button" id="btn-period-3d" onclick="setStrat11Period('3d')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer" title="Classer selon les 3 derniers jours (72h)">📊 3 Jours</button>
             <button type="button" id="btn-period-all" onclick="setStrat11Period('all')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:800;border:1px solid #FFB400;background:rgba(255,180,0,0.15);color:#FFB400;cursor:pointer" title="Classer selon le test complet 8000 bougies">🏆 8000 bougies</button>
+          </div>
+        </div>
+        <div id="pastilles-exit-selector" style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:4px;padding:4px 6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px">
+          <span style="font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap">Sortie classée :</span>
+          <div style="display:flex;gap:3px;flex:1;justify-content:flex-end">
+            <button type="button" id="btn-exit-s1" onclick="setStrat11ExitMode('s1')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:800;border:1px solid #38BDF8;background:rgba(56,189,248,0.18);color:#38BDF8;cursor:pointer" title="Classer et mettre en avant la Sortie 1 (KK Ligne 0)">🏁 Sortie 1 (Ligne 0)</button>
+            <button type="button" id="btn-exit-s2" onclick="setStrat11ExitMode('s2')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer" title="Classer et mettre en avant la Sortie 2 (KK Extrême)">⚡ Sortie 2 (Extrême)</button>
           </div>
         </div>
       </div>
@@ -16105,36 +16112,53 @@ function renderPastillesList(forceRebuild) {
     const medal = ['🥇','🥈','🥉','4️⃣','5️⃣'][catRank11] || '#' + (catRank11 + 1);
 
     let catHeaderHTML = '';
-    if (is11 && rankStats && rankStats.sAll) {
-      const sDay = rankStats.sDay || { pnl: 0, wr: 0, pf: 0, n: 0 };
-      const s3d  = rankStats.s3d  || { pnl: 0, wr: 0, pf: 0, n: 0 };
-      const sAll = rankStats.sAll || { pnl: 0, wr: 0, pf: 0, n: 0 };
-      const activeS = (curPeriod === 'day') ? sDay : ((curPeriod === '3d') ? s3d : sAll);
+    const curExitMode = window.__strat11ExitMode || 's1';
+    if (is11 && rankStats && (rankStats.sAll || rankStats.s1)) {
+      const res1 = rankStats.s1 || rankStats;
+      const res2 = rankStats.s2 || rankStats;
+      const activeObj = (curExitMode === 's2') ? res2 : res1;
+      const activeS = (curPeriod === 'day') ? activeObj.sDay : ((curPeriod === '3d') ? activeObj.s3d : activeObj.sAll);
       const activePnlCol = activeS.pnl >= 0 ? '#10B981' : '#F87171';
       const activePnlStr = (activeS.pnl >= 0 ? '+' : '') + Math.round(activeS.pnl) + ' pts';
 
+      function _renderSubGrid(resObj, isFocus, accentCol, badgeLabel, subDesc) {
+        const dS = resObj.sDay || { pnl: 0, wr: 0, pf: 0, n: 0 };
+        const d3 = resObj.s3d  || { pnl: 0, wr: 0, pf: 0, n: 0 };
+        const dA = resObj.sAll || { pnl: 0, wr: 0, pf: 0, n: 0 };
+
+        function _box(pKey, title, sData) {
+          const isActPeriod = isFocus && (curPeriod === pKey);
+          const bg = isActPeriod ? 'rgba(255,180,0,0.14)' : (isFocus ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.015)');
+          const border = isActPeriod ? '1.5px solid #FFB400' : (isFocus ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.04)');
+          const colPnl = sData.pnl >= 0 ? '#10B981' : '#F87171';
+          const pfStr = (sData.pf > 99 ? '>99' : sData.pf.toFixed(2));
+          return '<div style="background:' + bg + ';border:' + border + ';border-radius:5px;padding:3px 4px">'
+            + '<div style="color:' + (isActPeriod ? '#FFB400' : 'var(--muted)') + ';font-size:7.5px;font-weight:800">' + title + '</div>'
+            + '<b style="color:' + colPnl + ';font-size:9.5px">' + (sData.pnl >= 0 ? '+' : '') + Math.round(sData.pnl) + ' pts</b>'
+            + '<div style="color:#94A3B8;font-size:7.5px">WR ' + sData.wr.toFixed(0) + '% · PF ' + pfStr + ' (' + sData.n + 't)</div>'
+            + '</div>';
+        }
+
+        return '<div style="margin-top:4px;padding:4px 5px;background:' + (isFocus ? 'rgba(255,255,255,0.02)' : 'transparent') + ';border:' + (isFocus ? '1px solid ' + accentCol : '1px dashed rgba(255,255,255,0.06)') + ';border-radius:7px">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
+          + '<span style="font-size:8.5px;font-weight:800;color:' + accentCol + '">' + badgeLabel + '</span>'
+          + '<span style="font-size:7.5px;color:#94A3B8">' + subDesc + (isFocus ? ' <b style="color:#FFB400">[Actif]</b>' : '') + '</span>'
+          + '</div>'
+          + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;font-size:8.5px;line-height:1.2">'
+          + _box('day', '📅 JOUR', dS)
+          + _box('3d',  '📊 3 JOURS', d3)
+          + _box('all', '🏆 8000 B.', dA)
+          + '</div>'
+          + '</div>';
+      }
+
       catHeaderHTML = '<div style="margin-bottom:6px">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;flex-wrap:wrap">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;flex-wrap:wrap">'
         + '<span style="font-size:11px;font-weight:900;letter-spacing:0.2px;color:' + cat.color + '">' + medal + ' #' + (catRank11 + 1) + ' — ' + rankStats.name + ' [' + rankStats.tfFMC + 'm×' + rankStats.tfKK + 'm]</span>'
-        + '<span style="font-size:11px;font-weight:900;color:' + activePnlCol + '">' + activePnlStr + '</span>'
+        + '<span style="font-size:11.5px;font-weight:900;color:' + activePnlCol + '">' + activePnlStr + '</span>'
         + '</div>'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:9px;line-height:1.25">'
-        + '<div style="background:' + (curPeriod === 'day' ? 'rgba(255,180,0,0.12)' : 'rgba(255,255,255,0.025)') + ';border:1px solid ' + (curPeriod === 'day' ? '#FFB400' : 'rgba(255,255,255,0.06)') + ';border-radius:6px;padding:3px 5px">'
-        + '<div style="color:' + (curPeriod === 'day' ? '#FFB400' : 'var(--muted)') + ';font-size:8px;font-weight:800">📅 JOUR MÊME</div>'
-        + '<b style="color:' + (sDay.pnl >= 0 ? '#10B981' : '#F87171') + '">' + (sDay.pnl >= 0 ? '+' : '') + Math.round(sDay.pnl) + ' pts</b>'
-        + '<div style="color:#94A3B8;font-size:8.5px">WR ' + sDay.wr.toFixed(0) + '% · PF ' + (sDay.pf > 99 ? '>99' : sDay.pf.toFixed(2)) + ' (' + sDay.n + 't)</div>'
-        + '</div>'
-        + '<div style="background:' + (curPeriod === '3d' ? 'rgba(255,180,0,0.12)' : 'rgba(255,255,255,0.025)') + ';border:1px solid ' + (curPeriod === '3d' ? '#FFB400' : 'rgba(255,255,255,0.06)') + ';border-radius:6px;padding:3px 5px">'
-        + '<div style="color:' + (curPeriod === '3d' ? '#FFB400' : 'var(--muted)') + ';font-size:8px;font-weight:800">📊 3 JOURS</div>'
-        + '<b style="color:' + (s3d.pnl >= 0 ? '#10B981' : '#F87171') + '">' + (s3d.pnl >= 0 ? '+' : '') + Math.round(s3d.pnl) + ' pts</b>'
-        + '<div style="color:#94A3B8;font-size:8.5px">WR ' + s3d.wr.toFixed(0) + '% · PF ' + (s3d.pf > 99 ? '>99' : s3d.pf.toFixed(2)) + ' (' + s3d.n + 't)</div>'
-        + '</div>'
-        + '<div style="background:' + (curPeriod === 'all' ? 'rgba(255,180,0,0.12)' : 'rgba(255,255,255,0.025)') + ';border:1px solid ' + (curPeriod === 'all' ? '#FFB400' : 'rgba(255,255,255,0.06)') + ';border-radius:6px;padding:3px 5px">'
-        + '<div style="color:' + (curPeriod === 'all' ? '#FFB400' : 'var(--muted)') + ';font-size:8px;font-weight:800">🏆 8000 B.</div>'
-        + '<b style="color:' + (sAll.pnl >= 0 ? '#10B981' : '#F87171') + '">' + (sAll.pnl >= 0 ? '+' : '') + Math.round(sAll.pnl) + ' pts</b>'
-        + '<div style="color:#94A3B8;font-size:8.5px">WR ' + sAll.wr.toFixed(0) + '% · PF ' + (sAll.pf > 99 ? '>99' : sAll.pf.toFixed(2)) + ' (' + sAll.n + 't)</div>'
-        + '</div>'
-        + '</div>'
+        + _renderSubGrid(res1, curExitMode === 's1', '#38BDF8', '🏁 Sortie 1 : Ligne 0', 'Clôture retournement')
+        + _renderSubGrid(res2, curExitMode === 's2', '#FBBF24', '⚡ Sortie 2 : Extrême', 'Prise TP Sommet')
         + '</div>';
     } else {
       catHeaderHTML = '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:' + cat.color + ';margin-bottom:6px">' + cat.category + '</div>';
@@ -16267,10 +16291,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2560
+// Build B-0911-2570
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2560
+// Build B-0911-2570
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -16284,6 +16308,7 @@ const STRAT11_VARIANTS_DEF = [
 window.__strat11Ranking = null;
 window.__strat11RankingPrev = null;
 window.__strat11Period = localStorage.getItem('strat11_active_period') || 'all'; // 'day', '3d', 'all'
+window.__strat11ExitMode = localStorage.getItem('strat11_active_exit') || 's1'; // 's1' (Ligne 0) ou 's2' (Extrême)
 window.__synth8000Candles = null;
 
 async function get8000Candles() {
@@ -16329,16 +16354,55 @@ function setStrat11Period(p) {
   renderPastillesList(true);
 }
 
+function setStrat11ExitMode(mode) {
+  window.__strat11ExitMode = mode;
+  try { localStorage.setItem('strat11_active_exit', mode); } catch(e) {}
+  const b1 = document.getElementById('btn-exit-s1');
+  const b2 = document.getElementById('btn-exit-s2');
+  if (b1) {
+    if (mode === 's1') {
+      b1.style.borderColor = '#38BDF8';
+      b1.style.background = 'rgba(56,189,248,0.22)';
+      b1.style.color = '#38BDF8';
+      b1.style.fontWeight = '800';
+    } else {
+      b1.style.borderColor = 'rgba(255,255,255,0.15)';
+      b1.style.background = 'rgba(255,255,255,0.05)';
+      b1.style.color = 'var(--text)';
+      b1.style.fontWeight = '600';
+    }
+  }
+  if (b2) {
+    if (mode === 's2') {
+      b2.style.borderColor = '#FBBF24';
+      b2.style.background = 'rgba(251,191,36,0.22)';
+      b2.style.color = '#FBBF24';
+      b2.style.fontWeight = '800';
+    } else {
+      b2.style.borderColor = 'rgba(255,255,255,0.15)';
+      b2.style.background = 'rgba(255,255,255,0.05)';
+      b2.style.color = 'var(--text)';
+      b2.style.fontWeight = '600';
+    }
+  }
+  renderPastillesList(true);
+}
+
 function buildOrderedCatalog() {
   if (!window.__strat11Ranking || window.__strat11Ranking.length !== 5) return PASTILLES_CATALOG;
   const cats11 = PASTILLES_CATALOG.slice(0, 5);
   const catsOther = PASTILLES_CATALOG.slice(5);
   const p = window.__strat11Period || 'all';
+  const ex = window.__strat11ExitMode || 's1';
+
+  function _getPnl(r) {
+    const sObj = (ex === 's2' && r.s2) ? r.s2 : (r.s1 || r);
+    const stat = (p === 'day') ? sObj.sDay : ((p === '3d') ? sObj.s3d : sObj.sAll);
+    return stat ? stat.pnl : 0;
+  }
 
   const sorted = window.__strat11Ranking.slice().sort(function(a, b) {
-    const pnlA = (p === 'day') ? (a.sDay ? a.sDay.pnl : 0) : ((p === '3d') ? (a.s3d ? a.s3d.pnl : 0) : (a.sAll ? a.sAll.pnl : 0));
-    const pnlB = (p === 'day') ? (b.sDay ? b.sDay.pnl : 0) : ((p === '3d') ? (b.s3d ? b.s3d.pnl : 0) : (b.sAll ? b.sAll.pnl : 0));
-    return pnlB - pnlA;
+    return _getPnl(b) - _getPnl(a);
   });
 
   const sortedCats = sorted.map(function(r) { return cats11[r.catIdx]; });
@@ -16392,9 +16456,10 @@ function _projectLocal(bars1m, barsTf, vals) {
 }
 
 function _backtestVariantSerious(bars8000, vDef) {
+  const empty = { pnl: 0, wr: 0, pf: 0, n: 0 };
+  const emptyRes = { sAll: empty, s3d: empty, sDay: empty };
   if (!bars8000 || bars8000.length < 50) {
-    const empty = { pnl: 0, wr: 0, pf: 0, n: 0 };
-    return { sAll: empty, s3d: empty, sDay: empty };
+    return { s1: emptyRes, s2: emptyRes, sAll: empty, s3d: empty, sDay: empty };
   }
   try {
     const bFMC = _aggregateLocal(bars8000, vDef.tfFMC);
@@ -16428,58 +16493,84 @@ function _backtestVariantSerious(bars8000, vDef) {
       else if (sell && curDir !== -1) { curDir = -1; entries.push({ dir: -1, i: k, px: bars8000[k].c, t: bars8000[k].t }); }
     }
 
-    const trades = [];
-    for (let ei = 0; ei < entries.length; ei++) {
-      const ent = entries[ei];
-      const nxt = entries[ei + 1];
-      const maxK = nxt ? nxt.i : bars8000.length - 1;
-      let exitPx = null, exitT = null;
-      for (let k = ent.i + 1; k <= maxK; k++) {
-        const cur = netEx[k] != null ? netEx[k] : 0;
-        const prv = netEx[k-1] != null ? netEx[k-1] : 0;
-        if (k - ent.i >= 2) {
-          const cross = ent.dir === 1 ? (prv > 0 && cur <= 0) : (prv < 0 && cur >= 0);
-          if (cross) { exitPx = bars8000[k].c; exitT = bars8000[k].t; break; }
-        }
-      }
-      if (exitPx == null && nxt) { exitPx = bars8000[nxt.i].c; exitT = bars8000[nxt.i].t; }
-      if (exitPx == null) continue;
-      const pnl = ent.dir === 1 ? (exitPx - ent.px) : (ent.px - exitPx);
-      trades.push({ pnl: pnl, entryT: ent.t, exitT: exitT });
-    }
+    function _runExitSim(mode) {
+      const trades = [];
+      for (let ei = 0; ei < entries.length; ei++) {
+        const ent = entries[ei];
+        const nxt = entries[ei + 1];
+        const maxK = nxt ? nxt.i : bars8000.length - 1;
+        let exitPx = null, exitT = null;
 
-    function _calcStats(tList) {
-      let pnl = 0, wins = 0, losses = 0, gW = 0, gL = 0;
-      for (let i = 0; i < tList.length; i++) {
-        const t = tList[i];
-        pnl += t.pnl;
-        if (t.pnl >= 0) { wins++; gW += t.pnl; }
-        else { losses++; gL += Math.abs(t.pnl); }
+        for (let k = ent.i + 1; k <= maxK; k++) {
+          const cur = netEx[k] != null ? netEx[k] : 0;
+          const prv = netEx[k-1] != null ? netEx[k-1] : 0;
+
+          if (mode === 'zero') {
+            // Sortie 1 : Ligne 0 KK
+            if (k - ent.i >= 2) {
+              const cross = ent.dir === 1 ? (prv > 0 && cur <= 0) : (prv < 0 && cur >= 0);
+              if (cross) { exitPx = bars8000[k].c; exitT = bars8000[k].t; break; }
+            }
+          } else if (mode === 'extreme') {
+            // Sortie 2 : KK Extrême (≥ 55 ou ≤ -55 avec repli)
+            if (k - ent.i >= 1) {
+              const hit = ent.dir === 1 ? (cur >= 55 && cur < prv) : (cur <= -55 && cur > prv);
+              if (hit) { exitPx = bars8000[k].c; exitT = bars8000[k].t; break; }
+            }
+          }
+        }
+        if (exitPx == null && nxt) { exitPx = bars8000[nxt.i].c; exitT = bars8000[nxt.i].t; }
+        if (exitPx == null) continue;
+        const pnl = ent.dir === 1 ? (exitPx - ent.px) : (ent.px - exitPx);
+        trades.push({ pnl: pnl, entryT: ent.t, exitT: exitT });
       }
-      const n = wins + losses;
+
+      function _calcStats(tList) {
+        let pnl = 0, wins = 0, losses = 0, gW = 0, gL = 0;
+        for (let i = 0; i < tList.length; i++) {
+          const t = tList[i];
+          pnl += t.pnl;
+          if (t.pnl >= 0) { wins++; gW += t.pnl; }
+          else { losses++; gL += Math.abs(t.pnl); }
+        }
+        const n = wins + losses;
+        return {
+          pnl: Math.round(pnl),
+          wr: n > 0 ? (wins / n) * 100 : 0,
+          pf: gL > 0 ? gW / gL : (gW > 0 ? 99 : 0),
+          n: n
+        };
+      }
+
+      const lastT = bars8000[bars8000.length - 1].t;
+      const t3Days = lastT - (3 * 24 * 3600 * 1000);
+      const startOfDay = new Date(lastT);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const tToday = startOfDay.getTime();
+
       return {
-        pnl: pnl,
-        wr: n > 0 ? (wins / n) * 100 : 0,
-        pf: gL > 0 ? gW / gL : (gW > 0 ? 99 : 0),
-        n: n
+        sAll: _calcStats(trades),
+        s3d:  _calcStats(trades.filter(function(t) { return t.entryT >= t3Days; })),
+        sDay: _calcStats(trades.filter(function(t) { return t.entryT >= tToday; }))
       };
     }
 
-    const lastT = bars8000[bars8000.length - 1].t;
-    const t3Days = lastT - (3 * 24 * 3600 * 1000);
-    const startOfDay = new Date(lastT);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const tToday = startOfDay.getTime();
+    const resS1 = _runExitSim('zero');
+    const resS2 = _runExitSim('extreme');
 
-    const sAll = _calcStats(trades);
-    const s3d  = _calcStats(trades.filter(function(t) { return t.entryT >= t3Days; }));
-    const sDay = _calcStats(trades.filter(function(t) { return t.entryT >= tToday; }));
+    const activeExitMode = window.__strat11ExitMode || 's1';
+    const activeRes = activeExitMode === 's2' ? resS2 : resS1;
 
-    return { sAll: sAll, s3d: s3d, sDay: sDay };
+    return {
+      s1: resS1,
+      s2: resS2,
+      sAll: activeRes.sAll,
+      s3d:  activeRes.s3d,
+      sDay: activeRes.sDay
+    };
   } catch(e) {
     console.error('Erreur _backtestVariantSerious:', e);
-    const empty = { pnl: 0, wr: 0, pf: 0, n: 0 };
-    return { sAll: empty, s3d: empty, sDay: empty };
+    return { s1: emptyRes, s2: emptyRes, sAll: empty, s3d: empty, sDay: empty };
   }
 }
 
@@ -16511,11 +16602,16 @@ async function runStrat11Backtest(isManualAction) {
 
     const prevRanking = window.__strat11Ranking;
     const curP = window.__strat11Period || 'all';
+    const curEx = window.__strat11ExitMode || 's1';
+
+    function _getSortPnl(r) {
+      const obj = (curEx === 's2' && r.s2) ? r.s2 : (r.s1 || r);
+      const s = (curP === 'day') ? obj.sDay : ((curP === '3d') ? obj.s3d : obj.sAll);
+      return s ? s.pnl : 0;
+    }
 
     results.sort(function(a, b) {
-      const pnlA = (curP === 'day') ? a.sDay.pnl : ((curP === '3d') ? a.s3d.pnl : a.sAll.pnl);
-      const pnlB = (curP === 'day') ? b.sDay.pnl : ((curP === '3d') ? b.s3d.pnl : b.sAll.pnl);
-      return pnlB - pnlA;
+      return _getSortPnl(b) - _getSortPnl(a);
     });
 
     const hasChanged = prevRanking && prevRanking.length === 5 &&
@@ -16686,6 +16782,37 @@ if (btnPastillesMenu && pastillesMenuEl) {
           btn.style.fontWeight = '600';
         }
       });
+
+      // Synchroniser le style du sélecteur de sortie
+      const activeEx = window.__strat11ExitMode || 's1';
+      const b1 = document.getElementById('btn-exit-s1');
+      const b2 = document.getElementById('btn-exit-s2');
+      if (b1) {
+        if (activeEx === 's1') {
+          b1.style.borderColor = '#38BDF8';
+          b1.style.background = 'rgba(56,189,248,0.22)';
+          b1.style.color = '#38BDF8';
+          b1.style.fontWeight = '800';
+        } else {
+          b1.style.borderColor = 'rgba(255,255,255,0.15)';
+          b1.style.background = 'rgba(255,255,255,0.05)';
+          b1.style.color = 'var(--text)';
+          b1.style.fontWeight = '600';
+        }
+      }
+      if (b2) {
+        if (activeEx === 's2') {
+          b2.style.borderColor = '#FBBF24';
+          b2.style.background = 'rgba(251,191,36,0.22)';
+          b2.style.color = '#FBBF24';
+          b2.style.fontWeight = '800';
+        } else {
+          b2.style.borderColor = 'rgba(255,255,255,0.15)';
+          b2.style.background = 'rgba(255,255,255,0.05)';
+          b2.style.color = 'var(--text)';
+          b2.style.fontWeight = '600';
+        }
+      }
 
       renderPastillesList(false);
       anchorPastillesMenu(pastillesMenuEl, btnPastillesMenu);
@@ -40594,7 +40721,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2560';
+  window.__LUMEN_BUILD = 'B-0911-2570';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
