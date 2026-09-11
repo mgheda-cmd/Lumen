@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2550</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2560</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1401,7 +1401,17 @@ footer{
           <button id="btn-pastilles-all-on" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(0,230,118,0.14);border:1.2px solid #00E676;color:#00E676;font-weight:800;border-radius:6px">👁️ Tout Afficher</button>
           <button id="btn-pastilles-all-off" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(255,0,85,0.14);border:1.2px solid #FF0055;color:#FF0055;font-weight:800;border-radius:6px">🚫 Tout Masquer</button>
           <button id="btn-pastilles-reset-def" class="btn" style="font-size:10.5px;padding:6px 8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:700;border-radius:6px" title="Rétablir les pastilles recommandées par défaut">⟲ Défaut</button>
-          <button id="btn-pastilles-retest" class="btn" onclick="runStrat11Backtest(true)" style="font-size:10.5px;padding:6px 9px;background:rgba(122,162,255,0.14);border:1.2px solid #7AA2FF;color:#7AA2FF;font-weight:800;border-radius:6px;white-space:nowrap" title="Recalculer le classement des 5 stratégies sur les données actuelles">🔬 Re-tester</button>
+          <button id="btn-pastilles-retest" class="btn" onclick="runStrat11Backtest(true)" style="font-size:10.5px;padding:6px 9px;background:rgba(122,162,255,0.14);border:1.2px solid #7AA2FF;color:#7AA2FF;font-weight:800;border-radius:6px;white-space:nowrap" title="Recalculer le test sérieux sur 8000 bougies">🔬 Re-tester</button>
+        </div>
+
+        <!-- Sélecteur des 3 périodes de classement (Jour Même / 3 Jours / 8000 Bougies) -->
+        <div id="pastilles-period-selector" style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:7px;padding:4px 6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px">
+          <span style="font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap">Trier par :</span>
+          <div style="display:flex;gap:3px;flex:1;justify-content:flex-end">
+            <button type="button" id="btn-period-day" onclick="setStrat11Period('day')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer" title="Classer selon les gains du jour même">📅 Jour même</button>
+            <button type="button" id="btn-period-3d" onclick="setStrat11Period('3d')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer" title="Classer selon les 3 derniers jours (72h)">📊 3 Jours</button>
+            <button type="button" id="btn-period-all" onclick="setStrat11Period('all')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:800;border:1px solid #FFB400;background:rgba(255,180,0,0.15);color:#FFB400;cursor:pointer" title="Classer selon le test complet 8000 bougies">🏆 8000 bougies</button>
+          </div>
         </div>
       </div>
 
@@ -16257,25 +16267,82 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2540
+// Build B-0911-2560
+// ═══════════════════════════════════════════════════════════════════════════
+// GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
+// Build B-0911-2560
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
-  { key: 'strat_11_11_elite', tfFMC: 5, tfKK: 10, tfExit: 3,  name: 'Élite', catIdx: 0 },
-  { key: 'strat_11_11_ultra', tfFMC: 1, tfKK: 6,  tfExit: 6,  name: 'Ultra Scalp', catIdx: 1 },
-  { key: 'strat_11_11_scalp', tfFMC: 2, tfKK: 3,  tfExit: 3,  name: 'Scalp Rapide', catIdx: 2 },
-  { key: 'strat_11_11_pro',   tfFMC: 5, tfKK: 6,  tfExit: 5,  name: 'Pro', catIdx: 3 },
-  { key: 'strat_11_11',       tfFMC: 3, tfKK: 2,  tfExit: 3,  name: 'Original', catIdx: 4 }
+  { key: 'strat_11_11_elite', tfFMC: 5, tfKK: 10, tfExit: 3,  name: 'Élite', catIdx: 0, cBuy: '#10B981', cSell: '#F43F5E' },
+  { key: 'strat_11_11_ultra', tfFMC: 1, tfKK: 6,  tfExit: 6,  name: 'Ultra Scalp', catIdx: 1, cBuy: '#00E5FF', cSell: '#FF0055' },
+  { key: 'strat_11_11_scalp', tfFMC: 2, tfKK: 3,  tfExit: 3,  name: 'Scalp Rapide', catIdx: 2, cBuy: '#00E676', cSell: '#FF0055' },
+  { key: 'strat_11_11_pro',   tfFMC: 5, tfKK: 6,  tfExit: 5,  name: 'Pro', catIdx: 3, cBuy: '#10B981', cSell: '#F43F5E' },
+  { key: 'strat_11_11',       tfFMC: 3, tfKK: 2,  tfExit: 3,  name: 'Original', catIdx: 4, cBuy: '#00E676', cSell: '#FF0055' }
 ];
+
 window.__strat11Ranking = null;
 window.__strat11RankingPrev = null;
+window.__strat11Period = localStorage.getItem('strat11_active_period') || 'all'; // 'day', '3d', 'all'
+window.__synth8000Candles = null;
+
+async function get8000Candles() {
+  if (window.__synth8000Candles && window.__synth8000Candles.length >= 8000) {
+    return window.__synth8000Candles;
+  }
+  if (typeof state !== 'undefined' && state && state.data && state.data.length >= 8000) {
+    return state.data;
+  }
+  try {
+    const res = await fetch('candles_synth.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length >= 1000) {
+        window.__synth8000Candles = data;
+        return data;
+      }
+    }
+  } catch(e) {
+    console.warn('candles_synth.json indisponible:', e);
+  }
+  return (typeof state !== 'undefined' && state && state.data) ? state.data : [];
+}
+
+function setStrat11Period(p) {
+  window.__strat11Period = p;
+  try { localStorage.setItem('strat11_active_period', p); } catch(e) {}
+  ['day', '3d', 'all'].forEach(function(pid) {
+    const btn = document.getElementById('btn-period-' + pid);
+    if (!btn) return;
+    if (pid === p) {
+      btn.style.borderColor = '#FFB400';
+      btn.style.background = 'rgba(255,180,0,0.18)';
+      btn.style.color = '#FFB400';
+      btn.style.fontWeight = '800';
+    } else {
+      btn.style.borderColor = 'rgba(255,255,255,0.15)';
+      btn.style.background = 'rgba(255,255,255,0.05)';
+      btn.style.color = 'var(--text)';
+      btn.style.fontWeight = '600';
+    }
+  });
+  renderPastillesList(true);
+}
 
 function buildOrderedCatalog() {
   if (!window.__strat11Ranking || window.__strat11Ranking.length !== 5) return PASTILLES_CATALOG;
   const cats11 = PASTILLES_CATALOG.slice(0, 5);
   const catsOther = PASTILLES_CATALOG.slice(5);
-  const sorted11 = window.__strat11Ranking.map(function(r) { return cats11[r.catIdx]; });
-  return sorted11.concat(catsOther);
+  const p = window.__strat11Period || 'all';
+
+  const sorted = window.__strat11Ranking.slice().sort(function(a, b) {
+    const pnlA = (p === 'day') ? (a.sDay ? a.sDay.pnl : 0) : ((p === '3d') ? (a.s3d ? a.s3d.pnl : 0) : (a.sAll ? a.sAll.pnl : 0));
+    const pnlB = (p === 'day') ? (b.sDay ? b.sDay.pnl : 0) : ((p === '3d') ? (b.s3d ? b.s3d.pnl : 0) : (b.sAll ? b.sAll.pnl : 0));
+    return pnlB - pnlA;
+  });
+
+  const sortedCats = sorted.map(function(r) { return cats11[r.catIdx]; });
+  return sortedCats.concat(catsOther);
 }
 
 function _emaLocal(arr, period) {
@@ -16324,137 +16391,211 @@ function _projectLocal(bars1m, barsTf, vals) {
   return out;
 }
 
-function _backtestVariant(bars1m, vDef) {
-  if (!bars1m || bars1m.length < 50) return { pnl: 0, winRate: 0, pf: 0, nTrades: 0 };
+function _backtestVariantSerious(bars8000, vDef) {
+  if (!bars8000 || bars8000.length < 50) {
+    const empty = { pnl: 0, wr: 0, pf: 0, n: 0 };
+    return { sAll: empty, s3d: empty, sDay: empty };
+  }
   try {
-    // FMC
-    const bFMC = _aggregateLocal(bars1m, vDef.tfFMC);
+    const bFMC = _aggregateLocal(bars8000, vDef.tfFMC);
     const cFMC = bFMC.map(function(b) { return b.c; });
     const coreFMC = _emaLocal(cFMC, 8);
     const balFMC  = _emaLocal(cFMC, 21);
-    const fmcG = _projectLocal(bars1m, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v >= balFMC[i]; }));
-    const fmcR = _projectLocal(bars1m, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v < balFMC[i]; }));
-    // KK
-    const bKK = _aggregateLocal(bars1m, vDef.tfKK);
+    const fmcG = _projectLocal(bars8000, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v >= balFMC[i]; }));
+    const fmcR = _projectLocal(bars8000, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v < balFMC[i]; }));
+
+    const bKK = _aggregateLocal(bars8000, vDef.tfKK);
     const cKK = bKK.map(function(b) { return b.c; });
     const fstKK = _emaLocal(cKK, 5);
     const slwKK = _emaLocal(cKK, 13);
     const netKKr = fstKK.map(function(v, i) { return v != null && slwKK[i] != null ? v - slwKK[i] : null; });
     const sigKKr = _emaLocal(netKKr.map(function(v) { return v != null ? v : 0; }), 9);
-    const kkG = _projectLocal(bars1m, bKK, netKKr.map(function(v, i) { return v != null && v > sigKKr[i]; }));
-    const kkR = _projectLocal(bars1m, bKK, netKKr.map(function(v, i) { return v != null && v <= sigKKr[i]; }));
-    // Exit KK
-    const bEx = _aggregateLocal(bars1m, vDef.tfExit);
+    const kkG = _projectLocal(bars8000, bKK, netKKr.map(function(v, i) { return v != null && v > sigKKr[i]; }));
+    const kkR = _projectLocal(bars8000, bKK, netKKr.map(function(v, i) { return v != null && v <= sigKKr[i]; }));
+
+    const bEx = _aggregateLocal(bars8000, vDef.tfExit);
     const cEx = bEx.map(function(b) { return b.c; });
     const fstEx = _emaLocal(cEx, 5);
     const slwEx = _emaLocal(cEx, 13);
-    const netEx = _projectLocal(bars1m, bEx, fstEx.map(function(v, i) { return v != null && slwEx[i] != null ? v - slwEx[i] : null; }));
-    // Simulation
+    const netEx = _projectLocal(bars8000, bEx, fstEx.map(function(v, i) { return v != null && slwEx[i] != null ? v - slwEx[i] : null; }));
+
     let curDir = 0;
     const entries = [];
-    for (let k = 1; k < bars1m.length; k++) {
+    for (let k = 1; k < bars8000.length; k++) {
       const buy  = fmcG[k] && kkG[k] && !(fmcG[k-1] && kkG[k-1]);
       const sell = fmcR[k] && kkR[k] && !(fmcR[k-1] && kkR[k-1]);
-      if (buy && curDir !== 1)   { curDir =  1; entries.push({ dir: 1,  i: k, px: bars1m[k].c }); }
-      else if (sell && curDir !== -1) { curDir = -1; entries.push({ dir: -1, i: k, px: bars1m[k].c }); }
+      if (buy && curDir !== 1)   { curDir =  1; entries.push({ dir: 1,  i: k, px: bars8000[k].c, t: bars8000[k].t }); }
+      else if (sell && curDir !== -1) { curDir = -1; entries.push({ dir: -1, i: k, px: bars8000[k].c, t: bars8000[k].t }); }
     }
-    let totalPnl = 0, wins = 0, losses = 0, grossW = 0, grossL = 0;
+
+    const trades = [];
     for (let ei = 0; ei < entries.length; ei++) {
       const ent = entries[ei];
       const nxt = entries[ei + 1];
-      const maxK = nxt ? nxt.i : bars1m.length - 1;
-      let exitPx = null;
+      const maxK = nxt ? nxt.i : bars8000.length - 1;
+      let exitPx = null, exitT = null;
       for (let k = ent.i + 1; k <= maxK; k++) {
         const cur = netEx[k] != null ? netEx[k] : 0;
         const prv = netEx[k-1] != null ? netEx[k-1] : 0;
         if (k - ent.i >= 2) {
           const cross = ent.dir === 1 ? (prv > 0 && cur <= 0) : (prv < 0 && cur >= 0);
-          if (cross) { exitPx = bars1m[k].c; break; }
+          if (cross) { exitPx = bars8000[k].c; exitT = bars8000[k].t; break; }
         }
       }
-      if (exitPx == null && nxt) exitPx = bars1m[nxt.i].c;
+      if (exitPx == null && nxt) { exitPx = bars8000[nxt.i].c; exitT = bars8000[nxt.i].t; }
       if (exitPx == null) continue;
       const pnl = ent.dir === 1 ? (exitPx - ent.px) : (ent.px - exitPx);
-      totalPnl += pnl;
-      if (pnl >= 0) { wins++; grossW += pnl; } else { losses++; grossL += Math.abs(pnl); }
+      trades.push({ pnl: pnl, entryT: ent.t, exitT: exitT });
     }
-    const nTrades = wins + losses;
-    return { pnl: totalPnl, winRate: nTrades > 0 ? wins / nTrades * 100 : 0, pf: grossL > 0 ? grossW / grossL : (grossW > 0 ? 99 : 0), nTrades: nTrades };
-  } catch(e) { return { pnl: 0, winRate: 0, pf: 0, nTrades: 0 }; }
+
+    function _calcStats(tList) {
+      let pnl = 0, wins = 0, losses = 0, gW = 0, gL = 0;
+      for (let i = 0; i < tList.length; i++) {
+        const t = tList[i];
+        pnl += t.pnl;
+        if (t.pnl >= 0) { wins++; gW += t.pnl; }
+        else { losses++; gL += Math.abs(t.pnl); }
+      }
+      const n = wins + losses;
+      return {
+        pnl: pnl,
+        wr: n > 0 ? (wins / n) * 100 : 0,
+        pf: gL > 0 ? gW / gL : (gW > 0 ? 99 : 0),
+        n: n
+      };
+    }
+
+    const lastT = bars8000[bars8000.length - 1].t;
+    const t3Days = lastT - (3 * 24 * 3600 * 1000);
+    const startOfDay = new Date(lastT);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const tToday = startOfDay.getTime();
+
+    const sAll = _calcStats(trades);
+    const s3d  = _calcStats(trades.filter(function(t) { return t.entryT >= t3Days; }));
+    const sDay = _calcStats(trades.filter(function(t) { return t.entryT >= tToday; }));
+
+    return { sAll: sAll, s3d: s3d, sDay: sDay };
+  } catch(e) {
+    console.error('Erreur _backtestVariantSerious:', e);
+    const empty = { pnl: 0, wr: 0, pf: 0, n: 0 };
+    return { sAll: empty, s3d: empty, sDay: empty };
+  }
 }
 
-function runStrat11Backtest(showToast) {
-  const bars1m = (typeof state !== 'undefined' && state && state.data) ? state.data : null;
-  if (!bars1m || bars1m.length < 100) {
-    if (typeof toast === 'function') toast('\u26A0\uFE0F Pas assez de donn\u00E9es pour le classement', '#FBBF24');
-    return;
-  }
+async function runStrat11Backtest(isManualAction) {
   const retestBtn = document.getElementById('btn-pastilles-retest');
   const statusEl  = document.getElementById('pastilles-ranking-status');
-  if (retestBtn) { retestBtn.textContent = '\u23F3 Calcul\u2026'; retestBtn.disabled = true; }
-  if (statusEl)  statusEl.textContent = '\u23F3 Calcul en cours sur ' + bars1m.length + ' bougies\u2026';
-  setTimeout(function() {
-    try {
-      const results = STRAT11_VARIANTS_DEF.map(function(vDef) {
-        const stats = _backtestVariant(bars1m, vDef);
-        return Object.assign({ key: vDef.key, name: vDef.name, catIdx: vDef.catIdx, tfFMC: vDef.tfFMC, tfKK: vDef.tfKK }, stats);
-      });
-      results.sort(function(a, b) { return b.pnl - a.pnl; });
-      const prevRanking = window.__strat11Ranking;
-      const hasChanged = prevRanking && prevRanking.length === 5 && results.some(function(r, i) { return r.key !== prevRanking[i].key; });
-      window.__strat11RankingPrev = prevRanking;
-      window.__strat11Ranking = results;
-      try { localStorage.setItem('strat11Ranking', JSON.stringify(results)); } catch(e) {}
-      const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      if (statusEl) statusEl.innerHTML = '\uD83C\uDFC6 #1 : <b style="color:#10B981">' + results[0].name + ' [' + results[0].tfFMC + 'm\u00D7' + results[0].tfKK + 'm]</b>'
-        + ' &middot; <span style="color:#10B981">' + (results[0].pnl >= 0 ? '+' : '') + Math.round(results[0].pnl) + ' pts</span>'
-        + ' &middot; <span style="color:#94A3B8">Mis \u00E0 jour ' + now + '</span>';
-      if (retestBtn) { retestBtn.textContent = '\uD83D\uDD2C Re-tester'; retestBtn.disabled = false; }
-      renderPastillesList(true);
-      if (showToast) {
-        if (hasChanged) {
-          _showReclassModal(results, prevRanking);
-        } else if (typeof toast === 'function') {
-          toast('\u2705 Classement \u00E0 jour · #1 : ' + results[0].name + ' · ' + (results[0].pnl >= 0 ? '+' : '') + Math.round(results[0].pnl) + ' pts', '#10B981');
-        }
-      }
-    } catch(err) {
-      console.error('runStrat11Backtest error:', err);
-      if (retestBtn) { retestBtn.textContent = '\uD83D\uDD2C Re-tester'; retestBtn.disabled = false; }
-      if (statusEl) statusEl.textContent = '\u274C Erreur lors du calcul';
-      if (typeof toast === 'function') toast('\u274C Erreur calcul classement', '#F87171');
+  if (retestBtn) { retestBtn.textContent = '⏳ Calcul…'; retestBtn.disabled = true; }
+  if (statusEl)  statusEl.textContent = '⏳ Analyse sérieuse sur 8000 bougies…';
+
+  try {
+    const bars8000 = await get8000Candles();
+    if (!bars8000 || bars8000.length < 100) {
+      if (typeof toast === 'function') toast('⚠️ Données insuffisantes pour le test', '#FBBF24');
+      if (retestBtn) { retestBtn.textContent = '🔬 Re-tester'; retestBtn.disabled = false; }
+      if (statusEl) statusEl.textContent = 'Classement dynamique · cliquez 🔬 pour recalculer';
+      return;
     }
-  }, 60);
+
+    const results = STRAT11_VARIANTS_DEF.map(function(vDef) {
+      const stats = _backtestVariantSerious(bars8000, vDef);
+      return Object.assign({
+        key: vDef.key,
+        name: vDef.name,
+        catIdx: vDef.catIdx,
+        tfFMC: vDef.tfFMC,
+        tfKK: vDef.tfKK
+      }, stats);
+    });
+
+    const prevRanking = window.__strat11Ranking;
+    const curP = window.__strat11Period || 'all';
+
+    results.sort(function(a, b) {
+      const pnlA = (curP === 'day') ? a.sDay.pnl : ((curP === '3d') ? a.s3d.pnl : a.sAll.pnl);
+      const pnlB = (curP === 'day') ? b.sDay.pnl : ((curP === '3d') ? b.s3d.pnl : b.sAll.pnl);
+      return pnlB - pnlA;
+    });
+
+    const hasChanged = prevRanking && prevRanking.length === 5 &&
+      results.some(function(r, i) { return r.key !== prevRanking[i].key; });
+
+    window.__strat11RankingPrev = prevRanking;
+    window.__strat11Ranking = results;
+
+    try {
+      localStorage.setItem('strat11Ranking', JSON.stringify(results));
+    } catch(e) {}
+
+    const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const topStat = (curP === 'day') ? results[0].sDay : ((curP === '3d') ? results[0].s3d : results[0].sAll);
+    if (statusEl) {
+      statusEl.innerHTML = '🏆 #1 : <b style="color:#10B981">' + results[0].name + ' [' + results[0].tfFMC + 'm×' + results[0].tfKK + 'm]</b>'
+        + ' · <span style="color:#10B981">' + (topStat.pnl >= 0 ? '+' : '') + Math.round(topStat.pnl) + ' pts</span>'
+        + ' · <span style="color:#94A3B8">' + bars8000.length + ' bougies · ' + now + '</span>';
+    }
+    if (retestBtn) { retestBtn.textContent = '🔬 Re-tester'; retestBtn.disabled = false; }
+
+    renderPastillesList(true);
+
+    if (isManualAction) {
+      if (hasChanged) {
+        _showReclassModal(results, prevRanking, curP);
+      } else if (typeof toast === 'function') {
+        toast('✅ Test 8000 bougies terminé · #1 : ' + results[0].name + ' (+' + Math.round(topStat.pnl) + ' pts)', '#10B981');
+      }
+    }
+  } catch(err) {
+    console.error('runStrat11Backtest error:', err);
+    if (retestBtn) { retestBtn.textContent = '🔬 Re-tester'; retestBtn.disabled = false; }
+    if (statusEl) statusEl.textContent = '❌ Erreur lors du calcul';
+    if (typeof toast === 'function') toast('❌ Erreur calcul classement', '#F87171');
+  }
 }
 
-function _showReclassModal(newR, prevR) {
+function _showReclassModal(newR, prevR, activeP) {
   const ex = document.getElementById('reclass-modal');
   if (ex) ex.remove();
   const prevTop = prevR ? prevR[0] : null;
   const newTop  = newR[0];
   const modal = document.createElement('div');
   modal.id = 'reclass-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,20,0.78);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,20,0.85);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px';
   const box = document.createElement('div');
-  box.style.cssText = 'background:#0A111F;border:2px solid #7AA2FF;border-radius:14px;max-width:360px;width:100%;padding:22px 22px 18px;box-shadow:0 16px 60px rgba(0,0,0,0.9);text-align:center';
+  box.style.cssText = 'background:#0A111F;border:2px solid #7AA2FF;border-radius:14px;max-width:380px;width:100%;padding:22px 22px 18px;box-shadow:0 16px 60px rgba(0,0,0,0.92);text-align:center';
+
+  const statNew = (activeP === 'day') ? newTop.sDay : ((activeP === '3d') ? newTop.s3d : newTop.sAll);
+  const pLabel = (activeP === 'day') ? "Aujourd'hui" : ((activeP === '3d') ? '3 Derniers Jours' : '8000 Bougies');
+
   const prevHtml = prevTop
-    ? '<div style="margin-bottom:6px;font-size:11px;color:#94A3B8">Avant : <b>' + prevTop.name + ' [' + prevTop.tfFMC + 'm×' + prevTop.tfKK + 'm] · ' + Math.round(prevTop.pnl) + ' pts</b></div>'
+    ? '<div style="margin-bottom:8px;font-size:11px;color:#94A3B8">Ancien #1 : <b>' + prevTop.name + ' [' + prevTop.tfFMC + 'm×' + prevTop.tfKK + 'm]</b></div>'
     : '';
-  const pfStr = newTop.pf > 99 ? '>99' : newTop.pf.toFixed(2);
-  box.innerHTML = '<div style="font-size:26px;margin-bottom:8px">🔄</div>'
-    + '<div style="font-weight:800;font-size:14px;color:#7AA2FF;margin-bottom:10px">Nouveau Classement Détecté !</div>'
+
+  box.innerHTML = '<div style="font-size:28px;margin-bottom:8px">🔄</div>'
+    + '<div style="font-weight:800;font-size:15px;color:#7AA2FF;margin-bottom:8px">Nouveau Classement Détecté !</div>'
+    + '<div style="font-size:10.5px;color:#94A3B8;margin-bottom:12px">Période : <b style="color:#FFB400">' + pLabel + '</b></div>'
     + prevHtml
-    + '<div style="font-size:12px;color:#E6EDF3;margin-bottom:14px">Nouveau #1 : <b style="color:#10B981;font-size:14px">' + newTop.name + ' [' + newTop.tfFMC + 'm×' + newTop.tfKK + 'm]</b><br>'
-    + '<span style="color:#10B981;font-weight:700">' + (newTop.pnl >= 0 ? '+' : '') + Math.round(newTop.pnl) + ' pts &middot; WR ' + newTop.winRate.toFixed(0) + '% &middot; PF ' + pfStr + '</span></div>'
+    + '<div style="background:rgba(16,185,129,0.08);border:1.2px solid #10B981;border-radius:10px;padding:10px 12px;margin-bottom:14px;text-align:left">'
+    + '<div style="font-size:13px;font-weight:900;color:#10B981;margin-bottom:4px">🥇 Nouveau #1 : ' + newTop.name + ' [' + newTop.tfFMC + 'm×' + newTop.tfKK + 'm]</div>'
+    + '<div style="font-size:11px;color:#E6EDF3">'
+    + 'Gain : <b style="color:#10B981">' + (statNew.pnl >= 0 ? '+' : '') + Math.round(statNew.pnl) + ' pts</b> · '
+    + 'WR <b style="color:#FBBF24">' + statNew.wr.toFixed(0) + '%</b> · '
+    + 'PF <b style="color:#A78BFA">' + (statNew.pf > 99 ? '>99' : statNew.pf.toFixed(2)) + '</b> · '
+    + '<span style="color:#94A3B8">' + statNew.n + ' trades</span>'
+    + '</div>'
+    + '</div>'
     + '<div style="display:flex;gap:8px">'
-    + '<button id="reclass-ok" style="flex:1;padding:10px;background:rgba(16,185,129,0.2);border:1.5px solid #10B981;border-radius:8px;color:#10B981;font-weight:800;font-size:12px;cursor:pointer">✅ Valider</button>'
+    + '<button id="reclass-ok" style="flex:1;padding:10px;background:rgba(16,185,129,0.22);border:1.5px solid #10B981;border-radius:8px;color:#10B981;font-weight:800;font-size:12px;cursor:pointer">✅ Valider le reclassement</button>'
     + '<button id="reclass-no" style="flex:1;padding:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#94A3B8;font-weight:700;font-size:12px;cursor:pointer">↺ Garder l\'ancien</button>'
     + '</div>';
+
   modal.appendChild(box);
   document.body.appendChild(modal);
+
   document.getElementById('reclass-ok').addEventListener('click', function() {
     modal.remove();
-    if (typeof toast === 'function') toast('✅ Nouveau classement validé ! #1 : ' + newTop.name, '#10B981');
+    if (typeof toast === 'function') toast('✅ Reclassement validé ! #1 : ' + newTop.name, '#10B981');
   });
   document.getElementById('reclass-no').addEventListener('click', function() {
     window.__strat11Ranking = window.__strat11RankingPrev;
@@ -16474,16 +16615,22 @@ function _showReclassModal(newR, prevR) {
 function loadSavedStrat11Ranking() {
   try {
     const saved = localStorage.getItem('strat11Ranking');
-    if (!saved) return;
+    if (!saved) return false;
     const parsed = JSON.parse(saved);
-    if (!Array.isArray(parsed) || parsed.length !== 5) return;
+    if (!Array.isArray(parsed) || parsed.length !== 5) return false;
     const rebuilt = parsed.map(function(s) {
       const vDef = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === s.key; });
       if (!vDef) return null;
       return Object.assign({}, vDef, s);
     }).filter(Boolean);
-    if (rebuilt.length === 5) window.__strat11Ranking = rebuilt;
-  } catch(e) {}
+    if (rebuilt.length === 5 && rebuilt[0].sAll) {
+      window.__strat11Ranking = rebuilt;
+      return true;
+    }
+    return false;
+  } catch(e) {
+    return false;
+  }
 }
 
 function resetDefaultPastilles() {
@@ -16513,15 +16660,32 @@ if (btnPastillesMenu && pastillesMenuEl) {
     e.stopPropagation();
     const open = pastillesMenuEl.classList.toggle('open');
     if (open) {
-      // Règle stricte : test 8000 bougies UNIQUEMENT à la 1ère ouverture de la journée
+      // Règle stricte : test 8000 bougies à la 1ère ouverture du jour OU si pas encore calculé
       const todayDateStr = new Date().toISOString().slice(0, 10);
       const lastRunDate = localStorage.getItem('strat11_last_test_date');
-      if (lastRunDate !== todayDateStr) {
+      const hasSaved = loadSavedStrat11Ranking();
+      if (!hasSaved || !window.__strat11Ranking || lastRunDate !== todayDateStr) {
         localStorage.setItem('strat11_last_test_date', todayDateStr);
-        setTimeout(function() { runStrat11Backtest(false); }, 150);
-      } else {
-        loadSavedStrat11Ranking();
+        setTimeout(function() { runStrat11Backtest(false); }, 100);
       }
+
+      // Synchroniser le style du sélecteur de période
+      const activeP = window.__strat11Period || 'all';
+      ['day', '3d', 'all'].forEach(function(pid) {
+        const btn = document.getElementById('btn-period-' + pid);
+        if (!btn) return;
+        if (pid === activeP) {
+          btn.style.borderColor = '#FFB400';
+          btn.style.background = 'rgba(255,180,0,0.18)';
+          btn.style.color = '#FFB400';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.style.borderColor = 'rgba(255,255,255,0.15)';
+          btn.style.background = 'rgba(255,255,255,0.05)';
+          btn.style.color = 'var(--text)';
+          btn.style.fontWeight = '600';
+        }
+      });
 
       renderPastillesList(false);
       anchorPastillesMenu(pastillesMenuEl, btnPastillesMenu);
@@ -40430,7 +40594,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2550';
+  window.__LUMEN_BUILD = 'B-0911-2560';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
