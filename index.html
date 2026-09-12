@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2680</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2690</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -10342,22 +10342,54 @@ function drawPrice(p,s,e,cw,sharedXStack){
       let activeTrade = null;
       if (Array.isArray(window.__lastFMCSignals) && window.__lastFMCSignals.length > 0) {
         const sigs = window.__lastFMCSignals;
-        const entries = sigs.filter(s => !s.isExit && s.price != null && (s.isStrat1111 || s.isConfluenceKK || s.isElite || s.isPureNoAlma)).sort((a, b) => a.i - b.i);
+        
+        // Cibler en priorité absolue la stratégie 11 11 visible sur le graphique
+        const activeKey = (function() {
+          if (window.activeDemoStrategy && window.activeDemoStrategy.varKey && state.indicators && state.indicators[window.activeDemoStrategy.varKey]?.on) {
+            return window.activeDemoStrategy.varKey;
+          }
+          if (typeof STRAT11_VARIANTS_DEF !== 'undefined') {
+            const act = STRAT11_VARIANTS_DEF.find(function(v) { return state.indicators && state.indicators[v.key] && state.indicators[v.key].on; });
+            if (act) return act.key;
+          }
+          if (window.__stJournalVarKey && state.indicators && state.indicators[window.__stJournalVarKey]?.on) {
+            return window.__stJournalVarKey;
+          }
+          return null;
+        })();
+
+        // Filtrer strictement sur la stratégie active affichée, sans pollution des autres stratégies masquées
+        let relevantSigs = sigs;
+        if (activeKey) {
+          relevantSigs = sigs.filter(function(s) { return s.optKey === activeKey; });
+        } else {
+          relevantSigs = sigs.filter(function(s) {
+            const indCfg = state.indicators && s.optKey && state.indicators[s.optKey];
+            return indCfg ? (indCfg.on !== false) : true;
+          });
+        }
+
+        const entries = relevantSigs.filter(function(s) { return !s.isExit && s.price != null; }).sort(function(a, b) { return a.i - b.i; });
         if (entries.length > 0) {
           const lastEntry = entries[entries.length - 1];
-          const hasExit = sigs.some(s => s.isExit && s.entryI === lastEntry.i && s.i >= lastEntry.i);
+          const hasExit = relevantSigs.some(function(s) {
+            return s.isExit && ((s.entryI != null && s.entryI === lastEntry.i) || (s.tradeNum != null && s.tradeNum === lastEntry.tradeNum)) && s.i >= lastEntry.i;
+          });
           if (!hasExit) {
             activeTrade = lastEntry;
           }
         }
       }
+
+      // 2. Si aucun trade en cours sur le graphique, vérifier si une position Démo est en cours
       if (!activeTrade && typeof paper !== 'undefined' && Array.isArray(paper.positions) && paper.positions.length > 0) {
-        const pos = paper.positions.find(posObj => (!posObj.sym || posObj.sym === state.symbol) && posObj.entry);
+        const pos = paper.positions.find(function(posObj) { return (!posObj.sym || posObj.sym === state.symbol) && posObj.entry; });
         if (pos) {
           activeTrade = {
             price: pos.entry,
             dir: pos.side === 'long' ? 1 : -1,
-            label: pos.side === 'long' ? 'ACHAT' : 'VENTE'
+            label: pos.side === 'long' ? 'ACHAT' : 'VENTE',
+            tradeNum: pos.tradeNum || null
           };
         }
       }
@@ -10386,8 +10418,9 @@ function drawPrice(p,s,e,cw,sharedXStack){
         ctx.textAlign = 'center';
         ctx.fillText(pnlStr, W - AXIS_W + (AXIS_W / 2), pnlY + 11.5);
 
-        // 2. Badge dynamique flottant sur la ligne du prix en direct (suit chaque mouvement du prix)
-        const badgeTxt = (isLong ? '🟢 ACHAT ' : '🔴 VENTE ') + pnlStr;
+        // 2. Badge dynamique flottant sur la ligne du prix en direct avec le vrai numéro de pastille (#29 ACHAT)
+        const tNumBadge = (activeTrade.tradeNum != null) ? ('#' + activeTrade.tradeNum + ' ') : '';
+        const badgeTxt = (isLong ? ('🟢 ' + tNumBadge + 'ACHAT ') : ('🔴 ' + tNumBadge + 'VENTE ')) + pnlStr;
         ctx.font = 'bold 9.5px "IBM Plex Sans", sans-serif';
         const txtMetrics = ctx.measureText(badgeTxt);
         const bW = Math.max(90, Math.round(txtMetrics.width + 14));
@@ -16552,10 +16585,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2680
+// Build B-0911-2690
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2680
+// Build B-0911-2690
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -17168,6 +17201,31 @@ window.activerStrat11SurCompteDemo = function() {
     activatedAt: Date.now(),
     timestamp: Date.now()
   };
+
+  // Synchroniser la position Démo sur le trade actuellement ouvert sur le graphique (s'il existe)
+  if (typeof paper !== 'undefined' && Array.isArray(window.__lastFMCSignals)) {
+    const varSigs = window.__lastFMCSignals.filter(function(s) { return s.optKey === varKey; });
+    const entSigs = varSigs.filter(function(s) { return !s.isExit; }).sort(function(a, b) { return a.i - b.i; });
+    if (entSigs.length > 0) {
+      const lastEnt = entSigs[entSigs.length - 1];
+      const hasEx = varSigs.some(function(s) { return s.isExit && ((s.entryI != null && s.entryI === lastEnt.i) || (s.tradeNum != null && s.tradeNum === lastEnt.tradeNum)); });
+      if (!hasEx) {
+        // Le trade est en cours sur le graphique (ex: #29 ACHAT @ $77 147.8)
+        paper.positions = [{
+          sym: state.symbol || 'BTCUSDT',
+          side: lastEnt.dir === 1 ? 'long' : 'short',
+          entry: lastEnt.price,
+          qty: 0.02,
+          margin: (0.02 * lastEnt.price) / 200,
+          notional: 0.02 * lastEnt.price,
+          lev: 200,
+          t: lastEnt.t || Date.now(),
+          tradeNum: lastEnt.tradeNum,
+          triggerSignal: lastEnt.badge || ('Pastille #' + lastEnt.tradeNum)
+        }];
+      }
+    }
+  }
   try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
 
   // 2. Activer l'Auto-Trade
