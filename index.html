@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-0530</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-0535</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -17451,6 +17451,225 @@ window.updateStrat11JournalExecUI = function() {
   }
 };
 
+window.applyStrat11Dock = function(mode, save) {
+  const panel = document.getElementById('strat11-trades-panel');
+  if (!panel) return;
+  const resizer = document.getElementById('st-panel-resizer');
+  const btnSnapL = document.getElementById('btn-st-snap-left');
+  const btnSnapR = document.getElementById('btn-st-snap-right');
+  const btnSnapC = document.getElementById('btn-st-snap-center');
+
+  let savedW = parseInt(localStorage.getItem('strat11_panel_width'), 10) || 535;
+  const winW = window.innerWidth || 1024;
+  savedW = Math.max(320, Math.min(savedW, winW - 20));
+
+  panel.style.transition = 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+  panel.style.width = savedW + 'px';
+
+  if (mode === 'left') {
+    panel.style.left = '0px';
+    panel.style.right = 'auto';
+    panel.style.top = '45px';
+    panel.style.height = 'calc(100vh - 55px)';
+    panel.style.borderLeft = 'none';
+    panel.style.borderRight = '1.5px solid #38BDF8';
+    panel.style.borderRadius = '0 12px 12px 0';
+    panel.style.boxShadow = '14px 0 45px rgba(0,0,0,0.85)';
+    if (resizer) {
+      resizer.style.left = 'auto';
+      resizer.style.right = '-6px';
+    }
+    if (btnSnapL) { btnSnapL.style.background = '#38BDF8'; btnSnapL.style.color = '#0B1120'; }
+    if (btnSnapR) { btnSnapR.style.background = 'rgba(56,189,248,0.12)'; btnSnapR.style.color = '#38BDF8'; }
+    if (btnSnapC) { btnSnapC.style.background = 'rgba(255,255,255,0.06)'; btnSnapC.style.color = 'var(--text)'; }
+  } else if (mode === 'center') {
+    const left = Math.max(10, Math.round((winW - savedW) / 2));
+    panel.style.left = left + 'px';
+    panel.style.right = 'auto';
+    panel.style.top = '55px';
+    panel.style.height = 'calc(100vh - 75px)';
+    panel.style.border = '1.5px solid #38BDF8';
+    panel.style.borderRadius = '12px';
+    panel.style.boxShadow = '0 25px 70px rgba(0,0,0,0.92)';
+    if (resizer) {
+      resizer.style.left = 'auto';
+      resizer.style.right = '-6px';
+    }
+    if (btnSnapC) { btnSnapC.style.background = '#38BDF8'; btnSnapC.style.color = '#0B1120'; }
+    if (btnSnapL) { btnSnapL.style.background = 'rgba(56,189,248,0.12)'; btnSnapL.style.color = '#38BDF8'; }
+    if (btnSnapR) { btnSnapR.style.background = 'rgba(56,189,248,0.12)'; btnSnapR.style.color = '#38BDF8'; }
+  } else { // 'right'
+    mode = 'right';
+    panel.style.left = 'auto';
+    panel.style.right = '0px';
+    panel.style.top = '45px';
+    panel.style.height = 'calc(100vh - 55px)';
+    panel.style.borderRight = 'none';
+    panel.style.borderLeft = '1.5px solid #38BDF8';
+    panel.style.borderRadius = '12px 0 0 12px';
+    panel.style.boxShadow = '-14px 0 45px rgba(0,0,0,0.85)';
+    if (resizer) {
+      resizer.style.right = 'auto';
+      resizer.style.left = '-6px';
+    }
+    if (btnSnapR) { btnSnapR.style.background = '#38BDF8'; btnSnapR.style.color = '#0B1120'; }
+    if (btnSnapL) { btnSnapL.style.background = 'rgba(56,189,248,0.12)'; btnSnapL.style.color = '#38BDF8'; }
+    if (btnSnapC) { btnSnapC.style.background = 'rgba(255,255,255,0.06)'; btnSnapC.style.color = 'var(--text)'; }
+  }
+  window.__stPanelDock = mode;
+  if (save) {
+    try { localStorage.setItem('strat11_panel_dock', mode); } catch(e){}
+  }
+  setTimeout(() => { if (panel) panel.style.transition = 'none'; }, 240);
+};
+
+window.initStrat11PanelDraggableAndResizable = function() {
+  const panel = document.getElementById('strat11-trades-panel');
+  if (!panel || panel.__dragResizerInited) return;
+  panel.__dragResizerInited = true;
+
+  const head = document.getElementById('st-panel-header');
+  const resizer = document.getElementById('st-panel-resizer');
+  const snapLeft = document.getElementById('btn-st-snap-left');
+  const snapRight = document.getElementById('btn-st-snap-right');
+  const snapCenter = document.getElementById('btn-st-snap-center');
+
+  if (snapLeft) snapLeft.addEventListener('click', (e) => { e.stopPropagation(); window.applyStrat11Dock('left', true); });
+  if (snapRight) snapRight.addEventListener('click', (e) => { e.stopPropagation(); window.applyStrat11Dock('right', true); });
+  if (snapCenter) snapCenter.addEventListener('click', (e) => { e.stopPropagation(); window.applyStrat11Dock('center', true); });
+
+  // 1. Redimensionnement fluide par glissement du bord (Resizer)
+  if (resizer) {
+    let isResizing = false;
+    let startX = 0, startW = 0;
+
+    const onResizeStart = function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      isResizing = true;
+      const p = e.touches ? e.touches[0] : e;
+      startX = p.clientX;
+      startW = panel.offsetWidth;
+      panel.style.transition = 'none';
+      const handleBar = resizer.querySelector('div');
+      if (handleBar) handleBar.style.background = '#38BDF8';
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
+    };
+
+    const onResizeMove = function(e) {
+      if (!isResizing) return;
+      const p = e.touches ? e.touches[0] : e;
+      const curX = p.clientX;
+      const dock = window.__stPanelDock || 'right';
+      let newW = startW;
+      if (dock === 'left') {
+        newW = startW + (curX - startX);
+      } else { // 'right', 'center', or custom
+        newW = startW + (startX - curX);
+      }
+      const winW = window.innerWidth || 1024;
+      newW = Math.max(320, Math.min(newW, winW - 20));
+      panel.style.width = newW + 'px';
+      if (e.cancelable) e.preventDefault();
+    };
+
+    const onResizeEnd = function() {
+      if (!isResizing) return;
+      isResizing = false;
+      const handleBar = resizer.querySelector('div');
+      if (handleBar) handleBar.style.background = 'rgba(56,189,248,0.5)';
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      try { localStorage.setItem('strat11_panel_width', panel.offsetWidth); } catch(e){}
+    };
+
+    resizer.addEventListener('mousedown', onResizeStart);
+    window.addEventListener('mousemove', onResizeMove);
+    window.addEventListener('mouseup', onResizeEnd);
+
+    resizer.addEventListener('touchstart', onResizeStart, { passive: false });
+    window.addEventListener('touchmove', onResizeMove, { passive: false });
+    window.addEventListener('touchend', onResizeEnd);
+  }
+
+  // 2. Déplacement libre par glissement de l'en-tête (Drag & Drop)
+  if (head) {
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let initLeft = 0, initTop = 0;
+
+    const onDragStart = function(e) {
+      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+      isDragging = true;
+      const p = e.touches ? e.touches[0] : e;
+      startX = p.clientX;
+      startY = p.clientY;
+      const rect = panel.getBoundingClientRect();
+      initLeft = rect.left;
+      initTop = rect.top;
+      panel.style.transition = 'none';
+      panel.style.left = rect.left + 'px';
+      panel.style.right = 'auto';
+      panel.style.top = rect.top + 'px';
+      head.style.cursor = 'grabbing';
+      panel.style.boxShadow = '0 30px 90px rgba(0,0,0,0.98)';
+    };
+
+    const onDragMove = function(e) {
+      if (!isDragging) return;
+      const p = e.touches ? e.touches[0] : e;
+      const dx = p.clientX - startX;
+      const dy = p.clientY - startY;
+      const winW = window.innerWidth || 1024;
+      const winH = window.innerHeight || 768;
+      const curLeft = Math.max(0, Math.min(initLeft + dx, winW - 80));
+      const curTop = Math.max(40, Math.min(initTop + dy, winH - 60));
+      panel.style.left = curLeft + 'px';
+      panel.style.top = curTop + 'px';
+      if (e.cancelable) e.preventDefault();
+    };
+
+    const onDragEnd = function() {
+      if (!isDragging) return;
+      isDragging = false;
+      head.style.cursor = 'grab';
+      const rect = panel.getBoundingClientRect();
+      const winW = window.innerWidth || 1024;
+      if (rect.left < 70) {
+        window.applyStrat11Dock('left', true);
+      } else if (rect.right > winW - 70) {
+        window.applyStrat11Dock('right', true);
+      } else {
+        window.__stPanelDock = 'custom';
+        panel.style.border = '1.5px solid #38BDF8';
+        panel.style.borderRadius = '12px';
+        try {
+          localStorage.setItem('strat11_panel_dock', 'custom');
+          localStorage.setItem('strat11_panel_x', rect.left);
+          localStorage.setItem('strat11_panel_y', rect.top);
+        } catch(e){}
+      }
+    };
+
+    head.addEventListener('mousedown', onDragStart);
+    window.addEventListener('mousemove', onDragMove);
+    window.addEventListener('mouseup', onDragEnd);
+
+    head.addEventListener('touchstart', onDragStart, { passive: false });
+    window.addEventListener('touchmove', onDragMove, { passive: false });
+    window.addEventListener('touchend', onDragEnd);
+
+    head.addEventListener('dblclick', function(e) {
+      if (e.target.closest('button')) return;
+      if (window.__stPanelDock === 'left') window.applyStrat11Dock('right', true);
+      else window.applyStrat11Dock('left', true);
+    });
+  }
+};
+
 window.openStrat11TradesJournal = function(varKey, exitKey) {
   if (varKey) window.__stJournalVarKey = varKey;
   if (exitKey) window.__stJournalExitMode = exitKey;
@@ -17459,6 +17678,12 @@ window.openStrat11TradesJournal = function(varKey, exitKey) {
   const panel = document.getElementById('strat11-trades-panel');
   if (!panel) return;
   panel.style.display = 'flex';
+
+  if (typeof window.initStrat11PanelDraggableAndResizable === 'function') {
+    window.initStrat11PanelDraggableAndResizable();
+  }
+  const savedDock = localStorage.getItem('strat11_panel_dock') || 'right';
+  window.applyStrat11Dock(savedDock, false);
 
   window.setStrat11JournalPeriod(window.__stJournalPeriod || '3d', false);
   window.setStrat11JournalExit(window.__stJournalExitMode || 's1', false);
@@ -17474,9 +17699,14 @@ window.toggleStrat11PanelWidth = function() {
   const panel = document.getElementById('strat11-trades-panel');
   const btn = document.getElementById('btn-st-panel-resize');
   if (!panel) return;
-  const isLarge = panel.style.width === '650px';
-  panel.style.width = isLarge ? '535px' : '650px';
-  if (btn) btn.textContent = isLarge ? '⤢ Large' : '⤡ Standard';
+  const curW = parseInt(panel.style.width, 10) || 535;
+  let nextW = 535;
+  if (curW < 440) nextW = 535;
+  else if (curW < 620) nextW = 720;
+  else nextW = 380;
+  panel.style.width = nextW + 'px';
+  try { localStorage.setItem('strat11_panel_width', nextW); } catch(e){}
+  if (btn) btn.textContent = (nextW > 620) ? '⤡ Réduire' : ((nextW < 440) ? '⤢ Normal' : '⤢ Large');
 };
 
 window.setStrat11JournalPeriod = function(p, doRender) {
@@ -41895,7 +42125,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-0530';
+  window.__LUMEN_BUILD = 'B-0912-0535';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -44823,20 +45053,28 @@ window.balayerMM_MTF = async function(){
 
 </script>
 
-<!-- VOLET LATÉRAL JOURNAL DES TRADES STRATÉGIES 11 11 -->
+<!-- VOLET LATÉRAL JOURNAL DES TRADES STRATÉGIES 11 11 (DÉPLAÇABLE & REDIMENSIONNABLE) -->
 <div id="strat11-trades-panel" style="display:none;position:fixed;top:45px;right:0;width:535px;max-width:calc(100vw - 10px);height:calc(100vh - 55px);background:rgba(10,17,31,0.98);border-left:1.5px solid #38BDF8;box-shadow:-14px 0 45px rgba(0,0,0,0.85);z-index:999999;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#F1F5F9;backdrop-filter:blur(18px)">
-  <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03)">
-    <div style="display:flex;align-items:center;gap:8px;min-width:0">
-      <span style="font-size:20px;flex:none">📋</span>
+  <!-- Poignée verticale de redimensionnement de la largeur (bord interactif) -->
+  <div id="st-panel-resizer" style="position:absolute;top:0;bottom:0;left:-5px;width:12px;cursor:col-resize;z-index:99999;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center" title="Maintenez et glissez horizontalement pour agrandir ou rétrécir le tableau (élargir/diminuer le graphique)">
+    <div style="width:3px;height:48px;background:rgba(56,189,248,0.5);border-radius:2px;pointer-events:none"></div>
+  </div>
+
+  <!-- Header DÉPLAÇABLE (Drag & Drop + Ancrage Rapide Gauche / Droite / Centre) -->
+  <div id="st-panel-header" title="Maintenez et glissez cette barre pour déplacer le tableau · Double-clic pour basculer Gauche / Droite" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none">
+    <div style="display:flex;align-items:center;gap:6px;min-width:0">
+      <div id="st-panel-drag-handle" style="display:inline-flex;align-items:center;gap:4px;cursor:grab;background:rgba(56,189,248,0.18);border:1px solid #38BDF8;color:#38BDF8;border-radius:6px;padding:2px 6px;font-size:10px;font-weight:800;white-space:nowrap" title="Glisser pour déplacer le tableau des trades sur l'écran">⠿ Déplacer</div>
       <div style="min-width:0">
-        <div id="st-panel-title" style="font-weight:900;font-size:13.5px;color:#38BDF8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Journal des Trades</div>
-        <div id="st-panel-sub" style="font-size:10.5px;color:#94A3B8">Trades récents · 3 derniers jours par défaut</div>
+        <div id="st-panel-title" style="font-weight:900;font-size:13px;color:#38BDF8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Journal des Trades</div>
+        <div id="st-panel-sub" style="font-size:9.5px;color:#94A3B8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Trades récents · 3 derniers jours par défaut</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <button id="btn-st-panel-resize" onclick="window.toggleStrat11PanelWidth()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.22);color:#E6EDF3;font-size:11px;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px" title="Agrandir ou réduire la largeur du panneau">⤢ Large</button>
-      <button onclick="window.closeStrat11TradesJournal()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:#FFFFFF;font-size:16px;font-weight:800;cursor:pointer;padding:4px 9px;line-height:1;border-radius:6px;transition:all 0.15s" title="Fermer">✕</button>
+    <div style="display:flex;align-items:center;gap:4px;flex:none">
+      <button type="button" class="btn" id="btn-st-snap-left" title="Placer à gauche (libère la droite du graphique)" style="padding:2px 6px;font-size:9.5px;font-weight:800;border:1px solid #38BDF8;color:#38BDF8;background:rgba(56,189,248,0.12);cursor:pointer;border-radius:6px">↖ G</button>
+      <button type="button" class="btn" id="btn-st-snap-right" title="Placer à droite" style="padding:2px 6px;font-size:9.5px;font-weight:800;border:1px solid #38BDF8;color:#38BDF8;background:rgba(56,189,248,0.12);cursor:pointer;border-radius:6px">↗ D</button>
+      <button type="button" class="btn" id="btn-st-snap-center" title="Recentrer le tableau" style="padding:2px 5px;font-size:9.5px;font-weight:700;border:1px solid rgba(255,255,255,0.2);color:var(--text);background:rgba(255,255,255,0.06);cursor:pointer;border-radius:6px">⟲</button>
+      <button id="btn-st-panel-resize" onclick="window.toggleStrat11PanelWidth()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.22);color:#E6EDF3;font-size:10.5px;font-weight:700;cursor:pointer;padding:3px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:3px" title="Changer la largeur (Compact / Normal / Large)">⤢ Large</button>
+      <button onclick="window.closeStrat11TradesJournal()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:#FFFFFF;font-size:14px;font-weight:800;cursor:pointer;padding:3px 8px;line-height:1;border-radius:6px;transition:all 0.15s" title="Fermer">✕</button>
     </div>
   </div>
 
