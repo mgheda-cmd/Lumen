@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.6
+// @version      2.1.7
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
@@ -11,6 +11,7 @@
 // @match        *://*.vercel.app/*
 // @match        *://mgheda-cmd.github.io/*
 // @match        *://localhost:*/*
+// @grant        unsafeWindow
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addValueChangeListener
@@ -23,63 +24,82 @@
     // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
-        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen');
-        window.__LUMEN_USERSCRIPT_ACTIVE = true;
-        window.__LUMEN_SEND_SIGNAL = function(sig) {
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.1.7)');
+        const pageWin = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+
+        const sendSignal = function(sig) {
             try {
+                const payload = { ...sig, _ts: Date.now() };
                 if (typeof GM_setValue === 'function') {
-                    GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...sig, _ts: Date.now() }));
-                    console.log('[Lumen Userscript Bridge] GM_setValue direct transmis :', sig);
+                    GM_setValue('lumen_mexc_cross_signal', JSON.stringify(payload));
+                    console.log('[Lumen Userscript Bridge] GM_setValue direct transmis :', payload);
                 }
+            } catch(e){
+                console.error('[Lumen Userscript Bridge Error]', e);
+            }
+        };
+
+        pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
+        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.7';
+        window.__LUMEN_USERSCRIPT_ACTIVE = true;
+        window.__LUMEN_USERSCRIPT_VERSION = '2.1.7';
+        pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
+        window.__LUMEN_SEND_SIGNAL = sendSignal;
+
+        // Écoute sur document pour garantir le passage à travers les sandboxes de Safari / Tampermonkey
+        document.addEventListener('LumenEmitSignalToBridge', (e) => {
+            if (e.detail) sendSignal(e.detail);
+        });
+        window.addEventListener('LumenEmitSignal', (e) => {
+            if (e.detail) sendSignal(e.detail);
+        });
+
+        const keepBridgeAlive = () => {
+            try {
+                pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
+                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.7';
+                window.__LUMEN_USERSCRIPT_ACTIVE = true;
+                window.__LUMEN_USERSCRIPT_VERSION = '2.1.7';
+                pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
+                window.__LUMEN_SEND_SIGNAL = sendSignal;
+                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.1.7' } }));
             } catch(e){}
         };
-        window.addEventListener('LumenEmitSignal', (e) => {
-            if (e.detail && typeof GM_setValue === 'function') {
-                GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...e.detail, _ts: Date.now() }));
-            }
-        });
-        try {
-            window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.6' } }));
-        } catch(e){}
+        keepBridgeAlive();
+        setInterval(keepBridgeAlive, 1000);
+
         let lChannel = null;
         try { lChannel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
         if (lChannel) {
             lChannel.onmessage = (event) => {
                 if (event.data && (event.data.type === 'LUMEN_TRADE_SIGNAL' || event.data.action)) {
-                    if (typeof GM_setValue === 'function') {
-                        GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...event.data, _ts: Date.now() }));
-                    }
+                    sendSignal(event.data);
                 }
             };
         }
         window.addEventListener('message', (e) => {
             if (e.data && (e.data.type === 'LUMEN_TRADE_SIGNAL' || e.data.action)) {
-                if (typeof GM_setValue === 'function') {
-                    GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...e.data, _ts: Date.now() }));
-                }
+                sendSignal(e.data);
             }
         });
         let lastSeenLocalSig = 0;
         setInterval(() => {
             try {
-                window.__LUMEN_USERSCRIPT_ACTIVE = true;
                 const raw = localStorage.getItem('lumen_mexc_web_signal');
                 if (raw) {
                     const sig = JSON.parse(raw);
                     const ts = sig.timestamp || sig._ts || 0;
                     if (ts > lastSeenLocalSig) {
                         lastSeenLocalSig = ts;
-                        if (typeof GM_setValue === 'function') {
-                            GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...sig, _ts: Date.now() }));
-                        }
+                        sendSignal(sig);
                     }
                 }
             } catch(e){}
-        }, 200);
+        }, 300);
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.6 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
+    console.log('>>> [Lumen Web Trader] Script v2.1.7 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
@@ -92,7 +112,7 @@
             hud = document.createElement('div');
             hud.id = 'lumen-trader-hud';
             hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.95);border:2px solid #10B981;border-radius:8px;padding:6px 14px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4);backdrop-filter:blur(8px);pointer-events:none;transition:all 0.3s ease;';
-            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.6</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.7</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             document.body.appendChild(hud);
         }
         return hud;
@@ -111,7 +131,7 @@
             hud._resetTimer = setTimeout(() => {
                 hud.style.borderColor = '#10B981';
                 hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.6</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.7</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             }, holdMs);
         }
     }
@@ -519,11 +539,11 @@
 
     function handleIncomingSignal(sig) {
         if (!sig) return;
-        const sigTs = sig.timestamp || sig._ts || 0;
+        const sigTs = sig.timestamp || sig._ts || Date.now();
         const sigId = sig.id || `${sig.action || sig.side}_${sigTs}`;
         const isPing = (sig.action === 'PING_TEST');
         const maxAge = isPing ? 300000 : 120000;
-        if (sigTs > lastProcessedSigTs && Math.abs(Date.now() - sigTs) < maxAge && sigId !== lastProcessedSigId) {
+        if (sigId !== lastProcessedSigId && Math.abs(Date.now() - sigTs) < maxAge) {
             lastProcessedSigId = sigId;
             lastProcessedSigTs = sigTs;
             console.log('[Lumen Web Trader] Signal validé et transmis à l\'exécution:', sig);
@@ -531,7 +551,7 @@
         }
     }
 
-    // 1. Canal BroadcastChannel (même domaine)
+    // 1. Canal BroadcastChannel
     if (channel) {
         channel.onmessage = (event) => {
             if (event.data && (event.data.type === 'LUMEN_TRADE_SIGNAL' || event.data.action)) {
@@ -540,11 +560,45 @@
         };
     }
 
-    // 2. Liaison Cloud Temps Réel SSE (Garantie 100% Inter-Onglets iPad Safari)
+    // 2. GM_addValueChangeListener local ultra-rapide (inter-onglets instantané)
+    if (typeof GM_addValueChangeListener === 'function') {
+        GM_addValueChangeListener('lumen_mexc_cross_signal', (name, oldVal, newVal, remote) => {
+            if (!newVal) return;
+            try {
+                const sig = typeof newVal === 'string' ? JSON.parse(newVal) : newVal;
+                handleIncomingSignal(sig);
+            } catch(e){}
+        });
+    }
+
+    // 3. Polling GM_getValue local (200ms) sans latence et sans réseau externe
+    if (typeof GM_getValue === 'function') {
+        setInterval(() => {
+            try {
+                const raw = GM_getValue('lumen_mexc_cross_signal', null);
+                if (raw) {
+                    const sig = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    handleIncomingSignal(sig);
+                }
+            } catch(e){}
+        }, 200);
+    }
+
+    // 4. Écoute storage local
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'lumen_mexc_web_signal' && e.newValue) {
+            try {
+                const sig = JSON.parse(e.newValue);
+                handleIncomingSignal(sig);
+            } catch (err) {}
+        }
+    });
+
+    // 5. Cloud SSE de secours sans boucle de poll agressive
     function initCloudSignalStream() {
         try {
             if (typeof EventSource !== 'undefined') {
-                const sse = new EventSource('https://ntfy.sh/lumen_mexc_direct_bridge/sse');
+                const sse = new EventSource('https://ntfy.sh/lumen_mexc_live_hub/sse');
                 sse.onmessage = (e) => {
                     try {
                         const raw = JSON.parse(e.data);
@@ -556,17 +610,21 @@
                 };
                 sse.onerror = () => {
                     try { sse.close(); } catch(e){}
-                    setTimeout(initCloudSignalStream, 3500);
+                    setTimeout(initCloudSignalStream, 5000);
                 };
             }
         } catch(e){}
     }
     initCloudSignalStream();
 
-    // 3. Vérification immédiate dès que l'utilisateur bascule sur l'onglet MEXC (Focus)
+    // 6. Vérification légère uniquement au focus (max 1x toutes les 15s)
+    let lastCloudPoll = 0;
     async function checkCloudPoll() {
+        const now = Date.now();
+        if (now - lastCloudPoll < 15000) return;
+        lastCloudPoll = now;
         try {
-            const res = await fetch('https://ntfy.sh/lumen_mexc_direct_bridge/json?poll=1');
+            const res = await fetch('https://ntfy.sh/lumen_mexc_live_hub/json?poll=1');
             if (res.ok) {
                 const text = await res.text();
                 const lines = text.trim().split('\n');
@@ -587,41 +645,5 @@
     window.addEventListener('focus', checkCloudPoll);
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') checkCloudPoll();
-    });
-    // Poll léger de secours toutes les 4s
-    setInterval(checkCloudPoll, 4000);
-
-    // 4. GM_addValueChangeListener si supporté par l'extension
-    if (typeof GM_addValueChangeListener === 'function') {
-        GM_addValueChangeListener('lumen_mexc_cross_signal', (name, oldVal, newVal, remote) => {
-            if (!newVal) return;
-            try {
-                const sig = typeof newVal === 'string' ? JSON.parse(newVal) : newVal;
-                handleIncomingSignal(sig);
-            } catch(e){}
-        });
-    }
-
-    // 5. Polling GM_getValue local
-    if (typeof GM_getValue === 'function') {
-        setInterval(() => {
-            try {
-                const raw = GM_getValue('lumen_mexc_cross_signal', null);
-                if (raw) {
-                    const sig = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                    handleIncomingSignal(sig);
-                }
-            } catch(e){}
-        }, 500);
-    }
-
-    // 6. LocalStorage local (storage event)
-    window.addEventListener('storage', (e) => {
-        if (e.key === 'lumen_mexc_web_signal' && e.newValue) {
-            try {
-                const sig = JSON.parse(e.newValue);
-                handleIncomingSignal(sig);
-            } catch (err) {}
-        }
     });
 })();

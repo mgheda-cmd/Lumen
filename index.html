@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0020</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0030</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -17955,23 +17955,29 @@ window.emettreSignalMexcWeb = function(sig) {
   try {
     const payload = { ...sig, timestamp: sig.timestamp || Date.now() };
 
-    // 0. Liaison Cloud Temps Réel (garantit 100% la transmission inter-onglets sur iPad Safari)
-    try {
-      fetch('https://ntfy.sh/lumen_mexc_direct_bridge', {
-        method: 'POST',
-        headers: { 'Title': 'Lumen Signal' },
-        body: JSON.stringify(payload)
-      }).catch(()=>{});
-    } catch(e){}
-
-    // 1. Appel direct au pont Userscripts (100% instantané et garanti)
+    // 0. Appel direct au pont Userscripts via window (100% instantané et garanti)
     try {
       if (typeof window.__LUMEN_SEND_SIGNAL === 'function') {
         window.__LUMEN_SEND_SIGNAL(payload);
       }
     } catch(e){}
 
-    // 1. BroadcastChannel inter-onglets
+    // 1. Événements sur document (franchit systématiquement les barrières de sandbox iOS / iPadOS)
+    try {
+      document.dispatchEvent(new CustomEvent('LumenEmitSignalToBridge', { detail: payload }));
+      document.dispatchEvent(new CustomEvent('LumenEmitSignal', { detail: payload }));
+    } catch(e){}
+
+    // 2. Liaison Cloud Temps Réel (secours inter-onglets)
+    try {
+      fetch('https://ntfy.sh/lumen_mexc_live_hub', {
+        method: 'POST',
+        headers: { 'Title': 'Lumen Signal' },
+        body: JSON.stringify(payload)
+      }).catch(()=>{});
+    } catch(e){}
+
+    // 3. BroadcastChannel inter-onglets
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const bc = new BroadcastChannel('lumen_mexc_channel');
@@ -17979,18 +17985,17 @@ window.emettreSignalMexcWeb = function(sig) {
       }
     } catch(e){}
 
-    // 2. window.postMessage & CustomEvent vers l'extension Userscripts
+    // 4. window.postMessage
     try {
       window.postMessage(payload, '*');
-      window.dispatchEvent(new CustomEvent('LumenEmitSignal', { detail: payload }));
     } catch(e){}
 
-    // 3. LocalStorage
+    // 5. LocalStorage
     try {
       localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(payload));
     } catch(e){}
 
-    // 4. GM_setValue si directement injecté
+    // 6. GM_setValue si directement injecté
     try {
       if (typeof GM_setValue === 'function') {
         GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...payload, _ts: Date.now() }));
@@ -18000,6 +18005,18 @@ window.emettreSignalMexcWeb = function(sig) {
     console.error('[Lumen Signal Dispatch Error]', err);
   }
 };
+
+// Réception de l'annonce du pont Userscripts
+document.addEventListener('LumenUserscriptBridgeReady', function(e) {
+  window.__LUMEN_USERSCRIPT_ACTIVE = true;
+  if (e.detail && e.detail.version) window.__LUMEN_USERSCRIPT_VERSION = e.detail.version;
+  const el = document.getElementById('st-coach-bridge-status');
+  if (el) {
+    el.innerHTML = '🟢 <b style="color:#10B981">Pont Safari iPad Connecté</b> (Liaison MEXC 100% Active)';
+    el.style.background = 'rgba(16,185,129,0.08)';
+    el.style.border = '1px solid rgba(16,185,129,0.2)';
+  }
+});
 
 window.testerConnexionMexcWeb = function() {
   try {
@@ -18013,7 +18030,11 @@ window.testerConnexionMexcWeb = function() {
     };
     window.emettreSignalMexcWeb(pingSignal);
     if (typeof toast === 'function') {
-      toast('📡 Signal de Test envoyé ! Basculez sur votre onglet MEXC pour voir le HUD réagir.', '#10B981');
+      if (window.__LUMEN_USERSCRIPT_ACTIVE) {
+        toast('📡 Signal PING envoyé ! Basculez sur votre onglet MEXC : le badge vert clignotera "🎉 TEST 100% VALIDÉ".', '#10B981', 6000);
+      } else {
+        toast('⚠️ Signal envoyé ! Si le badge MEXC ne réagit pas : activez l\'extension (icône puzzle 🧩 ou Tampermonkey) sur cet onglet Lumen puis actualisez la page.', '#F59E0B', 8000);
+      }
     }
     try { if (typeof beep === 'function') beep(); } catch(e){}
   } catch(e) {
@@ -18026,7 +18047,7 @@ window.expliquerAutorisationExtension = function() {
     toast('✅ Le pont Userscripts est déjà 100% actif et relié à MEXC !', '#10B981');
     return;
   }
-  alert("🧩 Pour synchroniser Lumen et MEXC sur Safari iPad :\n\n1. Touchez l'icône Extension (la pièce de puzzle 🧩) située dans la barre d'adresse de Safari en haut de l'écran.\n2. Touchez 'Userscripts'.\n3. Sélectionnez 'Toujours autoriser sur ce site web' (ou 'Toujours autoriser sur tous les sites web').\n\nDès que c'est fait, Lumen et MEXC communiquent instantanément à 100% !");
+  alert("🧩 Pour synchroniser Lumen et MEXC sur Safari iPad :\n\n1. Touchez l'icône Extension (la pièce de puzzle 🧩) située dans la barre d'adresse de Safari en haut de l'écran.\n2. Touchez 'Userscripts' ou 'Tampermonkey'.\n3. Sélectionnez 'Toujours autoriser sur ce site web'.\n4. Actualisez cet onglet Lumen et votre onglet MEXC.\n\nDès que c'est fait, Lumen et MEXC communiquent instantanément à 100% !");
 };
 
 // Surveillance continue du statut du pont iPad
@@ -43450,7 +43471,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0020';
+  window.__LUMEN_BUILD = 'B-0913-0030';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
