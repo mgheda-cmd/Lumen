@@ -20974,6 +20974,20 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
     toast(`Ordre ${side==='long'?'ACHAT (LONG)':'VENTE (SHORT)'} exécuté : ${qFmt} ${coinSym} @ $${fmt(px, 2)} (${lev}x)${liqStr}${slTpStr}`, side==='long'?'#10B981':'#F45B7D');
     sendTelegramDemoEntryNotification(newPos, false);
 
+    // Notification Push Téléphone Directe (ntfy) & Pont Antigravity
+    try {
+      const entryTitle = side === 'long' ? `🟢 ENTRÉE ACHAT : ${coinSym}` : `🔴 ENTRÉE VENTE : ${coinSym}`;
+      const entryBody = `${qFmt} ${coinSym} @ $${fmt(px, 2)} (${lev}x)${slTpStr}\n⚡ Ordre 0.00% Frais envoyé à MEXC !`;
+      if (typeof sendNtfyPushNotification === 'function') {
+        sendNtfyPushNotification(entryTitle, entryBody, { dir: side === 'long' ? 1 : -1, type: side.toUpperCase() });
+      }
+      fetch('http://192.168.0.33:3456/trade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'ENTRY', side, qty: qFmt, coin: coinSym, price: px, lev })
+      }).catch(()=>{});
+    } catch(e){}
+
     // Émission vers le Web Auto-Trader si actif
     if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
       try {
@@ -21082,6 +21096,21 @@ function closePos(i, customReason){
   }
   toast(`Position fermée : PnL ${netPnl>=0?'+':''}${fmtUsd(netPnl)} (${exitReasonStr})`, netPnl>=0?'#10B981':'#F45B7D');
   sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: p.qty, reason: exitReasonStr, capitalAfter: paper.cash, t0: p.t, t: Date.now() });
+
+  // Notification Push Téléphone Directe (ntfy) & Pont Antigravity
+  try {
+    const isWin = (netPnl >= 0);
+    const exitTitle = isWin ? `🎉 GAIN SORTIE ${p.sym} : +$${fmtUsd(netPnl)}` : `🛑 SORTIE ${p.sym} : -$${fmtUsd(Math.abs(netPnl))}`;
+    const exitBody = `Position ${p.side.toUpperCase()} clôturée (${exitReasonStr})\n• Entrée : $${fmt(p.entry, 2)}\n• Sortie : $${fmt(px, 2)}\n• PnL Net : ${isWin ? '+' : ''}$${fmtUsd(netPnl)}`;
+    if (typeof sendNtfyPushNotification === 'function') {
+      sendNtfyPushNotification(exitTitle, exitBody, { dir: isWin ? 1 : -1, type: 'SORTIE' });
+    }
+    fetch('http://192.168.0.33:3456/trade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'EXIT', side: p.side, pnl: netPnl, pnlStr: fmtUsd(netPnl), coin: p.sym, entry: p.entry, exit: px, reason: exitReasonStr })
+    }).catch(()=>{});
+  } catch(e){}
 }
 window.closePos = closePos;
 
