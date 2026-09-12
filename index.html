@@ -17896,6 +17896,47 @@ window.desactiverStrat11Execution = function() {
   }
 };
 
+window.emettreSignalMexcWeb = function(sig) {
+  try {
+    const payload = { ...sig, timestamp: sig.timestamp || Date.now() };
+    // 1. Canal Cloud Instantané SSE (100% garanti inter-onglets Safari iPad)
+    try {
+      fetch('https://ntfy.sh/lumen_mexc_direct_bridge', {
+        method: 'POST',
+        headers: { 'Title': 'Lumen Signal' },
+        body: JSON.stringify(payload)
+      }).catch(()=>{});
+    } catch(e){}
+
+    // 2. BroadcastChannel
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('lumen_mexc_channel');
+        bc.postMessage(payload);
+      }
+    } catch(e){}
+
+    // 3. window.postMessage pour le content script du même onglet
+    try {
+      window.postMessage(payload, '*');
+    } catch(e){}
+
+    // 4. LocalStorage
+    try {
+      localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(payload));
+    } catch(e){}
+
+    // 5. GM_setValue si accessible
+    try {
+      if (typeof GM_setValue === 'function') {
+        GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...payload, _ts: Date.now() }));
+      }
+    } catch(e){}
+  } catch(err) {
+    console.error('[Lumen Signal Dispatch Error]', err);
+  }
+};
+
 window.testerConnexionMexcWeb = function() {
   try {
     const rawSym = (state.symbol || 'BTCUSDT').toUpperCase();
@@ -17906,14 +17947,7 @@ window.testerConnexionMexcWeb = function() {
       symbol: mexcPair,
       timestamp: Date.now()
     };
-    if (typeof BroadcastChannel !== 'undefined') {
-      const bc = new BroadcastChannel('lumen_mexc_channel');
-      bc.postMessage(pingSignal);
-    }
-    localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(pingSignal));
-    if (typeof GM_setValue === 'function') {
-      GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...pingSignal, _ts: Date.now() }));
-    }
+    window.emettreSignalMexcWeb(pingSignal);
     if (typeof toast === 'function') {
       toast('📡 Signal de Test envoyé ! Basculez sur votre onglet MEXC pour voir le HUD réagir.', '#10B981');
     }
@@ -21014,14 +21048,7 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
           maxDeviationPts: 12,
           timestamp: Date.now()
         };
-        if (typeof BroadcastChannel !== 'undefined') {
-          const bc = new BroadcastChannel('lumen_mexc_channel');
-          bc.postMessage(webSignal);
-        }
-        localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
-        if (typeof GM_setValue === 'function') {
-          GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...webSignal, _ts: Date.now() }));
-        }
+        window.emettreSignalMexcWeb(webSignal);
         toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${sendQty} BTC) transmis à MEXC (0.00% Maker visé / sécu 12 pts)`, '#10B981');
       } catch(err){}
     }
@@ -21083,14 +21110,7 @@ function closePos(i, customReason){
         maxDeviationPts: 12,
         timestamp: Date.now()
       };
-      if (typeof BroadcastChannel !== 'undefined') {
-        const bc = new BroadcastChannel('lumen_mexc_channel');
-        bc.postMessage(webSignal);
-      }
-      localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
-      if (typeof GM_setValue === 'function') {
-        GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...webSignal, _ts: Date.now() }));
-      }
+      window.emettreSignalMexcWeb(webSignal);
       toast('⚡ Web Auto-Trader : Clôture S2 ' + mexcPair + ' transmise à MEXC (0.00% Maker visé / sécu 12 pts)', '#EC4899');
     } catch(err){}
   }
