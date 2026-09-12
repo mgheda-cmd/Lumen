@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.5
-// @description  Mode Maker Chaser 0.00% Frais avec sécurité 12 pts (Entrée Limit 30s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
+// @version      2.1.6
+// @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
 // @match        *://futures.mexc.com/*
@@ -39,7 +39,7 @@
             }
         });
         try {
-            window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.5' } }));
+            window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.6' } }));
         } catch(e){}
         let lChannel = null;
         try { lChannel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -79,7 +79,7 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.5 actif sur MEXC (0.00% Maker · Sécurité 12 pts · Fast-Catchup)');
+    console.log('>>> [Lumen Web Trader] Script v2.1.6 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
@@ -92,7 +92,7 @@
             hud = document.createElement('div');
             hud.id = 'lumen-trader-hud';
             hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.95);border:2px solid #10B981;border-radius:8px;padding:6px 14px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4);backdrop-filter:blur(8px);pointer-events:none;transition:all 0.3s ease;';
-            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.5</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.6</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             document.body.appendChild(hud);
         }
         return hud;
@@ -111,7 +111,7 @@
             hud._resetTimer = setTimeout(() => {
                 hud.style.borderColor = '#10B981';
                 hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.5</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.6</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             }, holdMs);
         }
     }
@@ -131,7 +131,7 @@
             hud._resetTimer = setTimeout(() => {
                 hud.style.borderColor = '#10B981';
                 hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.5</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.6</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             }, duration);
         }
         try {
@@ -324,8 +324,8 @@
             const tradeDir = (signal.tradeDir || 'both').toLowerCase();
             const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
             const useMaker = (signal?.executionMode === 'MAKER_CHASER');
-            const timeoutMs = signal?.limitTimeoutMs || 30000;
-            const maxDev = signal?.maxDeviationPts || 12;
+            const timeoutMs = signal?.limitTimeoutMs || 90000;
+            const maxDev = signal?.maxDeviationPts || 15;
             const refPx = signal?.price || 0;
 
             // 1. Filtrage sens
@@ -433,7 +433,7 @@
                         if (targetBtn && !targetBtn.disabled) {
                             targetBtn.click();
                             limitPlaced = true;
-                            notifyHud(`⚡ Entrée Limit Maker à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 30s / 12 pts)...`, '#10B981');
+                            notifyHud(`⚡ Entrée Limit Maker à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 90s / 15 pts)...`, '#10B981');
 
                             // Boucle de surveillance Maker (30s max avec sécurité 12 points)
                             const startTime = Date.now();
