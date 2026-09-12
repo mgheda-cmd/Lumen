@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (Frais Réduits 0.02%)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      1.9.2
-// @description  Gestion intelligente des sens de trade (Deux sens avec REVERSE natif, ou Achat seul / Vente seule sans interférence) (0.02% de frais)
+// @version      2.0.0
+// @description  Gestion intelligente des sens de trade (Deux sens avec REVERSE natif, ou Achat seul / Vente seule sans interférence) (0.02% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
 // @match        *://futures.mexc.com/*
@@ -48,7 +48,7 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v1.9.0 actif sur MEXC (Support Multi-Stratégies & Filtre Sens)');
+    console.log('>>> [Lumen Web Trader] Script v2.0.0 actif sur MEXC (0.02% Frais · Support Élite S2 0.032 BTC)');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -60,7 +60,7 @@
         const hud = document.createElement('div');
         hud.id = 'lumen-web-hud';
         hud.style.cssText = 'position:fixed;top:65px;right:20px;z-index:99999999;background:rgba(15,23,42,0.96);border:2.5px solid #10B981;border-radius:10px;padding:10px 16px;color:#FFFFFF;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:bold;box-shadow:0 0 25px rgba(16,185,129,0.7);display:flex;align-items:center;gap:10px;pointer-events:none;';
-        hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v1.9.2</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.02% FRAIS</span>';
+        hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.0.0</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.02% FRAIS</span>';
         document.body.appendChild(hud);
     }
 
@@ -74,7 +74,7 @@
         setTimeout(() => {
             if (hud) {
                 hud.style.borderColor = '#10B981';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v1.9.2</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.02% FRAIS</span>';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.0.0</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.02% FRAIS</span>';
             }
         }, 6000);
     }
@@ -250,12 +250,12 @@
                 const isBtcField = (qtyInput.placeholder || '').toLowerCase().includes('btc') || 
                                    document.body.innerText.includes('Quantity (BTC)') || 
                                    document.body.innerText.includes('Quantité (BTC)');
-                let valToEnter = 0.025;
+                let valToEnter = 0.032;
                 if (isBtcField) {
-                    valToEnter = signal.qty || signal.btcQty || 0.025;
+                    valToEnter = signal.qty || signal.btcQty || 0.032;
                 } else {
-                    // En USDT : Valeur notionnelle totale pour 0.025 BTC (~1931 USDT)
-                    valToEnter = signal.notional || signal.budget || Math.round(0.025 * (signal.price || 77250));
+                    // En USDT : Valeur notionnelle totale pour 0.032 BTC (~2650 USDT)
+                    valToEnter = signal.notional || signal.budget || Math.round((signal.qty || 0.032) * (signal.price || 83000));
                 }
 
                 qtyInput.focus();
