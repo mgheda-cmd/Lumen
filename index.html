@@ -468,7 +468,7 @@ footer{
   header{gap:4px; padding:2px 6px; padding-top:max(4px, env(safe-area-inset-top));}
   .logo .logo-txt{display:none}
   .btn-full-txt{display:none}
-  #header-build-tag{display:none !important}
+  #header-build-tag{display:inline-flex !important;font-size:9.5px !important;padding:2px 5px !important;border-radius:4px !important;}
   #btn-tools-menu{
     border-color: #00E5FF !important;
     color: #00E5FF !important;
@@ -525,13 +525,9 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1900</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-2120</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
-
-  <button class="btn" id="btn-balayage" onclick="window.lancerBalayageStrat && window.lancerBalayageStrat(true)"
-    title="Lancer le balayage des combinaisons MM et mettre à jour la stratégie du moment"
-    style="font-weight:700;display:inline-flex;align-items:center;gap:5px;color:var(--text)">★ Balayage</button>
 
   <div class="ind-wrap" id="alerts-wrap" style="position:relative">
     <button class="btn" id="btn-alerts-panel" onclick="toggleAlertsPanel()" title="Gestionnaire d'Alertes" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;color:var(--text)">
@@ -1453,6 +1449,13 @@ footer{
       <div id="tools-updates-box" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
         <div id="tools-dyn-anchor" style="display:none"></div>
       </div>
+
+      <!-- Bouton Balayage déplacé dans le menu Outils -->
+      <button class="btn" id="btn-balayage" onclick="window.lancerBalayageStrat && window.lancerBalayageStrat(true)"
+        title="Lancer le balayage des combinaisons MM et mettre à jour la stratégie du moment"
+        style="width:100%;margin-bottom:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,215,0,0.15);border:1.5px solid #FFD700;color:#FFD700;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:12px;box-shadow:0 2px 8px rgba(255,215,0,0.25)">
+        ★ Lancer le Balayage des Stratégies
+      </button>
       
       <!-- Section 1 : Graphique & Direct -->
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px">
@@ -43398,7 +43401,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-1900';
+  window.__LUMEN_BUILD = 'B-0912-2120';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
