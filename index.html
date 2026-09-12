@@ -17896,6 +17896,33 @@ window.desactiverStrat11Execution = function() {
   }
 };
 
+window.testerConnexionMexcWeb = function() {
+  try {
+    const rawSym = (state.symbol || 'BTCUSDT').toUpperCase();
+    const mexcPair = `${rawSym.replace('USDT','')}_USDT`;
+    const pingSignal = {
+      type: 'LUMEN_TRADE_SIGNAL',
+      action: 'PING_TEST',
+      symbol: mexcPair,
+      timestamp: Date.now()
+    };
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('lumen_mexc_channel');
+      bc.postMessage(pingSignal);
+    }
+    localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(pingSignal));
+    if (typeof GM_setValue === 'function') {
+      GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...pingSignal, _ts: Date.now() }));
+    }
+    if (typeof toast === 'function') {
+      toast('📡 Signal de Test envoyé ! Basculez sur votre onglet MEXC pour voir le HUD réagir.', '#10B981');
+    }
+    try { if (typeof beep === 'function') beep(); } catch(e){}
+  } catch(e) {
+    if (typeof toast === 'function') toast('❌ Erreur envoi test : ' + e.message, '#EF4444');
+  }
+};
+
 window.updateStrat11JournalExecUI = function() {
   const banner = document.getElementById('st-execution-status-banner');
   const bannerTxt = document.getElementById('st-execution-status-txt');
@@ -46374,10 +46401,13 @@ window.balayerMM_MTF = async function(){
         <span id="st-coach-alert-txt"></span>
       </div>
 
-      <!-- Bouton 1-Clic d'Application Automatique -->
+      <!-- Bouton 1-Clic d'Application Automatique + Bouton Test Ping -->
       <div style="display:flex;gap:6px">
         <button id="btn-st-coach-apply" type="button" onclick="window.appliquerReglagesCoach()" style="flex:1;background:linear-gradient(135deg,#00E5FF,#00B0FF);color:#06101E;border:none;border-radius:6px;padding:6px 10px;font-size:10.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(0,229,255,0.3);transition:all 0.15s" title="Lancer le Robot MEXC Web Trader avec les réglages optimaux du Coach (0.00% de frais Maker visés)">
           ⚡ Lancer Robot MEXC (0% Frais · Élite · 0.032 BTC)
+        </button>
+        <button type="button" onclick="window.testerConnexionMexcWeb()" style="background:rgba(16,185,129,0.15);border:1.5px solid #10B981;color:#34D399;border-radius:6px;padding:6px 9px;font-size:10px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:all 0.15s" title="Envoyer un signal test sans risque vers l'onglet MEXC pour valider la communication en direct">
+          📡 Test Ping
         </button>
       </div>
     </div>

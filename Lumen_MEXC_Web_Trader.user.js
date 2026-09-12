@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.0
+// @version      2.1.1
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 12 pts (Entrée Limit 30s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
@@ -240,6 +240,11 @@
 
     // --- ENTRÉE INTELLIGENTE : LIMIT MAKER CHASER (0% FRAIS) AVEC SÉCURITÉ 12 PTS ---
     async function executeMarketOrder(signal) {
+        if (signal.action === 'PING_TEST') {
+            notifyHud('🎉 TEST 100% VALIDÉ : Lumen & MEXC connectés en direct !', '#10B981');
+            console.log('[Lumen Web Trader] Test Ping reçu et validé avec succès !');
+            return true;
+        }
         if (signal.action === 'CLOSE' || signal.side === 'CLOSE_LONG' || signal.side === 'CLOSE_SHORT') {
             return executeCloseOrder(signal);
         }
@@ -415,7 +420,7 @@
             if (!newVal) return;
             try {
                 const signal = typeof newVal === 'string' ? JSON.parse(newVal) : newVal;
-                if (signal && Date.now() - (signal.timestamp || signal._ts || 0) < 5000) {
+                if (signal && Date.now() - (signal.timestamp || signal._ts || 0) < 6000) {
                     console.log('[Lumen Web Trader] Signal inter-domain reçu via Tampermonkey:', signal);
                     executeMarketOrder(signal);
                 }
@@ -425,11 +430,30 @@
         });
     }
 
+    // Fallback Polling GM_getValue (Pour compatibilité 100% garantie sur iPad Safari Userscripts)
+    if (typeof GM_getValue === 'function') {
+        let lastHandledCrossTs = 0;
+        setInterval(() => {
+            try {
+                const raw = GM_getValue('lumen_mexc_cross_signal', null);
+                if (raw) {
+                    const signal = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    const sigTs = signal.timestamp || signal._ts || 0;
+                    if (sigTs > lastHandledCrossTs && (Date.now() - sigTs) < 8000) {
+                        lastHandledCrossTs = sigTs;
+                        console.log('[Lumen Web Trader] Signal reçu via GM_getValue poll:', signal);
+                        executeMarketOrder(signal);
+                    }
+                }
+            } catch(e){}
+        }, 350);
+    }
+
     window.addEventListener('storage', (e) => {
         if (e.key === 'lumen_mexc_web_signal' && e.newValue) {
             try {
                 const signal = JSON.parse(e.newValue);
-                if (signal && Date.now() - signal.timestamp < 3000) {
+                if (signal && Date.now() - signal.timestamp < 4000) {
                     executeMarketOrder(signal);
                 }
             } catch (err) {}
