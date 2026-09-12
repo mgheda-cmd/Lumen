@@ -89,11 +89,50 @@ async function testPrivateMexc() {
   }
 }
 
+const lumenToken = process.argv[4] || process.env.LUMEN_ACCESS_TOKEN || '';
+
+async function testVercelSigner() {
+  process.stdout.write('3. Test Microservice Vercel (https://mexc-signer.vercel.app)... ');
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (lumenToken) headers['X-Lumen-Token'] = lumenToken;
+
+    const res = await fetch('https://mexc-signer.vercel.app/api/mexc', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} })
+    });
+
+    const data = await res.json();
+    if (res.status === 401) {
+      console.log('🟡 EN LIGNE (En attente du jeton X-Lumen-Token valide)');
+      console.log('   -> Le serveur Vercel est actif et protège l\'accès avec votre jeton.');
+      return false;
+    } else if (res.ok && data && (data.success || Array.isArray(data.data))) {
+      console.log('✅ SUCCÈS (Authentification Vercel + MEXC validée !)');
+      const resData = data.data?.data || data.data;
+      const assets = Array.isArray(resData) ? resData : [resData];
+      const usdt = assets.find(a => a && (a.currency === 'USDT' || a.symbol === 'USDT')) || assets[0];
+      if (usdt) {
+        console.log(`   💰 Solde récupéré via Vercel: ${usdt.availableBalance || usdt.equity || '0'} USDT (Clés 100% masquées)`);
+      }
+      return true;
+    } else {
+      console.log('❌ Réponse Vercel:', data);
+      return false;
+    }
+  } catch (err) {
+    console.log(`❌ Erreur connexion Vercel: ${err.message}`);
+    return false;
+  }
+}
+
 async function run() {
-  console.log('\n=== AUDIT DE DIAGNOSTIC MEXC (LUMEN AUTONOMIE) ===');
+  console.log('\n=== AUDIT DE DIAGNOSTIC MEXC & VERCEL (LUMEN AUTONOMIE) ===');
   await testPublicMexc();
   await testPrivateMexc();
-  console.log('==================================================\n');
+  await testVercelSigner();
+  console.log('===========================================================\n');
 }
 
 run();
