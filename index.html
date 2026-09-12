@@ -16984,6 +16984,7 @@ function _backtestVariantSerious(bars8000, vDef) {
     let curDir = 0;
     const entries = [];
     for (let k = 1; k < bars8000.length; k++) {
+      if (k < 5) continue;
       const buy  = fmcG[k] && kkG[k] && !(fmcG[k-1] && kkG[k-1]);
       const sell = fmcR[k] && kkR[k] && !(fmcR[k-1] && kkR[k-1]);
       if (buy && curDir !== 1)   { curDir =  1; entries.push({ dir: 1,  i: k, px: bars8000[k].c, t: bars8000[k].t }); }
@@ -17617,11 +17618,15 @@ window.renderStrat11TradesJournal = function() {
 
   // Mapper les numéros de pastilles d'entrée et sortie depuis le graphique
   allTrades.forEach(function(t) {
-    const eMatch = entrySigs.find(function(s) { return s.t === t.entryT || Math.abs(s.t - t.entryT) < 45000; });
+    const eMatch = entrySigs.find(function(s) {
+      return (s.t === t.entryT || Math.abs(s.t - t.entryT) < 60000) ||
+             (Math.abs(s.price - t.entryPx) < 2.0 && Math.abs(s.t - t.entryT) < 300000);
+    });
     if (eMatch) {
       t.entryPastilleNum = eMatch.tradeNum;
       const xMatch = exitSigs.find(function(s) { return (s.entryI != null && s.entryI === eMatch.i) || (s.tradeNum != null && s.tradeNum === eMatch.tradeNum); });
       t.exitPastilleNum = xMatch ? xMatch.tradeNum : eMatch.tradeNum;
+      t.num = eMatch.tradeNum;
     } else {
       t.entryPastilleNum = t.num;
       t.exitPastilleNum = t.num;
@@ -17740,7 +17745,7 @@ window.renderStrat11TradesJournal = function() {
 
     trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.08);transition:background 0.1s" onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'" onmouseout="this.style.background=\'transparent\'">'
       + '<td style="padding:6px 4px">'
-      + '<div style="font-weight:900;color:#F8FAFC;font-size:11px;margin-bottom:3px">Trade #' + t.num + '</div>'
+      + '<div style="font-weight:900;color:#F8FAFC;font-size:11px;margin-bottom:3px">Trade #' + entNum + '</div>'
       + '<div style="display:flex;flex-direction:column;gap:2px">'
       + '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(0,229,255,0.18);color:#00E5FF;border:1px solid rgba(0,229,255,0.45);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:900;white-space:nowrap" title="Pastille d\'entrée #' + entNum + ' sur le graphique">🟢 Entrée #' + entNum + '</span>'
       + '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,180,0,0.22);color:#FFB400;border:1px solid rgba(255,180,0,0.5);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:900;white-space:nowrap" title="Pastille de sortie #' + exNum + ' sur le graphique">🏁 Sortie #' + exNum + '</span>'
@@ -35134,7 +35139,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
 
       for (let k = 1; k < d.length; k++) {
         const b = d[k];
-        if (!b) continue;
+        if (!b || k < 5) continue;
 
         const fmcG_now = isFMCGreen(k),  kkG_now = isKKGreen(k);
         const fmcG_prev = isFMCGreen(k-1), kkG_prev = isKKGreen(k-1);
