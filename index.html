@@ -17193,9 +17193,9 @@ window.activerStrat11SurCompteDemo = function() {
     exitKey: exitKey,
     modeLabel: label,
     capital: (typeof paper !== 'undefined' && paper.cash > 0) ? paper.cash : 100,
-    marge: 0.02,
+    marge: 0.025,
     unite: 'BASE',
-    lev: 200,
+    lev: 50,
     feePct: 0.02,
     active: true,
     activatedAt: Date.now(),
@@ -17215,10 +17215,10 @@ window.activerStrat11SurCompteDemo = function() {
           sym: state.symbol || 'BTCUSDT',
           side: lastEnt.dir === 1 ? 'long' : 'short',
           entry: lastEnt.price,
-          qty: 0.02,
-          margin: (0.02 * lastEnt.price) / 200,
-          notional: 0.02 * lastEnt.price,
-          lev: 200,
+          qty: 0.025,
+          margin: (0.025 * lastEnt.price) / 50,
+          notional: 0.025 * lastEnt.price,
+          lev: 50,
           t: lastEnt.t || Date.now(),
           tradeNum: lastEnt.tradeNum,
           triggerSignal: lastEnt.badge || ('Pastille #' + lastEnt.tradeNum)
@@ -20326,8 +20326,8 @@ function checkAutoTrade(inputSignals){
   const isBase = (strat?.unite === 'BASE' || strat?.unite === 'BTC' || paperUnit === 'coin' || (document.getElementById('paper-unite') && document.getElementById('paper-unite').value === 'BASE'));
   if(strat && strat.active){
     paperUnit = isBase ? 'coin' : 'usdt';
-    const reqAmt = isBase ? (strat.marge || 0.02) : (strat.marge || strat.capital || 100);
-    const reqLev = strat.lev || 200;
+    const reqAmt = isBase ? (strat.marge || 0.025) : (strat.marge || strat.capital || 100);
+    const reqLev = strat.lev || 50;
     const amtEl = document.getElementById('paper-amt');
     if(amtEl && (!amtEl.value || amtEl.value === '0')){
       amtEl.value = String(reqAmt);
