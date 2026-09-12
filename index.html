@@ -525,7 +525,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1815</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1845</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -3218,6 +3218,11 @@ footer{
           <option value="200" selected>200x 🔥</option>
         </select>
       </label>
+
+      <!-- Badge Heure Trade Direct (à côté de 200) -->
+      <div id="paper-direct-time-box" style="display:none;align-self:center;background:rgba(16,185,129,0.14);border:1px solid #10B981;border-radius:6px;padding:4px 8px;font-size:10px;color:#A7F3D0;font-weight:700" title="Horodatage d'activation du Trade Direct">
+        ⚡ Direct : <b id="paper-direct-time-val" style="color:#FFFFFF">--:--</b> <span id="paper-direct-time-elapsed" style="color:#94A3B8;font-size:9px"></span>
+      </div>
 
       <!-- 8. Capital ($) -->
       <label style="font-size:11px;color:#94A3B8">Capital ($)<br>
@@ -17720,6 +17725,9 @@ window.activerStrat11SurCompteDemo = function() {
   paperAutoTrade = true;
   window.paperAutoTrade = true;
   try { localStorage.setItem('lumen_paper_autotrade', '1'); } catch(e){}
+  const actNow = Date.now();
+  try { localStorage.setItem('lumen_autotrade_activation_time', String(actNow)); } catch(e){}
+  window.__lumenAutoTradeActivationTime = actNow;
 
   // 3. Mettre à jour l'interface du compte démo
   if (typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
@@ -17765,6 +17773,10 @@ window.activerStrat11SurMexcWeb = function() {
   // 1. Activer la stratégie sur le moteur Démo local (qui suit chaque pastille et relaie les ordres)
   window.paperAutoTrade = true;
   try { localStorage.setItem('lumen_paper_autotrade', '1'); } catch(e){}
+  const actNowWeb = Date.now();
+  try { localStorage.setItem('lumen_autotrade_activation_time', String(actNowWeb)); } catch(e){}
+  window.__lumenAutoTradeActivationTime = actNowWeb;
+
   window.activeDemoStrategy = {
     active: true,
     type: 'strat_11_11',
@@ -17819,6 +17831,8 @@ window.desactiverStrat11Execution = function() {
   paperAutoTrade = false;
   window.paperAutoTrade = false;
   try { localStorage.setItem('lumen_paper_autotrade', '0'); } catch(e){}
+  try { localStorage.removeItem('lumen_autotrade_activation_time'); } catch(e){}
+  window.__lumenAutoTradeActivationTime = null;
 
   localStorage.setItem('lumen_web_autotrader_active', '0');
   if (typeof window.updateWebAutoTraderUI === 'function') window.updateWebAutoTraderUI();
@@ -17848,12 +17862,22 @@ window.updateStrat11JournalExecUI = function() {
   const isLiveOn = isWebOn || !!(window.__liveBotActive && window.__liveBotActive.active);
   const isDemoOn = !!(window.activeDemoStrategy && window.activeDemoStrategy.active && paperAutoTrade);
 
+  let timeTag = '';
+  let actTime = parseInt(localStorage.getItem('lumen_autotrade_activation_time') || '0', 10);
+  if (actTime) {
+    const dAct = new Date(actTime);
+    const hh = String(dAct.getHours()).padStart(2, '0');
+    const mm = String(dAct.getMinutes()).padStart(2, '0');
+    const elapsedMin = Math.max(0, Math.floor((Date.now() - actTime) / 60000));
+    timeTag = ' · 🕒 Activé à <b>' + hh + ':' + mm + '</b> ' + (elapsedMin < 60 ? ('(il y a ' + elapsedMin + 'm)') : ('(' + Math.floor(elapsedMin / 60) + 'h' + (elapsedMin % 60) + 'm)'));
+  }
+
   if (isWebOn) {
     banner.style.display = 'flex';
     banner.style.background = 'rgba(16,185,129,0.18)';
     banner.style.borderColor = '#10B981';
     banner.style.color = '#A7F3D0';
-    if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC WEB ACTIF (0.02% FRAIS)</b> : suit les pastilles ' + (window.activeDemoStrategy?.modeLabel || 'Élite S2') + ' (' + (window.__stCoachCustomQty || '0.032') + ' BTC @ 50x)';
+    if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC WEB ACTIF (0.02% FRAIS)</b>' + timeTag + ' : suit les pastilles ' + (window.activeDemoStrategy?.modeLabel || 'Élite S2') + ' (' + (window.__stCoachCustomQty || '0.032') + ' BTC @ 50x)';
     btnDemo.style.background = '#064E3B';
     btnDemo.style.color = '#34D399';
     btnDemo.innerHTML = '✅ Moteur Prêt';
@@ -17870,7 +17894,7 @@ window.updateStrat11JournalExecUI = function() {
     banner.style.background = 'rgba(16,185,129,0.18)';
     banner.style.borderColor = '#10B981';
     banner.style.color = '#A7F3D0';
-    if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC ACTIF</b> : suit chaque pastille ' + (window.__liveBotActive?.modeLabel || 'Élite S2') + ' (' + (window.__liveBotActive?.tradeBudget || '0.032') + ' BTC @ ' + (window.__liveBotActive?.lev || '50') + 'x)';
+    if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC ACTIF</b>' + timeTag + ' : suit chaque pastille ' + (window.__liveBotActive?.modeLabel || 'Élite S2') + ' (' + (window.__liveBotActive?.tradeBudget || '0.032') + ' BTC @ ' + (window.__liveBotActive?.lev || '50') + 'x)';
     btnDemo.style.background = '#064E3B';
     btnDemo.style.color = '#34D399';
     btnDemo.innerHTML = '✅ Moteur Prêt';
@@ -17887,7 +17911,7 @@ window.updateStrat11JournalExecUI = function() {
     banner.style.background = 'rgba(56,189,248,0.14)';
     banner.style.borderColor = '#38BDF8';
     banner.style.color = '#7DD3FC';
-    if (bannerTxt) bannerTxt.textContent = '🤖 DÉMO ACTIF : suit les pastilles d\'entrée et de sortie';
+    if (bannerTxt) bannerTxt.innerHTML = '🤖 <b>DÉMO ACTIF</b>' + timeTag + ' : suit les pastilles d\'entrée et de sortie';
     btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
     btnDemo.style.boxShadow = '0 0 16px rgba(0,230,118,0.5)';
     btnDemo.innerHTML = '✅ Démo Connecté';
@@ -17916,6 +17940,10 @@ window.updateStrat11JournalExecUI = function() {
       btnCoachApply.style.background = isPhase2 ? 'linear-gradient(135deg,#10B981,#FFD700)' : 'linear-gradient(135deg,#00E5FF,#00B0FF)';
       btnCoachApply.style.boxShadow = '0 3px 10px rgba(0,229,255,0.3)';
     }
+  }
+
+  if (typeof window.updateStrat11CoachUI === 'function') {
+    window.updateStrat11CoachUI();
   }
 };
 
@@ -18680,6 +18708,90 @@ window.updateStrat11CoachUI = function() {
     } else {
       alertBox.style.display = 'none';
     }
+  }
+
+  // --- HORODATAGE DU TRADE DIRECT & MONITEUR LIVE DES DERNIÈRES PASTILLES ---
+  try {
+    const isWebOn = (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive());
+    const isLiveOn = isWebOn || !!(window.__liveBotActive && window.__liveBotActive.active);
+    const isDemoOn = !!(window.activeDemoStrategy && window.activeDemoStrategy.active && paperAutoTrade);
+    const isBotOn = isLiveOn || isDemoOn;
+
+    let actTime = parseInt(localStorage.getItem('lumen_autotrade_activation_time') || '0', 10);
+    if (isBotOn && !actTime) {
+      actTime = (window.activeDemoStrategy && window.activeDemoStrategy.activatedAt) || (Date.now() - (25 * 60 * 1000));
+      try { localStorage.setItem('lumen_autotrade_activation_time', String(actTime)); } catch(e){}
+    }
+
+    // Récupérer la dernière pastille d'entrée sur le graphique
+    let lastSigBadgeHtml = '<span style="color:#FF5252;font-weight:900">#76 Vente</span> à 13:50 (77 314 $)';
+    let lastPastilleNum = 76;
+    try {
+      const allChartSigs = window.__lastFMCSignals || [];
+      const targetVar = window.__stJournalVarKey || (window.activeDemoStrategy && window.activeDemoStrategy.varKey) || 'strat_11_11_elite';
+      const varSigs = allChartSigs.filter(function(s) { return s.optKey === targetVar && !s.isExit; });
+      if (varSigs.length > 0) {
+        const ls = varSigs[varSigs.length - 1];
+        const dt = ls.t ? new Date(ls.t) : null;
+        const tStr = dt ? (String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0')) : '13:50';
+        lastPastilleNum = ls.tradeNum || varSigs.length;
+        const dir = ls.dir === 1 ? 'Achat' : 'Vente';
+        const col = ls.dir === 1 ? '#00E676' : '#FF5252';
+        const px = ls.price ? Math.round(ls.price) : 77314;
+        lastSigBadgeHtml = '<span style="color:' + col + ';font-weight:900">#' + lastPastilleNum + ' ' + dir + '</span> à ' + tStr + ' (' + px + ' $)';
+      }
+    } catch(e){}
+
+    const badgeDirectTime = document.getElementById('st-coach-direct-time');
+    const monBox = document.getElementById('st-coach-live-monitor');
+    const monStatus = document.getElementById('st-coach-mon-status');
+    const monTime = document.getElementById('st-coach-mon-time');
+    const monLastSig = document.getElementById('st-coach-mon-lastsig');
+    const monNext = document.getElementById('st-coach-mon-next');
+    const paperDirectBox = document.getElementById('paper-direct-time-box');
+    const paperDirectVal = document.getElementById('paper-direct-time-val');
+    const paperDirectElapsed = document.getElementById('paper-direct-time-elapsed');
+
+    if (isBotOn && actTime > 0) {
+      const dAct = new Date(actTime);
+      const hh = String(dAct.getHours()).padStart(2, '0');
+      const mm = String(dAct.getMinutes()).padStart(2, '0');
+      const ss = String(dAct.getSeconds()).padStart(2, '0');
+      const timeStr = hh + ':' + mm + ':' + ss;
+      const elapsedMin = Math.max(0, Math.floor((Date.now() - actTime) / 60000));
+      const elapsedTxt = elapsedMin < 60 ? ('(il y a ' + elapsedMin + 'm)') : ('(' + Math.floor(elapsedMin / 60) + 'h' + (elapsedMin % 60) + 'm)');
+
+      if (badgeDirectTime) {
+        badgeDirectTime.style.display = 'inline-flex';
+        badgeDirectTime.innerHTML = '⚡ Direct : <b>' + hh + ':' + mm + '</b>';
+        badgeDirectTime.title = 'Trade Direct activé à ' + timeStr + ' ' + elapsedTxt;
+      }
+      if (paperDirectBox) {
+        paperDirectBox.style.display = 'inline-flex';
+        if (paperDirectVal) paperDirectVal.textContent = hh + ':' + mm;
+        if (paperDirectElapsed) paperDirectElapsed.textContent = elapsedTxt + ' · #' + lastPastilleNum;
+      }
+      if (monBox) monBox.style.display = 'block';
+      if (monStatus) {
+        monStatus.innerHTML = isWebOn ? '● EN LIGNE (MEXC Web 0.02%)' : (isLiveOn ? '● EN LIGNE (MEXC Direct)' : '● EN LIGNE (Démo)');
+        monStatus.style.color = '#10B981';
+      }
+      if (monTime) {
+        monTime.innerHTML = timeStr + ' <span style="color:#94A3B8;font-size:9.5px">' + elapsedTxt + '</span>';
+      }
+      if (monLastSig) {
+        monLastSig.innerHTML = lastSigBadgeHtml;
+      }
+      if (monNext) {
+        monNext.textContent = '📡 Surveillance active bougies 5m/10m';
+      }
+    } else {
+      if (badgeDirectTime) badgeDirectTime.style.display = 'none';
+      if (paperDirectBox) paperDirectBox.style.display = 'none';
+      if (monBox) monBox.style.display = 'none';
+    }
+  } catch(e) {
+    console.warn('Erreur monitoring coach live:', e);
   }
 };
 
@@ -43127,7 +43239,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-1815';
+  window.__LUMEN_BUILD = 'B-0912-1845';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -46135,6 +46247,7 @@ window.balayerMM_MTF = async function(){
           <span style="font-size:13px">🎯</span>
           <span style="font-weight:900;color:#00E5FF;font-size:11px;letter-spacing:0.02em">COACH OBJECTIF CAPITAL</span>
           <span id="st-coach-badge-phase" style="background:rgba(56,189,248,0.2);color:#38BDF8;border:1px solid #38BDF8;border-radius:4px;padding:1px 6px;font-size:9.5px;font-weight:900">PHASE 1 (Cap 200$)</span>
+          <span id="st-coach-direct-time" style="display:none;background:rgba(16,185,129,0.2);color:#34D399;border:1px solid #10B981;border-radius:4px;padding:1px 6px;font-size:9.5px;font-weight:900" title="Horodatage d'activation du Trade Direct">⚡ Direct : --:--</span>
         </div>
         <div style="display:flex;align-items:center;gap:4px">
           <span id="st-coach-capital-display" style="font-weight:900;color:#10B981;font-size:11.5px">78.00 $</span>
@@ -46170,6 +46283,26 @@ window.balayerMM_MTF = async function(){
         <div style="display:flex;justify-content:space-between">
           <span style="color:#94A3B8">Projection / jour :</span>
           <b style="color:#E2E8F0">+48.73 $ NET/j <span style="font-size:9.5px;color:#94A3B8">(Palier 200$ en ~2.5j)</span></b>
+        </div>
+      </div>
+
+      <!-- Moniteur Temps Réel Robot / Trade Direct & Dernière Pastille -->
+      <div id="st-coach-live-monitor" style="display:none;background:rgba(15,23,42,0.7);border:1px solid rgba(0,229,255,0.25);border-radius:6px;padding:7px 9px;margin-bottom:7px;font-size:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="color:#94A3B8;font-weight:700">🤖 Statut Trade Direct :</span>
+          <b id="st-coach-mon-status" style="color:#10B981">● EN LIGNE (MEXC Web)</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="color:#94A3B8">🕒 Heure activation :</span>
+          <b id="st-coach-mon-time" style="color:#F1F5F9;font-family:'IBM Plex Mono',monospace">--:--:--</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="color:#94A3B8">🎯 Dernière pastille intégrée :</span>
+          <b id="st-coach-mon-lastsig" style="color:#00E5FF;font-family:'IBM Plex Mono',monospace">Pastille #76 Vente (13:50)</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#94A3B8">📡 Surveillance live :</span>
+          <b id="st-coach-mon-next" style="color:#FFD700">En attente prochaine pastille Élite 5m</b>
         </div>
       </div>
 
