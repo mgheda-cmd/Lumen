@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2650</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2660</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16552,10 +16552,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2650
+// Build B-0911-2660
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2650
+// Build B-0911-2660
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -16572,26 +16572,46 @@ window.__strat11Period = localStorage.getItem('strat11_active_period') || 'all';
 window.__strat11ExitMode = localStorage.getItem('strat11_active_exit') || 's1'; // 's1' (Ligne 0) ou 's2' (Extrême)
 window.__synth8000Candles = null;
 
-async function get8000Candles() {
-  if (window.__synth8000Candles && window.__synth8000Candles.length >= 8000) {
-    return window.__synth8000Candles;
-  }
-  if (typeof state !== 'undefined' && state && state.data && state.data.length >= 8000) {
-    return state.data;
-  }
-  try {
-    const res = await fetch('candles_synth.json');
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length >= 1000) {
-        window.__synth8000Candles = data;
-        return data;
+async function get8000Candles(forceFresh) {
+  // 1. Obtenir la base historique profonde si pas encore en mémoire ou si actualisation demandée
+  if (!window.__synth8000Candles || !window.__synth8000Candles.length || forceFresh) {
+    try {
+      const res = await fetch('candles_synth.json?_=' + Date.now());
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length >= 1000) {
+          window.__synth8000Candles = data;
+        }
       }
+    } catch(e) {
+      console.warn('candles_synth.json indisponible:', e);
     }
-  } catch(e) {
-    console.warn('candles_synth.json indisponible:', e);
   }
-  return (typeof state !== 'undefined' && state && state.data) ? state.data : [];
+
+  const base = window.__synth8000Candles || [];
+
+  // 2. FUSION DYNAMIQUE EN TEMPS RÉEL avec state.data :
+  // On intègre systématiquement toutes les bougies récentes du graphique jusqu'à la dernière minute fermée !
+  if (typeof state !== 'undefined' && state && Array.isArray(state.data) && state.data.length > 0) {
+    const live = state.data;
+    if (!base.length) {
+      return live.slice();
+    }
+    const map = new Map();
+    // Ingestion historique de base
+    for (let i = 0; i < base.length; i++) {
+      map.set(base[i].t, base[i]);
+    }
+    // Ingestion et écrasement par les bougies réelles du direct (jusqu'à maintenant)
+    for (let i = 0; i < live.length; i++) {
+      map.set(live[i].t, live[i]);
+    }
+    const merged = Array.from(map.values()).sort(function(a, b) { return a.t - b.t; });
+    // Conserver jusqu'à 8500 bougies pour préserver la mémoire et la réactivité
+    return (merged.length > 8500) ? merged.slice(-8500) : merged;
+  }
+
+  return base.slice();
 }
 
 function setStrat11Period(p) {
@@ -16961,7 +16981,7 @@ async function runStrat11Backtest(isManualAction) {
   if (statusEl)  statusEl.textContent = '⏳ Analyse sérieuse sur 8000 bougies…';
 
   try {
-    const bars8000 = await get8000Candles();
+    const bars8000 = await get8000Candles(true);
     if (!bars8000 || bars8000.length < 100) {
       if (typeof toast === 'function') toast('⚠️ Données insuffisantes pour le test', '#FBBF24');
       if (retestBtn) { retestBtn.textContent = '🔬 Re-tester'; retestBtn.disabled = false; }
@@ -17015,11 +17035,19 @@ async function runStrat11Backtest(isManualAction) {
 
     renderPastillesList(true);
 
+    // Mettre à jour immédiatement le journal des trades s'il est ouvert
+    const journalPanel = document.getElementById('strat11-trades-panel');
+    if (journalPanel && journalPanel.style.display !== 'none' && typeof window.renderStrat11TradesJournal === 'function') {
+      window.renderStrat11TradesJournal();
+    }
+
     if (isManualAction) {
       if (hasChanged) {
         _showReclassModal(results, prevRanking, curP);
       } else if (typeof toast === 'function') {
-        toast('✅ Test 8000 bougies terminé · #1 : ' + results[0].name + ' (+' + Math.round(topStat.pnl) + ' pts)', '#10B981');
+        const topN = topStat.n || 0;
+        const signStr = topStat.pnl >= 0 ? '+' : '';
+        toast('✅ Test actualisé jusqu\'au dernier trade fermé (' + topN + ' trades) : ' + signStr + Math.round(topStat.pnl) + ' pts', '#10B981');
       }
     }
   } catch(err) {
@@ -17244,46 +17272,44 @@ window.renderStrat11TradesJournal = function() {
 
   // 2. Déterminer la liste des trades à afficher selon la période demandée
   let allTrades = [];
-  if (period !== 'all' && liveChartTrades.length > 0) {
-    // Pour 3 Jours et Jour même : prioriser à 100% les trades réels du graphique avec les vrais numéros de pastille
-    allTrades = liveChartTrades;
+  if (rStats && rStats[exitKey] && Array.isArray(rStats[exitKey].trades) && rStats[exitKey].trades.length > 0) {
+    allTrades = rStats[exitKey].trades.slice();
+  } else if (liveChartTrades.length > 0) {
+    allTrades = liveChartTrades.slice();
   } else {
-    // Si période "Tout (8000 bougies)", ou si le graphique n'a pas encore calculé de signaux
-    if (rStats && rStats[exitKey] && Array.isArray(rStats[exitKey].trades)) {
-      allTrades = rStats[exitKey].trades.slice();
-    } else {
-      const candles = window.__synth8000Candles || (typeof state !== 'undefined' && state ? state.data : []);
-      if (candles && candles.length >= 50 && typeof _backtestVariantSerious === 'function') {
-        const bRes = _backtestVariantSerious(candles, vDef);
-        if (bRes && bRes[exitKey] && Array.isArray(bRes[exitKey].trades)) {
-          allTrades = bRes[exitKey].trades.slice();
-        }
+    const candles = window.__synth8000Candles || (typeof state !== 'undefined' && state ? state.data : []);
+    if (candles && candles.length >= 50 && typeof _backtestVariantSerious === 'function') {
+      const bRes = _backtestVariantSerious(candles, vDef);
+      if (bRes && bRes[exitKey] && Array.isArray(bRes[exitKey].trades)) {
+        allTrades = bRes[exitKey].trades.slice();
       }
-    }
-
-    // Mapper les numéros de pastilles d'entrée et sortie depuis le graphique
-    allTrades.forEach(function(t) {
-      const eMatch = entrySigs.find(function(s) { return s.t === t.entryT || Math.abs(s.t - t.entryT) < 45000; });
-      if (eMatch) {
-        t.entryPastilleNum = eMatch.tradeNum;
-        const xMatch = exitSigs.find(function(s) { return (s.entryI != null && s.entryI === eMatch.i) || (s.tradeNum != null && s.tradeNum === eMatch.tradeNum); });
-        t.exitPastilleNum = xMatch ? xMatch.tradeNum : eMatch.tradeNum;
-      } else {
-        t.entryPastilleNum = t.num;
-        t.exitPastilleNum = t.num;
-      }
-    });
-
-    // Compléter avec les trades fermés récents du graphique s'ils sont postérieurs au backtest
-    if (liveChartTrades.length > 0 && allTrades.length > 0) {
-      const lastBacktestT = allTrades[allTrades.length - 1].entryT || 0;
-      liveChartTrades.forEach(function(lt) {
-        if (lt.entryT > lastBacktestT) {
-          allTrades.push(lt);
-        }
-      });
     }
   }
+
+  // Compléter avec tous les trades fermés récents du graphique s'ils sont postérieurs au backtest
+  if (liveChartTrades.length > 0 && allTrades.length > 0) {
+    const lastBacktestT = allTrades[allTrades.length - 1].entryT || 0;
+    liveChartTrades.forEach(function(lt) {
+      if (lt.entryT > lastBacktestT) {
+        allTrades.push(lt);
+      }
+    });
+  } else if (liveChartTrades.length > 0 && (!allTrades || !allTrades.length)) {
+    allTrades = liveChartTrades.slice();
+  }
+
+  // Mapper les numéros de pastilles d'entrée et sortie depuis le graphique
+  allTrades.forEach(function(t) {
+    const eMatch = entrySigs.find(function(s) { return s.t === t.entryT || Math.abs(s.t - t.entryT) < 45000; });
+    if (eMatch) {
+      t.entryPastilleNum = eMatch.tradeNum;
+      const xMatch = exitSigs.find(function(s) { return (s.entryI != null && s.entryI === eMatch.i) || (s.tradeNum != null && s.tradeNum === eMatch.tradeNum); });
+      t.exitPastilleNum = xMatch ? xMatch.tradeNum : eMatch.tradeNum;
+    } else {
+      t.entryPastilleNum = t.num;
+      t.exitPastilleNum = t.num;
+    }
+  });
 
   if (!allTrades || !allTrades.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="padding:25px;text-align:center;color:#94A3B8">Aucun trade fermé calculé pour cette sélection.</td></tr>';
@@ -35075,6 +35101,12 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
   const rawSignals = fmcRes.signals || [];
   window.__lastFMCSignals = rawSignals;
   try { if (typeof window.__updateEliteJournal === 'function') window.__updateEliteJournal(); } catch(e){}
+  try {
+    const jPan = document.getElementById('strat11-trades-panel');
+    if (jPan && jPan.style.display !== 'none' && typeof window.renderStrat11TradesJournal === 'function') {
+      window.renderStrat11TradesJournal();
+    }
+  } catch(e){}
   if (!rawSignals.length) return;
 
   // Trier pour traiter d'abord les sorties (au plus près de la mèche) puis les entrées
