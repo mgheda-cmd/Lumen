@@ -79,17 +79,31 @@
 
     setInterval(createHud, 800);
 
-    function notifyHud(msg, color='#10B981') {
+    function notifyHud(msg, color='#10B981', duration=8000) {
         const hud = document.getElementById('lumen-web-hud');
         if (!hud) return;
         hud.style.borderColor = color;
-        hud.innerHTML = `⚡ <span style="color:${color};font-weight:900">${msg}</span>`;
+        hud.style.boxShadow = `0 0 35px ${color}`;
+        hud.innerHTML = `⚡ <span style="color:${color};font-weight:900;font-size:13px">${msg}</span>`;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.frequency.value = 880;
+            g.gain.setValueAtTime(0.15, ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.35);
+        } catch(e){}
         setTimeout(() => {
             if (hud) {
                 hud.style.borderColor = '#10B981';
+                hud.style.boxShadow = '0 0 25px rgba(16,185,129,0.7)';
                 hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.2</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             }
-        }, 6000);
+        }, duration);
     }
 
     function setNativeValue(element, value) {
@@ -254,7 +268,7 @@
     // --- ENTRÉE INTELLIGENTE : LIMIT MAKER CHASER (0% FRAIS) AVEC SÉCURITÉ 12 PTS ---
     async function executeMarketOrder(signal) {
         if (signal.action === 'PING_TEST') {
-            notifyHud('🎉 TEST 100% VALIDÉ : Lumen & MEXC connectés en direct !', '#10B981');
+            notifyHud('🎉 TEST 100% VALIDÉ : Lumen & MEXC connectés en direct !', '#10B981', 35000);
             console.log('[Lumen Web Trader] Test Ping reçu et validé avec succès !');
             return true;
         }
@@ -512,7 +526,9 @@
                         if (raw && raw.event === 'message' && raw.message) {
                             const sig = JSON.parse(raw.message);
                             const sigTs = sig.timestamp || sig._ts || 0;
-                            if (sigTs > lastHandledCloudTs && (Date.now() - sigTs) < 15000) {
+                            const isPing = (sig.action === 'PING_TEST');
+                            const maxAge = isPing ? 180000 : 35000;
+                            if (sigTs > lastHandledCloudTs && Math.abs(Date.now() - sigTs) < maxAge) {
                                 lastHandledCloudTs = sigTs;
                                 console.log('[Lumen Web Trader] Signal reçu via Cloud SSE:', sig);
                                 executeMarketOrder(sig);
@@ -543,7 +559,9 @@
                         if (raw && raw.message) {
                             const sig = JSON.parse(raw.message);
                             const sigTs = sig.timestamp || sig._ts || 0;
-                            if (sigTs > lastHandledCloudTs && (Date.now() - sigTs) < 12000) {
+                            const isPing = (sig.action === 'PING_TEST');
+                            const maxAge = isPing ? 180000 : 35000;
+                            if (sigTs > lastHandledCloudTs && Math.abs(Date.now() - sigTs) < maxAge) {
                                 lastHandledCloudTs = sigTs;
                                 console.log('[Lumen Web Trader] Signal reçu via Cloud Poll:', sig);
                                 executeMarketOrder(sig);
