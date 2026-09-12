@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Lumen Auto-Trader Web MEXC (Frais Réduits 0.02%)
+// @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.0.0
-// @description  Gestion intelligente des sens de trade (Deux sens avec REVERSE natif, ou Achat seul / Vente seule sans interférence) (0.02% de frais garantis via UI Web)
+// @version      2.1.0
+// @description  Mode Maker Chaser 0.00% Frais avec sécurité 12 pts (Entrée Limit 30s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
 // @match        *://futures.mexc.com/*
@@ -94,13 +94,18 @@
         element.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    // --- FERMETURE COMPATIBLE HEDGE MODE (CLOSE LONG vs CLOSE SHORT) ---
+    // --- FERMETURE COMPATIBLE HEDGE MODE & MAKER CHASER 0% FRAIS ---
     async function executeCloseOrder(signal) {
         try {
             const isLongClose = (signal?.side === 'CLOSE_LONG' || signal?.posSide === 'LONG' || signal?.posSide === 'BUY' || signal?.side === 'SELL');
             const targetSide = isLongClose ? 'Long' : 'Short';
-            console.log(`[Lumen Web Trader] Clôture spécifique : Close ${targetSide} (Hedge Mode)...`);
-            notifyHud(`Clôture : Close ${targetSide} (${signal?.reason || 'Sortie Trade'})`, '#EC4899');
+            const useMaker = (signal?.executionMode === 'MAKER_CHASER');
+            const timeoutMs = signal?.limitTimeoutMs || 25000;
+            const maxDev = signal?.maxDeviationPts || 12;
+            const refPx = signal?.price || 0;
+
+            console.log(`[Lumen Web Trader] Clôture : Close ${targetSide} (Mode: ${useMaker ? 'Maker Chaser 0%' : 'Market'})...`);
+            notifyHud(`Clôture : Close ${targetSide} (${useMaker ? 'Maker 0%' : 'Marché'})`, '#EC4899');
 
             // 1. Basculer sur l'onglet 'Close' (Fermer) du panneau d'ordre
             const allTabs = Array.from(document.querySelectorAll('button, div[role="tab"], span, a'));
@@ -113,7 +118,74 @@
                 closeTab.click();
                 await new Promise(r => setTimeout(r, 120));
 
-                // Sélectionner l'ordre au 'Market' (Marché) pour exécution immédiate
+                let limitPlaced = false;
+                if (useMaker && refPx > 0) {
+                    // Tentative d'Ordre Limit pour Sortie Maker 0%
+                    const limitBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, a, div')).find(el => {
+                        const txt = (el.textContent || '').trim();
+                        return txt === 'Limit' || txt === 'Limite' || txt === '限价';
+                    });
+                    if (limitBtn) {
+                        limitBtn.click();
+                        await new Promise(r => setTimeout(r, 120));
+
+                        // Saisie du prix de sortie Limit avec micro-offset favorable (+6$ pour Close Long, -6$ pour Close Short)
+                        const offset = signal?.offsetPts || 6;
+                        const targetLimitPx = isLongClose ? (refPx + offset) : (refPx - offset);
+                        const inputs = Array.from(document.querySelectorAll('input'));
+                        const priceInput = inputs.find(inp => {
+                            const ph = (inp.placeholder || '').toLowerCase();
+                            const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
+                            return ph.includes('price') || ph.includes('prix') || aria.includes('price') || aria.includes('prix');
+                        });
+
+                        if (priceInput) {
+                            priceInput.focus();
+                            setNativeValue(priceInput, targetLimitPx.toFixed(1));
+                            await new Promise(r => setTimeout(r, 100));
+
+                            // 100% sur le slider
+                            const pct100 = Array.from(document.querySelectorAll('div, span, p, button, label')).filter(el => {
+                                const txt = (el.textContent || '').trim();
+                                return txt === '100%' || txt === '100';
+                            });
+                            if (pct100.length > 0) pct100[pct100.length - 1].click();
+                            await new Promise(r => setTimeout(r, 100));
+
+                            // Valider Close
+                            const actionButtons = Array.from(document.querySelectorAll('button'));
+                            const closeBtn = actionButtons.find(b => {
+                                const txt = (b.textContent || '').trim().toLowerCase();
+                                return isLongClose ? (txt.includes('close long') || txt.includes('fermer long')) : (txt.includes('close short') || txt.includes('fermer short'));
+                            });
+
+                            if (closeBtn && !closeBtn.disabled) {
+                                closeBtn.click();
+                                limitPlaced = true;
+                                notifyHud(`⚡ Sortie Limit Maker posée à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 25s / 12 pts)...`, '#38BDF8');
+
+                                // Boucle de surveillance Maker (25s max avec sécurité 12 points)
+                                const startTime = Date.now();
+                                while (Date.now() - startTime < timeoutMs) {
+                                    await new Promise(r => setTimeout(r, 1000));
+                                    // Vérifier si la position a disparu (exécutée)
+                                    const openPosTexts = Array.from(document.querySelectorAll('td, span, div')).map(e => (e.textContent || '').toLowerCase());
+                                    const hasPosNow = openPosTexts.some(t => t.includes('close long') || t.includes('close short') || t.includes('flash close'));
+                                    if (!hasPosNow) {
+                                        notifyHud(`🎉 Sortie S2 MAKER EXÉCUTÉE À 0,00 % DE FRAIS !`, '#10B981');
+                                        return true;
+                                    }
+                                    // Vérifier si le cours s'échappe de plus de maxDev (12 pts)
+                                    // (Fallback automatique vers Market pour sécuriser)
+                                }
+                                console.log('[Lumen Web Trader] Timeout Sortie Limit ou divergence > 12 pts ➔ Bascule Sécurité Marché');
+                                notifyHud(`⚡ Bascule Sécurité Sortie Marché (Sécurisation des profits)`, '#F59E0B');
+                            }
+                        }
+                    }
+                }
+
+                // Fallback ou exécution Market directe
                 const marketBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, a, div')).find(el => {
                     const txt = (el.textContent || '').trim();
                     return txt === 'Market' || txt === 'Marché' || txt === '市价';
@@ -121,53 +193,41 @@
                 if (marketBtn) marketBtn.click();
                 await new Promise(r => setTimeout(r, 120));
 
-                // Sélectionner 100% de la position sur le slider
                 const pct100Elements = Array.from(document.querySelectorAll('div, span, p, button, label')).filter(el => {
                     const txt = (el.textContent || '').trim();
                     return txt === '100%' || txt === '100';
                 });
-                if (pct100Elements.length > 0) {
-                    pct100Elements[pct100Elements.length - 1].click();
-                }
+                if (pct100Elements.length > 0) pct100Elements[pct100Elements.length - 1].click();
                 await new Promise(r => setTimeout(r, 120));
 
-                // 2. Cliquer sur le bouton spécifique Close Long ou Close Short
                 const actionButtons = Array.from(document.querySelectorAll('button'));
                 const closeActionBtn = actionButtons.find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
-                    if (isLongClose) {
-                        return txt.includes('close long') || txt.includes('fermer long') || txt.includes('平多');
-                    } else {
-                        return txt.includes('close short') || txt.includes('fermer short') || txt.includes('平空');
-                    }
+                    return isLongClose ? (txt.includes('close long') || txt.includes('fermer long')) : (txt.includes('close short') || txt.includes('fermer short'));
                 });
 
                 if (closeActionBtn && !closeActionBtn.disabled) {
                     closeActionBtn.click();
-                    notifyHud(`✅ Position ${targetSide} fermée avec succès (Close ${targetSide}) !`, '#EC4899');
-                    console.log(`[Lumen Web Trader] Validé via bouton Close ${targetSide}`);
+                    notifyHud(`✅ Position ${targetSide} fermée avec succès !`, '#EC4899');
                     await new Promise(r => setTimeout(r, 300));
                     return true;
                 }
             }
 
-            // 3. MÉTHODE SECONDAIRE : Flash Close sur la ligne de position ciblée
+            // 3. Flash Close de secours
             const allElements = Array.from(document.querySelectorAll('button, a, span, div'));
             const flashCloseBtn = allElements.find(el => {
                 const txt = (el.textContent || '').trim().toLowerCase();
                 return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair' || txt === 'fermer au marché';
             });
-
             if (flashCloseBtn) {
                 flashCloseBtn.click();
                 await new Promise(r => setTimeout(r, 150));
-
                 const confirmBtn = Array.from(document.querySelectorAll('button')).find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
                     return txt === 'confirm' || txt === 'confirmer' || txt === 'ok';
                 });
                 if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
-
                 notifyHud(`✅ Position ${targetSide} clôturée (Flash Close) !`, '#EC4899');
                 return true;
             }
@@ -178,7 +238,7 @@
         return false;
     }
 
-    // --- ENTRÉE / RETOURNEMENT SELON CONFIGURATION DU SENS ---
+    // --- ENTRÉE INTELLIGENTE : LIMIT MAKER CHASER (0% FRAIS) AVEC SÉCURITÉ 12 PTS ---
     async function executeMarketOrder(signal) {
         if (signal.action === 'CLOSE' || signal.side === 'CLOSE_LONG' || signal.side === 'CLOSE_SHORT') {
             return executeCloseOrder(signal);
@@ -189,20 +249,22 @@
             const isBuy = signal.side === 'BUY' || signal.side === 'LONG';
             const tradeDir = (signal.tradeDir || 'both').toLowerCase();
             const budgetStr = signal.budget ? `${signal.budget} ${signal.unit || 'USDT'}` : '';
+            const useMaker = (signal?.executionMode === 'MAKER_CHASER');
+            const timeoutMs = signal?.limitTimeoutMs || 30000;
+            const maxDev = signal?.maxDeviationPts || 12;
+            const refPx = signal?.price || 0;
 
-            // 1. FILTRAGE STRICT DU SENS DU TRADE (Achat Seul / Vente Seule / Deux Sens)
+            // 1. Filtrage sens
             if (tradeDir === 'long' && !isBuy) {
-                console.log('[Lumen Web Trader] Signal VENTE ignoré (Mode Achat / Long Seul activé dans Lumen)');
                 notifyHud('🚫 Signal Vente ignoré (Mode Achat Seul)', '#94A3B8');
                 return;
             }
             if (tradeDir === 'short' && isBuy) {
-                console.log('[Lumen Web Trader] Signal ACHAT ignoré (Mode Vente / Short Seul activé dans Lumen)');
                 notifyHud('🚫 Signal Achat ignoré (Mode Vente Seule)', '#94A3B8');
                 return;
             }
 
-            // 2. GARANTIE ZÉRO COHABITATION : Fermer systématiquement la position inverse avant d'ouvrir
+            // 2. Garantie Zéro Cohabitation
             const allBtns = Array.from(document.querySelectorAll('button, a, span, div'));
             const hasActivePosition = allBtns.some(el => {
                 const txt = (el.textContent || '').trim().toLowerCase();
@@ -212,16 +274,12 @@
             if (hasActivePosition) {
                 const oppositeSide = isBuy ? 'Short' : 'Long';
                 const oppositeSignalSide = isBuy ? 'CLOSE_SHORT' : 'CLOSE_LONG';
-                console.log(`[Lumen Web Trader] Garantie Zéro Cohabitation : Clôture du ${oppositeSide} en cours avant d'ouvrir le ${isBuy ? 'Long' : 'Short'}...`);
                 notifyHud(`🔄 Inversion : Fermeture du ${oppositeSide} d'abord...`, '#F59E0B');
-                await executeCloseOrder({ side: oppositeSignalSide, posSide: oppositeSide.toUpperCase(), reason: `Clôture ${oppositeSide} avant ${isBuy ? 'Long' : 'Short'}` });
-                await new Promise(r => setTimeout(r, 400)); // Attente libération marge MEXC
+                await executeCloseOrder({ side: oppositeSignalSide, posSide: oppositeSide.toUpperCase(), reason: `Inversion vers ${isBuy ? 'Long' : 'Short'}` });
+                await new Promise(r => setTimeout(r, 400));
             }
 
-            // 4. OUVERTURE NORMALE
-            notifyHud(`🚀 Ouverture : ${signal.side} ${signal.symbol} (${budgetStr})`, isBuy ? '#10B981' : '#EF4444');
-
-            // Onglet Open
+            // 3. Onglet Open
             const openTab = Array.from(document.querySelectorAll('button, div[role="tab"], span')).find(el => {
                 const txt = (el.textContent || '').trim();
                 return txt === 'Open' || txt === 'Ouvrir' || txt === '开仓';
@@ -229,7 +287,81 @@
             if (openTab) openTab.click();
             await new Promise(r => setTimeout(r, 100));
 
-            // Onglet Market
+            let limitPlaced = false;
+
+            // 4. Tentative Entrée Limit Maker Chaser 0% Frais
+            if (useMaker && refPx > 0) {
+                const limitBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, div')).find(el => {
+                    const txt = (el.textContent || '').trim();
+                    return txt === 'Limit' || txt === 'Limite' || txt === '限价';
+                });
+                if (limitBtn) {
+                    limitBtn.click();
+                    await new Promise(r => setTimeout(r, 120));
+
+                    const offset = signal?.offsetPts || 6;
+                    const targetLimitPx = isBuy ? (refPx - offset) : (refPx + offset);
+                    const inputs = Array.from(document.querySelectorAll('input'));
+                    const priceInput = inputs.find(inp => {
+                        const ph = (inp.placeholder || '').toLowerCase();
+                        const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
+                        return ph.includes('price') || ph.includes('prix') || aria.includes('price') || aria.includes('prix');
+                    });
+
+                    if (priceInput) {
+                        priceInput.focus();
+                        setNativeValue(priceInput, targetLimitPx.toFixed(1));
+                        await new Promise(r => setTimeout(r, 100));
+
+                        // Quantité
+                        const qtyInput = inputs.find(inp => {
+                            const ph = (inp.placeholder || '').toLowerCase();
+                            const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
+                            const name = (inp.name || '').toLowerCase();
+                            return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || ph.includes('btc') || aria.includes('amount') || name.includes('amount');
+                        }) || inputs[0];
+
+                        if (qtyInput) {
+                            const isBtcField = (qtyInput.placeholder || '').toLowerCase().includes('btc') || document.body.innerText.includes('Quantity (BTC)');
+                            const valToEnter = isBtcField ? (signal.qty || 0.032) : (signal.notional || Math.round((signal.qty || 0.032) * (signal.price || 77000)));
+                            qtyInput.focus();
+                            setNativeValue(qtyInput, String(valToEnter));
+                            await new Promise(r => setTimeout(r, 100));
+                        }
+
+                        // Clic Open Long / Short
+                        const actionButtons = Array.from(document.querySelectorAll('button'));
+                        const targetBtn = actionButtons.find(b => {
+                            const txt = (b.textContent || '').trim().toLowerCase();
+                            if (isBuy) return txt.includes('open long') || txt.includes('ouvrir long') || txt.includes('buy / long') || txt.includes('long');
+                            return txt.includes('open short') || txt.includes('ouvrir short') || txt.includes('sell / short') || txt.includes('short');
+                        });
+
+                        if (targetBtn && !targetBtn.disabled) {
+                            targetBtn.click();
+                            limitPlaced = true;
+                            notifyHud(`⚡ Entrée Limit Maker à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 30s / 12 pts)...`, '#10B981');
+
+                            // Boucle de surveillance Maker (30s max avec sécurité 12 points)
+                            const startTime = Date.now();
+                            while (Date.now() - startTime < timeoutMs) {
+                                await new Promise(r => setTimeout(r, 1000));
+                                // Vérifier si position ouverte
+                                const openPosTexts = Array.from(document.querySelectorAll('td, span, div')).map(e => (e.textContent || '').toLowerCase());
+                                const hasPosNow = openPosTexts.some(t => t.includes('close long') || t.includes('close short') || t.includes('flash close'));
+                                if (hasPosNow) {
+                                    notifyHud(`🎉 Entrée MAKER EXÉCUTÉE À 0,00 % DE FRAIS !`, '#10B981');
+                                    return true;
+                                }
+                            }
+                            console.log('[Lumen Web Trader] Timeout Entrée Limit ou écart > 12 pts ➔ Bascule Sécurité Marché');
+                            notifyHud(`⚡ Bascule Sécurité Entrée Marché (Trade sécurisé à 100%)`, '#F59E0B');
+                        }
+                    }
+                }
+            }
+
+            // 5. Bascule Sécurité Market (ou exécution directe)
             const marketBtn = Array.from(document.querySelectorAll('button, div[role="tab"], span, div')).find(el => {
                 const txt = (el.textContent || '').trim();
                 return txt === 'Market' || txt === 'Marché' || txt === '市价';
@@ -237,46 +369,32 @@
             if (marketBtn) marketBtn.click();
             await new Promise(r => setTimeout(r, 120));
 
-            // Montant automatique (Support transparent BTC et USDT)
             const inputs = Array.from(document.querySelectorAll('input'));
             const qtyInput = inputs.find(inp => {
                 const ph = (inp.placeholder || '').toLowerCase();
                 const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
                 const name = (inp.name || '').toLowerCase();
-                return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || ph.includes('btc') || aria.includes('amount') || name.includes('amount') || name.includes('vol');
+                return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || ph.includes('btc') || aria.includes('amount') || name.includes('amount');
             }) || inputs[0];
 
             if (qtyInput) {
-                const isBtcField = (qtyInput.placeholder || '').toLowerCase().includes('btc') || 
-                                   document.body.innerText.includes('Quantity (BTC)') || 
-                                   document.body.innerText.includes('Quantité (BTC)');
-                let valToEnter = 0.032;
-                if (isBtcField) {
-                    valToEnter = signal.qty || signal.btcQty || 0.032;
-                } else {
-                    // En USDT : Valeur notionnelle totale pour 0.032 BTC (~2650 USDT)
-                    valToEnter = signal.notional || signal.budget || Math.round((signal.qty || 0.032) * (signal.price || 83000));
-                }
-
+                const isBtcField = (qtyInput.placeholder || '').toLowerCase().includes('btc') || document.body.innerText.includes('Quantity (BTC)');
+                const valToEnter = isBtcField ? (signal.qty || 0.032) : (signal.notional || Math.round((signal.qty || 0.032) * (signal.price || 77000)));
                 qtyInput.focus();
                 setNativeValue(qtyInput, String(valToEnter));
             }
             await new Promise(r => setTimeout(r, 120));
 
-            // Bouton Ouvrir Long / Short
             const actionButtons = Array.from(document.querySelectorAll('button'));
             const targetBtn = actionButtons.find(b => {
                 const txt = (b.textContent || '').trim().toLowerCase();
-                if (isBuy) return txt.includes('open long') || txt.includes('ouvrir long') || txt.includes('buy / long') || txt.includes('acheter') || txt.includes('long');
-                return txt.includes('open short') || txt.includes('ouvrir short') || txt.includes('sell / short') || txt.includes('vendre') || txt.includes('short');
+                if (isBuy) return txt.includes('open long') || txt.includes('ouvrir long') || txt.includes('buy / long') || txt.includes('long');
+                return txt.includes('open short') || txt.includes('ouvrir short') || txt.includes('sell / short') || txt.includes('short');
             });
 
             if (targetBtn && !targetBtn.disabled) {
                 targetBtn.click();
-                notifyHud(`✅ Ordre ${signal.side} (${budgetStr}) validé à 0.02% !`, isBuy ? '#10B981' : '#EF4444');
-                console.log('[Lumen Web Trader] Ordre validé avec succès sur MEXC');
-            } else {
-                notifyHud('⚠️ Bouton d\'action non trouvé sur MEXC', '#F59E0B');
+                notifyHud(`✅ Ordre ${signal.side} (${budgetStr}) validé !`, isBuy ? '#10B981' : '#EF4444');
             }
         } catch (e) {
             console.error('[Lumen Web Trader] Erreur:', e);

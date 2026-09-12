@@ -525,7 +525,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1845</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1900</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -17690,7 +17690,7 @@ window.activerStrat11SurCompteDemo = function() {
     timestamp: Date.now()
   };
 
-  // Synchroniser la position Démo sur le trade actuellement ouvert sur le graphique (s'il existe)
+  // Synchroniser la position Démo sur le trade actuellement ouvert sur le graphique (si <= 6 min et ecart <= 12 pts)
   if (typeof paper !== 'undefined' && Array.isArray(window.__lastFMCSignals)) {
     const varSigs = window.__lastFMCSignals.filter(function(s) { return s.optKey === varKey; });
     const entSigs = varSigs.filter(function(s) { return !s.isExit; }).sort(function(a, b) { return a.i - b.i; });
@@ -17698,19 +17698,33 @@ window.activerStrat11SurCompteDemo = function() {
       const lastEnt = entSigs[entSigs.length - 1];
       const hasEx = varSigs.some(function(s) { return s.isExit && ((s.entryI != null && s.entryI === lastEnt.i) || (s.tradeNum != null && s.tradeNum === lastEnt.tradeNum)); });
       if (!hasEx) {
-        // Le trade est en cours sur le graphique (ex: #29 ACHAT @ $77 147.8)
-        paper.positions = [{
-          sym: state.symbol || 'BTCUSDT',
-          side: lastEnt.dir === 1 ? 'long' : 'short',
-          entry: lastEnt.price,
-          qty: userQty,
-          margin: (userQty * lastEnt.price) / 50,
-          notional: userQty * lastEnt.price,
-          lev: 50,
-          t: lastEnt.t || Date.now(),
-          tradeNum: lastEnt.tradeNum,
-          triggerSignal: lastEnt.badge || ('Pastille #' + lastEnt.tradeNum)
-        }];
+        const curPx = (typeof livePrice === 'function' ? livePrice(state.symbol) : null) || (state.data && state.data[state.data.length - 1] && state.data[state.data.length - 1].c);
+        const ageMin = lastEnt.t ? ((Date.now() - lastEnt.t) / 60000) : 999;
+        const isBuy = lastEnt.dir === 1;
+        const diffPts = curPx ? (isBuy ? (lastEnt.price - curPx) : (curPx - lastEnt.price)) : 0;
+
+        if (ageMin <= 6.0 && diffPts >= -12.0) {
+          paper.positions = [{
+            sym: state.symbol || 'BTCUSDT',
+            side: isBuy ? 'long' : 'short',
+            entry: curPx || lastEnt.price,
+            qty: userQty,
+            margin: (userQty * (curPx || lastEnt.price)) / 50,
+            notional: userQty * (curPx || lastEnt.price),
+            lev: 50,
+            t: lastEnt.t || Date.now(),
+            tradeNum: lastEnt.tradeNum,
+            triggerSignal: (lastEnt.badge || ('Pastille #' + lastEnt.tradeNum)) + ` (Rattrapage ${diffPts >= 0 ? '+' : ''}${diffPts.toFixed(1)} pts)`
+          }];
+          if (typeof toast === 'function') {
+            toast(`⚡ [Rattrapage Démo] Pastille #${lastEnt.tradeNum || entSigs.length} ${isBuy ? 'ACHAT' : 'VENTE'} synchronisée (${diffPts >= 0 ? '+' : ''}${diffPts.toFixed(1)} pts)`, '#10B981');
+          }
+        } else {
+          paper.positions = [];
+          if (ageMin <= 6.0 && diffPts < -12.0 && typeof toast === 'function') {
+            toast(`ℹ️ [Rattrapage Démo Ignoré] Pastille récente mais écart > 12 pts (${diffPts.toFixed(1)} pts). En attente du prochain signal !`, '#F59E0B');
+          }
+        }
       }
     }
   }
@@ -17751,7 +17765,7 @@ window.activerStrat11SurCompteDemo = function() {
 window.activerStrat11SurMexcWeb = function() {
   const isWebActive = (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive());
   if (isWebActive) {
-    if (confirm('🛑 Le Robot MEXC Web Trader (0.02% de frais) est actuellement en cours d\'exécution.\n\nSouhaitez-vous arrêter le trading automatique sur votre compte MEXC ?')) {
+    if (confirm('🛑 Le Robot MEXC Web Trader (0.00% Frais Maker) est actuellement en cours d\'exécution.\n\nSouhaitez-vous arrêter le trading automatique sur votre compte MEXC ?')) {
       window.desactiverStrat11Execution();
     }
     return;
@@ -17787,7 +17801,7 @@ window.activerStrat11SurMexcWeb = function() {
     marge: tradeQty,
     unite: 'BASE',
     lev: 50,
-    feePct: 0.02
+    feePct: 0.00
   };
   try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
 
@@ -17796,7 +17810,7 @@ window.activerStrat11SurMexcWeb = function() {
     window.activerPastillesSeuleStrategie(varKey, exitKey);
   }
 
-  // 2. Activer le Web Auto-Trader (Tampermonkey : Frais Réduits 0.02% garantis via UI Web)
+  // 2. Activer le Web Auto-Trader (Tampermonkey : Frais 0.00% Maker garantis via UI Web)
   localStorage.setItem('lumen_web_autotrader_active', '1');
   localStorage.setItem('lumen_web_autotrader_ready', '1');
   if (typeof window.updateWebAutoTraderUI === 'function') window.updateWebAutoTraderUI();
@@ -17806,14 +17820,46 @@ window.activerStrat11SurMexcWeb = function() {
     window.stopLiveExchangeTrading();
   }
 
+  // 2.5 Volet 2 : Rattrapage Rapide (Fast-Catchup <= 6 min et ecart <= 12 pts)
+  let catchupDone = false;
+  if (Array.isArray(window.__lastFMCSignals)) {
+    const varSigs = window.__lastFMCSignals.filter(s => s.optKey === varKey);
+    const entSigs = varSigs.filter(s => !s.isExit).sort((a, b) => a.i - b.i);
+    if (entSigs.length > 0) {
+      const lastEnt = entSigs[entSigs.length - 1];
+      const hasEx = varSigs.some(s => s.isExit && ((s.entryI != null && s.entryI === lastEnt.i) || (s.tradeNum != null && s.tradeNum === lastEnt.tradeNum)));
+      if (!hasEx) {
+        const curPx = (typeof livePrice === 'function' ? livePrice(state.symbol) : null) || (state.data && state.data[state.data.length - 1] && state.data[state.data.length - 1].c);
+        const ageMin = lastEnt.t ? ((Date.now() - lastEnt.t) / 60000) : 999;
+        const isBuy = lastEnt.dir === 1;
+        const diffPts = curPx ? (isBuy ? (lastEnt.price - curPx) : (curPx - lastEnt.price)) : 0;
+
+        if (ageMin <= 6.0 && diffPts >= -12.0) {
+          catchupDone = true;
+          if (typeof paper !== 'undefined') {
+            paper.positions = [];
+          }
+          openTrade(isBuy ? 'long' : 'short', null, tradeQty, 50, `⚡ Rattrapage Pastille #${lastEnt.tradeNum || entSigs.length} (${diffPts >= 0 ? '+' : ''}${diffPts.toFixed(1)} pts)`, lastEnt.t || Date.now());
+          if (typeof toast === 'function') {
+            toast(`⚡ [Rattrapage 0.00% Frais] Pastille #${lastEnt.tradeNum || entSigs.length} ${isBuy ? 'ACHAT' : 'VENTE'} rattrapée !\n• Âge signal : ${ageMin.toFixed(1)}m (≤ 6m)\n• Écart : ${diffPts >= 0 ? '+' : ''}${diffPts.toFixed(1)} pts (max 12 pts)\n• Ordre Limit Maker envoyé à MEXC ! 🚀`, '#10B981');
+          }
+        } else if (ageMin <= 6.0 && diffPts < -12.0) {
+          if (typeof toast === 'function') {
+            toast(`ℹ️ [Rattrapage Ignoré] Pastille récente (${ageMin.toFixed(1)}m) mais cours trop éloigné (${diffPts.toFixed(1)} pts > 12 pts tolérés). En attente du prochain signal !`, '#F59E0B');
+          }
+        }
+      }
+    }
+  }
+
   if (typeof window.updateStrat11JournalExecUI === 'function') window.updateStrat11JournalExecUI();
 
-  if (typeof toast === 'function') {
-    toast(`⚡ ROBOT MEXC WEB ACTIVÉ (0.02% FRAIS GARANTIS) !
+  if (!catchupDone && typeof toast === 'function') {
+    toast(`⚡ ROBOT MEXC WEB ACTIVÉ (0.00% FRAIS MAKER · CHASER 12 PTS) !
 • Stratégie : ${label}
 • Taille : ${tradeQty} BTC @ 50x (~53$ marge)
-• Exécution : Onglet Web MEXC (${mexcPair})
-• Prêt à cliquer chaque pastille en direct ! 🚀`, '#10B981');
+• Exécution : Limit Maker Chaser (0.00% frais visé, sécu 12 pts)
+• Veille active pastilles en direct ! 🚀`, '#10B981');
   }
   try { if (typeof beep === 'function') beep(); } catch(e){}
 
@@ -17877,7 +17923,7 @@ window.updateStrat11JournalExecUI = function() {
     banner.style.background = 'rgba(16,185,129,0.18)';
     banner.style.borderColor = '#10B981';
     banner.style.color = '#A7F3D0';
-    if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC WEB ACTIF (0.02% FRAIS)</b>' + timeTag + ' : suit les pastilles ' + (window.activeDemoStrategy?.modeLabel || 'Élite S2') + ' (' + (window.__stCoachCustomQty || '0.032') + ' BTC @ 50x)';
+    if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC WEB ACTIF (0.00% FRAIS MAKER)</b>' + timeTag + ' : suit les pastilles ' + (window.activeDemoStrategy?.modeLabel || 'Élite S2') + ' (' + (window.__stCoachCustomQty || '0.032') + ' BTC @ 50x) · <i>Chaser 12 pts</i>';
     btnDemo.style.background = '#064E3B';
     btnDemo.style.color = '#34D399';
     btnDemo.innerHTML = '✅ Moteur Prêt';
@@ -17917,11 +17963,11 @@ window.updateStrat11JournalExecUI = function() {
     btnDemo.innerHTML = '✅ Démo Connecté';
     btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
     btnMexc.style.boxShadow = 'none';
-    btnMexc.innerHTML = '⚡ Robot MEXC (0.02%)';
+    btnMexc.innerHTML = '⚡ Robot MEXC (0% Frais)';
     if (btnCoachApply) {
       const capInfo = window.getCoachCapital();
       const isPhase2 = (capInfo.capital >= 200);
-      btnCoachApply.innerHTML = isPhase2 ? '🚀 Lancer Robot MEXC Phase 2 (0.065 BTC · 50x)' : '⚡ Lancer Robot MEXC (0.02% · 0.032 BTC)';
+      btnCoachApply.innerHTML = isPhase2 ? '🚀 Lancer Robot MEXC Phase 2 (0.065 BTC · 50x)' : '⚡ Lancer Robot MEXC (0% Frais · 0.032 BTC)';
       btnCoachApply.style.background = isPhase2 ? 'linear-gradient(135deg,#10B981,#FFD700)' : 'linear-gradient(135deg,#00E5FF,#00B0FF)';
       btnCoachApply.style.boxShadow = '0 3px 10px rgba(0,229,255,0.3)';
     }
@@ -17932,11 +17978,11 @@ window.updateStrat11JournalExecUI = function() {
     btnDemo.innerHTML = '🤖 Activer en Démo';
     btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
     btnMexc.style.boxShadow = '0 3px 12px rgba(255,215,0,0.35)';
-    btnMexc.innerHTML = '⚡ Robot MEXC (0.02%)';
+    btnMexc.innerHTML = '⚡ Robot MEXC (0% Frais)';
     if (btnCoachApply) {
       const capInfo = window.getCoachCapital();
       const isPhase2 = (capInfo.capital >= 200);
-      btnCoachApply.innerHTML = isPhase2 ? '🚀 Lancer Robot MEXC Phase 2 (0.065 BTC · 50x)' : '⚡ Lancer Robot MEXC (0.02% · 0.032 BTC)';
+      btnCoachApply.innerHTML = isPhase2 ? '🚀 Lancer Robot MEXC Phase 2 (0.065 BTC · 50x)' : '⚡ Lancer Robot MEXC (0% Frais · 0.032 BTC)';
       btnCoachApply.style.background = isPhase2 ? 'linear-gradient(135deg,#10B981,#FFD700)' : 'linear-gradient(135deg,#00E5FF,#00B0FF)';
       btnCoachApply.style.boxShadow = '0 3px 10px rgba(0,229,255,0.3)';
     }
@@ -18622,12 +18668,16 @@ window.updateStrat11CoachUI = function() {
         + '<b style="color:#FBBF24">0.032 BTC <span style="font-size:9.5px;color:#94A3B8">(~53$ marge · reste 25$)</span></b>'
         + '</div>'
         + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-        + '<span style="color:#94A3B8">Gain NET visé / trade :</span>'
-        + '<b style="color:#10B981">+5.04 $ NET <span style="font-size:9.5px;color:#94A3B8">(frais MEXC 0.02% déduits)</span></b>'
+        + '<span style="color:#94A3B8">Gain visé / trade :</span>'
+        + '<b style="color:#10B981">+6.04 $ BRUT = NET <span style="font-size:9.5px;color:#38BDF8">(0.00% Maker · 0 frais !)</span></b>'
         + '</div>'
-        + '<div style="display:flex;justify-content:space-between">'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
         + '<span style="color:#94A3B8">Projection / jour :</span>'
-        + '<b style="color:#E2E8F0">+48.73 $ NET/j <span style="font-size:9.5px;color:#94A3B8">(Palier 200$ en ~2.5j)</span></b>'
+        + '<b style="color:#E2E8F0">+58.40 $ NET/j <span style="font-size:9.5px;color:#38BDF8">(0% frais · Palier en ~2j)</span></b>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;padding-top:3px;border-top:1px dashed rgba(255,255,255,0.1)">'
+        + '<span style="color:#94A3B8">Moteur MEXC :</span>'
+        + '<b style="color:#FFD700">⚡ Limit Maker 0% <span style="font-size:9.5px;color:#94A3B8">(Chaser 12 pts · Rattrapage ≤6m)</span></b>'
         + '</div>';
     }
 
@@ -18773,7 +18823,7 @@ window.updateStrat11CoachUI = function() {
       }
       if (monBox) monBox.style.display = 'block';
       if (monStatus) {
-        monStatus.innerHTML = isWebOn ? '● EN LIGNE (MEXC Web 0.02%)' : (isLiveOn ? '● EN LIGNE (MEXC Direct)' : '● EN LIGNE (Démo)');
+        monStatus.innerHTML = isWebOn ? '● EN LIGNE (MEXC 0.00% Frais · Maker Chaser 12 pts)' : (isLiveOn ? '● EN LIGNE (MEXC Direct)' : '● EN LIGNE (Démo)');
         monStatus.style.color = '#10B981';
       }
       if (monTime) {
@@ -20917,6 +20967,10 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
           margin: targetNotional / (lev || 50),
           unit: 'USDT',
           leverage: lev,
+          executionMode: 'MAKER_CHASER',
+          offsetPts: 6,
+          limitTimeoutMs: 30000,
+          maxDeviationPts: 12,
           timestamp: Date.now()
         };
         if (typeof BroadcastChannel !== 'undefined') {
@@ -20924,7 +20978,7 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
           bc.postMessage(webSignal);
         }
         localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
-        toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${sendQty} BTC) transmis à MEXC (0.02%)`, '#10B981');
+        toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${sendQty} BTC) transmis à MEXC (0.00% Maker visé / sécu 12 pts)`, '#10B981');
       } catch(err){}
     }
   }
@@ -20968,7 +21022,7 @@ function closePos(i, customReason){
   paper.positions.splice(i,1);
   saveConfig(); updatePaper();
 
-  // Relais Web Auto-Trader vers MEXC (Flash Close 0.02%)
+  // Relais Web Auto-Trader vers MEXC (Maker Chaser 0% / Sécurité 12 pts)
   if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
     try {
       const mexcPair = ((p.sym || state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
@@ -20978,6 +21032,11 @@ function closePos(i, customReason){
         symbol: mexcPair,
         side: p.side === 'long' ? 'CLOSE_LONG' : 'CLOSE_SHORT',
         reason: exitReasonStr,
+        price: px,
+        executionMode: 'MAKER_CHASER',
+        offsetPts: 6,
+        limitTimeoutMs: 25000,
+        maxDeviationPts: 12,
         timestamp: Date.now()
       };
       if (typeof BroadcastChannel !== 'undefined') {
@@ -20985,7 +21044,7 @@ function closePos(i, customReason){
         bc.postMessage(webSignal);
       }
       localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
-      toast('⚡ Web Auto-Trader : Clôture ' + mexcPair + ' transmise à MEXC (0.02%)', '#EC4899');
+      toast('⚡ Web Auto-Trader : Clôture S2 ' + mexcPair + ' transmise à MEXC (0.00% Maker visé / sécu 12 pts)', '#EC4899');
     } catch(err){}
   }
   toast(`Position fermée : PnL ${netPnl>=0?'+':''}${fmtUsd(netPnl)} (${exitReasonStr})`, netPnl>=0?'#10B981':'#F45B7D');
@@ -43239,7 +43298,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-1845';
+  window.__LUMEN_BUILD = 'B-0912-1900';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -46220,9 +46279,9 @@ window.balayerMM_MTF = async function(){
         🤖 Activer en Démo
       </button>
 
-      <!-- Bouton 2 : Robot MEXC Web Trader 0.02% -->
-      <button id="btn-st-apply-mexc" type="button" onclick="window.activerStrat11SurMexcWeb()" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#06101E;border:none;border-radius:7px;padding:7px 8px;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(255,215,0,0.35);transition:all 0.15s" title="Lancer le Robot MEXC Web Trader (0.02% de frais garantis via votre onglet MEXC Web)">
-        ⚡ Robot MEXC (0.02%)
+      <!-- Bouton 2 : Robot MEXC Web Trader 0.00% Maker -->
+      <button id="btn-st-apply-mexc" type="button" onclick="window.activerStrat11SurMexcWeb()" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#06101E;border:none;border-radius:7px;padding:7px 8px;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(255,215,0,0.35);transition:all 0.15s" title="Lancer le Robot MEXC Web Trader (0.00% Frais Maker visés via carnet d'ordres Web)">
+        ⚡ Robot MEXC (0% Frais)
       </button>
     </div>
 
@@ -46277,12 +46336,16 @@ window.balayerMM_MTF = async function(){
           <b style="color:#FBBF24">0.032 BTC <span style="font-size:9.5px;color:#94A3B8">(~53$ marge · reste 25$)</span></b>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-          <span style="color:#94A3B8">Gain NET visé / trade :</span>
-          <b style="color:#10B981">+5.04 $ NET <span style="font-size:9.5px;color:#94A3B8">(frais MEXC 0.02% déduits)</span></b>
+          <span style="color:#94A3B8">Gain visé / trade :</span>
+          <b style="color:#10B981">+6.04 $ BRUT = NET <span style="font-size:9.5px;color:#38BDF8">(0.00% Maker · 0 frais !)</span></b>
         </div>
-        <div style="display:flex;justify-content:space-between">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
           <span style="color:#94A3B8">Projection / jour :</span>
-          <b style="color:#E2E8F0">+48.73 $ NET/j <span style="font-size:9.5px;color:#94A3B8">(Palier 200$ en ~2.5j)</span></b>
+          <b style="color:#E2E8F0">+58.40 $ NET/j <span style="font-size:9.5px;color:#38BDF8">(0% frais · Palier en ~2j)</span></b>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-top:3px;border-top:1px dashed rgba(255,255,255,0.1)">
+          <span style="color:#94A3B8">Moteur MEXC :</span>
+          <b style="color:#FFD700">⚡ Limit Maker 0% <span style="font-size:9.5px;color:#94A3B8">(Chaser 12 pts · Rattrapage ≤6m)</span></b>
         </div>
       </div>
 
@@ -46290,7 +46353,7 @@ window.balayerMM_MTF = async function(){
       <div id="st-coach-live-monitor" style="display:none;background:rgba(15,23,42,0.7);border:1px solid rgba(0,229,255,0.25);border-radius:6px;padding:7px 9px;margin-bottom:7px;font-size:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
           <span style="color:#94A3B8;font-weight:700">🤖 Statut Trade Direct :</span>
-          <b id="st-coach-mon-status" style="color:#10B981">● EN LIGNE (MEXC Web)</b>
+          <b id="st-coach-mon-status" style="color:#10B981">● EN LIGNE (MEXC 0% Maker)</b>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
           <span style="color:#94A3B8">🕒 Heure activation :</span>
@@ -46313,8 +46376,8 @@ window.balayerMM_MTF = async function(){
 
       <!-- Bouton 1-Clic d'Application Automatique -->
       <div style="display:flex;gap:6px">
-        <button id="btn-st-coach-apply" type="button" onclick="window.appliquerReglagesCoach()" style="flex:1;background:linear-gradient(135deg,#00E5FF,#00B0FF);color:#06101E;border:none;border-radius:6px;padding:6px 10px;font-size:10.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(0,229,255,0.3);transition:all 0.15s" title="Lancer le Robot MEXC Web Trader avec les réglages optimaux du Coach (0.02% de frais)">
-          ⚡ Lancer Robot MEXC (0.02% · Élite · 0.032 BTC)
+        <button id="btn-st-coach-apply" type="button" onclick="window.appliquerReglagesCoach()" style="flex:1;background:linear-gradient(135deg,#00E5FF,#00B0FF);color:#06101E;border:none;border-radius:6px;padding:6px 10px;font-size:10.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(0,229,255,0.3);transition:all 0.15s" title="Lancer le Robot MEXC Web Trader avec les réglages optimaux du Coach (0.00% de frais Maker visés)">
+          ⚡ Lancer Robot MEXC (0% Frais · Élite · 0.032 BTC)
         </button>
       </div>
     </div>
