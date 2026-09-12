@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2640</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2650</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16552,10 +16552,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2640
+// Build B-0911-2650
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2640
+// Build B-0911-2650
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -17203,23 +17203,90 @@ window.renderStrat11TradesJournal = function() {
     subEl.textContent = exLabel + ' · ' + pLabel;
   }
 
-  // Obtenir la liste des trades
-  let allTrades = [];
-  if (rStats && rStats[exitKey] && Array.isArray(rStats[exitKey].trades)) {
-    allTrades = rStats[exitKey].trades;
-  } else {
-    // Calcul direct de secours
-    const candles = window.__synth8000Candles || (typeof state !== 'undefined' && state ? state.data : []);
-    if (candles && candles.length >= 50 && typeof _backtestVariantSerious === 'function') {
-      const bRes = _backtestVariantSerious(candles, vDef);
-      if (bRes && bRes[exitKey] && Array.isArray(bRes[exitKey].trades)) {
-        allTrades = bRes[exitKey].trades;
+  // 1. Extraire les trades RÉELS dessinés en direct sur le graphique (window.__lastFMCSignals)
+  const chartSignals = window.__lastFMCSignals || [];
+  const entrySigs = chartSignals.filter(function(s) { return s.optKey === varKey && !s.isExit; }).sort(function(a, b) { return a.i - b.i; });
+  const exitSigs  = chartSignals.filter(function(s) { return s.optKey === varKey && s.isExit; }).sort(function(a, b) { return a.i - b.i; });
+
+  let liveChartTrades = [];
+  if (entrySigs.length > 0) {
+    for (let ei = 0; ei < entrySigs.length; ei++) {
+      const ent = entrySigs[ei];
+      // Trouver la sortie correspondante sur le graphique
+      const ex = exitSigs.find(function(s) {
+        return (s.entryI != null && s.entryI === ent.i) || (s.tradeNum != null && s.tradeNum === ent.tradeNum);
+      });
+      if (!ex) {
+        // C'est le trade en cours (non encore fermé) :
+        // Règle stricte demandée : on s'arrête au trade en cours, on ne montre que les trades fermés
+        continue;
       }
+      const isBuy = ent.dir === 1;
+      const pnlVal = (ex.pnl != null) ? ex.pnl : (isBuy ? (ex.price - ent.price) : (ent.price - ex.price));
+      const reasonStr = ex.badge ? ex.badge.replace(/^.*?SORTIE\s*/, '') : (ex.exitType === 'kk_zero' ? 'Ligne 0' : (ex.exitType === 'kk_extreme' ? 'Extrême' : 'Inversion'));
+
+      liveChartTrades.push({
+        num: ent.tradeNum || (ei + 1),
+        entryPastilleNum: ent.tradeNum || (ei + 1),
+        exitPastilleNum: ex.tradeNum || ent.tradeNum || (ei + 1),
+        dir: ent.dir,
+        type: isBuy ? 'ACHAT' : 'VENTE',
+        entryI: ent.i,
+        entryT: ent.t,
+        entryPx: ent.price,
+        exitT: ex.t,
+        exitPx: ex.price,
+        pnl: Math.round(pnlVal * 10) / 10,
+        exitReason: reasonStr
+      });
+    }
+  }
+
+  // 2. Déterminer la liste des trades à afficher selon la période demandée
+  let allTrades = [];
+  if (period !== 'all' && liveChartTrades.length > 0) {
+    // Pour 3 Jours et Jour même : prioriser à 100% les trades réels du graphique avec les vrais numéros de pastille
+    allTrades = liveChartTrades;
+  } else {
+    // Si période "Tout (8000 bougies)", ou si le graphique n'a pas encore calculé de signaux
+    if (rStats && rStats[exitKey] && Array.isArray(rStats[exitKey].trades)) {
+      allTrades = rStats[exitKey].trades.slice();
+    } else {
+      const candles = window.__synth8000Candles || (typeof state !== 'undefined' && state ? state.data : []);
+      if (candles && candles.length >= 50 && typeof _backtestVariantSerious === 'function') {
+        const bRes = _backtestVariantSerious(candles, vDef);
+        if (bRes && bRes[exitKey] && Array.isArray(bRes[exitKey].trades)) {
+          allTrades = bRes[exitKey].trades.slice();
+        }
+      }
+    }
+
+    // Mapper les numéros de pastilles d'entrée et sortie depuis le graphique
+    allTrades.forEach(function(t) {
+      const eMatch = entrySigs.find(function(s) { return s.t === t.entryT || Math.abs(s.t - t.entryT) < 45000; });
+      if (eMatch) {
+        t.entryPastilleNum = eMatch.tradeNum;
+        const xMatch = exitSigs.find(function(s) { return (s.entryI != null && s.entryI === eMatch.i) || (s.tradeNum != null && s.tradeNum === eMatch.tradeNum); });
+        t.exitPastilleNum = xMatch ? xMatch.tradeNum : eMatch.tradeNum;
+      } else {
+        t.entryPastilleNum = t.num;
+        t.exitPastilleNum = t.num;
+      }
+    });
+
+    // Compléter avec les trades fermés récents du graphique s'ils sont postérieurs au backtest
+    if (liveChartTrades.length > 0 && allTrades.length > 0) {
+      const lastBacktestT = allTrades[allTrades.length - 1].entryT || 0;
+      liveChartTrades.forEach(function(lt) {
+        if (lt.entryT > lastBacktestT) {
+          allTrades.push(lt);
+        }
+      });
     }
   }
 
   if (!allTrades || !allTrades.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="padding:25px;text-align:center;color:#94A3B8">Aucun trade calculé pour cette sélection. Lancez un test avec 🔬 Re-tester.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:25px;text-align:center;color:#94A3B8">Aucun trade fermé calculé pour cette sélection.</td></tr>';
     return;
   }
 
@@ -17269,59 +17336,6 @@ window.renderStrat11TradesJournal = function() {
     return j + '/' + m + ' ' + h + ':' + min;
   }
 
-  // Récupérer les signaux réels du graphique pour extraire le numéro exact de pastille (#31, #32, etc.)
-  const chartSignals = window.__lastFMCSignals || [];
-  const entryPastilleMap = {};
-  chartSignals.forEach(function(s) {
-    if (s.optKey === varKey && !s.isExit && s.tradeNum) {
-      entryPastilleMap[s.t] = s.tradeNum;
-    }
-  });
-
-  // Si non trouvé directement (ex: graphique pas encore dessiné), calculer les index sur state.data
-  if (Object.keys(entryPastilleMap).length === 0 && typeof state !== 'undefined' && state && state.data) {
-    const dBars = state.data;
-    const vDefObj = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === varKey; });
-    if (vDefObj && typeof _aggregateLocal === 'function' && typeof _emaLocal === 'function') {
-      try {
-        function _mapHTFLocal(barsHTF, valsHTF, barsBase) {
-          if (typeof mapHTF === 'function') return mapHTF(barsHTF, valsHTF, barsBase);
-          const out = new Array(barsBase.length);
-          let hIdx = 0;
-          for (let bIdx = 0; bIdx < barsBase.length; bIdx++) {
-            const t = barsBase[bIdx].t;
-            while (hIdx + 1 < barsHTF.length && barsHTF[hIdx + 1].t <= t) hIdx++;
-            out[bIdx] = valsHTF[hIdx];
-          }
-          return out;
-        }
-        const bFmcL = _aggregateLocal(dBars, vDefObj.tfFMC);
-        const cFmcL = bFmcL.map(function(b){ return b.c; });
-        const fmcCL = _mapHTFLocal(bFmcL, _emaLocal(cFmcL, 9), dBars);
-        const fmcBL = _mapHTFLocal(bFmcL, _emaLocal(cFmcL, 21), dBars);
-        const bKkL  = _aggregateLocal(dBars, vDefObj.tfKK);
-        const cKkL  = bKkL.map(function(b){ return b.c; });
-        const eFastL = _emaLocal(cKkL, 12);
-        const eSlowL = _emaLocal(cKkL, 26);
-        const netRawL = eFastL.map(function(f, i){ return (f != null && eSlowL[i] != null) ? (f - eSlowL[i]) : 0; });
-        const sigRawL = _emaLocal(netRawL, 9);
-        const netKkL = _mapHTFLocal(bKkL, netRawL, dBars);
-        const sigKkL = _mapHTFLocal(bKkL, sigRawL, dBars);
-        let cCount = 0, cDir = 0;
-        for (let ki = 1; ki < dBars.length; ki++) {
-          const gF = fmcCL[ki] >= fmcBL[ki], gK = netKkL[ki] > sigKkL[ki];
-          const rF = fmcCL[ki] < fmcBL[ki],  rK = netKkL[ki] <= sigKkL[ki];
-          const pgF = fmcCL[ki-1] >= fmcBL[ki-1], pgK = netKkL[ki-1] > sigKkL[ki-1];
-          const prF = fmcCL[ki-1] < fmcBL[ki-1],  prK = netKkL[ki-1] <= sigKkL[ki-1];
-          const tB = gF && gK && !(pgF && pgK);
-          const tS = rF && rK && !(prF && prK);
-          if (tB && cDir !== 1) { cDir = 1; cCount++; entryPastilleMap[dBars[ki].t] = cCount; }
-          else if (tS && cDir !== -1) { cDir = -1; cCount++; entryPastilleMap[dBars[ki].t] = cCount; }
-        }
-      } catch(errMap){}
-    }
-  }
-
   // Afficher en ordre chronologique inversé (du plus récent au plus ancien)
   const displayTrades = filteredTrades.slice().reverse();
 
@@ -17334,37 +17348,31 @@ window.renderStrat11TradesJournal = function() {
       ? '<span style="background:rgba(16,185,129,0.22);color:#10B981;font-weight:900;padding:2px 6px;border-radius:4px;font-size:9.5px;border:1px solid rgba(16,185,129,0.4)">🟢 ACHAT</span>'
       : '<span style="background:rgba(244,63,94,0.22);color:#F43F5E;font-weight:900;padding:2px 6px;border-radius:4px;font-size:9.5px;border:1px solid rgba(244,63,94,0.4)">🔴 VENTE</span>';
 
-    // Trouver le numéro de pastille sur le graphique
-    let pNum = entryPastilleMap[t.entryT];
-    if (pNum == null) {
-      const closeT = Object.keys(entryPastilleMap).find(function(kt) { return Math.abs(Number(kt) - t.entryT) < 45000; });
-      if (closeT) pNum = entryPastilleMap[closeT];
-    }
+    const entNum = t.entryPastilleNum || t.num;
+    const exNum  = t.exitPastilleNum || entNum;
 
-    const pastilleBadgeHTML = pNum != null
-      ? '<div style="margin-top:2px;display:inline-flex;align-items:center;gap:2px;background:rgba(255,180,0,0.22);color:#FFB400;border:1px solid rgba(255,180,0,0.5);border-radius:4px;padding:1px 5px;font-size:9.5px;font-weight:900;white-space:nowrap" title="Pastille #' + pNum + ' visible sur le graphique">🏷️ Pastille #' + pNum + '</div>'
-      : '<div style="margin-top:2px;font-size:9px;color:#64748B">Trade #' + t.num + '</div>';
-
-    const exitReasonShort = t.exitReason ? ('<div style="font-size:8px;color:#94A3B8;max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + t.exitReason + '">' + t.exitReason + '</div>') : '';
-
-    trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.07);transition:background 0.1s" onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseout="this.style.background=\'transparent\'">'
+    trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.08);transition:background 0.1s" onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'" onmouseout="this.style.background=\'transparent\'">'
       + '<td style="padding:6px 4px">'
-      + '<div style="font-weight:900;color:#F8FAFC;font-size:11px">#' + t.num + '</div>'
-      + pastilleBadgeHTML
+      + '<div style="font-weight:900;color:#F8FAFC;font-size:11px;margin-bottom:3px">Trade #' + t.num + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:2px">'
+      + '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(0,229,255,0.18);color:#00E5FF;border:1px solid rgba(0,229,255,0.45);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:900;white-space:nowrap" title="Pastille d\'entrée #' + entNum + ' sur le graphique">🟢 Entrée #' + entNum + '</span>'
+      + '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,180,0,0.22);color:#FFB400;border:1px solid rgba(255,180,0,0.5);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:900;white-space:nowrap" title="Pastille de sortie #' + exNum + ' sur le graphique">🏁 Sortie #' + exNum + '</span>'
+      + '</div>'
       + '</td>'
       + '<td style="padding:6px 4px">' + badgeType + '</td>'
       + '<td style="padding:6px 4px">'
-      + '<div style="font-weight:800;color:#F8FAFC;font-size:10.5px">$' + (t.entryPx ? t.entryPx.toFixed(1) : '—') + '</div>'
-      + '<div style="font-size:9px;color:#94A3B8">' + fmtTime(t.entryT) + '</div>'
+      + '<div style="font-weight:900;color:#F8FAFC;font-size:10.5px">$' + (t.entryPx ? t.entryPx.toFixed(1) : '—') + '</div>'
+      + '<div style="font-size:9px;color:#CBD5E1">' + fmtTime(t.entryT) + '</div>'
+      + '<div style="font-size:8.5px;font-weight:800;color:#00E5FF">Pastille #' + entNum + '</div>'
       + '</td>'
       + '<td style="padding:6px 4px">'
-      + '<div style="font-weight:800;color:#F8FAFC;font-size:10.5px">$' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
-      + '<div style="font-size:9px;color:#94A3B8">' + fmtTime(t.exitT) + '</div>'
-      + exitReasonShort
+      + '<div style="font-weight:900;color:#F8FAFC;font-size:10.5px">$' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
+      + '<div style="font-size:9px;color:#CBD5E1">' + fmtTime(t.exitT) + '</div>'
+      + '<div style="font-size:8.5px;font-weight:800;color:#FFB400">Pastille #' + exNum + (t.exitReason ? (' · ' + t.exitReason) : '') + '</div>'
       + '</td>'
-      + '<td style="padding:6px 4px;text-align:right;font-family:monospace;font-weight:900;color:' + pnlCol + ';font-size:11px">' + pnlStr + '</td>'
+      + '<td style="padding:6px 4px;text-align:right;font-family:monospace;font-weight:900;color:' + pnlCol + ';font-size:11.5px">' + pnlStr + '</td>'
       + '<td style="padding:6px 4px;text-align:center">'
-      + '<button onclick="event.stopPropagation();if(typeof window.focusChartOnCandle===\'function\')window.focusChartOnCandle(' + t.entryI + ')" style="background:rgba(56,189,248,0.18);border:1px solid #38BDF8;color:#38BDF8;border-radius:4px;padding:3px 6px;font-size:10px;font-weight:800;cursor:pointer;transition:all 0.15s" title="Centrer le graphique sur la Pastille #' + (pNum || t.num) + '">🔍</button>'
+      + '<button onclick="event.stopPropagation();if(typeof window.focusChartOnCandle===\'function\')window.focusChartOnCandle(' + t.entryI + ')" style="background:rgba(56,189,248,0.2);border:1px solid #38BDF8;color:#38BDF8;border-radius:5px;padding:4px 7px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s" title="Centrer le graphique sur l\'Entrée #' + entNum + '">🔍</button>'
       + '</td>'
       + '</tr>';
   });
@@ -41375,7 +41383,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2640';
+  window.__LUMEN_BUILD = 'B-0911-2650';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
