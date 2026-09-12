@@ -25,6 +25,19 @@
     if (isLumenOrigin) {
         console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen');
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
+        window.__LUMEN_SEND_SIGNAL = function(sig) {
+            try {
+                if (typeof GM_setValue === 'function') {
+                    GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...sig, _ts: Date.now() }));
+                    console.log('[Lumen Userscript Bridge] GM_setValue direct transmis :', sig);
+                }
+            } catch(e){}
+        };
+        window.addEventListener('LumenEmitSignal', (e) => {
+            if (e.detail && typeof GM_setValue === 'function') {
+                GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...e.detail, _ts: Date.now() }));
+            }
+        });
         try {
             window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.4' } }));
         } catch(e){}

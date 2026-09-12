@@ -17903,6 +17903,13 @@ window.emettreSignalMexcWeb = function(sig) {
   try {
     const payload = { ...sig, timestamp: sig.timestamp || Date.now() };
 
+    // 0. Appel direct au pont Userscripts (100% instantané et garanti)
+    try {
+      if (typeof window.__LUMEN_SEND_SIGNAL === 'function') {
+        window.__LUMEN_SEND_SIGNAL(payload);
+      }
+    } catch(e){}
+
     // 1. BroadcastChannel inter-onglets
     try {
       if (typeof BroadcastChannel !== 'undefined') {
