@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2670</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2680</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16552,10 +16552,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2670
+// Build B-0911-2680
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2670
+// Build B-0911-2680
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -17145,6 +17145,150 @@ window.__stJournalVarKey = 'strat_11_11_ultra';
 window.__stJournalExitMode = 's1';
 window.__stJournalPeriod = '3d'; // '3d' par défaut (du dernier en cours aux 3 jours)
 
+window.activerStrat11SurCompteDemo = function() {
+  const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
+  const exitKey = window.__stJournalExitMode || 's1';
+  const vDef = (typeof STRAT11_VARIANTS_DEF !== 'undefined' ? STRAT11_VARIANTS_DEF.find(v => v.key === varKey) : null) || { name: 'Ultra Scalp', tfFMC: 1, tfKK: 6 };
+  const exLabel = (exitKey === 's1') ? 'Ligne 0' : ((exitKey === 's2') ? 'Extrême' : 'Inversion');
+  const label = vDef.name + ' [' + vDef.tfFMC + 'm×' + vDef.tfKK + 'm] · Sortie ' + exLabel;
+
+  // 1. Activer la stratégie sur le compte Démo
+  window.activeDemoStrategy = {
+    type: 'strat_11_11',
+    mode: 'strat_11_11',
+    varKey: varKey,
+    exitKey: exitKey,
+    modeLabel: label,
+    capital: (typeof paper !== 'undefined' && paper.cash > 0) ? paper.cash : 100,
+    marge: 0.02,
+    unite: 'BASE',
+    lev: 200,
+    feePct: 0.02,
+    active: true,
+    activatedAt: Date.now(),
+    timestamp: Date.now()
+  };
+  try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
+
+  // 2. Activer l'Auto-Trade
+  paperAutoTrade = true;
+  window.paperAutoTrade = true;
+  try { localStorage.setItem('lumen_paper_autotrade', '1'); } catch(e){}
+
+  // 3. Mettre à jour l'interface du compte démo
+  if (typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
+  if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
+  if (typeof updatePaper === 'function') updatePaper();
+  if (typeof saveConfig === 'function') saveConfig();
+
+  // 4. Mettre à jour le bouton et la bannière dans le journal
+  if (typeof window.updateStrat11JournalExecUI === 'function') window.updateStrat11JournalExecUI();
+
+  if (typeof toast === 'function') {
+    toast('🚀 STRATÉGIE ' + label + ' ACTIVÉE SUR VOTRE COMPTE DÉMO !\n• Suit à la lettre chaque pastille Entrée & Sortie\n• Auto-Trade : ACTIVÉ 🤖', '#10B981');
+  }
+
+  // 5. Exécuter un premier checkAutoTrade immédiat
+  if (typeof checkAutoTrade === 'function') {
+    setTimeout(checkAutoTrade, 100);
+  }
+};
+
+window.activerStrat11SurMexcWeb = function() {
+  const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
+  const exitKey = window.__stJournalExitMode || 's1';
+  const vDef = (typeof STRAT11_VARIANTS_DEF !== 'undefined' ? STRAT11_VARIANTS_DEF.find(v => v.key === varKey) : null) || { name: 'Ultra Scalp', tfFMC: 1, tfKK: 6 };
+  const exLabel = (exitKey === 's1') ? 'Ligne 0' : ((exitKey === 's2') ? 'Extrême' : 'Inversion');
+  const label = vDef.name + ' [' + vDef.tfFMC + 'm×' + vDef.tfKK + 'm] · Sortie ' + exLabel;
+
+  // 1. Activer aussi sur le compte Démo (moteur de pastilles partagé)
+  window.activerStrat11SurCompteDemo();
+
+  // 2. Activer le Web Auto-Trader MEXC
+  localStorage.setItem('lumen_web_autotrader_active', '1');
+  localStorage.setItem('lumen_web_autotrader_ready', '1');
+  if (typeof window.updateWebAutoTraderUI === 'function') window.updateWebAutoTraderUI();
+  if (typeof window.updateStrat11JournalExecUI === 'function') window.updateStrat11JournalExecUI();
+
+  const rawSym = (state.symbol || 'BTCUSDT').toUpperCase();
+  const base = rawSym.replace('USDT', '') || 'BTC';
+  const mexcPair = base + '_USDT';
+
+  if (typeof toast === 'function') {
+    toast('⚡ ROBOT MEXC WEB TRADER ACTIVÉ !\n• Stratégie : ' + label + '\n• Transmission automatique sur ' + mexcPair + ' (Frais 0.02%)\n• Prêt à exécuter !', '#FFD700');
+  }
+
+  // Ouvrir l'onglet MEXC Futures avec le script
+  if (typeof window.ouvrirMexcEtScript === 'function') {
+    window.ouvrirMexcEtScript();
+  }
+};
+
+window.desactiverStrat11Execution = function() {
+  if (window.activeDemoStrategy) {
+    window.activeDemoStrategy.active = false;
+    try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
+  }
+  paperAutoTrade = false;
+  window.paperAutoTrade = false;
+  try { localStorage.setItem('lumen_paper_autotrade', '0'); } catch(e){}
+  localStorage.setItem('lumen_web_autotrader_active', '0');
+
+  if (typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
+  if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
+  if (typeof window.updateWebAutoTraderUI === 'function') window.updateWebAutoTraderUI();
+  if (typeof window.updateStrat11JournalExecUI === 'function') window.updateStrat11JournalExecUI();
+
+  if (typeof toast === 'function') {
+    toast('🛑 Exécution automatique arrêtée.', '#94A3B8');
+  }
+};
+
+window.updateStrat11JournalExecUI = function() {
+  const banner = document.getElementById('st-execution-status-banner');
+  const bannerTxt = document.getElementById('st-execution-status-txt');
+  const btnDemo = document.getElementById('btn-st-apply-demo');
+  const btnMexc = document.getElementById('btn-st-apply-mexc');
+  if (!banner || !btnDemo || !btnMexc) return;
+
+  const isDemoOn = !!(window.activeDemoStrategy && window.activeDemoStrategy.active && paperAutoTrade);
+  const isMexcOn = (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive());
+
+  if (isMexcOn && isDemoOn) {
+    banner.style.display = 'flex';
+    banner.style.background = 'rgba(255,215,0,0.14)';
+    banner.style.borderColor = '#FFD700';
+    banner.style.color = '#FFD700';
+    if (bannerTxt) bannerTxt.textContent = '⚡ ROBOT MEXC + DÉMO ACTIFS (Suit les pastilles)';
+    btnDemo.style.background = '#064E3B';
+    btnDemo.style.color = '#34D399';
+    btnDemo.innerHTML = '✅ Démo Connecté';
+    btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
+    btnMexc.style.boxShadow = '0 0 16px rgba(255,215,0,0.6)';
+    btnMexc.innerHTML = '⚡ MEXC ACTIF (0.02%)';
+  } else if (isDemoOn) {
+    banner.style.display = 'flex';
+    banner.style.background = 'rgba(16,185,129,0.14)';
+    banner.style.borderColor = '#10B981';
+    banner.style.color = '#34D399';
+    if (bannerTxt) bannerTxt.textContent = '🤖 DÉMO ACTIF : suit les pastilles d\'entrée et de sortie';
+    btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
+    btnDemo.style.boxShadow = '0 0 16px rgba(0,230,118,0.5)';
+    btnDemo.innerHTML = '✅ Démo Connecté';
+    btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
+    btnMexc.style.boxShadow = 'none';
+    btnMexc.innerHTML = '⚡ Robot MEXC (0.02%)';
+  } else {
+    banner.style.display = 'none';
+    btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
+    btnDemo.style.boxShadow = '0 3px 12px rgba(0,230,118,0.35)';
+    btnDemo.innerHTML = '🤖 Activer en Démo';
+    btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
+    btnMexc.style.boxShadow = '0 3px 12px rgba(255,215,0,0.35)';
+    btnMexc.innerHTML = '⚡ Robot MEXC (0.02%)';
+  }
+};
+
 window.openStrat11TradesJournal = function(varKey, exitKey) {
   if (varKey) window.__stJournalVarKey = varKey;
   if (exitKey) window.__stJournalExitMode = exitKey;
@@ -17369,6 +17513,10 @@ window.renderStrat11TradesJournal = function() {
     const h = String(dt.getHours()).padStart(2, '0');
     const min = String(dt.getMinutes()).padStart(2, '0');
     return j + '/' + m + ' ' + h + ':' + min;
+  }
+
+  if (typeof window.updateStrat11JournalExecUI === 'function') {
+    window.updateStrat11JournalExecUI();
   }
 
   // Afficher en ordre chronologique inversé (du plus récent au plus ancien)
@@ -19444,6 +19592,27 @@ function closePos(i, customReason){
   paper.history=paper.history.slice(0,50);
   paper.positions.splice(i,1);
   saveConfig(); updatePaper();
+
+  // Relais Web Auto-Trader vers MEXC (Flash Close 0.02%)
+  if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
+    try {
+      const mexcPair = ((p.sym || state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
+      const webSignal = {
+        type: 'LUMEN_TRADE_SIGNAL',
+        action: 'CLOSE',
+        symbol: mexcPair,
+        side: p.side === 'long' ? 'CLOSE_LONG' : 'CLOSE_SHORT',
+        reason: exitReasonStr,
+        timestamp: Date.now()
+      };
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('lumen_mexc_channel');
+        bc.postMessage(webSignal);
+      }
+      localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
+      toast('⚡ Web Auto-Trader : Clôture ' + mexcPair + ' transmise à MEXC (0.02%)', '#EC4899');
+    } catch(err){}
+  }
   toast(`Position fermée : PnL ${netPnl>=0?'+':''}${fmtUsd(netPnl)} (${exitReasonStr})`, netPnl>=0?'#10B981':'#F45B7D');
   sendTelegramDemoExitNotification({ sym: p.sym, side: p.side, entryPx: p.entry, exitPx: px, pnl: netPnl, qty: p.qty, reason: exitReasonStr, capitalAfter: paper.cash, t0: p.t, t: Date.now() });
 }
@@ -20145,7 +20314,66 @@ function checkAutoTrade(inputSignals){
   const stratMode = strat?.mode || (state.indicators?.strat_zz?.on ? 'strat_zz' : (state.indicators?.strat_mm?.on ? 'strat_mm' : 'all'));
 
   try {
-    if (stratMode === 'strat_zz' || stratMode === 'strat_zz2') {
+    if (strat?.type === 'strat_11_11' || stratMode === 'strat_11_11') {
+      // --- STRATÉGIE PASTILLES 11 11 (SUIVI RIGOUREUX DES PASTILLES GRAPHIQUE) ---
+      const varKey = strat?.varKey || window.__stJournalVarKey || 'strat_11_11_ultra';
+      const exitKey = strat?.exitKey || window.__stJournalExitMode || 's1';
+      const allChartSigs = window.__lastFMCSignals || [];
+      const varSigs = allChartSigs.filter(function(s) { return s.optKey === varKey; });
+
+      candidateSignals = varSigs.filter(function(s) { return !s.isExit; });
+      const exitSigs = varSigs.filter(function(s) { return s.isExit; });
+
+      // 1. Si une position est ouverte sur le compte Démo : chercher la pastille de sortie correspondante
+      if (existingPos) {
+        // Sortie selon le mode configuré (s1 = Ligne 0, s2 = Extrême, s3 = Inversion)
+        const matchedExits = exitSigs.filter(function(s) {
+          if (s.t <= posEntryTime) return false;
+          if (exitKey === 's1') return (s.exitType === 'kk_zero' || s.exitType === 'reversal');
+          if (exitKey === 's2') return (s.exitType === 'kk_extreme' || s.exitType === 'reversal');
+          if (exitKey === 's3') return (s.exitType === 'reversal');
+          return true;
+        });
+
+        if (matchedExits.length > 0) {
+          const lastEx = matchedExits[matchedExits.length - 1];
+          const exIdx = (lastEx.t != null && typeof idxOfTime === 'function' ? idxOfTime(lastEx.t) : null) ?? lastEx.i;
+          if (exIdx != null && exIdx >= lastIdx - 2) {
+            exitTriggered = true;
+            exitReason = lastEx.badge ? lastEx.badge.replace(/^.*?SORTIE\s*/, '') : (exitKey === 's1' ? 'Pastille Sortie Ligne 0' : (exitKey === 's2' ? 'Pastille Sortie Extrême' : 'Pastille Sortie Inversion'));
+            sigT = lastEx.t;
+          }
+        }
+
+        // Sortie et retournement impératif si signal opposé (Inversion)
+        const oppEntries = candidateSignals.filter(function(s) {
+          return s.t > posEntryTime && ((existingPos.side === 'long' && s.dir === -1) || (existingPos.side === 'short' && s.dir === 1));
+        });
+        if (oppEntries.length > 0) {
+          const lastOpp = oppEntries[oppEntries.length - 1];
+          const oppIdx = (lastOpp.t != null && typeof idxOfTime === 'function' ? idxOfTime(lastOpp.t) : null) ?? lastOpp.i;
+          if (oppIdx != null && oppIdx >= lastIdx - 2) {
+            exitTriggered = true;
+            exitReason = lastOpp.dir === -1 ? 'Pastille Vente Opposée (Inversion)' : 'Pastille Achat Opposée (Inversion)';
+            sigT = lastOpp.t;
+            if (lastOpp.dir === 1) buySignal = true;
+            else if (lastOpp.dir === -1) sellSignal = true;
+          }
+        }
+      }
+
+      // 2. Si aucune position n'est ouverte : chercher la dernière pastille d'entrée récente
+      if (!existingPos && candidateSignals.length > 0) {
+        const lastSig = candidateSignals[candidateSignals.length - 1];
+        const sigIdx = (lastSig.t != null && typeof idxOfTime === 'function' ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
+        if (sigIdx != null && sigIdx >= lastIdx - 2) {
+          sigT = lastSig.t;
+          if (lastSig.dir === 1) buySignal = true;
+          else if (lastSig.dir === -1) sellSignal = true;
+          sigTriggerName = lastSig.badge || (lastSig.dir === 1 ? 'Pastille Achat 11 11' : 'Pastille Vente 11 11');
+        }
+      }
+    } else if (stratMode === 'strat_zz' || stratMode === 'strat_zz2') {
       // --- STRATÉGIE PASTILLES ZIGZAG (Z.Z. / Z.Z. 2) ---
       const indCfg = stratMode === 'strat_zz2' ? ((state.indicators && state.indicators.strat_zz2) || {}) : ((state.indicators && state.indicators.strat_zz) || {});
       const fnCompute = stratMode === 'strat_zz2' && typeof computeZZ2Signals === 'function' ? computeZZ2Signals : (typeof computeZZSignals === 'function' ? computeZZSignals : null);
@@ -35116,6 +35344,11 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       window.renderStrat11TradesJournal();
     }
   } catch(e){}
+  try {
+    if (paperAutoTrade && typeof checkAutoTrade === 'function') {
+      checkAutoTrade();
+    }
+  } catch(e){}
   if (!rawSignals.length) return;
 
   // Trier pour traiter d'abord les sorties (au plus près de la mèche) puis les entrées
@@ -44389,6 +44622,25 @@ window.balayerMM_MTF = async function(){
         <button id="btn-st-ex-s3" onclick="window.setStrat11JournalExit('s3')" style="font-size:10px;padding:4px 8px;border-radius:6px;font-weight:700;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.08);color:#F1F5F9;cursor:pointer">🔄 S3: Inversion</button>
       </div>
     </div>
+    <!-- Actions d'Exécution Automatique Directe : Compte Démo & Robot MEXC -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
+      <!-- Bouton 1 : Compte Démo -->
+      <button id="btn-st-apply-demo" type="button" onclick="window.activerStrat11SurCompteDemo()" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#06101E;border:none;border-radius:7px;padding:7px 8px;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(0,230,118,0.35);transition:all 0.15s" title="Activer cette stratégie exacte sur le compte Démo : elle suivra à la lettre chaque pastille d'entrée et de sortie du graphique">
+        🤖 Activer en Démo
+      </button>
+
+      <!-- Bouton 2 : Robot MEXC Web Trader -->
+      <button id="btn-st-apply-mexc" type="button" onclick="window.activerStrat11SurMexcWeb()" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#06101E;border:none;border-radius:7px;padding:7px 8px;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(255,215,0,0.35);transition:all 0.15s" title="Activer le Robot MEXC Web Trader (Frais réduits 0.02% sans passer par l'API payante)">
+        ⚡ Robot MEXC (0.02%)
+      </button>
+    </div>
+
+    <!-- Bannière État Exécution Temps Réel -->
+    <div id="st-execution-status-banner" style="display:none;background:rgba(16,185,129,0.12);border:1px solid #10B981;border-radius:6px;padding:5px 8px;font-size:10px;color:#A7F3D0;align-items:center;justify-content:space-between">
+      <span id="st-execution-status-txt">🟢 Démo ACTIF : suit les pastilles</span>
+      <button type="button" onclick="window.desactiverStrat11Execution()" style="background:transparent;border:1px solid rgba(255,255,255,0.25);color:#F1F5F9;border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;font-weight:700">Désactiver</button>
+    </div>
+
     <!-- Mini Stats Strip (Texte clair, lisible sur fond sombre) -->
     <div id="st-panel-stats" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);border-radius:7px;padding:6px 10px;font-size:10.5px;color:#CBD5E1">
       <span>Gain : <b id="st-stat-pnl" style="color:#10B981;font-weight:900;font-size:11.5px">+0 pts</b></span>
