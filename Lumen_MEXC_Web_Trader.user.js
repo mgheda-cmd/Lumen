@@ -60,7 +60,7 @@
         const hud = document.createElement('div');
         hud.id = 'lumen-web-hud';
         hud.style.cssText = 'position:fixed;top:65px;right:20px;z-index:99999999;background:rgba(15,23,42,0.96);border:2.5px solid #10B981;border-radius:10px;padding:10px 16px;color:#FFFFFF;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:bold;box-shadow:0 0 25px rgba(16,185,129,0.7);display:flex;align-items:center;gap:10px;pointer-events:none;';
-        hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.0</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+        hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.1</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
         document.body.appendChild(hud);
     }
 
