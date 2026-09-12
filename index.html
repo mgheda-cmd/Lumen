@@ -525,7 +525,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1800</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1815</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6168,6 +6168,12 @@ function loadConfig(){
 
   /* Stratégie FMC autonome & Confluence KK : initialisation propre */
   try{
+    if(!state.indicators.strat_11_11_elite){
+      state.indicators.strat_11_11_elite = {on:true,showBuy:true,showSell:true,showExitZero:false,showExitExtreme:true,showExitReversal:false,showVerticalLines:true,tfFMC:5,tfKK:10,tfExitKK:3,cBuy:'#10B981',cSell:'#F43F5E'};
+    }
+    if(!state.indicators.strat_11_11_ultra){
+      state.indicators.strat_11_11_ultra = {on:false,showBuy:false,showSell:false,showExitZero:true,showExitExtreme:false,showExitReversal:false,showVerticalLines:true,tfFMC:1,tfKK:6,tfExitKK:6,cBuy:'#00E5FF',cSell:'#FF0055'};
+    }
     if(!state.indicators.strat_11_11_scalp){
       state.indicators.strat_11_11_scalp = {on:true,showBuy:true,showSell:true,showVerticalLines:true,tfFMC:2,tfKK:3,cBuy:'#00E676',cSell:'#FF0055'};
     }
@@ -9328,6 +9334,8 @@ function render(){
   }
   const hasFmc = vis('strat_fmc');
   const has1111 = !!(state.indicators && (
+    (state.indicators.strat_11_11_elite && state.indicators.strat_11_11_elite.on) ||
+    (state.indicators.strat_11_11_ultra && state.indicators.strat_11_11_ultra.on) ||
     (state.indicators.strat_11_11 && state.indicators.strat_11_11.on) ||
     (state.indicators.strat_11_11_scalp && state.indicators.strat_11_11_scalp.on) ||
     (state.indicators.strat_11_11_pro && state.indicators.strat_11_11_pro.on)
@@ -35314,10 +35322,12 @@ function computeFMCSignals(cleFmc, cleStrat) {
   const d = state.data;
   if (!d || !d.length) return { signals: [] };
   const indFmc = (state.indicators && state.indicators[cleStrat]) ? state.indicators[cleStrat] : { on: false };
+  const ind1111Elite = (state.indicators && state.indicators.strat_11_11_elite) ? state.indicators.strat_11_11_elite : { on: false };
+  const ind1111Ultra = (state.indicators && state.indicators.strat_11_11_ultra) ? state.indicators.strat_11_11_ultra : { on: false };
   const ind1111Orig = (state.indicators && state.indicators.strat_11_11) ? state.indicators.strat_11_11 : { on: false };
   const ind1111Scalp = (state.indicators && state.indicators.strat_11_11_scalp) ? state.indicators.strat_11_11_scalp : { on: false };
   const ind1111Pro = (state.indicators && state.indicators.strat_11_11_pro) ? state.indicators.strat_11_11_pro : { on: false };
-  if (!indFmc.on && !ind1111Orig.on && !ind1111Scalp.on && !ind1111Pro.on) return { signals: [] };
+  if (!indFmc.on && !ind1111Elite.on && !ind1111Ultra.on && !ind1111Orig.on && !ind1111Scalp.on && !ind1111Pro.on) return { signals: [] };
 
   const nomFmc = 'FMC';
   const signals = [];
@@ -36840,6 +36850,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
           if (!cfg11 || !cfg11.on) continue;
           if (sig.exitType === 'kk_zero' && cfg11.showExitZero === false) continue;
           if (sig.exitType === 'kk_extreme' && cfg11.showExitExtreme === false) continue;
+          if (sig.exitType === 'reversal' && cfg11.showExitReversal === false) continue;
         } else {
           if (!indFmc.on) continue;
         if (sig.isPureNoAlma && indFmc.showPureNoAlma === false) continue;
@@ -43116,7 +43127,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-1800';
+  window.__LUMEN_BUILD = 'B-0912-1815';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
