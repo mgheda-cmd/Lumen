@@ -16647,9 +16647,34 @@ async function get8000Candles(forceFresh) {
   return base.slice();
 }
 
+window.charger8000BougiesSurGraphique = async function() {
+  const info = document.getElementById('bta-charge') || document.getElementById('btm-charge');
+  if (info) info.textContent = '⏳ Chargement des 8000 bougies réelles Binance sur le graphique...';
+  if (typeof toast === 'function') toast('⏳ Chargement des 8000 bougies réelles Binance sur le graphique...', '#FFB400');
+  try {
+    const bars8000 = await get8000Candles(true);
+    if (bars8000 && bars8000.length >= 1000) {
+      window.__btFreeze = true;
+      state.data = bars8000.slice();
+      state.view = { start: Math.max(0, state.data.length - 150), count: 150 };
+      state.cache = {};
+      if (typeof updateIndicatorsAndRender === 'function') updateIndicatorsAndRender();
+      else if (typeof render === 'function') render();
+      if (typeof window.renderStrat11TradesJournal === 'function') window.renderStrat11TradesJournal();
+      if (info) info.textContent = '✅ 8000 bougies réelles chargées sur le graphique !';
+      if (typeof toast === 'function') toast('✅ 8000 bougies réelles Binance chargées ! Graphique et tableau 100% synchronisés.', '#10B981');
+    }
+  } catch(e) {
+    console.error('Erreur chargement 8000 bougies:', e);
+  }
+};
+
 function setStrat11Period(p) {
   window.__strat11Period = p;
   try { localStorage.setItem('strat11_active_period', p); } catch(e) {}
+  if (p === 'all') {
+    window.charger8000BougiesSurGraphique();
+  }
   ['day', '3d', 'all'].forEach(function(pid) {
     const btn = document.getElementById('btn-period-' + pid);
     if (!btn) return;
@@ -17377,6 +17402,9 @@ window.toggleStrat11PanelWidth = function() {
 
 window.setStrat11JournalPeriod = function(p, doRender) {
   window.__stJournalPeriod = p;
+  if (p === 'all' && typeof window.charger8000BougiesSurGraphique === 'function') {
+    window.charger8000BougiesSurGraphique();
+  }
   ['3d', 'day', 'all'].forEach(function(pid) {
     const btn = document.getElementById('btn-st-p-' + pid);
     if (!btn) return;
