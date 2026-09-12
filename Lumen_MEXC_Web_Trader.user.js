@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.4
+// @version      2.1.5
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 12 pts (Entrée Limit 30s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
@@ -39,7 +39,7 @@
             }
         });
         try {
-            window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.4' } }));
+            window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.5' } }));
         } catch(e){}
         let lChannel = null;
         try { lChannel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -79,7 +79,7 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.4 actif sur MEXC (0.00% Maker · Sécurité 12 pts · Fast-Catchup)');
+    console.log('>>> [Lumen Web Trader] Script v2.1.5 actif sur MEXC (0.00% Maker · Sécurité 12 pts · Fast-Catchup)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
@@ -92,7 +92,7 @@
             hud = document.createElement('div');
             hud.id = 'lumen-trader-hud';
             hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.95);border:2px solid #10B981;border-radius:8px;padding:6px 14px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4);backdrop-filter:blur(8px);pointer-events:none;transition:all 0.3s ease;';
-            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.4</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.5</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             document.body.appendChild(hud);
         }
         return hud;
@@ -111,7 +111,7 @@
             hud._resetTimer = setTimeout(() => {
                 hud.style.borderColor = '#10B981';
                 hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.4</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.5</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             }, holdMs);
         }
     }
@@ -131,7 +131,7 @@
             hud._resetTimer = setTimeout(() => {
                 hud.style.borderColor = '#10B981';
                 hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.4</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.5</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             }, duration);
         }
         try {
@@ -514,61 +514,113 @@
         }
     }
 
+    let lastProcessedSigId = '';
+    let lastProcessedSigTs = 0;
+
+    function handleIncomingSignal(sig) {
+        if (!sig) return;
+        const sigTs = sig.timestamp || sig._ts || 0;
+        const sigId = sig.id || `${sig.action || sig.side}_${sigTs}`;
+        const isPing = (sig.action === 'PING_TEST');
+        const maxAge = isPing ? 300000 : 120000;
+        if (sigTs > lastProcessedSigTs && Math.abs(Date.now() - sigTs) < maxAge && sigId !== lastProcessedSigId) {
+            lastProcessedSigId = sigId;
+            lastProcessedSigTs = sigTs;
+            console.log('[Lumen Web Trader] Signal validé et transmis à l\'exécution:', sig);
+            executeMarketOrder(sig);
+        }
+    }
+
+    // 1. Canal BroadcastChannel (même domaine)
     if (channel) {
         channel.onmessage = (event) => {
-            if (event.data && event.data.type === 'LUMEN_TRADE_SIGNAL') {
-                executeMarketOrder(event.data);
+            if (event.data && (event.data.type === 'LUMEN_TRADE_SIGNAL' || event.data.action)) {
+                handleIncomingSignal(event.data);
             }
         };
     }
 
+    // 2. Liaison Cloud Temps Réel SSE (Garantie 100% Inter-Onglets iPad Safari)
+    function initCloudSignalStream() {
+        try {
+            if (typeof EventSource !== 'undefined') {
+                const sse = new EventSource('https://ntfy.sh/lumen_mexc_direct_bridge/sse');
+                sse.onmessage = (e) => {
+                    try {
+                        const raw = JSON.parse(e.data);
+                        if (raw && raw.event === 'message' && raw.message) {
+                            const sig = JSON.parse(raw.message);
+                            handleIncomingSignal(sig);
+                        }
+                    } catch(err){}
+                };
+                sse.onerror = () => {
+                    try { sse.close(); } catch(e){}
+                    setTimeout(initCloudSignalStream, 3500);
+                };
+            }
+        } catch(e){}
+    }
+    initCloudSignalStream();
+
+    // 3. Vérification immédiate dès que l'utilisateur bascule sur l'onglet MEXC (Focus)
+    async function checkCloudPoll() {
+        try {
+            const res = await fetch('https://ntfy.sh/lumen_mexc_direct_bridge/json?poll=1');
+            if (res.ok) {
+                const text = await res.text();
+                const lines = text.trim().split('\n');
+                for (const l of lines) {
+                    if (!l) continue;
+                    try {
+                        const raw = JSON.parse(l);
+                        if (raw && raw.message) {
+                            const sig = JSON.parse(raw.message);
+                            handleIncomingSignal(sig);
+                        }
+                    } catch(err){}
+                }
+            }
+        } catch(e){}
+    }
+
+    window.addEventListener('focus', checkCloudPoll);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkCloudPoll();
+    });
+    // Poll léger de secours toutes les 4s
+    setInterval(checkCloudPoll, 4000);
+
+    // 4. GM_addValueChangeListener si supporté par l'extension
     if (typeof GM_addValueChangeListener === 'function') {
         GM_addValueChangeListener('lumen_mexc_cross_signal', (name, oldVal, newVal, remote) => {
             if (!newVal) return;
             try {
-                const signal = typeof newVal === 'string' ? JSON.parse(newVal) : newVal;
-                const sigTs = signal.timestamp || signal._ts || 0;
-                const isPing = (signal.action === 'PING_TEST');
-                const maxAge = isPing ? 300000 : 120000;
-                if (signal && Math.abs(Date.now() - sigTs) < maxAge) {
-                    console.log('[Lumen Web Trader] Signal inter-domaine reçu via GM listener:', signal);
-                    executeMarketOrder(signal);
-                }
-            } catch(e) {
-                console.error('[Lumen Web Trader] Erreur signal GM:', e);
-            }
+                const sig = typeof newVal === 'string' ? JSON.parse(newVal) : newVal;
+                handleIncomingSignal(sig);
+            } catch(e){}
         });
     }
 
-    // Polling GM_getValue très réactif (compatibilité garantie sur iPad Safari Userscripts)
+    // 5. Polling GM_getValue local
     if (typeof GM_getValue === 'function') {
-        let lastHandledCrossTs = 0;
         setInterval(() => {
             try {
                 const raw = GM_getValue('lumen_mexc_cross_signal', null);
                 if (raw) {
-                    const signal = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                    const sigTs = signal.timestamp || signal._ts || 0;
-                    const isPing = (signal.action === 'PING_TEST');
-                    const maxAge = isPing ? 300000 : 120000;
-                    if (sigTs > lastHandledCrossTs && Math.abs(Date.now() - sigTs) < maxAge) {
-                        lastHandledCrossTs = sigTs;
-                        console.log('[Lumen Web Trader] Signal reçu via GM_getValue poll:', signal);
-                        executeMarketOrder(signal);
-                    }
+                    const sig = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    handleIncomingSignal(sig);
                 }
             } catch(e){}
-        }, 300);
+        }, 500);
     }
 
-    // Écoute des signaux inter-domaines locaux (storage)
+    // 6. LocalStorage local (storage event)
     window.addEventListener('storage', (e) => {
         if (e.key === 'lumen_mexc_web_signal' && e.newValue) {
             try {
-                const signal = JSON.parse(e.newValue);
-                if (signal && Date.now() - signal.timestamp < 4000) {
-                    executeMarketOrder(signal);
-                }
+                const sig = JSON.parse(e.newValue);
+                handleIncomingSignal(sig);
             } catch (err) {}
         }
     });

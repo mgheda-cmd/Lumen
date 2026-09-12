@@ -17910,7 +17910,16 @@ window.emettreSignalMexcWeb = function(sig) {
   try {
     const payload = { ...sig, timestamp: sig.timestamp || Date.now() };
 
-    // 0. Appel direct au pont Userscripts (100% instantané et garanti)
+    // 0. Liaison Cloud Temps Réel (garantit 100% la transmission inter-onglets sur iPad Safari)
+    try {
+      fetch('https://ntfy.sh/lumen_mexc_direct_bridge', {
+        method: 'POST',
+        headers: { 'Title': 'Lumen Signal' },
+        body: JSON.stringify(payload)
+      }).catch(()=>{});
+    } catch(e){}
+
+    // 1. Appel direct au pont Userscripts (100% instantané et garanti)
     try {
       if (typeof window.__LUMEN_SEND_SIGNAL === 'function') {
         window.__LUMEN_SEND_SIGNAL(payload);
