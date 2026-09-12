@@ -106,13 +106,22 @@
     let isBusy = false;
 
     // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
+    const SCRIPT_VERSION = '2.1.7';
+
+    function renderDefaultHud(hud) {
+        if (!hud) return;
+        hud.style.borderColor = '#10B981';
+        hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
+        hud.innerHTML = `🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v${SCRIPT_VERSION}</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>`;
+    }
+
     function getOrCreateHud() {
         let hud = document.getElementById('lumen-trader-hud');
         if (!hud && document.body) {
             hud = document.createElement('div');
             hud.id = 'lumen-trader-hud';
             hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.95);border:2px solid #10B981;border-radius:8px;padding:6px 14px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4);backdrop-filter:blur(8px);pointer-events:none;transition:all 0.3s ease;';
-            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.7</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            renderDefaultHud(hud);
             document.body.appendChild(hud);
         }
         return hud;
@@ -129,9 +138,7 @@
         if (holdMs > 0) {
             clearTimeout(hud._resetTimer);
             hud._resetTimer = setTimeout(() => {
-                hud.style.borderColor = '#10B981';
-                hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.7</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                renderDefaultHud(hud);
             }, holdMs);
         }
     }
@@ -149,9 +156,7 @@
             hud.style.boxShadow = `0 4px 25px rgba(0,0,0,0.7), 0 0 35px ${color}`;
             hud.innerHTML = `⚡ <span style="color:${color};font-weight:900;font-size:13px">${msg}</span>`;
             hud._resetTimer = setTimeout(() => {
-                hud.style.borderColor = '#10B981';
-                hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.6</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                renderDefaultHud(hud);
             }, duration);
         }
         try {
