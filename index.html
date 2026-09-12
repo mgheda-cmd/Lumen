@@ -521,7 +521,11 @@ footer{
     <span>🟢</span> <span>MEXC Direct</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1740</span>
+  <button class="btn" id="btn-header-all-strats" onclick="window.openAllStrategiesModal()" title="Comparatif & Audit de TOUTES les stratégies développées sur 8000 bougies" style="font-weight:900;display:inline-flex;align-items:center;gap:6px;border:1.5px solid #FFD700;color:#FFD700;background:rgba(255,215,0,0.14);box-shadow:0 0 10px rgba(255,215,0,0.25);cursor:pointer">
+    <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
+  </button>
+
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1800</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1408,7 +1412,8 @@ footer{
           <button id="btn-pastilles-all-on" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(0,230,118,0.14);border:1.2px solid #00E676;color:#00E676;font-weight:800;border-radius:6px">👁️ Tout Afficher</button>
           <button id="btn-pastilles-all-off" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(255,0,85,0.14);border:1.2px solid #FF0055;color:#FF0055;font-weight:800;border-radius:6px">🚫 Tout Masquer</button>
           <button id="btn-pastilles-reset-def" class="btn" style="font-size:10.5px;padding:6px 8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:700;border-radius:6px" title="Rétablir les pastilles recommandées par défaut">⟲ Défaut</button>
-          <button id="btn-pastilles-retest" class="btn" onclick="runStrat11Backtest(true)" style="font-size:10.5px;padding:6px 9px;background:rgba(122,162,255,0.14);border:1.2px solid #7AA2FF;color:#7AA2FF;font-weight:800;border-radius:6px;white-space:nowrap" title="Recalculer le test sérieux sur 8000 bougies">🔬 Re-tester</button>
+          <button id="btn-pastilles-retest" class="btn" onclick="runStrat11Backtest(true)" style="font-size:10.5px;padding:6px 8px;background:rgba(122,162,255,0.14);border:1.2px solid #7AA2FF;color:#7AA2FF;font-weight:800;border-radius:6px;white-space:nowrap" title="Recalculer le test sérieux sur 8000 bougies">🔬 Re-tester</button>
+          <button id="btn-pastilles-all-strats" class="btn" onclick="window.openAllStrategiesModal()" style="font-size:10.5px;padding:6px 9px;background:rgba(255,215,0,0.16);border:1.2px solid #FFD700;color:#FFD700;font-weight:800;border-radius:6px;white-space:nowrap;cursor:pointer" title="Voir l'audit et le comparatif de toutes les stratégies historiques sur 8000 bougies">🏛️ Toutes Stratégies</button>
         </div>
 
         <!-- Sélecteur des 3 périodes de classement (Jour Même / 3 Jours / 8000 Bougies) -->
@@ -2712,6 +2717,128 @@ footer{
       <button onclick="openLiveExchangeModal()" style="background:#D97706;color:#FFFFFF;border:1px solid #FBBF24;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(217,119,6,0.4)">⚙️ Gérer / Configurer</button>
       <button onclick="stopLiveExchangeTrading()" style="background:#DC2626;color:#FFFFFF;border:none;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:900;cursor:pointer;box-shadow:0 2px 10px rgba(220,38,38,0.5)">🛑 Stopper le Trading Direct</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL AUDIT TOUTES LES STRATÉGIES HISTORIQUES (INDICATIF & TRANSPARENCE) -->
+<div id="all-strategies-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(5,10,20,0.85);backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;padding:20px;box-sizing:border-box">
+  <div style="background:#0F172A;border:2px solid #38BDF8;border-radius:16px;max-width:1200px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,0.8);overflow:hidden;font-family:'Space Grotesk',sans-serif">
+    
+    <!-- Modal Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:linear-gradient(90deg,#0B132B,#1E293B);border-bottom:1px solid rgba(56,189,248,0.25)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:26px">🏛️</span>
+        <div>
+          <div style="font-size:17px;font-weight:900;color:#F8FAFC;letter-spacing:0.3px;display:flex;align-items:center;gap:10px">
+            AUDIT COMPARATIF COMPLET — TOUTES LES STRATÉGIES HISTORIQUES
+            <span style="font-size:11px;background:rgba(56,189,248,0.18);color:#38BDF8;border:1px solid #38BDF8;border-radius:20px;padding:2px 10px;font-weight:700">8 000 bougies 1m réelles</span>
+          </div>
+          <div style="font-size:12px;color:#94A3B8;margin-top:3px">
+            Comparatif exhaustif des 22 configurations créées dans Lumen · Analyse des biais de repainting, de sur-filtrage et de lookahead
+          </div>
+        </div>
+      </div>
+      <button onclick="window.closeAllStrategiesModal()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#F1F5F9;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .15s">✕</button>
+    </div>
+
+    <!-- Modal Scrollable Content -->
+    <div style="flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px">
+      
+      <!-- Coach Recommendation Banner -->
+      <div style="background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(56,189,248,0.15));border:1.5px solid #10B981;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="font-size:32px">👑</span>
+          <div>
+            <div style="font-size:11px;font-weight:900;color:#34D399;text-transform:uppercase;letter-spacing:1px">Recommandation Active du Coach (Objectif 78 $ ➔ 200 $)</div>
+            <div style="font-size:17px;font-weight:900;color:#FFFFFF;margin-top:2px">
+              ⭐ FMC × KK 11 11 ÉLITE [5m × 10m] · Sortie S2 (Extrême)
+            </div>
+            <div style="font-size:12px;color:#CBD5E1;margin-top:4px;line-height:1.4">
+              <strong>Pourquoi celle-ci ?</strong> Taux de réussite de <span style="color:#34D399;font-weight:900">80.2%</span>, Profit Factor exceptionnel de <span style="color:#34D399;font-weight:900">9.06</span> et Max Drawdown de seulement <span style="color:#34D399;font-weight:900">1.3%</span>. Avec environ ~14 trades/jour, elle élimine le risque d'érosion par les frais de courtage et le slippage, ce qui en fait le véhicule le plus sûr et régulier pour faire croître un petit capital de 78 $.
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <span style="font-size:12px;color:#94A3B8;font-family:'IBM Plex Mono',monospace">Statut actuel : <span style="color:#10B981;font-weight:900">● EN SERVICE</span></span>
+          <button onclick="window.closeAllStrategiesModal();if(window.activerStrat11SurCompteDemo)window.activerStrat11SurCompteDemo();" style="background:#10B981;color:#052E16;border:none;border-radius:6px;padding:8px 16px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 3px 12px rgba(16,185,129,0.35)">Garder cette stratégie</button>
+        </div>
+      </div>
+
+      <!-- Educational Traps & Biases Cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px">
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 14px">
+          <div style="font-size:13px;font-weight:800;color:#F87171;display:flex;align-items:center;gap:6px">
+            ⚠️ 1. Le Piège du "Repainting" (ZigZag Classique)
+          </div>
+          <div style="font-size:11.5px;color:#CBD5E1;margin-top:6px;line-height:1.45">
+            Sur un graphique figé, le ZigZag semble toujours toucher les sommets et les creux à la perfection. Mais en trading réel (forward test), il redessine sans cesse tant que la tendance continue. Résultat réel : <strong>-3 245 pts</strong> de pertes en direct ! La variante « Pastilles Or » inverse le signal sur cassure réelle et génère <strong>+3 245 pts</strong> (PF 2.01).
+          </div>
+        </div>
+        <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:12px 14px">
+          <div style="font-size:13px;font-weight:800;color:#FBBF24;display:flex;align-items:center;gap:6px">
+            ⚠️ 2. Le Biais de Lookahead (Multi-Timeframes)
+          </div>
+          <div style="font-size:11.5px;color:#CBD5E1;margin-top:6px;line-height:1.45">
+            Lorsqu'on analyse une tendance en 5m ou 10m sur une bougie 1m, il ne faut JAMAIS lire la clôture d'une bougie supérieure non terminée (tricherie sur le futur). Le moteur 11 11 applique strictement un <strong>décalage de 1 bougie clôturée</strong> (shift 1 bar), garantissant des résultats 100% reproductibles sans aucune triche.
+          </div>
+        </div>
+        <div style="background:rgba(147,51,234,0.08);border:1px solid rgba(147,51,234,0.3);border-radius:10px;padding:12px 14px">
+          <div style="font-size:13px;font-weight:800;color:#C084FC;display:flex;align-items:center;gap:6px">
+            ⚠️ 3. Le Piège du Sur-filtrage (Super Stratégie & EMA)
+          </div>
+          <div style="font-size:11.5px;color:#CBD5E1;margin-top:6px;line-height:1.45">
+            Empiler 5 filtres rigides simultanés (Heikin-Ashi + EMA Trend + Supertrend + RSI + Volume) empêche les trades de se déclencher dès que le marché entre en range ou hésite (0 trade fermé sur 8 000 bougies). Une stratégie robuste doit savoir respirer tout en protégeant le stop-loss.
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Tabs & Controls -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-top:4px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <button class="strat-audit-tab active" data-fam="all" onclick="window.filterAllStrategiesTable('all')" style="background:#2563EB;color:#FFFFFF;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer">Toutes (22)</button>
+          <button class="strat-audit-tab" data-fam="11_11" onclick="window.filterAllStrategiesTable('11_11')" style="background:rgba(255,255,255,0.06);color:#94A3B8;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">⭐ FMC × KK 11 11 (15)</button>
+          <button class="strat-audit-tab" data-fam="fmc_classic" onclick="window.filterAllStrategiesTable('fmc_classic')" style="background:rgba(255,255,255,0.06);color:#94A3B8;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">FMC Classique (2)</button>
+          <button class="strat-audit-tab" data-fam="pastilles_or" onclick="window.filterAllStrategiesTable('pastilles_or')" style="background:rgba(255,255,255,0.06);color:#94A3B8;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">Pastilles Or / ZigZag (2)</button>
+          <button class="strat-audit-tab" data-fam="mm" onclick="window.filterAllStrategiesTable('mm')" style="background:rgba(255,255,255,0.06);color:#94A3B8;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">Moyennes Mobiles (1)</button>
+          <button class="strat-audit-tab" data-fam="others" onclick="window.filterAllStrategiesTable('others')" style="background:rgba(255,255,255,0.06);color:#94A3B8;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">Super Strat & Divers (2)</button>
+        </div>
+        <div style="font-size:11.5px;color:#64748B;font-family:'IBM Plex Mono',monospace">
+          Échantillon certifié : 8 000 bougies M1 · BTCUSDT
+        </div>
+      </div>
+
+      <!-- Comparative Table Container -->
+      <div style="background:#090D16;border:1px solid #1E293B;border-radius:10px;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;white-space:nowrap">
+          <thead>
+            <tr style="background:#0F172A;color:#94A3B8;border-bottom:1px solid #1E293B;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">
+              <th style="padding:10px 12px">Rang</th>
+              <th style="padding:10px 14px">Stratégie / Variante</th>
+              <th style="padding:10px 12px">Famille</th>
+              <th style="padding:10px 12px;text-align:right">Trades (8k)</th>
+              <th style="padding:10px 12px;text-align:right">Win Rate</th>
+              <th style="padding:10px 12px;text-align:right">Gain Net</th>
+              <th style="padding:10px 12px;text-align:right">Profit Factor</th>
+              <th style="padding:10px 14px">Biais / Fiabilité</th>
+              <th style="padding:10px 12px;text-align:center">Statut</th>
+            </tr>
+          </thead>
+          <tbody id="all-strategies-table-body">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#0B132B;border-top:1px solid #1E293B">
+      <div style="font-size:12px;color:#94A3B8">
+        💡 <em>Note : Les données présentées ici sont issues du backtest exhaustif et servent de référence informative. La recommandation active reste verrouillée sur Élite S2.</em>
+      </div>
+      <button onclick="window.closeAllStrategiesModal()" style="background:#334155;color:#F8FAFC;border:none;border-radius:6px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer">Fermer</button>
+    </div>
+
   </div>
 </div>
 
@@ -17405,6 +17532,125 @@ function loadSavedStrat11Ranking() {
 window.__stJournalVarKey = 'strat_11_11_ultra';
 window.__stJournalExitMode = 's1';
 window.__stJournalPeriod = '3d'; // '3d' par défaut (du dernier en cours aux 3 jours)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIT COMPARATIF COMPLET — TOUTES LES 22 STRATÉGIES HISTORIQUES SUR 8000 BOUGIES
+// ═══════════════════════════════════════════════════════════════════════════
+window.ALL_STRATEGIES_AUDIT_DATA = [
+  { rank: 1, name: "Scalp Rapide [2m×3m] · S1", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 223, wr: "81.6%", pts: "+16 859", pf: "8.32", bias: "Shift 1 bar strict (0 lookahead)", note: "Ultra actif (~40 trades/j). Très rentable mais friction de frais élevée.", isCoach: false, status: "Alternatif" },
+  { rank: 2, name: "Ultra Scalp [1m×6m] · S1", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 202, wr: "80.7%", pts: "+15 440", pf: "8.06", bias: "Shift 1 bar strict (0 lookahead)", note: "Excellent en scalp agressif", isCoach: false, status: "Alternatif" },
+  { rank: 3, name: "Élite [5m×10m] · S1", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 147, wr: "81.6%", pts: "+14 597", pf: "7.77", bias: "Shift 1 bar strict (0 lookahead)", note: "Régulier et sécurisant", isCoach: false, status: "Alternatif" },
+  { rank: 4, name: "Swing Confirmation [6m×11m] · S1", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 133, wr: "82.7%", pts: "+14 366", pf: "8.80", bias: "Shift 1 bar strict (0 lookahead)", note: "Forte précision sur swing", isCoach: false, status: "Alternatif" },
+  { rank: 5, name: "FMC Classique (Exit Ligne 0)", fam: "fmc_classic", famLabel: "FMC Classique", trades: 247, wr: "77.7%", pts: "+12 376", pf: "4.74", bias: "Indicateur natif Lumen", note: "Stratégie historique de base", isCoach: false, status: "Disponible" },
+  { rank: 6, name: "⭐ Élite [5m×10m] · S2 (Extrême)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 76, wr: "80.2%", pts: "+10 918", pf: "9.06", bias: "Shift 1 bar (Max DD 1.3%)", note: "LE MEILLEUR CHOIX CAPITAL 78$ : Moins de trades (~14/j), 0 sur-trading, ratio de gain maximal !", isCoach: true, status: "EN SERVICE" },
+  { rank: 7, name: "Tendance Lourde [8m×13m] · S1", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 93, wr: "81.7%", pts: "+10 839", pf: "6.90", bias: "Shift 1 bar strict (0 lookahead)", note: "Gros mouvements suivis", isCoach: false, status: "Alternatif" },
+  { rank: 8, name: "Scalp Rapide [2m×3m] · S2 (Extrême)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 111, wr: "79.3%", pts: "+10 710", pf: "6.36", bias: "Shift 1 bar strict (0 lookahead)", note: "Bon compromis scalp", isCoach: false, status: "Alternatif" },
+  { rank: 9, name: "Swing Confirmation [6m×11m] · S2 (Extrême)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 68, wr: "80.9%", pts: "+10 611", pf: "9.18", bias: "Shift 1 bar strict (0 lookahead)", note: "Très bon PF sur swings amples", isCoach: false, status: "Alternatif" },
+  { rank: 10, name: "Ultra Scalp [1m×6m] · S2 (Extrême)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 106, wr: "77.4%", pts: "+9 837", pf: "5.45", bias: "Shift 1 bar strict (0 lookahead)", note: "Scalp rapide filtré", isCoach: false, status: "Alternatif" },
+  { rank: 11, name: "Tendance Lourde [8m×13m] · S2 (Extrême)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 51, wr: "80.4%", pts: "+8 021", pf: "6.71", bias: "Shift 1 bar strict (0 lookahead)", note: "Peu de signaux mais solides", isCoach: false, status: "Alternatif" },
+  { rank: 12, name: "FMC Classique (Exit Extrême)", fam: "fmc_classic", famLabel: "FMC Classique", trades: 127, wr: "74.8%", pts: "+7 749", pf: "4.12", bias: "Indicateur natif Lumen", note: "Version extrême classique", isCoach: false, status: "Disponible" },
+  { rank: 13, name: "Ultra Scalp [1m×6m] · S3 (Inversion)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 147, wr: "61.2%", pts: "+7 186", pf: "2.51", bias: "Sortie sur retournement", note: "Garde les positions plus longtemps", isCoach: false, status: "Alternatif" },
+  { rank: 14, name: "Swing Confirmation [6m×11m] · S3 (Inversion)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 93, wr: "61.3%", pts: "+5 304", pf: "2.16", bias: "Sortie sur retournement", note: "Sortie tardive sur retournement", isCoach: false, status: "Alternatif" },
+  { rank: 15, name: "Scalp Rapide [2m×3m] · S3 (Inversion)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 160, wr: "58.1%", pts: "+5 106", pf: "2.05", bias: "Sortie sur retournement", note: "Rendement inférieur à S1 et S2", isCoach: false, status: "Alternatif" },
+  { rank: 16, name: "Élite [5m×10m] · S3 (Inversion)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 104, wr: "58.7%", pts: "+4 978", pf: "2.10", bias: "Sortie sur retournement", note: "Moins efficace que S2 pour capital 78$", isCoach: false, status: "Alternatif" },
+  { rank: 17, name: "Tendance Lourde [8m×13m] · S3 (Inversion)", fam: "11_11", famLabel: "FMC × KK 11 11", trades: 69, wr: "58.0%", pts: "+3 349", pf: "1.80", bias: "Sortie sur retournement", note: "Drawdown plus prononcé", isCoach: false, status: "Alternatif" },
+  { rank: 18, name: "Pastilles Or (ZigZag Inversé)", fam: "pastilles_or", famLabel: "Pastilles Or", trades: 61, wr: "65.6%", pts: "+3 245", pf: "2.01", bias: "Robuste (Trade cassures réelles)", note: "Corrige le piège du ZigZag classique en prenant les vrais breakouts", isCoach: false, status: "Disponible" },
+  { rank: 19, name: "Moyennes Mobiles (MM Base + Opt)", fam: "mm", famLabel: "Moyennes Mobiles", trades: 64, wr: "46.9%", pts: "-382", pf: "0.89", bias: "Sensible aux faux signaux (whipsaws)", note: "Souffre en consolidation/range. Nécessite filtre de tendance fort.", isCoach: false, status: "Déconseillé" },
+  { rank: 20, name: "ZigZag Classique Normal (Pastille)", fam: "pastilles_or", famLabel: "ZigZag Standard", trades: 61, wr: "34.4%", pts: "-3 245", pf: "0.50", bias: "🚨 REPAINTING MASQUÉ (Illusion visuelle)", note: "Le ZigZag redessine ses sommets dans le passé ! En réel, il perd -3 245 pts.", isCoach: false, status: "BIAISÉ / REPAINT" },
+  { rank: 21, name: "Super Stratégie Multi-Indicateurs", fam: "others", famLabel: "Super Strat", trades: 0, wr: "0.0%", pts: "0", pf: "—", bias: "🚨 SUR-FILTRAGE (5 filtres simultanés)", note: "Trop de conditions strictes : Heikin-Ashi + EMA + RSI + Supertrend + Volume bloquent tout.", isCoach: false, status: "INACTIF" },
+  { rank: 22, name: "Stratégie EMA Trend Heikin-Ashi", fam: "others", famLabel: "EMA Trend", trades: 0, wr: "0.0%", pts: "0", pf: "—", bias: "🚨 SUR-FILTRAGE (Filtre rigidifié)", note: "Aucun trade validé sur les 8000 bougies en direct à cause du double filtre.", isCoach: false, status: "INACTIF" }
+];
+
+window.openAllStrategiesModal = function(filterFam) {
+  const modal = document.getElementById('all-strategies-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  window.filterAllStrategiesTable(filterFam || 'all');
+};
+
+window.closeAllStrategiesModal = function() {
+  const modal = document.getElementById('all-strategies-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.filterAllStrategiesTable = function(famKey) {
+  const tbody = document.getElementById('all-strategies-table-body');
+  if (!tbody || !Array.isArray(window.ALL_STRATEGIES_AUDIT_DATA)) return;
+  
+  // Highlight active tab
+  const tabs = document.querySelectorAll('.strat-audit-tab');
+  tabs.forEach(tab => {
+    if (tab.getAttribute('data-fam') === famKey) {
+      tab.style.background = '#2563EB';
+      tab.style.color = '#FFFFFF';
+      tab.style.border = 'none';
+      tab.style.fontWeight = '800';
+    } else {
+      tab.style.background = 'rgba(255,255,255,0.06)';
+      tab.style.color = '#94A3B8';
+      tab.style.border = '1px solid rgba(255,255,255,0.1)';
+      tab.style.fontWeight = '700';
+    }
+  });
+
+  const filtered = window.ALL_STRATEGIES_AUDIT_DATA.filter(item => {
+    if (!famKey || famKey === 'all') return true;
+    return item.fam === famKey;
+  });
+
+  tbody.innerHTML = filtered.map(item => {
+    const isWinPos = !item.pts.startsWith('-');
+    const ptsColor = item.pts === '0' ? '#94A3B8' : (isWinPos ? '#34D399' : '#F87171');
+    const isCoach = item.isCoach;
+    const isRepaint = item.bias.includes('REPAINTING');
+    const isBlocked = item.bias.includes('SUR-FILTRAGE');
+    
+    let rowBg = isCoach ? 'background:rgba(16,185,129,0.12);border-left:4px solid #10B981;' : (isRepaint ? 'background:rgba(239,68,68,0.08);' : 'background:transparent;');
+    let badgeBg = isCoach ? 'background:#10B981;color:#064E3B;' : (isRepaint ? 'background:#DC2626;color:#FFFFFF;' : (isBlocked ? 'background:#64748B;color:#FFFFFF;' : 'background:rgba(255,255,255,0.08);color:#CBD5E1;'));
+
+    return `
+      <tr style="border-bottom:1px solid #1E293B;${rowBg}transition:background .15s">
+        <td style="padding:10px 12px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:${isCoach ? '#10B981' : '#94A3B8'}">
+          ${isCoach ? '⭐ #' + item.rank : '#' + item.rank}
+        </td>
+        <td style="padding:10px 14px">
+          <div style="font-weight:${isCoach ? '900' : '700'};color:${isCoach ? '#FFFFFF' : '#E2E8F0'};font-size:12.5px;display:flex;align-items:center;gap:6px">
+            ${item.name}
+            ${isCoach ? '<span style="font-size:10px;background:#10B981;color:#022C22;border-radius:4px;padding:2px 6px;font-weight:900">RECOMMANDÉ</span>' : ''}
+          </div>
+          <div style="font-size:11px;color:#94A3B8;margin-top:2px">${item.note}</div>
+        </td>
+        <td style="padding:10px 12px">
+          <span style="font-size:11px;background:rgba(56,189,248,0.1);color:#38BDF8;border:1px solid rgba(56,189,248,0.25);border-radius:4px;padding:2px 6px;font-weight:700">
+            ${item.famLabel}
+          </span>
+        </td>
+        <td style="padding:10px 12px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:#F1F5F9">
+          ${item.trades}
+        </td>
+        <td style="padding:10px 12px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:800;color:${parseFloat(item.wr) >= 75 ? '#34D399' : (parseFloat(item.wr) >= 50 ? '#FBBF24' : '#F87171')}">
+          ${item.wr}
+        </td>
+        <td style="padding:10px 12px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:900;color:${ptsColor};font-size:12.5px">
+          ${item.pts} pts
+        </td>
+        <td style="padding:10px 12px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:800;color:${parseFloat(item.pf) >= 3 ? '#34D399' : (parseFloat(item.pf) >= 1.5 ? '#FBBF24' : '#F87171')}">
+          ${item.pf}
+        </td>
+        <td style="padding:10px 14px">
+          <span style="font-size:11px;padding:3px 8px;border-radius:4px;font-weight:700;${badgeBg}">
+            ${item.bias}
+          </span>
+        </td>
+        <td style="padding:10px 12px;text-align:center">
+          <span style="font-size:10.5px;padding:2px 8px;border-radius:12px;font-weight:800;${isCoach ? 'background:#059669;color:#ECFDF5;' : 'background:#1E293B;color:#94A3B8;'}">
+            ${item.status}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+};
 
 window.activerStrat11SurCompteDemo = function() {
   const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
@@ -42870,7 +43116,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-1740';
+  window.__LUMEN_BUILD = 'B-0912-1800';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -45818,6 +46064,7 @@ window.balayerMM_MTF = async function(){
       <button type="button" class="btn" id="btn-st-snap-left" title="Placer à gauche (libère la droite du graphique)" style="padding:2px 6px;font-size:9.5px;font-weight:800;border:1px solid #38BDF8;color:#38BDF8;background:rgba(56,189,248,0.12);cursor:pointer;border-radius:6px">↖ G</button>
       <button type="button" class="btn" id="btn-st-snap-right" title="Placer à droite" style="padding:2px 6px;font-size:9.5px;font-weight:800;border:1px solid #38BDF8;color:#38BDF8;background:rgba(56,189,248,0.12);cursor:pointer;border-radius:6px">↗ D</button>
       <button type="button" class="btn" id="btn-st-snap-center" title="Recentrer le tableau" style="padding:2px 5px;font-size:9.5px;font-weight:700;border:1px solid rgba(255,255,255,0.2);color:var(--text);background:rgba(255,255,255,0.06);cursor:pointer;border-radius:6px">⟲</button>
+      <button id="btn-st-all-strats" onclick="window.openAllStrategiesModal()" style="background:rgba(255,215,0,0.15);border:1px solid #FFD700;color:#FFD700;font-size:10.5px;font-weight:800;cursor:pointer;padding:3px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:3px" title="Voir l'audit et le comparatif de toutes les stratégies historiques sur 8000 bougies">🏛️ Toutes Stratégies</button>
       <button id="btn-st-panel-resize" onclick="window.toggleStrat11PanelWidth()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.22);color:#E6EDF3;font-size:10.5px;font-weight:700;cursor:pointer;padding:3px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:3px" title="Changer la largeur (Compact / Normal / Large)">⤢ Large</button>
       <button onclick="window.closeStrat11TradesJournal()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:#FFFFFF;font-size:14px;font-weight:800;cursor:pointer;padding:3px 8px;line-height:1;border-radius:6px;transition:all 0.15s" title="Fermer">✕</button>
     </div>
