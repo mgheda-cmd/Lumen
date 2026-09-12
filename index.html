@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2630</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2640</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16552,10 +16552,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2630
+// Build B-0911-2640
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2630
+// Build B-0911-2640
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -17143,13 +17143,13 @@ window.setStrat11JournalPeriod = function(p, doRender) {
     if (!btn) return;
     if (pid === p) {
       btn.style.borderColor = '#FFB400';
-      btn.style.background = 'rgba(255,180,0,0.18)';
+      btn.style.background = 'rgba(255,180,0,0.25)';
       btn.style.color = '#FFB400';
-      btn.style.fontWeight = '800';
+      btn.style.fontWeight = '900';
     } else {
-      btn.style.borderColor = 'rgba(255,255,255,0.15)';
-      btn.style.background = 'rgba(255,255,255,0.05)';
-      btn.style.color = 'var(--text)';
+      btn.style.borderColor = 'rgba(255,255,255,0.22)';
+      btn.style.background = 'rgba(255,255,255,0.08)';
+      btn.style.color = '#F1F5F9';
       btn.style.fontWeight = '700';
     }
   });
@@ -17169,11 +17169,11 @@ window.setStrat11JournalExit = function(exitKey, doRender) {
       btn.style.borderColor = item.col;
       btn.style.background = item.bg;
       btn.style.color = item.col;
-      btn.style.fontWeight = '800';
+      btn.style.fontWeight = '900';
     } else {
-      btn.style.borderColor = 'rgba(255,255,255,0.15)';
-      btn.style.background = 'rgba(255,255,255,0.05)';
-      btn.style.color = 'var(--text)';
+      btn.style.borderColor = 'rgba(255,255,255,0.22)';
+      btn.style.background = 'rgba(255,255,255,0.08)';
+      btn.style.color = '#F1F5F9';
       btn.style.fontWeight = '700';
     }
   });
@@ -17269,6 +17269,59 @@ window.renderStrat11TradesJournal = function() {
     return j + '/' + m + ' ' + h + ':' + min;
   }
 
+  // Récupérer les signaux réels du graphique pour extraire le numéro exact de pastille (#31, #32, etc.)
+  const chartSignals = window.__lastFMCSignals || [];
+  const entryPastilleMap = {};
+  chartSignals.forEach(function(s) {
+    if (s.optKey === varKey && !s.isExit && s.tradeNum) {
+      entryPastilleMap[s.t] = s.tradeNum;
+    }
+  });
+
+  // Si non trouvé directement (ex: graphique pas encore dessiné), calculer les index sur state.data
+  if (Object.keys(entryPastilleMap).length === 0 && typeof state !== 'undefined' && state && state.data) {
+    const dBars = state.data;
+    const vDefObj = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === varKey; });
+    if (vDefObj && typeof _aggregateLocal === 'function' && typeof _emaLocal === 'function') {
+      try {
+        function _mapHTFLocal(barsHTF, valsHTF, barsBase) {
+          if (typeof mapHTF === 'function') return mapHTF(barsHTF, valsHTF, barsBase);
+          const out = new Array(barsBase.length);
+          let hIdx = 0;
+          for (let bIdx = 0; bIdx < barsBase.length; bIdx++) {
+            const t = barsBase[bIdx].t;
+            while (hIdx + 1 < barsHTF.length && barsHTF[hIdx + 1].t <= t) hIdx++;
+            out[bIdx] = valsHTF[hIdx];
+          }
+          return out;
+        }
+        const bFmcL = _aggregateLocal(dBars, vDefObj.tfFMC);
+        const cFmcL = bFmcL.map(function(b){ return b.c; });
+        const fmcCL = _mapHTFLocal(bFmcL, _emaLocal(cFmcL, 9), dBars);
+        const fmcBL = _mapHTFLocal(bFmcL, _emaLocal(cFmcL, 21), dBars);
+        const bKkL  = _aggregateLocal(dBars, vDefObj.tfKK);
+        const cKkL  = bKkL.map(function(b){ return b.c; });
+        const eFastL = _emaLocal(cKkL, 12);
+        const eSlowL = _emaLocal(cKkL, 26);
+        const netRawL = eFastL.map(function(f, i){ return (f != null && eSlowL[i] != null) ? (f - eSlowL[i]) : 0; });
+        const sigRawL = _emaLocal(netRawL, 9);
+        const netKkL = _mapHTFLocal(bKkL, netRawL, dBars);
+        const sigKkL = _mapHTFLocal(bKkL, sigRawL, dBars);
+        let cCount = 0, cDir = 0;
+        for (let ki = 1; ki < dBars.length; ki++) {
+          const gF = fmcCL[ki] >= fmcBL[ki], gK = netKkL[ki] > sigKkL[ki];
+          const rF = fmcCL[ki] < fmcBL[ki],  rK = netKkL[ki] <= sigKkL[ki];
+          const pgF = fmcCL[ki-1] >= fmcBL[ki-1], pgK = netKkL[ki-1] > sigKkL[ki-1];
+          const prF = fmcCL[ki-1] < fmcBL[ki-1],  prK = netKkL[ki-1] <= sigKkL[ki-1];
+          const tB = gF && gK && !(pgF && pgK);
+          const tS = rF && rK && !(prF && prK);
+          if (tB && cDir !== 1) { cDir = 1; cCount++; entryPastilleMap[dBars[ki].t] = cCount; }
+          else if (tS && cDir !== -1) { cDir = -1; cCount++; entryPastilleMap[dBars[ki].t] = cCount; }
+        }
+      } catch(errMap){}
+    }
+  }
+
   // Afficher en ordre chronologique inversé (du plus récent au plus ancien)
   const displayTrades = filteredTrades.slice().reverse();
 
@@ -17278,23 +17331,40 @@ window.renderStrat11TradesJournal = function() {
     const pnlCol = t.pnl >= 0 ? '#10B981' : '#F87171';
     const pnlStr = (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + ' pts';
     const badgeType = isBuy
-      ? '<span style="background:rgba(16,185,129,0.18);color:#10B981;font-weight:800;padding:1px 5px;border-radius:4px;font-size:9px">🟢 ACHAT</span>'
-      : '<span style="background:rgba(244,63,94,0.18);color:#F43F5E;font-weight:800;padding:1px 5px;border-radius:4px;font-size:9px">🔴 VENTE</span>';
+      ? '<span style="background:rgba(16,185,129,0.22);color:#10B981;font-weight:900;padding:2px 6px;border-radius:4px;font-size:9.5px;border:1px solid rgba(16,185,129,0.4)">🟢 ACHAT</span>'
+      : '<span style="background:rgba(244,63,94,0.22);color:#F43F5E;font-weight:900;padding:2px 6px;border-radius:4px;font-size:9.5px;border:1px solid rgba(244,63,94,0.4)">🔴 VENTE</span>';
 
-    trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.1s" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'transparent\'">'
-      + '<td style="padding:6px 3px;font-weight:800;color:#94A3B8;font-size:9.5px">#' + t.num + '</td>'
-      + '<td style="padding:6px 3px">' + badgeType + '</td>'
-      + '<td style="padding:6px 3px">'
-      + '<div style="font-weight:700;color:var(--text);font-size:10px">$' + (t.entryPx ? t.entryPx.toFixed(1) : '—') + '</div>'
-      + '<div style="font-size:8.5px;color:#94A3B8">' + fmtTime(t.entryT) + '</div>'
+    // Trouver le numéro de pastille sur le graphique
+    let pNum = entryPastilleMap[t.entryT];
+    if (pNum == null) {
+      const closeT = Object.keys(entryPastilleMap).find(function(kt) { return Math.abs(Number(kt) - t.entryT) < 45000; });
+      if (closeT) pNum = entryPastilleMap[closeT];
+    }
+
+    const pastilleBadgeHTML = pNum != null
+      ? '<div style="margin-top:2px;display:inline-flex;align-items:center;gap:2px;background:rgba(255,180,0,0.22);color:#FFB400;border:1px solid rgba(255,180,0,0.5);border-radius:4px;padding:1px 5px;font-size:9.5px;font-weight:900;white-space:nowrap" title="Pastille #' + pNum + ' visible sur le graphique">🏷️ Pastille #' + pNum + '</div>'
+      : '<div style="margin-top:2px;font-size:9px;color:#64748B">Trade #' + t.num + '</div>';
+
+    const exitReasonShort = t.exitReason ? ('<div style="font-size:8px;color:#94A3B8;max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + t.exitReason + '">' + t.exitReason + '</div>') : '';
+
+    trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.07);transition:background 0.1s" onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseout="this.style.background=\'transparent\'">'
+      + '<td style="padding:6px 4px">'
+      + '<div style="font-weight:900;color:#F8FAFC;font-size:11px">#' + t.num + '</div>'
+      + pastilleBadgeHTML
       + '</td>'
-      + '<td style="padding:6px 3px">'
-      + '<div style="font-weight:700;color:var(--text);font-size:10px">$' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
-      + '<div style="font-size:8.5px;color:#94A3B8">' + fmtTime(t.exitT) + '</div>'
+      + '<td style="padding:6px 4px">' + badgeType + '</td>'
+      + '<td style="padding:6px 4px">'
+      + '<div style="font-weight:800;color:#F8FAFC;font-size:10.5px">$' + (t.entryPx ? t.entryPx.toFixed(1) : '—') + '</div>'
+      + '<div style="font-size:9px;color:#94A3B8">' + fmtTime(t.entryT) + '</div>'
       + '</td>'
-      + '<td style="padding:6px 3px;text-align:right;font-family:monospace;font-weight:800;color:' + pnlCol + ';font-size:10.5px">' + pnlStr + '</td>'
-      + '<td style="padding:6px 3px;text-align:center">'
-      + '<button onclick="event.stopPropagation();if(typeof window.focusChartOnCandle===\'function\')window.focusChartOnCandle(' + t.entryI + ')" style="background:rgba(56,189,248,0.12);border:1px solid #38BDF8;color:#38BDF8;border-radius:4px;padding:2px 5px;font-size:9px;cursor:pointer" title="Centrer le graphique sur ce trade">🔍</button>'
+      + '<td style="padding:6px 4px">'
+      + '<div style="font-weight:800;color:#F8FAFC;font-size:10.5px">$' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
+      + '<div style="font-size:9px;color:#94A3B8">' + fmtTime(t.exitT) + '</div>'
+      + exitReasonShort
+      + '</td>'
+      + '<td style="padding:6px 4px;text-align:right;font-family:monospace;font-weight:900;color:' + pnlCol + ';font-size:11px">' + pnlStr + '</td>'
+      + '<td style="padding:6px 4px;text-align:center">'
+      + '<button onclick="event.stopPropagation();if(typeof window.focusChartOnCandle===\'function\')window.focusChartOnCandle(' + t.entryI + ')" style="background:rgba(56,189,248,0.18);border:1px solid #38BDF8;color:#38BDF8;border-radius:4px;padding:3px 6px;font-size:10px;font-weight:800;cursor:pointer;transition:all 0.15s" title="Centrer le graphique sur la Pastille #' + (pNum || t.num) + '">🔍</button>'
       + '</td>'
       + '</tr>';
   });
@@ -34740,9 +34810,10 @@ function computeFMCSignals(cleFmc, cleStrat) {
             }
           }
 
-          // 3. Sortie N°3 : Sortie de Secours / Inversion de Signal
-          const showExitReversal = cfg.showExitReversal !== false;
-          if (showExitReversal && !hasZeroExit && !hasExtremeExit && nextEnt) {
+          // 3. Sortie N°3 : Sortie de Secours / Clôture Impérative sur Signal Opposé (Stop & Reverse)
+          // RÈGLE ABSOLUE : Si ni la Ligne 0 ni l'Extrême n'ont été touchés avant le signal inverse (ex: Vente),
+          // le trade précédent DOIT obligatoirement être clôturé sur la bougie du signal opposé !
+          if (!hasZeroExit && !hasExtremeExit && nextEnt) {
             const b = d[nextEnt.i];
             if (b) {
               const pnl = isAchat ? (b.c - ent.price) : (ent.price - b.c);
@@ -41304,7 +41375,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0911-2630';
+  window.__LUMEN_BUILD = 'B-0911-2640';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -44233,61 +44304,61 @@ window.balayerMM_MTF = async function(){
 </script>
 
 <!-- VOLET LATÉRAL JOURNAL DES TRADES STRATÉGIES 11 11 -->
-<div id="strat11-trades-panel" style="display:none;position:fixed;top:45px;right:0;width:440px;max-width:calc(100vw - 12px);height:calc(100vh - 55px);background:rgba(10,17,31,0.96);border-left:1.5px solid #38BDF8;box-shadow:-12px 0 40px rgba(0,0,0,0.65);z-index:999999;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--text);backdrop-filter:blur(16px)">
+<div id="strat11-trades-panel" style="display:none;position:fixed;top:45px;right:0;width:450px;max-width:calc(100vw - 12px);height:calc(100vh - 55px);background:rgba(10,17,31,0.98);border-left:1.5px solid #38BDF8;box-shadow:-14px 0 45px rgba(0,0,0,0.85);z-index:999999;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#F1F5F9;backdrop-filter:blur(18px)">
   <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02)">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03)">
     <div style="display:flex;align-items:center;gap:8px;min-width:0">
-      <span style="font-size:18px">📋</span>
+      <span style="font-size:20px;flex:none">📋</span>
       <div style="min-width:0">
-        <div id="st-panel-title" style="font-weight:900;font-size:13px;color:#7AA2FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Journal des Trades</div>
-        <div id="st-panel-sub" style="font-size:10px;color:#94A3B8">Trades récents · 3 derniers jours par défaut</div>
+        <div id="st-panel-title" style="font-weight:900;font-size:13.5px;color:#38BDF8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Journal des Trades</div>
+        <div id="st-panel-sub" style="font-size:10.5px;color:#94A3B8">Trades récents · 3 derniers jours par défaut</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button onclick="window.closeStrat11TradesJournal()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text);font-size:16px;cursor:pointer;padding:3px 8px;line-height:1;border-radius:6px" title="Fermer">✕</button>
+      <button onclick="window.closeStrat11TradesJournal()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:#FFFFFF;font-size:16px;font-weight:800;cursor:pointer;padding:4px 9px;line-height:1;border-radius:6px;transition:all 0.15s" title="Fermer">✕</button>
     </div>
   </div>
 
   <!-- Filter Bar -->
-  <div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:6px">
+  <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);display:flex;flex-direction:column;gap:8px">
     <!-- Période : 3 Jours (défaut) / Aujourd'hui / Tout (8000 bougies) -->
     <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-      <span style="font-size:10px;font-weight:800;color:var(--muted)">Période :</span>
-      <div style="display:flex;gap:4px">
-        <button id="btn-st-p-3d" onclick="window.setStrat11JournalPeriod('3d')" style="font-size:10px;padding:3px 8px;border-radius:5px;font-weight:800;border:1.2px solid #FFB400;background:rgba(255,180,0,0.18);color:#FFB400;cursor:pointer">📊 3 Jours (Défaut)</button>
-        <button id="btn-st-p-day" onclick="window.setStrat11JournalPeriod('day')" style="font-size:10px;padding:3px 8px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer">📅 Aujourd'hui</button>
-        <button id="btn-st-p-all" onclick="window.setStrat11JournalPeriod('all')" style="font-size:10px;padding:3px 8px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer">🏆 Tout (8000 b.)</button>
+      <span style="font-size:10.5px;font-weight:800;color:#CBD5E1">Période :</span>
+      <div style="display:flex;gap:5px">
+        <button id="btn-st-p-3d" onclick="window.setStrat11JournalPeriod('3d')" style="font-size:10.5px;padding:4px 9px;border-radius:6px;font-weight:900;border:1.5px solid #FFB400;background:rgba(255,180,0,0.22);color:#FFB400;cursor:pointer">📊 3 Jours (Défaut)</button>
+        <button id="btn-st-p-day" onclick="window.setStrat11JournalPeriod('day')" style="font-size:10.5px;padding:4px 9px;border-radius:6px;font-weight:700;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.08);color:#F1F5F9;cursor:pointer">📅 Aujourd'hui</button>
+        <button id="btn-st-p-all" onclick="window.setStrat11JournalPeriod('all')" style="font-size:10.5px;padding:4px 9px;border-radius:6px;font-weight:700;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.08);color:#F1F5F9;cursor:pointer">🏆 Tout (8000 b.)</button>
       </div>
     </div>
     <!-- Sortie : S1 / S2 / S3 -->
     <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-      <span style="font-size:10px;font-weight:800;color:var(--muted)">Sortie :</span>
-      <div style="display:flex;gap:4px">
-        <button id="btn-st-ex-s1" onclick="window.setStrat11JournalExit('s1')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:800;border:1.2px solid #38BDF8;background:rgba(56,189,248,0.18);color:#38BDF8;cursor:pointer">🏁 S1: Ligne 0</button>
-        <button id="btn-st-ex-s2" onclick="window.setStrat11JournalExit('s2')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer">⚡ S2: Extrême</button>
-        <button id="btn-st-ex-s3" onclick="window.setStrat11JournalExit('s3')" style="font-size:9.5px;padding:3px 7px;border-radius:5px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer">🔄 S3: Inversion</button>
+      <span style="font-size:10.5px;font-weight:800;color:#CBD5E1">Sortie :</span>
+      <div style="display:flex;gap:5px">
+        <button id="btn-st-ex-s1" onclick="window.setStrat11JournalExit('s1')" style="font-size:10px;padding:4px 8px;border-radius:6px;font-weight:900;border:1.5px solid #38BDF8;background:rgba(56,189,248,0.22);color:#38BDF8;cursor:pointer">🏁 S1: Ligne 0</button>
+        <button id="btn-st-ex-s2" onclick="window.setStrat11JournalExit('s2')" style="font-size:10px;padding:4px 8px;border-radius:6px;font-weight:700;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.08);color:#F1F5F9;cursor:pointer">⚡ S2: Extrême</button>
+        <button id="btn-st-ex-s3" onclick="window.setStrat11JournalExit('s3')" style="font-size:10px;padding:4px 8px;border-radius:6px;font-weight:700;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.08);color:#F1F5F9;cursor:pointer">🔄 S3: Inversion</button>
       </div>
     </div>
-    <!-- Mini Stats Strip -->
-    <div id="st-panel-stats" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:4px 8px;font-size:10px">
-      <span>Gain : <b id="st-stat-pnl" style="color:#10B981">+0 pts</b></span>
-      <span>WR : <b id="st-stat-wr">0%</b></span>
-      <span>PF : <b id="st-stat-pf">0.0</b></span>
-      <span>Trades : <b id="st-stat-n">0</b></span>
+    <!-- Mini Stats Strip (Texte clair, lisible sur fond sombre) -->
+    <div id="st-panel-stats" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);border-radius:7px;padding:6px 10px;font-size:10.5px;color:#CBD5E1">
+      <span>Gain : <b id="st-stat-pnl" style="color:#10B981;font-weight:900;font-size:11.5px">+0 pts</b></span>
+      <span>WR : <b id="st-stat-wr" style="color:#FFFFFF;font-weight:900">0%</b></span>
+      <span>PF : <b id="st-stat-pf" style="color:#FFFFFF;font-weight:900">0.0</b></span>
+      <span>Trades : <b id="st-stat-n" style="color:#FFFFFF;font-weight:900">0</b></span>
     </div>
   </div>
 
   <!-- Table Body -->
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px">
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 8px">
     <table style="width:100%;border-collapse:collapse;font-size:10.5px">
       <thead>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.12);color:#94A3B8;font-size:9px;text-transform:uppercase">
-          <th style="padding:6px 3px;text-align:left">#</th>
-          <th style="padding:6px 3px;text-align:left">Type</th>
-          <th style="padding:6px 3px;text-align:left">Entrée</th>
-          <th style="padding:6px 3px;text-align:left">Sortie</th>
-          <th style="padding:6px 3px;text-align:right">PnL</th>
-          <th style="padding:6px 3px;text-align:center">🔍</th>
+        <tr style="border-bottom:1.5px solid rgba(255,255,255,0.15);color:#CBD5E1;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em">
+          <th style="padding:7px 4px;text-align:left"># / Pastille</th>
+          <th style="padding:7px 4px;text-align:left">Type</th>
+          <th style="padding:7px 4px;text-align:left">Entrée</th>
+          <th style="padding:7px 4px;text-align:left">Sortie</th>
+          <th style="padding:7px 4px;text-align:right">PnL</th>
+          <th style="padding:7px 4px;text-align:center">🔍</th>
         </tr>
       </thead>
       <tbody id="strat11-trades-tbody"></tbody>
