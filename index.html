@@ -19592,12 +19592,16 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
     if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
       try {
         const mexcPair = ((state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
+        const targetNotional = Math.round(notional || (qty * px) || (0.025 * px));
         const webSignal = {
           type: 'LUMEN_TRADE_SIGNAL',
           symbol: mexcPair,
           side: side === 'long' ? 'BUY' : 'SELL',
           price: px,
-          budget: notional / lev,
+          qty: qty || 0.025,
+          notional: targetNotional,
+          budget: targetNotional,
+          margin: targetNotional / (lev || 50),
           unit: 'USDT',
           leverage: lev,
           timestamp: Date.now()

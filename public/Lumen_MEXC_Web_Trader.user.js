@@ -237,20 +237,29 @@
             if (marketBtn) marketBtn.click();
             await new Promise(r => setTimeout(r, 120));
 
-            // Montant automatique
-            if (signal.budget && signal.budget > 0) {
-                const inputs = Array.from(document.querySelectorAll('input'));
-                const qtyInput = inputs.find(inp => {
-                    const ph = (inp.placeholder || '').toLowerCase();
-                    const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                    const name = (inp.name || '').toLowerCase();
-                    return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || aria.includes('amount') || name.includes('amount') || name.includes('vol');
-                }) || inputs[0];
+            // Montant automatique (Support transparent BTC et USDT)
+            const inputs = Array.from(document.querySelectorAll('input'));
+            const qtyInput = inputs.find(inp => {
+                const ph = (inp.placeholder || '').toLowerCase();
+                const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
+                const name = (inp.name || '').toLowerCase();
+                return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || ph.includes('btc') || aria.includes('amount') || name.includes('amount') || name.includes('vol');
+            }) || inputs[0];
 
-                if (qtyInput) {
-                    qtyInput.focus();
-                    setNativeValue(qtyInput, String(signal.budget));
+            if (qtyInput) {
+                const isBtcField = (qtyInput.placeholder || '').toLowerCase().includes('btc') || 
+                                   document.body.innerText.includes('Quantity (BTC)') || 
+                                   document.body.innerText.includes('Quantité (BTC)');
+                let valToEnter = 0.025;
+                if (isBtcField) {
+                    valToEnter = signal.qty || signal.btcQty || 0.025;
+                } else {
+                    // En USDT : Valeur notionnelle totale pour 0.025 BTC (~1931 USDT)
+                    valToEnter = signal.notional || signal.budget || Math.round(0.025 * (signal.price || 77250));
                 }
+
+                qtyInput.focus();
+                setNativeValue(qtyInput, String(valToEnter));
             }
             await new Promise(r => setTimeout(r, 120));
 
