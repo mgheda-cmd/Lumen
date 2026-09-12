@@ -521,7 +521,7 @@ footer{
     <span>🟢</span> <span>MEXC Direct</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1630</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1645</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -17391,33 +17391,100 @@ window.activerStrat11SurCompteDemo = function() {
 };
 
 window.activerStrat11SurMexcWeb = function() {
-  const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
-  const exitKey = window.__stJournalExitMode || 's1';
-  const vDef = (typeof STRAT11_VARIANTS_DEF !== 'undefined' ? STRAT11_VARIANTS_DEF.find(v => v.key === varKey) : null) || { name: 'Ultra Scalp', tfFMC: 1, tfKK: 6 };
+  const isLiveActive = !!(window.__liveBotActive && window.__liveBotActive.active);
+  if (isLiveActive) {
+    if (confirm('🛑 Le Bot MEXC Direct en Argent Réel est en cours d\'exécution.\n\nSouhaitez-vous désactiver le trading automatique sur votre compte MEXC ?')) {
+      window.desactiverStrat11Execution();
+    }
+    return;
+  }
+
+  const varKey = window.__stJournalVarKey || 'strat_11_11_elite';
+  const exitKey = window.__stJournalExitMode || 's2';
+  const vDef = (typeof STRAT11_VARIANTS_DEF !== 'undefined' ? STRAT11_VARIANTS_DEF.find(v => v.key === varKey) : null) || { name: 'Élite', tfFMC: 5, tfKK: 10 };
   const exLabel = (exitKey === 's1') ? 'Ligne 0' : ((exitKey === 's2') ? 'Extrême' : 'Inversion');
   const label = vDef.name + ' [' + vDef.tfFMC + 'm×' + vDef.tfKK + 'm] · Sortie ' + exLabel;
 
-  // 1. Activer aussi sur le compte Démo (moteur de pastilles partagé)
-  window.activerStrat11SurCompteDemo();
+  const capInfo = window.getCoachCapital();
+  const isPhase2 = (capInfo.capital >= 200);
+  const tradeQty = window.__stCoachCustomQty || (isPhase2 ? 0.065 : 0.032);
+  const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+  const serviceUrl = serviceConfig.serviceUrl || 'https://mexc-signer.vercel.app/api/mexc';
+  const lumenToken = serviceConfig.lumenToken || 'lum1071';
+  const px = (typeof livePrice === 'function' ? livePrice(state.symbol || 'BTCUSDT') : 0) || 83000;
+  const budgetUsdt = tradeQty * px;
+  const maxUsdt = isPhase2 ? '10000' : '5000';
 
-  // 2. Activer le Web Auto-Trader MEXC
-  localStorage.setItem('lumen_web_autotrader_active', '1');
-  localStorage.setItem('lumen_web_autotrader_ready', '1');
-  if (typeof window.updateWebAutoTraderUI === 'function') window.updateWebAutoTraderUI();
+  // 1. Configurer et activer le Bot MEXC Direct en Argent Réel
+  const botConfig = {
+    active: true,
+    exName: 'MEXC',
+    serviceUrl: serviceUrl,
+    lumenToken: lumenToken,
+    openType: 2, // Marge croisée
+    autoCapital: true,
+    mode: varKey + '_' + exitKey,
+    modeLabel: label,
+    tradeDir: 'both',
+    dirLabel: '🔄 Longs & Shorts',
+    tradeUnit: 'BTC',
+    tradeBudget: String(tradeQty),
+    tradeBudgetUsdt: budgetUsdt,
+    alloc: '100',
+    lev: '50',
+    sl: '0',
+    maxUsdt: maxUsdt,
+    startedAt: Date.now()
+  };
+  try {
+    localStorage.setItem('lumen_live_exchange_bot', JSON.stringify(botConfig));
+    localStorage.setItem('lumen_live_exchange_config', JSON.stringify({ exName: 'MEXC', serviceUrl, lumenToken }));
+  } catch(e){}
+  updateLiveExchangeUI(botConfig);
+
+  // 2. Activer la stratégie sur le graphique et le moteur de trading
+  window.paperAutoTrade = true;
+  try { localStorage.setItem('lumen_paper_autotrade', '1'); } catch(e){}
+  window.activeDemoStrategy = {
+    active: true,
+    type: 'strat_11_11',
+    varKey: varKey,
+    exitKey: exitKey,
+    modeLabel: label,
+    capital: capInfo.capital,
+    marge: tradeQty,
+    unite: 'BASE',
+    lev: 50,
+    feePct: 0.02
+  };
+  try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
+
+  if (typeof state !== 'undefined' && state.indicators) {
+    ['strat_11_11_elite', 'strat_11_11_ultra', 'strat_11_11', 'strat_11_11_scalp', 'strat_11_11_pro'].forEach(k => {
+      if (!state.indicators[k]) state.indicators[k] = {};
+      state.indicators[k].on = (k === varKey);
+    });
+    if (state.indicators[varKey]) {
+      state.indicators[varKey].showBuy = true;
+      state.indicators[varKey].showSell = true;
+      state.indicators[varKey].showExitExtreme = (exitKey === 's2');
+      state.indicators[varKey].showExitZero = (exitKey === 's1');
+      state.indicators[varKey].showExitReversal = (exitKey === 's3');
+      state.indicators[varKey].showVerticalLines = true;
+    }
+  }
+
   if (typeof window.updateStrat11JournalExecUI === 'function') window.updateStrat11JournalExecUI();
 
-  const rawSym = (state.symbol || 'BTCUSDT').toUpperCase();
-  const base = rawSym.replace('USDT', '') || 'BTC';
-  const mexcPair = base + '_USDT';
-
   if (typeof toast === 'function') {
-    toast('⚡ ROBOT MEXC WEB TRADER ACTIVÉ !\n• Stratégie : ' + label + '\n• Transmission automatique sur ' + mexcPair + ' (Frais 0.02%)\n• Prêt à exécuter !', '#FFD700');
+    toast(`🔴 ROBOT MEXC DIRECT DÉMARRÉ EN RÉEL !
+• Stratégie : ${label}
+• Taille : ${tradeQty} BTC @ 50x (~53$ marge)
+• Solde : ${capInfo.capital.toFixed(2)} USDT (MEXC)
+• Plafond Sécurité : ${maxUsdt} USDT
+• Bot en écoute des pastilles en direct ! 🚀`, '#10B981');
   }
-
-  // Ouvrir l'onglet MEXC Futures avec le script
-  if (typeof window.ouvrirMexcEtScript === 'function') {
-    window.ouvrirMexcEtScript();
-  }
+  try { if (typeof beep === 'function') beep(); } catch(e){}
 };
 
 window.desactiverStrat11Execution = function() {
@@ -17428,15 +17495,17 @@ window.desactiverStrat11Execution = function() {
   paperAutoTrade = false;
   window.paperAutoTrade = false;
   try { localStorage.setItem('lumen_paper_autotrade', '0'); } catch(e){}
-  localStorage.setItem('lumen_web_autotrader_active', '0');
+
+  if (typeof window.stopLiveExchangeTrading === 'function') {
+    window.stopLiveExchangeTrading();
+  }
 
   if (typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
   if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
-  if (typeof window.updateWebAutoTraderUI === 'function') window.updateWebAutoTraderUI();
   if (typeof window.updateStrat11JournalExecUI === 'function') window.updateStrat11JournalExecUI();
 
   if (typeof toast === 'function') {
-    toast('🛑 Exécution automatique arrêtée.', '#94A3B8');
+    toast('🛑 Robot MEXC et exécution automatique arrêtés.', '#94A3B8');
   }
 };
 
@@ -17445,35 +17514,48 @@ window.updateStrat11JournalExecUI = function() {
   const bannerTxt = document.getElementById('st-execution-status-txt');
   const btnDemo = document.getElementById('btn-st-apply-demo');
   const btnMexc = document.getElementById('btn-st-apply-mexc');
+  const btnCoachApply = document.getElementById('btn-st-coach-apply');
   if (!banner || !btnDemo || !btnMexc) return;
 
+  const isLiveOn = !!(window.__liveBotActive && window.__liveBotActive.active);
   const isDemoOn = !!(window.activeDemoStrategy && window.activeDemoStrategy.active && paperAutoTrade);
-  const isMexcOn = (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive());
 
-  if (isMexcOn && isDemoOn) {
+  if (isLiveOn) {
     banner.style.display = 'flex';
-    banner.style.background = 'rgba(255,215,0,0.14)';
-    banner.style.borderColor = '#FFD700';
-    banner.style.color = '#FFD700';
-    if (bannerTxt) bannerTxt.textContent = '⚡ ROBOT MEXC + DÉMO ACTIFS (Suit les pastilles)';
+    banner.style.background = 'rgba(16,185,129,0.18)';
+    banner.style.borderColor = '#10B981';
+    banner.style.color = '#A7F3D0';
+    if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC RÉEL ACTIF</b> : suit chaque pastille ' + (window.__liveBotActive.modeLabel || 'Élite S2') + ' (' + (window.__liveBotActive.tradeBudget || '0.032') + ' BTC @ ' + (window.__liveBotActive.lev || '50') + 'x)';
     btnDemo.style.background = '#064E3B';
     btnDemo.style.color = '#34D399';
-    btnDemo.innerHTML = '✅ Démo Connecté';
-    btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
-    btnMexc.style.boxShadow = '0 0 16px rgba(255,215,0,0.6)';
-    btnMexc.innerHTML = '⚡ MEXC ACTIF (0.02%)';
+    btnDemo.innerHTML = '✅ Moteur Prêt';
+    btnMexc.style.background = 'linear-gradient(135deg,#10B981,#059669)';
+    btnMexc.style.boxShadow = '0 0 16px rgba(16,185,129,0.7)';
+    btnMexc.innerHTML = '🟢 Bot MEXC Réel En Marche (Arrêter)';
+    if (btnCoachApply) {
+      btnCoachApply.innerHTML = '🟢 Bot MEXC Réel En Marche (Arrêter)';
+      btnCoachApply.style.background = 'linear-gradient(135deg,#10B981,#059669)';
+      btnCoachApply.style.boxShadow = '0 0 16px rgba(16,185,129,0.7)';
+    }
   } else if (isDemoOn) {
     banner.style.display = 'flex';
-    banner.style.background = 'rgba(16,185,129,0.14)';
-    banner.style.borderColor = '#10B981';
-    banner.style.color = '#34D399';
+    banner.style.background = 'rgba(56,189,248,0.14)';
+    banner.style.borderColor = '#38BDF8';
+    banner.style.color = '#7DD3FC';
     if (bannerTxt) bannerTxt.textContent = '🤖 DÉMO ACTIF : suit les pastilles d\'entrée et de sortie';
     btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
     btnDemo.style.boxShadow = '0 0 16px rgba(0,230,118,0.5)';
     btnDemo.innerHTML = '✅ Démo Connecté';
     btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
     btnMexc.style.boxShadow = 'none';
-    btnMexc.innerHTML = '⚡ Robot MEXC (0.02%)';
+    btnMexc.innerHTML = '🔴 Lancer Robot MEXC Réel';
+    if (btnCoachApply) {
+      const capInfo = window.getCoachCapital();
+      const isPhase2 = (capInfo.capital >= 200);
+      btnCoachApply.innerHTML = isPhase2 ? '🚀 Lancer Robot MEXC Phase 2 (0.065 BTC · 50x)' : '⚡ Lancer Robot MEXC Réel (Élite · 0.032 BTC · 50x)';
+      btnCoachApply.style.background = isPhase2 ? 'linear-gradient(135deg,#10B981,#FFD700)' : 'linear-gradient(135deg,#00E5FF,#00B0FF)';
+      btnCoachApply.style.boxShadow = '0 3px 10px rgba(0,229,255,0.3)';
+    }
   } else {
     banner.style.display = 'none';
     btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
@@ -17481,7 +17563,14 @@ window.updateStrat11JournalExecUI = function() {
     btnDemo.innerHTML = '🤖 Activer en Démo';
     btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
     btnMexc.style.boxShadow = '0 3px 12px rgba(255,215,0,0.35)';
-    btnMexc.innerHTML = '⚡ Robot MEXC (0.02%)';
+    btnMexc.innerHTML = '🔴 Lancer Robot MEXC Réel';
+    if (btnCoachApply) {
+      const capInfo = window.getCoachCapital();
+      const isPhase2 = (capInfo.capital >= 200);
+      btnCoachApply.innerHTML = isPhase2 ? '🚀 Lancer Robot MEXC Phase 2 (0.065 BTC · 50x)' : '⚡ Lancer Robot MEXC Réel (Élite · 0.032 BTC · 50x)';
+      btnCoachApply.style.background = isPhase2 ? 'linear-gradient(135deg,#10B981,#FFD700)' : 'linear-gradient(135deg,#00E5FF,#00B0FF)';
+      btnCoachApply.style.boxShadow = '0 3px 10px rgba(0,229,255,0.3)';
+    }
   }
 };
 
@@ -18067,7 +18156,7 @@ window.renderStrat11TradesJournal = function() {
 
 window.getCoachCapital = function() {
   let cap = 0;
-  let source = 'manual';
+  let source = 'mexc';
   if (typeof window.__mexcEquityUsdt === 'number' && window.__mexcEquityUsdt > 0) {
     cap = window.__mexcEquityUsdt;
     source = 'mexc';
@@ -18075,9 +18164,15 @@ window.getCoachCapital = function() {
     cap = window.__mexcBalanceUsdt;
     source = 'mexc';
   } else {
-    const saved = localStorage.getItem('lumen_user_capital');
-    cap = saved ? parseFloat(saved) : 78.00;
-    source = 'manual';
+    const cachedMexc = localStorage.getItem('lumen_mexc_last_balance');
+    if (cachedMexc && parseFloat(cachedMexc) > 0) {
+      cap = parseFloat(cachedMexc);
+      source = 'mexc';
+    } else {
+      const saved = localStorage.getItem('lumen_user_capital');
+      cap = saved ? parseFloat(saved) : 78.00;
+      source = 'mexc';
+    }
   }
   if (isNaN(cap) || cap <= 0) cap = 78.00;
   return { capital: cap, source: source };
@@ -18090,6 +18185,7 @@ window.editerCapitalCoach = function() {
     const val = parseFloat(rep.replace(',', '.'));
     if (!isNaN(val) && val > 0) {
       localStorage.setItem('lumen_user_capital', val.toFixed(2));
+      localStorage.setItem('lumen_mexc_last_balance', val.toFixed(2));
       if (typeof toast === 'function') {
         toast('🎯 Capital mis à jour : ' + val.toFixed(2) + ' $ USDT', '#10B981');
       }
@@ -18108,7 +18204,7 @@ window.updateStrat11CoachUI = function() {
 
   const capDisplay = document.getElementById('st-coach-capital-display');
   if (capDisplay) {
-    capDisplay.innerHTML = cap.toFixed(2) + ' $ <span style="font-size:9px;font-weight:700;color:' + (capInfo.source === 'mexc' ? '#38BDF8' : '#94A3B8') + '">' + (capInfo.source === 'mexc' ? '(MEXC)' : '(Manuel)') + '</span>';
+    capDisplay.innerHTML = cap.toFixed(2) + ' $ <span style="font-size:9.5px;font-weight:900;color:#10B981">🟢 (MEXC Direct)</span>';
   }
 
   const badgePhase = document.getElementById('st-coach-badge-phase');
@@ -18243,6 +18339,14 @@ window.updateStrat11CoachUI = function() {
 };
 
 window.appliquerReglagesCoach = function() {
+  const isLiveActive = !!(window.__liveBotActive && window.__liveBotActive.active);
+  if (isLiveActive) {
+    if (confirm('🛑 Le Bot MEXC Direct en Argent Réel est en cours d\'exécution.\n\nSouhaitez-vous arrêter le robot MEXC ?')) {
+      window.desactiverStrat11Execution();
+    }
+    return;
+  }
+
   const capInfo = window.getCoachCapital();
   const cap = capInfo.capital;
   const isPhase2 = (cap >= 200);
@@ -18298,11 +18402,9 @@ window.appliquerReglagesCoach = function() {
   if (liveMaxEl) window.setSelectValueOrAddOption(liveMaxEl, isPhase2 ? '10000' : '5000', v => '🛡️ Max ' + v + ' USDT');
   if (typeof window.recalcLiveModalNotional === 'function') window.recalcLiveModalNotional();
 
-  if (typeof toast === 'function') {
-    const msg = isPhase2
-      ? '🚀 MODE PHASE 2 ACTIVÉ !\n• Stratégie : Élite (5m×10m) Sortie S2\n• Taille : 0.065 BTC (~108$ marge @ 50x)\n• Objectif : ~100 $ NET / jour !'
-      : '⚡ RÉGLAGES COACH APPLIQUÉS !\n• Stratégie : Élite (5m×10m) Sortie S2\n• Taille : 0.032 BTC (~53$ marge @ 50x)\n• Objectif : +5.04 $ NET / trade gagnant !';
-    toast(msg, '#00E5FF');
+  // Déclencher et lancer le Bot MEXC Réel directement en 1 clic !
+  if (typeof window.activerStrat11SurMexcWeb === 'function') {
+    window.activerStrat11SurMexcWeb();
   }
 };
 
@@ -18310,12 +18412,27 @@ window.appliquerReglagesCoach = function() {
 if (!window.__stCoachWatchdogTimer) {
   window.__stCoachWatchdogTimer = setInterval(function() {
     try {
+      if (typeof window.fetchMexcAccountAndPositions === 'function') {
+        window.fetchMexcAccountAndPositions();
+      }
       if (typeof window.updateStrat11CoachUI === 'function') {
         window.updateStrat11CoachUI();
       }
     } catch(e) {}
   }, 60000);
 }
+
+// Rafraîchissement automatique au chargement
+setTimeout(function() {
+  try {
+    if (typeof window.fetchMexcAccountAndPositions === 'function') {
+      window.fetchMexcAccountAndPositions();
+    }
+    if (typeof window.updateStrat11CoachUI === 'function') {
+      window.updateStrat11CoachUI();
+    }
+  } catch(e){}
+}, 1500);
 
 function resetDefaultPastilles() {
   for (const cat of PASTILLES_CATALOG) {
@@ -31644,7 +31761,7 @@ window.fetchMexcAccountAndPositions = async function() {
   const inputUrl = document.getElementById('live-ex-serviceurl')?.value?.trim();
   const serviceUrl = inputUrl || serviceConfig.serviceUrl || botConfig.serviceUrl || 'https://mexc-signer.vercel.app/api/mexc';
   const inputToken = document.getElementById('live-ex-token')?.value?.trim()?.replace(/^['"]|['"]$/g, '');
-  const lumenToken = (inputToken || serviceConfig.lumenToken || botConfig.lumenToken || '').trim();
+  const lumenToken = (inputToken || serviceConfig.lumenToken || botConfig.lumenToken || 'lum1071').trim();
   const apiKey = (document.getElementById('live-ex-apikey')?.value || serviceConfig.apiKey || botConfig.apiKey || '').trim();
   const apiSecret = (document.getElementById('live-ex-apisecret')?.value || serviceConfig.apiSecret || botConfig.apiSecret || '').trim();
 
@@ -31702,6 +31819,14 @@ window.fetchMexcAccountAndPositions = async function() {
       window.__mexcAvailUsdt   = availUsdt;    // plafond de ce qu'on peut ajouter
       window.__mexcEquityUsdt  = equityUsdt;   // capital total, base du pourcentage
       window.__mexcBalanceUsdt = parseFloat(usdtFutures?.cashBalance ?? usdtFutures?.availableBalance ?? availUsdt) || availUsdt;
+      const bestLiveCap = (equityUsdt > 0 ? equityUsdt : (window.__mexcBalanceUsdt > 0 ? window.__mexcBalanceUsdt : availUsdt));
+      if (bestLiveCap > 0) {
+        try {
+          localStorage.setItem('lumen_mexc_last_balance', bestLiveCap.toFixed(2));
+          localStorage.setItem('lumen_user_capital', bestLiveCap.toFixed(2));
+        } catch(e){}
+        if (typeof window.updateStrat11CoachUI === 'function') window.updateStrat11CoachUI();
+      }
       if (elFuturesAvail) elFuturesAvail.innerHTML = `${availUsdt.toFixed(2)} <span style="font-size:12px;color:#94A3B8">USDT</span>`;
       if (elFuturesEquity) elFuturesEquity.innerHTML = `${equityUsdt.toFixed(2)} USDT`;
     } else {
@@ -42660,7 +42785,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-1630';
+  window.__LUMEN_BUILD = 'B-0912-1645';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -45640,9 +45765,9 @@ window.balayerMM_MTF = async function(){
         🤖 Activer en Démo
       </button>
 
-      <!-- Bouton 2 : Robot MEXC Web Trader -->
-      <button id="btn-st-apply-mexc" type="button" onclick="window.activerStrat11SurMexcWeb()" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#06101E;border:none;border-radius:7px;padding:7px 8px;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(255,215,0,0.35);transition:all 0.15s" title="Activer le Robot MEXC Web Trader (Frais réduits 0.02% sans passer par l'API payante)">
-        ⚡ Robot MEXC (0.02%)
+      <!-- Bouton 2 : Robot MEXC Réel Direct -->
+      <button id="btn-st-apply-mexc" type="button" onclick="window.activerStrat11SurMexcWeb()" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#06101E;border:none;border-radius:7px;padding:7px 8px;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(255,215,0,0.35);transition:all 0.15s" title="Lancer le Robot MEXC Réel Directement (Exécute chaque pastille Élite S2 en direct sur MEXC Futures)">
+        🔴 Lancer Robot MEXC Réel
       </button>
     </div>
 
@@ -45712,8 +45837,8 @@ window.balayerMM_MTF = async function(){
 
       <!-- Bouton 1-Clic d'Application Automatique -->
       <div style="display:flex;gap:6px">
-        <button id="btn-st-coach-apply" type="button" onclick="window.appliquerReglagesCoach()" style="flex:1;background:linear-gradient(135deg,#00E5FF,#00B0FF);color:#06101E;border:none;border-radius:6px;padding:6px 10px;font-size:10.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(0,229,255,0.3);transition:all 0.15s">
-          ⚡ Appliquer Réglages Coach (Élite · 0.032 BTC · Sortie S2)
+        <button id="btn-st-coach-apply" type="button" onclick="window.appliquerReglagesCoach()" style="flex:1;background:linear-gradient(135deg,#00E5FF,#00B0FF);color:#06101E;border:none;border-radius:6px;padding:6px 10px;font-size:10.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(0,229,255,0.3);transition:all 0.15s" title="Lancer le Robot MEXC Réel Directement avec les réglages optimaux du Coach">
+          ⚡ Lancer Robot MEXC Réel (Élite · 0.032 BTC · Sortie S2)
         </button>
       </div>
     </div>
