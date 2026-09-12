@@ -525,7 +525,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-2120</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-2230</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -17669,6 +17669,13 @@ window.filterAllStrategiesTable = function(famKey) {
 };
 
 window.activerStrat11SurCompteDemo = function() {
+  const isDemoActive = !!(window.activeDemoStrategy && window.activeDemoStrategy.active && paperAutoTrade);
+  if (isDemoActive) {
+    if (confirm('🛑 Le Trading Automatique Démo est actuellement actif.\n\nSouhaitez-vous l\'arrêter ?')) {
+      window.desactiverStrat11Execution();
+    }
+    return;
+  }
   const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
   const exitKey = window.__stJournalExitMode || 's1';
   const vDef = (typeof STRAT11_VARIANTS_DEF !== 'undefined' ? STRAT11_VARIANTS_DEF.find(v => v.key === varKey) : null) || { name: 'Ultra Scalp', tfFMC: 1, tfKK: 6 };
@@ -17990,8 +17997,7 @@ window.updateStrat11JournalExecUI = function() {
   const bannerTxt = document.getElementById('st-execution-status-txt');
   const btnDemo = document.getElementById('btn-st-apply-demo');
   const btnMexc = document.getElementById('btn-st-apply-mexc');
-  const btnCoachApply = document.getElementById('btn-st-coach-apply');
-  if (!banner || !btnDemo || !btnMexc) return;
+  if (!btnDemo || !btnMexc) return;
 
   const isWebOn = (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive());
   const isLiveOn = isWebOn || !!(window.__liveBotActive && window.__liveBotActive.active);
@@ -18007,74 +18013,48 @@ window.updateStrat11JournalExecUI = function() {
     timeTag = ' · 🕒 Activé à <b>' + hh + ':' + mm + '</b> ' + (elapsedMin < 60 ? ('(il y a ' + elapsedMin + 'm)') : ('(' + Math.floor(elapsedMin / 60) + 'h' + (elapsedMin % 60) + 'm)'));
   }
 
-  if (isWebOn) {
-    banner.style.display = 'flex';
-    banner.style.background = 'rgba(16,185,129,0.18)';
-    banner.style.borderColor = '#10B981';
-    banner.style.color = '#A7F3D0';
+  if (isWebOn || isLiveOn) {
+    if (banner) {
+      banner.style.display = 'flex';
+      banner.style.background = 'rgba(16,185,129,0.18)';
+      banner.style.borderColor = '#10B981';
+      banner.style.color = '#A7F3D0';
+    }
     if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC WEB ACTIF (0.00% FRAIS MAKER)</b>' + timeTag + ' : suit les pastilles ' + (window.activeDemoStrategy?.modeLabel || 'Élite S2') + ' (' + (window.__stCoachCustomQty || '0.032') + ' BTC @ 50x) · <i>Chaser 12 pts</i>';
-    btnDemo.style.background = '#064E3B';
-    btnDemo.style.color = '#34D399';
-    btnDemo.innerHTML = '✅ Moteur Prêt';
+    btnDemo.style.background = 'rgba(255,255,255,0.06)';
+    btnDemo.style.color = '#94A3B8';
+    btnDemo.style.boxShadow = 'none';
+    btnDemo.innerHTML = '🤖 Lancer en DÉMO';
     btnMexc.style.background = 'linear-gradient(135deg,#10B981,#059669)';
+    btnMexc.style.color = '#FFFFFF';
     btnMexc.style.boxShadow = '0 0 16px rgba(16,185,129,0.7)';
-    btnMexc.innerHTML = '🟢 Bot MEXC Web En Marche (Arrêter)';
-    if (btnCoachApply) {
-      btnCoachApply.innerHTML = '🟢 Bot MEXC Web En Marche (Arrêter)';
-      btnCoachApply.style.background = 'linear-gradient(135deg,#10B981,#059669)';
-      btnCoachApply.style.boxShadow = '0 0 16px rgba(16,185,129,0.7)';
-    }
-  } else if (isLiveOn) {
-    banner.style.display = 'flex';
-    banner.style.background = 'rgba(16,185,129,0.18)';
-    banner.style.borderColor = '#10B981';
-    banner.style.color = '#A7F3D0';
-    if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC ACTIF</b>' + timeTag + ' : suit chaque pastille ' + (window.__liveBotActive?.modeLabel || 'Élite S2') + ' (' + (window.__liveBotActive?.tradeBudget || '0.032') + ' BTC @ ' + (window.__liveBotActive?.lev || '50') + 'x)';
-    btnDemo.style.background = '#064E3B';
-    btnDemo.style.color = '#34D399';
-    btnDemo.innerHTML = '✅ Moteur Prêt';
-    btnMexc.style.background = 'linear-gradient(135deg,#10B981,#059669)';
-    btnMexc.style.boxShadow = '0 0 16px rgba(16,185,129,0.7)';
-    btnMexc.innerHTML = '🟢 Bot MEXC En Marche (Arrêter)';
-    if (btnCoachApply) {
-      btnCoachApply.innerHTML = '🟢 Bot MEXC En Marche (Arrêter)';
-      btnCoachApply.style.background = 'linear-gradient(135deg,#10B981,#059669)';
-      btnCoachApply.style.boxShadow = '0 0 16px rgba(16,185,129,0.7)';
-    }
+    btnMexc.innerHTML = '🟢 MEXC ACTIF · 0% Frais (Arrêter)';
   } else if (isDemoOn) {
-    banner.style.display = 'flex';
-    banner.style.background = 'rgba(56,189,248,0.14)';
-    banner.style.borderColor = '#38BDF8';
-    banner.style.color = '#7DD3FC';
+    if (banner) {
+      banner.style.display = 'flex';
+      banner.style.background = 'rgba(56,189,248,0.14)';
+      banner.style.borderColor = '#38BDF8';
+      banner.style.color = '#7DD3FC';
+    }
     if (bannerTxt) bannerTxt.innerHTML = '🤖 <b>DÉMO ACTIF</b>' + timeTag + ' : suit les pastilles d\'entrée et de sortie';
     btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
-    btnDemo.style.boxShadow = '0 0 16px rgba(0,230,118,0.5)';
-    btnDemo.innerHTML = '✅ Démo Connecté';
-    btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
+    btnDemo.style.color = '#06101E';
+    btnDemo.style.boxShadow = '0 0 16px rgba(0,230,118,0.7)';
+    btnDemo.innerHTML = '🟢 DÉMO ACTIF (Arrêter)';
+    btnMexc.style.background = 'rgba(255,255,255,0.06)';
+    btnMexc.style.color = '#94A3B8';
     btnMexc.style.boxShadow = 'none';
-    btnMexc.innerHTML = '⚡ Robot MEXC (0% Frais)';
-    if (btnCoachApply) {
-      const capInfo = window.getCoachCapital();
-      const isPhase2 = (capInfo.capital >= 200);
-      btnCoachApply.innerHTML = isPhase2 ? '🚀 Lancer Robot MEXC Phase 2 (0.065 BTC · 50x)' : '⚡ Lancer Robot MEXC (0% Frais · 0.032 BTC)';
-      btnCoachApply.style.background = isPhase2 ? 'linear-gradient(135deg,#10B981,#FFD700)' : 'linear-gradient(135deg,#00E5FF,#00B0FF)';
-      btnCoachApply.style.boxShadow = '0 3px 10px rgba(0,229,255,0.3)';
-    }
+    btnMexc.innerHTML = '⚡ Lancer sur MEXC (0% Frais)';
   } else {
-    banner.style.display = 'none';
+    if (banner) banner.style.display = 'none';
     btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
+    btnDemo.style.color = '#06101E';
     btnDemo.style.boxShadow = '0 3px 12px rgba(0,230,118,0.35)';
-    btnDemo.innerHTML = '🤖 Activer en Démo';
+    btnDemo.innerHTML = '🤖 Lancer en DÉMO';
     btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
+    btnMexc.style.color = '#06101E';
     btnMexc.style.boxShadow = '0 3px 12px rgba(255,215,0,0.35)';
-    btnMexc.innerHTML = '⚡ Robot MEXC (0% Frais)';
-    if (btnCoachApply) {
-      const capInfo = window.getCoachCapital();
-      const isPhase2 = (capInfo.capital >= 200);
-      btnCoachApply.innerHTML = isPhase2 ? '🚀 Lancer Robot MEXC Phase 2 (0.065 BTC · 50x)' : '⚡ Lancer Robot MEXC (0% Frais · 0.032 BTC)';
-      btnCoachApply.style.background = isPhase2 ? 'linear-gradient(135deg,#10B981,#FFD700)' : 'linear-gradient(135deg,#00E5FF,#00B0FF)';
-      btnCoachApply.style.boxShadow = '0 3px 10px rgba(0,229,255,0.3)';
-    }
+    btnMexc.innerHTML = '⚡ Lancer sur MEXC (0% Frais)';
   }
 
   if (typeof window.updateStrat11CoachUI === 'function') {
@@ -18822,13 +18802,13 @@ window.updateStrat11CoachUI = function() {
       alertBox.style.background = 'rgba(245,158,11,0.18)';
       alertBox.style.border = '1px solid #F59E0B';
       alertBox.style.color = '#FDE68A';
-      alertTxt.innerHTML = '⚠️ <b>Alerte Configuration :</b> Vous n\'êtes pas sur la variante optimale. Cliquez ci-dessous pour activer <b>Élite (5m×10m) Sortie S2</b> afin de garantir +5$ NET/trade.';
+      alertTxt.innerHTML = '⚠️ <b>Conseil Coach :</b> Sélectionnez la variante <b>Élite [5m×10m]</b> et la <b>Sortie S2: Extrême</b> ci-dessus pour viser +5$ NET/trade.';
     } else if (isPhase2 && (!window.__stCoachPhase2AlertShown)) {
       alertBox.style.display = 'block';
       alertBox.style.background = 'rgba(16,185,129,0.2)';
       alertBox.style.border = '1px solid #10B981';
       alertBox.style.color = '#A7F3D0';
-      alertTxt.innerHTML = '🎉 <b>FÉLICITATIONS !</b> Capital ≥ 200 $ atteint. Cliquez ci-dessous pour passer à 0.065 BTC et générer ~100 $ NET/jour.';
+      alertTxt.innerHTML = '🎉 <b>FÉLICITATIONS !</b> Capital ≥ 200 $ atteint. Vous pouvez passer à 0.065 BTC pour générer ~100 $ NET/jour.';
       if (!window.__stCoachPhase2AlertSent) {
         window.__stCoachPhase2AlertSent = true;
         try {
@@ -43408,7 +43388,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-2120';
+  window.__LUMEN_BUILD = 'B-0912-2230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -46382,16 +46362,16 @@ window.balayerMM_MTF = async function(){
         <button id="btn-st-ex-s3" onclick="window.setStrat11JournalExit('s3')" style="font-size:10px;padding:4px 8px;border-radius:6px;font-weight:700;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.08);color:#F1F5F9;cursor:pointer">🔄 S3: Inversion</button>
       </div>
     </div>
-    <!-- Actions d'Exécution Automatique Directe : Compte Démo & Robot MEXC -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
+    <!-- Actions d'Exécution Automatique Directe : SEULEMENT 2 BOUTONS CLAIRS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
       <!-- Bouton 1 : Compte Démo -->
-      <button id="btn-st-apply-demo" type="button" onclick="window.activerStrat11SurCompteDemo()" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#06101E;border:none;border-radius:7px;padding:7px 8px;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(0,230,118,0.35);transition:all 0.15s" title="Activer cette stratégie exacte sur le compte Démo : elle suivra à la lettre chaque pastille d'entrée et de sortie du graphique">
-        🤖 Activer en Démo
+      <button id="btn-st-apply-demo" type="button" onclick="window.activerStrat11SurCompteDemo()" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#06101E;border:none;border-radius:8px;padding:9px 8px;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(0,230,118,0.35);transition:all 0.15s" title="Lancer cette stratégie sur votre Compte Démo">
+        🤖 Lancer en DÉMO
       </button>
 
       <!-- Bouton 2 : Robot MEXC Web Trader 0.00% Maker -->
-      <button id="btn-st-apply-mexc" type="button" onclick="window.activerStrat11SurMexcWeb()" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#06101E;border:none;border-radius:7px;padding:7px 8px;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(255,215,0,0.35);transition:all 0.15s" title="Lancer le Robot MEXC Web Trader (0.00% Frais Maker visés via carnet d'ordres Web)">
-        ⚡ Robot MEXC (0% Frais)
+      <button id="btn-st-apply-mexc" type="button" onclick="window.activerStrat11SurMexcWeb()" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#06101E;border:none;border-radius:8px;padding:9px 8px;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(255,215,0,0.35);transition:all 0.15s" title="Lancer le Robot Réel MEXC (0% de frais Maker, sans API)">
+        ⚡ Lancer sur MEXC (0% Frais)
       </button>
     </div>
 
@@ -46484,13 +46464,10 @@ window.balayerMM_MTF = async function(){
         <span id="st-coach-alert-txt"></span>
       </div>
 
-      <!-- Bouton 1-Clic d'Application Automatique + Bouton Test Ping -->
+      <!-- Bouton Test Ping MEXC Direct -->
       <div style="display:flex;gap:6px">
-        <button id="btn-st-coach-apply" type="button" onclick="window.appliquerReglagesCoach()" style="flex:1;background:linear-gradient(135deg,#00E5FF,#00B0FF);color:#06101E;border:none;border-radius:6px;padding:6px 10px;font-size:10.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(0,229,255,0.3);transition:all 0.15s" title="Lancer le Robot MEXC Web Trader avec les réglages optimaux du Coach (0.00% de frais Maker visés)">
-          ⚡ Lancer Robot MEXC (0% Frais · Élite · 0.032 BTC)
-        </button>
-        <button type="button" onclick="window.testerConnexionMexcWeb()" style="background:rgba(16,185,129,0.15);border:1.5px solid #10B981;color:#34D399;border-radius:6px;padding:6px 9px;font-size:10px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:all 0.15s" title="Envoyer un signal test sans risque vers l'onglet MEXC pour valider la communication en direct">
-          📡 Test Ping
+        <button type="button" onclick="window.testerConnexionMexcWeb()" style="flex:1;background:rgba(16,185,129,0.15);border:1.5px solid #10B981;color:#34D399;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;transition:all 0.15s" title="Envoyer un signal test sans risque vers l'onglet MEXC pour valider la communication en direct">
+          📡 Tester la Connexion MEXC (Test Ping)
         </button>
       </div>
       <div id="st-coach-bridge-status" onclick="window.expliquerAutorisationExtension()" style="margin-top:5px;text-align:center;font-size:9.5px;cursor:pointer;padding:2px 4px;border-radius:4px;transition:all 0.2s"></div>
