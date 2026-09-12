@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2660</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0911-2670</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16552,10 +16552,10 @@ function setAllPastilles(val) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Classement Auto des Stratégies 11 11
-// Build B-0911-2660
+// Build B-0911-2670
 // ═══════════════════════════════════════════════════════════════════════════
 // GESTIONNAIRE DYNAMIQUE — Moteur Sérieux 8000 Bougies & Multi-Périodes
-// Build B-0911-2660
+// Build B-0911-2670
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRAT11_VARIANTS_DEF = [
@@ -17164,6 +17164,15 @@ window.closeStrat11TradesJournal = function() {
   if (panel) panel.style.display = 'none';
 };
 
+window.toggleStrat11PanelWidth = function() {
+  const panel = document.getElementById('strat11-trades-panel');
+  const btn = document.getElementById('btn-st-panel-resize');
+  if (!panel) return;
+  const isLarge = panel.style.width === '650px';
+  panel.style.width = isLarge ? '535px' : '650px';
+  if (btn) btn.textContent = isLarge ? '⤢ Large' : '⤡ Standard';
+};
+
 window.setStrat11JournalPeriod = function(p, doRender) {
   window.__stJournalPeriod = p;
   ['3d', 'day', 'all'].forEach(function(pid) {
@@ -17371,8 +17380,8 @@ window.renderStrat11TradesJournal = function() {
     const pnlCol = t.pnl >= 0 ? '#10B981' : '#F87171';
     const pnlStr = (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + ' pts';
     const badgeType = isBuy
-      ? '<span style="background:rgba(16,185,129,0.22);color:#10B981;font-weight:900;padding:2px 6px;border-radius:4px;font-size:9.5px;border:1px solid rgba(16,185,129,0.4)">🟢 ACHAT</span>'
-      : '<span style="background:rgba(244,63,94,0.22);color:#F43F5E;font-weight:900;padding:2px 6px;border-radius:4px;font-size:9.5px;border:1px solid rgba(244,63,94,0.4)">🔴 VENTE</span>';
+      ? '<span style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,0.22);color:#10B981;font-weight:900;padding:3px 7px;border-radius:4px;font-size:10px;border:1px solid rgba(16,185,129,0.4)">🟢 ACHAT</span>'
+      : '<span style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;background:rgba(244,63,94,0.22);color:#F43F5E;font-weight:900;padding:3px 7px;border-radius:4px;font-size:10px;border:1px solid rgba(244,63,94,0.4)">🔴 VENTE</span>';
 
     const entNum = t.entryPastilleNum || t.num;
     const exNum  = t.exitPastilleNum || entNum;
@@ -17396,7 +17405,7 @@ window.renderStrat11TradesJournal = function() {
       + '<div style="font-size:9px;color:#CBD5E1">' + fmtTime(t.exitT) + '</div>'
       + '<div style="font-size:8.5px;font-weight:800;color:#FFB400">Pastille #' + exNum + (t.exitReason ? (' · ' + t.exitReason) : '') + '</div>'
       + '</td>'
-      + '<td style="padding:6px 4px;text-align:right;font-family:monospace;font-weight:900;color:' + pnlCol + ';font-size:11.5px">' + pnlStr + '</td>'
+      + '<td style="padding:6px 6px;text-align:right;font-family:monospace;font-weight:900;color:' + pnlCol + ';font-size:11.5px;white-space:nowrap">' + pnlStr + '</td>'
       + '<td style="padding:6px 4px;text-align:center">'
       + '<button onclick="event.stopPropagation();if(typeof window.focusChartOnCandle===\'function\')window.focusChartOnCandle(' + t.entryI + ')" style="background:rgba(56,189,248,0.2);border:1px solid #38BDF8;color:#38BDF8;border-radius:5px;padding:4px 7px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s" title="Centrer le graphique sur l\'Entrée #' + entNum + '">🔍</button>'
       + '</td>'
@@ -44344,7 +44353,7 @@ window.balayerMM_MTF = async function(){
 </script>
 
 <!-- VOLET LATÉRAL JOURNAL DES TRADES STRATÉGIES 11 11 -->
-<div id="strat11-trades-panel" style="display:none;position:fixed;top:45px;right:0;width:450px;max-width:calc(100vw - 12px);height:calc(100vh - 55px);background:rgba(10,17,31,0.98);border-left:1.5px solid #38BDF8;box-shadow:-14px 0 45px rgba(0,0,0,0.85);z-index:999999;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#F1F5F9;backdrop-filter:blur(18px)">
+<div id="strat11-trades-panel" style="display:none;position:fixed;top:45px;right:0;width:535px;max-width:calc(100vw - 10px);height:calc(100vh - 55px);background:rgba(10,17,31,0.98);border-left:1.5px solid #38BDF8;box-shadow:-14px 0 45px rgba(0,0,0,0.85);z-index:999999;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#F1F5F9;backdrop-filter:blur(18px)">
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03)">
     <div style="display:flex;align-items:center;gap:8px;min-width:0">
@@ -44355,6 +44364,7 @@ window.balayerMM_MTF = async function(){
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
+      <button id="btn-st-panel-resize" onclick="window.toggleStrat11PanelWidth()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.22);color:#E6EDF3;font-size:11px;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px" title="Agrandir ou réduire la largeur du panneau">⤢ Large</button>
       <button onclick="window.closeStrat11TradesJournal()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:#FFFFFF;font-size:16px;font-weight:800;cursor:pointer;padding:4px 9px;line-height:1;border-radius:6px;transition:all 0.15s" title="Fermer">✕</button>
     </div>
   </div>
@@ -44393,12 +44403,12 @@ window.balayerMM_MTF = async function(){
     <table style="width:100%;border-collapse:collapse;font-size:10.5px">
       <thead>
         <tr style="border-bottom:1.5px solid rgba(255,255,255,0.15);color:#CBD5E1;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em">
-          <th style="padding:7px 4px;text-align:left"># / Pastille</th>
-          <th style="padding:7px 4px;text-align:left">Type</th>
-          <th style="padding:7px 4px;text-align:left">Entrée</th>
-          <th style="padding:7px 4px;text-align:left">Sortie</th>
-          <th style="padding:7px 4px;text-align:right">PnL</th>
-          <th style="padding:7px 4px;text-align:center">🔍</th>
+          <th style="padding:7px 6px;text-align:left;white-space:nowrap"># / Pastille</th>
+          <th style="padding:7px 6px;text-align:left;white-space:nowrap">Type</th>
+          <th style="padding:7px 6px;text-align:left;white-space:nowrap">Entrée</th>
+          <th style="padding:7px 6px;text-align:left;white-space:nowrap">Sortie</th>
+          <th style="padding:7px 6px;text-align:right;white-space:nowrap">PnL</th>
+          <th style="padding:7px 6px;text-align:center;white-space:nowrap">🔍</th>
         </tr>
       </thead>
       <tbody id="strat11-trades-tbody"></tbody>
