@@ -1,20 +1,54 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (Frais Réduits 0.02%)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      1.8.0
+// @version      1.9.0
 // @description  Gestion intelligente des sens de trade (Deux sens avec REVERSE natif, ou Achat seul / Vente seule sans interférence) (0.02% de frais)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
 // @match        *://futures.mexc.com/*
 // @match        *://mexc.com/*
-// @grant        none
+// @match        *://lumen-eta-lake.vercel.app/*
+// @match        *://*.vercel.app/*
+// @match        *://mgheda-cmd.github.io/*
+// @match        *://localhost:*/*
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_addValueChangeListener
 // @run-at       document-start
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    console.log('>>> [Lumen Web Trader] Script v1.8.0 actif (Support Multi-Stratégies & Filtre Sens de Trade)');
+    // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
+    const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
+    if (isLumenOrigin) {
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen');
+        let lChannel = null;
+        try { lChannel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
+        if (lChannel) {
+            lChannel.onmessage = (event) => {
+                if (event.data && (event.data.type === 'LUMEN_TRADE_SIGNAL' || event.data.action)) {
+                    if (typeof GM_setValue === 'function') {
+                        GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...event.data, _ts: Date.now() }));
+                    }
+                }
+            };
+        }
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'lumen_mexc_web_signal' && e.newValue) {
+                try {
+                    const data = JSON.parse(e.newValue);
+                    if (typeof GM_setValue === 'function') {
+                        GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...data, _ts: Date.now() }));
+                    }
+                } catch(err){}
+            }
+        });
+        return; // Ne pas injecter le HUD MEXC sur Lumen
+    }
+
+    console.log('>>> [Lumen Web Trader] Script v1.9.0 actif sur MEXC (Support Multi-Stratégies & Filtre Sens)');
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -244,6 +278,21 @@
                 executeMarketOrder(event.data);
             }
         };
+    }
+
+    if (typeof GM_addValueChangeListener === 'function') {
+        GM_addValueChangeListener('lumen_mexc_cross_signal', (name, oldVal, newVal, remote) => {
+            if (!newVal) return;
+            try {
+                const signal = typeof newVal === 'string' ? JSON.parse(newVal) : newVal;
+                if (signal && Date.now() - (signal.timestamp || signal._ts || 0) < 5000) {
+                    console.log('[Lumen Web Trader] Signal inter-domain reçu via Tampermonkey:', signal);
+                    executeMarketOrder(signal);
+                }
+            } catch(e) {
+                console.error('[Lumen Web Trader] Erreur signal GM:', e);
+            }
+        });
     }
 
     window.addEventListener('storage', (e) => {
