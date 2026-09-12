@@ -17397,6 +17397,11 @@ window.setStrat11JournalPeriod = function(p, doRender) {
 
 window.setStrat11JournalExit = function(exitKey, doRender) {
   window.__stJournalExitMode = exitKey;
+  const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
+  if (state.indicators && state.indicators[varKey]) {
+    state.indicators[varKey].showExitZero = (exitKey === 's1');
+    state.indicators[varKey].showExitExtreme = (exitKey === 's2');
+  }
   [
     { id: 's1', col: '#38BDF8', bg: 'rgba(56,189,248,0.18)' },
     { id: 's2', col: '#FBBF24', bg: 'rgba(251,191,36,0.18)' },
@@ -17416,6 +17421,11 @@ window.setStrat11JournalExit = function(exitKey, doRender) {
       btn.style.fontWeight = '700';
     }
   });
+  if (typeof updateIndicatorsAndRender === 'function') {
+    updateIndicatorsAndRender();
+  } else if (typeof draw === 'function') {
+    draw();
+  }
   if (doRender !== false) window.renderStrat11TradesJournal();
 };
 
@@ -17482,9 +17492,18 @@ window.renderStrat11TradesJournal = function() {
   }
 
   // 2. Déterminer la liste des trades à afficher selon la période demandée
+  // RÈGLE D'OR : Les pastilles RÉELLEMENT DESSINÉES sur le graphique (liveChartTrades) sont la source de vérité absolue !
   let allTrades = [];
-  if (rStats && rStats[exitKey] && Array.isArray(rStats[exitKey].trades) && rStats[exitKey].trades.length > 0) {
+  if (liveChartTrades.length > 0 && period !== 'all') {
+    // Mode Direct Graphique : 100% fidèle aux pastilles visibles à l'écran
+    allTrades = liveChartTrades.slice();
+  } else if (rStats && rStats[exitKey] && Array.isArray(rStats[exitKey].trades) && rStats[exitKey].trades.length > 0) {
     allTrades = rStats[exitKey].trades.slice();
+    // Fusionner et remplacer avec les vrais trades du graphique pour la partie récente
+    if (liveChartTrades.length > 0) {
+      const firstLiveT = liveChartTrades[0].entryT || 0;
+      allTrades = allTrades.filter(function(t) { return (t.entryT || 0) < firstLiveT; }).concat(liveChartTrades);
+    }
   } else if (liveChartTrades.length > 0) {
     allTrades = liveChartTrades.slice();
   } else {
@@ -17495,18 +17514,6 @@ window.renderStrat11TradesJournal = function() {
         allTrades = bRes[exitKey].trades.slice();
       }
     }
-  }
-
-  // Compléter avec tous les trades fermés récents du graphique s'ils sont postérieurs au backtest
-  if (liveChartTrades.length > 0 && allTrades.length > 0) {
-    const lastBacktestT = allTrades[allTrades.length - 1].entryT || 0;
-    liveChartTrades.forEach(function(lt) {
-      if (lt.entryT > lastBacktestT) {
-        allTrades.push(lt);
-      }
-    });
-  } else if (liveChartTrades.length > 0 && (!allTrades || !allTrades.length)) {
-    allTrades = liveChartTrades.slice();
   }
 
   // Mapper les numéros de pastilles d'entrée et sortie depuis le graphique
