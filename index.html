@@ -16399,10 +16399,10 @@ function renderPastillesList(forceRebuild) {
           const border = isActPeriod ? '1.5px solid #FFB400' : (isFocus ? '1px solid ' + accentCol : '1px solid rgba(255,255,255,0.04)');
           const colPnl = sData.pnl >= 0 ? '#10B981' : '#F87171';
           const pfStr = (sData.pf > 99 ? '>99' : sData.pf.toFixed(2));
-          return '<div style="background:' + bg + ';border:' + border + ';border-radius:5px;padding:3px 4px">'
+          return '<div id="stat-box-' + targetVarKey + '-' + exitKey + '-' + pKey + '" style="background:' + bg + ';border:' + border + ';border-radius:5px;padding:3px 4px">'
             + '<div style="color:' + (isActPeriod ? '#FFB400' : 'var(--muted)') + ';font-size:7.5px;font-weight:800">' + title + '</div>'
-            + '<b style="color:' + colPnl + ';font-size:9.5px">' + (sData.pnl >= 0 ? '+' : '') + Math.round(sData.pnl) + ' pts</b>'
-            + '<div style="color:#94A3B8;font-size:7.5px">WR ' + sData.wr.toFixed(0) + '% · PF ' + pfStr + ' (' + sData.n + 't)</div>'
+            + '<b class="box-pnl" style="color:' + colPnl + ';font-size:9.5px">' + (sData.pnl >= 0 ? '+' : '') + Math.round(sData.pnl) + ' pts</b>'
+            + '<div class="box-sub" style="color:#94A3B8;font-size:7.5px">WR ' + sData.wr.toFixed(0) + '% · PF ' + pfStr + ' (' + sData.n + 't)</div>'
             + '</div>';
         }
 
@@ -16445,7 +16445,7 @@ function renderPastillesList(forceRebuild) {
         + statusPill
         + '</label>'
         + '<div style="display:flex;align-items:center;gap:6px;flex:none">'
-        + '<span style="font-size:11.5px;font-weight:900;color:' + activePnlCol + '">' + activePnlStr + '</span>'
+        + '<span id="rank-pnl-' + rankStats.key + '" style="font-size:11.5px;font-weight:900;color:' + activePnlCol + '">' + activePnlStr + '</span>'
         + '<button type="button" onclick="event.stopPropagation();window.soloStrat11(\'' + rankStats.key + '\')" style="font-size:8.5px;padding:2px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#E6EDF3;cursor:pointer;font-weight:700" title="Activer UNIQUEMENT cette stratégie et masquer toutes les autres du graphique">Seule</button>'
         + '<button type="button" onclick="event.stopPropagation();window.openStrat11TradesJournal(\'' + rankStats.key + '\')" style="font-size:8.5px;padding:2px 6px;border-radius:4px;border:1px solid rgba(56,189,248,0.3);background:rgba(56,189,248,0.12);color:#38BDF8;cursor:pointer;font-weight:800" title="Ouvrir le tableau des trades détaillés">📋 Trades</button>'
         + '</div>'
@@ -16671,6 +16671,7 @@ window.charger8000BougiesSurGraphique = async function() {
 
 function setStrat11Period(p) {
   window.__strat11Period = p;
+  window.__stJournalPeriod = p;
   try { localStorage.setItem('strat11_active_period', p); } catch(e) {}
   if (p === 'all') {
     window.charger8000BougiesSurGraphique();
@@ -16690,7 +16691,26 @@ function setStrat11Period(p) {
       btn.style.fontWeight = '600';
     }
   });
+  ['3d', 'day', 'all'].forEach(function(pid) {
+    const btn = document.getElementById('btn-st-p-' + pid);
+    if (!btn) return;
+    if (pid === p) {
+      btn.style.borderColor = '#FFB400';
+      btn.style.background = 'rgba(255,180,0,0.25)';
+      btn.style.color = '#FFB400';
+      btn.style.fontWeight = '900';
+    } else {
+      btn.style.borderColor = 'rgba(255,255,255,0.22)';
+      btn.style.background = 'rgba(255,255,255,0.08)';
+      btn.style.color = '#F1F5F9';
+      btn.style.fontWeight = '700';
+    }
+  });
   renderPastillesList(true);
+  const journalPanel = document.getElementById('strat11-trades-panel');
+  if (journalPanel && journalPanel.style.display !== 'none' && typeof window.renderStrat11TradesJournal === 'function') {
+    window.renderStrat11TradesJournal();
+  }
 }
 
 window.toggleEntireStrat11 = function(varKey, isChecked) {
@@ -16907,26 +16927,59 @@ function _backtestVariantSerious(bars8000, vDef) {
   }
   try {
     const bFMC = _aggregateLocal(bars8000, vDef.tfFMC);
-    const cFMC = bFMC.map(function(b) { return b.c; });
-    const coreFMC = _emaLocal(cFMC, 8);
-    const balFMC  = _emaLocal(cFMC, 21);
-    const fmcG = _projectLocal(bars8000, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v >= balFMC[i]; }));
-    const fmcR = _projectLocal(bars8000, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v < balFMC[i]; }));
+    let fmcG, fmcR;
+    if (typeof calc !== 'undefined' && typeof calc.fmc === 'function') {
+      const indFmcCfg = (typeof state !== 'undefined' && state && state.indicators && state.indicators.fmc) ? state.indicators.fmc : {};
+      const rawFMC = calc.fmc(bFMC, indFmcCfg);
+      const coreFMC = _projectLocal(bars8000, bFMC, rawFMC.core || []);
+      const balFMC  = _projectLocal(bars8000, bFMC, rawFMC.bal || []);
+      fmcG = coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v >= balFMC[i]; });
+      fmcR = coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v < balFMC[i]; });
+    } else {
+      const cFMC = bFMC.map(function(b) { return b.c; });
+      const coreFMC = _emaLocal(cFMC, 8);
+      const balFMC  = _emaLocal(cFMC, 21);
+      fmcG = _projectLocal(bars8000, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v >= balFMC[i]; }));
+      fmcR = _projectLocal(bars8000, bFMC, coreFMC.map(function(v, i) { return v != null && balFMC[i] != null && v < balFMC[i]; }));
+    }
 
     const bKK = _aggregateLocal(bars8000, vDef.tfKK);
-    const cKK = bKK.map(function(b) { return b.c; });
-    const fstKK = _emaLocal(cKK, 5);
-    const slwKK = _emaLocal(cKK, 13);
-    const netKKr = fstKK.map(function(v, i) { return v != null && slwKK[i] != null ? v - slwKK[i] : null; });
-    const sigKKr = _emaLocal(netKKr.map(function(v) { return v != null ? v : 0; }), 9);
-    const kkG = _projectLocal(bars8000, bKK, netKKr.map(function(v, i) { return v != null && v > sigKKr[i]; }));
-    const kkR = _projectLocal(bars8000, bKK, netKKr.map(function(v, i) { return v != null && v <= sigKKr[i]; }));
+    let kkG, kkR, netEx;
+    if (typeof calc !== 'undefined' && typeof calc.twoIndicator === 'function') {
+      const indKKCfg = (typeof state !== 'undefined' && state && state.indicators && (state.indicators.kk_bis2 || state.indicators.two_ind)) ? (state.indicators.kk_bis2 || state.indicators.two_ind) : {};
+      const rawKK = calc.twoIndicator(bKK, {
+        src: indKKCfg.src || 'close', mode: indKKCfg.mode || 'Trend Strength', filter: indKKCfg.filter || 'PhiSmoother',
+        phase: indKKCfg.phase != null ? indKKCfg.phase : 3.7, spacing: indKKCfg.spacing != null ? indKKCfg.spacing : 3,
+        ssLen: indKKCfg.ssLen != null ? indKKCfg.ssLen : 21, sigLen: indKKCfg.sigLen != null ? indKKCfg.sigLen : 20
+      });
+      const netKK = _projectLocal(bars8000, bKK, rawKK.net || []);
+      const sigKK = _projectLocal(bars8000, bKK, rawKK.signal || []);
+      kkG = netKK.map(function(v, i) { return (v != null && sigKK[i] != null) ? v > sigKK[i] : (i > 0 && v > netKK[i-1]); });
+      kkR = netKK.map(function(v, i) { return (v != null && sigKK[i] != null) ? v <= sigKK[i] : (i > 0 && v < netKK[i-1]); });
 
-    const bEx = _aggregateLocal(bars8000, vDef.tfExit);
-    const cEx = bEx.map(function(b) { return b.c; });
-    const fstEx = _emaLocal(cEx, 5);
-    const slwEx = _emaLocal(cEx, 13);
-    const netEx = _projectLocal(bars8000, bEx, fstEx.map(function(v, i) { return v != null && slwEx[i] != null ? v - slwEx[i] : null; }));
+      const tfExit = vDef.tfExit || vDef.tfKK;
+      const bEx = (tfExit === vDef.tfKK) ? bKK : _aggregateLocal(bars8000, tfExit);
+      const rawExitKK = (tfExit === vDef.tfKK) ? rawKK : calc.twoIndicator(bEx, {
+        src: indKKCfg.src || 'close', mode: indKKCfg.mode || 'Trend Strength', filter: indKKCfg.filter || 'PhiSmoother',
+        phase: indKKCfg.phase != null ? indKKCfg.phase : 3.7, spacing: indKKCfg.spacing != null ? indKKCfg.spacing : 3,
+        ssLen: indKKCfg.ssLen != null ? indKKCfg.ssLen : 21, sigLen: indKKCfg.sigLen != null ? indKKCfg.sigLen : 20
+      });
+      netEx = (tfExit === vDef.tfKK) ? netKK : _projectLocal(bars8000, bEx, rawExitKK.net || []);
+    } else {
+      const cKK = bKK.map(function(b) { return b.c; });
+      const fstKK = _emaLocal(cKK, 5);
+      const slwKK = _emaLocal(cKK, 13);
+      const netKKr = fstKK.map(function(v, i) { return v != null && slwKK[i] != null ? v - slwKK[i] : null; });
+      const sigKKr = _emaLocal(netKKr.map(function(v) { return v != null ? v : 0; }), 9);
+      kkG = _projectLocal(bars8000, bKK, netKKr.map(function(v, i) { return v != null && v > sigKKr[i]; }));
+      kkR = _projectLocal(bars8000, bKK, netKKr.map(function(v, i) { return v != null && v <= sigKKr[i]; }));
+
+      const bEx = _aggregateLocal(bars8000, vDef.tfExit);
+      const cEx = bEx.map(function(b) { return b.c; });
+      const fstEx = _emaLocal(cEx, 5);
+      const slwEx = _emaLocal(cEx, 13);
+      netEx = _projectLocal(bars8000, bEx, fstEx.map(function(v, i) { return v != null && slwEx[i] != null ? v - slwEx[i] : null; }));
+    }
 
     let curDir = 0;
     const entries = [];
@@ -17402,6 +17455,8 @@ window.toggleStrat11PanelWidth = function() {
 
 window.setStrat11JournalPeriod = function(p, doRender) {
   window.__stJournalPeriod = p;
+  window.__strat11Period = p;
+  try { localStorage.setItem('strat11_active_period', p); } catch(e) {}
   if (p === 'all' && typeof window.charger8000BougiesSurGraphique === 'function') {
     window.charger8000BougiesSurGraphique();
   }
@@ -17420,6 +17475,22 @@ window.setStrat11JournalPeriod = function(p, doRender) {
       btn.style.fontWeight = '700';
     }
   });
+  ['day', '3d', 'all'].forEach(function(pid) {
+    const btn = document.getElementById('btn-period-' + pid);
+    if (!btn) return;
+    if (pid === p) {
+      btn.style.borderColor = '#FFB400';
+      btn.style.background = 'rgba(255,180,0,0.18)';
+      btn.style.color = '#FFB400';
+      btn.style.fontWeight = '800';
+    } else {
+      btn.style.borderColor = 'rgba(255,255,255,0.15)';
+      btn.style.background = 'rgba(255,255,255,0.05)';
+      btn.style.color = 'var(--text)';
+      btn.style.fontWeight = '600';
+    }
+  });
+  if (typeof renderPastillesList === 'function') renderPastillesList(true);
   if (doRender !== false) window.renderStrat11TradesJournal();
 };
 
@@ -17597,6 +17668,46 @@ window.renderStrat11TradesJournal = function() {
   if (statPf) statPf.textContent = pf > 99 ? '>99' : pf.toFixed(2);
   const statN = document.getElementById('st-stat-n');
   if (statN) statN.textContent = n + ' trades';
+
+  // SYNCHRONISATION ABSOLUE AVEC LE GESTIONNAIRE DE PASTILLES :
+  // Les deux panneaux doivent TOUJOURS afficher à l'identique les mêmes chiffres exacts
+  if (rStats && rStats[exitKey]) {
+    const syncStat = { pnl: Math.round(totalPnl), wr: wr, pf: pf, n: n };
+    if (period === 'all') rStats[exitKey].sAll = syncStat;
+    else if (period === '3d') rStats[exitKey].s3d = syncStat;
+    else if (period === 'day') rStats[exitKey].sDay = syncStat;
+
+    if (window.__strat11ExitMode === exitKey) {
+      if (period === 'all') rStats.sAll = syncStat;
+      else if (period === '3d') rStats.s3d = syncStat;
+      else if (period === 'day') rStats.sDay = syncStat;
+    }
+
+    try {
+      if (window.__strat11Ranking) {
+        localStorage.setItem('strat11Ranking', JSON.stringify(window.__strat11Ranking));
+      }
+    } catch(e) {}
+
+    // Mise à jour directe de la boîte dans le panneau de gauche si visible
+    const boxEl = document.getElementById('stat-box-' + varKey + '-' + exitKey + '-' + period);
+    if (boxEl) {
+      const pnlEl = boxEl.querySelector('.box-pnl');
+      const subEl = boxEl.querySelector('.box-sub');
+      if (pnlEl) {
+        pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + Math.round(totalPnl) + ' pts';
+        pnlEl.style.color = totalPnl >= 0 ? '#10B981' : '#F87171';
+      }
+      if (subEl) {
+        subEl.textContent = 'WR ' + wr.toFixed(0) + '% · PF ' + (pf > 99 ? '>99' : pf.toFixed(2)) + ' (' + n + 't)';
+      }
+    }
+    const rankPnlEl = document.getElementById('rank-pnl-' + varKey);
+    if (rankPnlEl && window.__strat11ExitMode === exitKey && (window.__strat11Period || 'all') === period) {
+      rankPnlEl.textContent = (totalPnl >= 0 ? '+' : '') + Math.round(totalPnl) + ' pts';
+      rankPnlEl.style.color = totalPnl >= 0 ? '#10B981' : '#F87171';
+    }
+  }
 
   function fmtTime(t) {
     if (!t) return '—';
