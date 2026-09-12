@@ -521,7 +521,7 @@ footer{
     <span>🟢</span> <span>MEXC Direct</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1655</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1740</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -16806,28 +16806,109 @@ window.toggleEntireStrat11 = function(varKey, isChecked) {
   }
 };
 
-window.soloStrat11 = function(varKey) {
-  STRAT11_VARIANTS_DEF.forEach(function(v) {
-    const isTarget = (v.key === varKey);
-    if (!state.indicators[v.key]) state.indicators[v.key] = {};
-    state.indicators[v.key].on = isTarget;
-    if (isTarget) {
-      state.indicators[v.key].showBuy = true;
-      state.indicators[v.key].showSell = true;
-      const curEx = window.__strat11ExitMode || 's1';
-      state.indicators[v.key].showExitZero     = (curEx === 's1');
-      state.indicators[v.key].showExitExtreme  = (curEx === 's2');
-      state.indicators[v.key].showExitReversal = (curEx === 's3');
-      state.indicators[v.key].showVerticalLines = true;
-    } else {
-      state.indicators[v.key].showBuy = false;
-      state.indicators[v.key].showSell = false;
-      state.indicators[v.key].showExitZero = false;
-      state.indicators[v.key].showExitExtreme = false;
-      state.indicators[v.key].showExitReversal = false;
-    }
-  });
+window.activerPastillesSeuleStrategie = function(varKey, exitKey) {
+  varKey = varKey || window.__stJournalVarKey || 'strat_11_11_elite';
+  exitKey = exitKey || window.__stJournalExitMode || window.__strat11ExitMode || 's2';
 
+  // 1. Décocher TOUTES les pastilles du catalogue centralisé
+  if (typeof PASTILLES_CATALOG !== 'undefined' && Array.isArray(PASTILLES_CATALOG)) {
+    for (const cat of PASTILLES_CATALOG) {
+      if (cat.items && Array.isArray(cat.items)) {
+        for (const item of cat.items) {
+          try {
+            item.set(false);
+          } catch(e) {}
+        }
+      }
+    }
+  }
+
+  // 2. Éteindre toutes les autres stratégies et modules dans state.indicators
+  if (typeof state !== 'undefined' && state.indicators) {
+    // Variantes 11 11
+    ['strat_11_11_elite', 'strat_11_11_ultra', 'strat_11_11', 'strat_11_11_scalp', 'strat_11_11_pro'].forEach(function(k) {
+      if (!state.indicators[k]) state.indicators[k] = {};
+      const isTarget = (k === varKey);
+      state.indicators[k].on = isTarget;
+      state.indicators[k].showBuy = isTarget;
+      state.indicators[k].showSell = isTarget;
+      state.indicators[k].showExitZero = isTarget && (exitKey === 's1');
+      state.indicators[k].showExitExtreme = isTarget && (exitKey === 's2');
+      state.indicators[k].showExitReversal = isTarget && (exitKey === 's3');
+      state.indicators[k].showVerticalLines = isTarget;
+    });
+
+    // Éteindre les modules de signaux concurrents
+    ['strat_super', 'strat_mm', 'strat_zz', 'strat_zz2', 'strat_fmc', 'strat_delta', 'signal_ema_ha', 'exhaustion', 'exhaustion_pro', 'signal_exit_kk', 'signal_exit_ob', 'signal_triple'].forEach(function(k) {
+      if (state.indicators[k]) {
+        state.indicators[k].on = false;
+        if (state.indicators[k].showBadges !== undefined) state.indicators[k].showBadges = false;
+        if (state.indicators[k].showElite !== undefined) state.indicators[k].showElite = false;
+        if (state.indicators[k].showPureNoAlma !== undefined) state.indicators[k].showPureNoAlma = false;
+        if (state.indicators[k].showEliteExits !== undefined) state.indicators[k].showEliteExits = false;
+        if (state.indicators[k].showKkConfluence !== undefined) state.indicators[k].showKkConfluence = false;
+        if (state.indicators[k].showKkBuy !== undefined) state.indicators[k].showKkBuy = false;
+        if (state.indicators[k].showKkSell !== undefined) state.indicators[k].showKkSell = false;
+      }
+    });
+
+    // Éteindre pivots / sorties sur prix kk_bis et kk_bis2
+    ['kk_bis', 'kk_bis2'].forEach(function(k) {
+      if (state.indicators[k]) {
+        state.indicators[k].showSeuilOnPrice = false;
+        state.indicators[k].showExits = false;
+        state.indicators[k].showDivOnPrice = false;
+        state.indicators[k].showDiv = false;
+        state.indicators[k].showCrossOnPrice = false;
+        state.indicators[k].showCross = false;
+        state.indicators[k].showPivotsOnPrice = false;
+      }
+    });
+
+    // 3. Activer uniquement la stratégie cible
+    if (!state.indicators[varKey]) state.indicators[varKey] = {};
+    state.indicators[varKey].on = true;
+    state.indicators[varKey].showBuy = true;
+    state.indicators[varKey].showSell = true;
+    state.indicators[varKey].showExitZero = (exitKey === 's1');
+    state.indicators[varKey].showExitExtreme = (exitKey === 's2');
+    state.indicators[varKey].showExitReversal = (exitKey === 's3');
+    state.indicators[varKey].showVerticalLines = true;
+
+    // S'assurer que le masquage global des pastilles est désactivé
+    state.hideBadges = false;
+    if (typeof applyCleanBtn === 'function') applyCleanBtn();
+  }
+
+  // 4. Synchroniser le catalogue PASTILLES_CATALOG pour que les cases à cocher soient exactes
+  if (typeof PASTILLES_CATALOG !== 'undefined' && Array.isArray(PASTILLES_CATALOG)) {
+    for (const cat of PASTILLES_CATALOG) {
+      if (cat.items && Array.isArray(cat.items)) {
+        for (const item of cat.items) {
+          if (item.id === `${varKey}_buy` || item.id === `${varKey}_sell`) {
+            try { item.set(true); } catch(e){}
+          } else if (item.id === `${varKey}_exit_zero`) {
+            try { item.set(exitKey === 's1'); } catch(e){}
+          } else if (item.id === `${varKey}_exit_extreme`) {
+            try { item.set(exitKey === 's2'); } catch(e){}
+          } else if (item.id === `${varKey}_exit_rev`) {
+            try { item.set(exitKey === 's3'); } catch(e){}
+          } else if (item.id === `${varKey}_lines`) {
+            try { item.set(true); } catch(e){}
+          }
+        }
+      }
+    }
+  }
+
+  // Mémoriser la stratégie et la sortie actives
+  window.__stJournalVarKey = varKey;
+  window.__stJournalExitMode = exitKey;
+  window.__strat11ExitMode = exitKey;
+  try { localStorage.setItem('strat11_active_var', varKey); } catch(e){}
+  try { localStorage.setItem('strat11_active_exit', exitKey); } catch(e){}
+
+  // 5. Sauvegarder et redessiner le graphique
   if (typeof state !== 'undefined' && state) state.cache = {};
   try { saveConfig(); } catch(e) {}
   if (typeof syncMenu === 'function') syncMenu();
@@ -16835,7 +16916,17 @@ window.soloStrat11 = function(varKey) {
   if (typeof scheduleRender === 'function') scheduleRender();
   else if (typeof render === 'function') render();
 
-  renderPastillesList(true);
+  // 6. Actualiser le Gestionnaire des Pastilles (reconstruction forcée pour rafraîchir tous les boutons/cases)
+  if (typeof renderPastillesList === 'function') {
+    renderPastillesList(true);
+  } else if (typeof updatePastillesHubCheckboxesOnly === 'function') {
+    updatePastillesHubCheckboxesOnly();
+  }
+};
+
+window.soloStrat11 = function(varKey) {
+  const exitKey = window.__strat11ExitMode || 's1';
+  window.activerPastillesSeuleStrategie(varKey, exitKey);
 
   const vObj = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === varKey; });
   const name = vObj ? vObj.name : varKey;
@@ -17366,6 +17457,11 @@ window.activerStrat11SurCompteDemo = function() {
   }
   try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
 
+  // ISOLER SUR LE GRAPHIQUE : afficher uniquement cette stratégie et décocher toutes les autres
+  if (typeof window.activerPastillesSeuleStrategie === 'function') {
+    window.activerPastillesSeuleStrategie(varKey, exitKey);
+  }
+
   // 2. Activer l'Auto-Trade
   paperAutoTrade = true;
   window.paperAutoTrade = true;
@@ -17429,19 +17525,9 @@ window.activerStrat11SurMexcWeb = function() {
   };
   try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
 
-  if (typeof state !== 'undefined' && state.indicators) {
-    ['strat_11_11_elite', 'strat_11_11_ultra', 'strat_11_11', 'strat_11_11_scalp', 'strat_11_11_pro'].forEach(k => {
-      if (!state.indicators[k]) state.indicators[k] = {};
-      state.indicators[k].on = (k === varKey);
-    });
-    if (state.indicators[varKey]) {
-      state.indicators[varKey].showBuy = true;
-      state.indicators[varKey].showSell = true;
-      state.indicators[varKey].showExitExtreme = (exitKey === 's2');
-      state.indicators[varKey].showExitZero = (exitKey === 's1');
-      state.indicators[varKey].showExitReversal = (exitKey === 's3');
-      state.indicators[varKey].showVerticalLines = true;
-    }
+  // ISOLER SUR LE GRAPHIQUE : afficher uniquement cette stratégie et décocher toutes les autres
+  if (typeof window.activerPastillesSeuleStrategie === 'function') {
+    window.activerPastillesSeuleStrategie(varKey, exitKey);
   }
 
   // 2. Activer le Web Auto-Trader (Tampermonkey : Frais Réduits 0.02% garantis via UI Web)
@@ -32660,19 +32746,9 @@ window.startLiveExchangeTrading = function() {
     };
     try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
 
-    if (typeof state !== 'undefined' && state.indicators) {
-      ['strat_11_11_elite', 'strat_11_11_ultra', 'strat_11_11', 'strat_11_11_scalp', 'strat_11_11_pro'].forEach(k => {
-        if (!state.indicators[k]) state.indicators[k] = {};
-        state.indicators[k].on = (k === varKey);
-      });
-      if (state.indicators[varKey]) {
-        state.indicators[varKey].showBuy = true;
-        state.indicators[varKey].showSell = true;
-        state.indicators[varKey].showExitExtreme = (exitKey === 's2');
-        state.indicators[varKey].showExitZero = (exitKey === 's1');
-        state.indicators[varKey].showExitReversal = (exitKey === 's3');
-        state.indicators[varKey].showVerticalLines = true;
-      }
+    // ISOLER SUR LE GRAPHIQUE : afficher uniquement cette stratégie et décocher toutes les autres
+    if (typeof window.activerPastillesSeuleStrategie === 'function') {
+      window.activerPastillesSeuleStrategie(varKey, exitKey);
     }
     window.__stJournalVarKey = varKey;
     window.__stJournalExitMode = exitKey;
@@ -42794,7 +42870,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-1655';
+  window.__LUMEN_BUILD = 'B-0912-1740';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
