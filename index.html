@@ -511,6 +511,10 @@ footer{
     </button>
   </div>
 
+  <button class="btn" id="btn-vue-mexc" onclick="window.restaurerVuePastillesMexc()" title="Restaurer instantanément le graphique sur les pastilles de trading MEXC en direct" style="font-weight:800;display:inline-flex;align-items:center;gap:5px;border:1.5px solid #10B981;color:#10B981;background:rgba(16,185,129,0.12);cursor:pointer;padding:4px 9px;border-radius:6px;white-space:nowrap">
+    <span>🎯</span> <span>Graphique MEXC</span>
+  </button>
+
   <div class="ind-wrap" id="tools-wrap" style="position:relative">
     <button class="btn" id="btn-tools-menu" aria-haspopup="true" aria-expanded="false" title="Menu des outils, réglages et options supplémentaires" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;border-color:var(--accent);color:var(--text)">
       <span>⋯ Outils</span> <span style="font-size:9px;color:var(--muted)">▾</span>
@@ -525,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-2230</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-2340</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1404,7 +1408,8 @@ footer{
         <div id="pastilles-ranking-status" style="font-size:9.5px;color:var(--muted);margin-bottom:6px">Classement dynamique · Maintenez et glissez ⠿ Déplacer</div>
 
         <!-- Actions Rapides en tête (Toujours accessibles) -->
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button id="btn-pastilles-vue-mexc" class="btn" onclick="window.restaurerVuePastillesMexc()" style="font-size:10.5px;padding:6px 9px;background:rgba(16,185,129,0.18);border:1.2px solid #10B981;color:#34D399;font-weight:900;border-radius:6px;white-space:nowrap;cursor:pointer" title="Éliminer toutes les modifications et réafficher uniquement la stratégie active sur MEXC">🎯 Graphique MEXC</button>
           <button id="btn-pastilles-all-on" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(0,230,118,0.14);border:1.2px solid #00E676;color:#00E676;font-weight:800;border-radius:6px">👁️ Tout Afficher</button>
           <button id="btn-pastilles-all-off" class="btn" style="flex:1;font-size:10.5px;padding:6px 6px;background:rgba(255,0,85,0.14);border:1.2px solid #FF0055;color:#FF0055;font-weight:800;border-radius:6px">🚫 Tout Masquer</button>
           <button id="btn-pastilles-reset-def" class="btn" style="font-size:10.5px;padding:6px 8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:700;border-radius:6px" title="Rétablir les pastilles recommandées par défaut">⟲ Défaut</button>
@@ -17076,6 +17081,46 @@ window.soloStrat11 = function(varKey) {
   if (typeof toast === 'function') {
     toast('🎯 Seule la stratégie ' + name + ' est affichée sur le graphique !', '#10B981');
   }
+};
+
+window.restaurerVuePastillesMexc = function() {
+  // 1. Déterminer la stratégie et la sortie actives sur MEXC (ou Démo)
+  let varKey = 'strat_11_11_elite';
+  let exitKey = 's2';
+
+  if (window.__liveBotActive && window.__liveBotActive.active) {
+    if (window.__liveBotActive.varKey) varKey = window.__liveBotActive.varKey;
+    if (window.__liveBotActive.exitKey) exitKey = window.__liveBotActive.exitKey;
+  } else if (window.activeDemoStrategy && window.activeDemoStrategy.active) {
+    if (window.activeDemoStrategy.varKey) varKey = window.activeDemoStrategy.varKey;
+    if (window.activeDemoStrategy.exitKey) exitKey = window.activeDemoStrategy.exitKey;
+  } else {
+    varKey = window.__stJournalVarKey || localStorage.getItem('strat11_active_var') || 'strat_11_11_elite';
+    exitKey = window.__stJournalExitMode || localStorage.getItem('strat11_exit_mode') || 's2';
+  }
+
+  // 2. Isoler cette stratégie exacte sur le graphique (nettoie et masque tout le reste)
+  if (typeof window.activerPastillesSeuleStrategie === 'function') {
+    window.activerPastillesSeuleStrategie(varKey, exitKey);
+  }
+
+  // 3. Mettre à jour le journal / panneau
+  if (typeof window.setStrat11JournalExit === 'function') {
+    window.setStrat11JournalExit(exitKey, false);
+  }
+  if (typeof window.renderStrat11TradesJournal === 'function') {
+    window.renderStrat11TradesJournal();
+  }
+
+  // 4. Notification claire à l'utilisateur
+  const vObj = (typeof STRAT11_VARIANTS_DEF !== 'undefined') ? STRAT11_VARIANTS_DEF.find(function(v) { return v.key === varKey; }) : null;
+  const stratName = vObj ? vObj.name : 'Élite [5m×10m]';
+  const exName = (exitKey === 's1') ? 'S1: Ligne 0' : ((exitKey === 's2') ? 'S2: Extrême' : 'S3: Inversion');
+
+  if (typeof toast === 'function') {
+    toast('🎯 [Graphique MEXC Restauré]\n• Toutes les autres pastilles ont été masquées.\n• Seules les pastilles actives sur MEXC (' + stratName + ' · ' + exName + ') sont affichées !', '#10B981');
+  }
+  try { if (typeof beep === 'function') beep(); } catch(e){}
 };
 
 window.selectStrat11Exit = function(varKey, exitId) {
@@ -43397,7 +43442,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-2230';
+  window.__LUMEN_BUILD = 'B-0912-2340';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
