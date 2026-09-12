@@ -46513,7 +46513,7 @@ window.balayerMM_MTF = async function(){
 </div>
 
 <!-- VOLET LATÉRAL TRADES ÉLITE (TABLEAU SUR LE CÔTÉ) -->
-<div id="elite-journal-pull-tab" onclick="toggleEliteJournalPanel()" title="Afficher le tableau des trades Élite" style="display:flex;position:fixed;right:0;top:130px;z-index:9998;background:var(--panel-2);border:1.5px solid #38BDF8;border-right:none;border-radius:8px 0 0 8px;padding:8px 5px;cursor:pointer;flex-direction:column;align-items:center;gap:5px;box-shadow:-3px 3px 12px rgba(0,0,0,0.35);color:#38BDF8;user-select:none;-webkit-user-select:none;transition:transform .2s ease">
+<div id="elite-journal-pull-tab" onclick="window.openStrat11TradesJournal ? window.openStrat11TradesJournal('strat_11_11_elite', 's2') : toggleEliteJournalPanel()" title="Afficher le tableau des trades Élite & Coach MEXC" style="display:flex;position:fixed;right:0;top:130px;z-index:9998;background:var(--panel-2);border:1.5px solid #38BDF8;border-right:none;border-radius:8px 0 0 8px;padding:8px 5px;cursor:pointer;flex-direction:column;align-items:center;gap:5px;box-shadow:-3px 3px 12px rgba(0,0,0,0.35);color:#38BDF8;user-select:none;-webkit-user-select:none;transition:transform .2s ease">
   <span style="font-size:14px">📊</span>
   <span style="writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:1px;font-size:9.5px;font-weight:800;color:var(--text)">ÉLITE</span>
 </div>
