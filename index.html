@@ -6455,7 +6455,10 @@ function applyKline(k, isLive=false){
   const bar={t:k.t,o:k.o,h:k.h,l:k.l,c:k.c,v:k.v,tbv:k.tbv};
   const last=d[d.length-1];
   if(bar.t===last.t) d[d.length-1]=bar;
-  else if(bar.t>last.t){d.push(bar);d.shift();}
+  else if(bar.t>last.t){
+    d.push(bar);
+    if(d.length > 9000) d.shift();
+  }
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
   if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
@@ -6752,6 +6755,18 @@ async function loadData(){
     if(g!==gen)return;
     if(!Array.isArray(rows))throw new Error('format');
     state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
+    if(state.symbol === 'BTCUSDT' && state.tf === 1){
+      try{
+        if(typeof get8000Candles === 'function'){
+          const deepBars = await get8000Candles(false);
+          if(deepBars && deepBars.length >= 1000){
+            state.data = deepBars;
+          }
+        }
+      }catch(err){
+        console.warn('[Lumen] Intégration 8000 bougies:', err);
+      }
+    }
     state.view={start:state.data.length-150,count:150};
     restoreView();
     /* Le cache peut contenir des indicateurs calculés sur d'autres données —
@@ -6775,6 +6790,16 @@ async function loadData(){
         if(g!==gen)return;
         if(Array.isArray(rows)){
           state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
+          if(state.symbol === 'BTCUSDT' && state.tf === 1){
+            try{
+              if(typeof get8000Candles === 'function'){
+                const deepBars = await get8000Candles(false);
+                if(deepBars && deepBars.length >= 1000){
+                  state.data = deepBars;
+                }
+              }
+            }catch(err){}
+          }
           state.view={start:state.data.length-150,count:150};
           restoreView(); updateHeader(); render(); startStream(g); ensureSR();
           return;
