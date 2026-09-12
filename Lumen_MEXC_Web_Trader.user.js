@@ -74,7 +74,7 @@
         setTimeout(() => {
             if (hud) {
                 hud.style.borderColor = '#10B981';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.0</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.1</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             }
         }, 6000);
     }
@@ -327,10 +327,29 @@
                         }) || inputs[0];
 
                         if (qtyInput) {
-                            const isBtcField = (qtyInput.placeholder || '').toLowerCase().includes('btc') || document.body.innerText.includes('Quantity (BTC)');
-                            const valToEnter = isBtcField ? (signal.qty || 0.032) : (signal.notional || Math.round((signal.qty || 0.032) * (signal.price || 77000)));
+                            const bodyText = document.body.innerText || '';
+                            const isBtcMode = bodyText.includes('Quantity (BTC)') || bodyText.includes('Quantité (BTC)') || (qtyInput.placeholder || '').toLowerCase().includes('btc');
+                            let refPx = signal?.price || 0;
+                            if (!refPx || refPx < 1000) {
+                                const pxMatch = document.title.match(/([\d,.]+)/);
+                                if (pxMatch) {
+                                    const parsed = parseFloat(pxMatch[1].replace(/,/g, ''));
+                                    if (parsed > 1000) refPx = parsed;
+                                }
+                                if (!refPx || refPx < 1000) refPx = 77150;
+                            }
+                            const btcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+                            let valToEnter = '';
+                            if (isBtcMode) {
+                                valToEnter = btcQty.toFixed(3);
+                                console.log(`[Lumen Web Trader] Mode BTC détecté sur MEXC ➔ Saisie: ${valToEnter} BTC`);
+                            } else {
+                                const targetNotional = Math.round(signal?.notional || (btcQty * refPx));
+                                valToEnter = String(targetNotional);
+                                console.log(`[Lumen Web Trader] Mode USDT détecté sur MEXC ➔ Saisie: ${valToEnter} USDT (~${(targetNotional/50).toFixed(1)}$ marge à 50x pour ${btcQty} BTC)`);
+                            }
                             qtyInput.focus();
-                            setNativeValue(qtyInput, String(valToEnter));
+                            setNativeValue(qtyInput, valToEnter);
                             await new Promise(r => setTimeout(r, 100));
                         }
 
@@ -383,10 +402,29 @@
             }) || inputs[0];
 
             if (qtyInput) {
-                const isBtcField = (qtyInput.placeholder || '').toLowerCase().includes('btc') || document.body.innerText.includes('Quantity (BTC)');
-                const valToEnter = isBtcField ? (signal.qty || 0.032) : (signal.notional || Math.round((signal.qty || 0.032) * (signal.price || 77000)));
+                const bodyText = document.body.innerText || '';
+                const isBtcMode = bodyText.includes('Quantity (BTC)') || bodyText.includes('Quantité (BTC)') || (qtyInput.placeholder || '').toLowerCase().includes('btc');
+                let refPx = signal?.price || 0;
+                if (!refPx || refPx < 1000) {
+                    const pxMatch = document.title.match(/([\d,.]+)/);
+                    if (pxMatch) {
+                        const parsed = parseFloat(pxMatch[1].replace(/,/g, ''));
+                        if (parsed > 1000) refPx = parsed;
+                    }
+                    if (!refPx || refPx < 1000) refPx = 77150;
+                }
+                const btcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+                let valToEnter = '';
+                if (isBtcMode) {
+                    valToEnter = btcQty.toFixed(3);
+                    console.log(`[Lumen Web Trader] Mode BTC détecté sur MEXC ➔ Saisie: ${valToEnter} BTC`);
+                } else {
+                    const targetNotional = Math.round(signal?.notional || (btcQty * refPx));
+                    valToEnter = String(targetNotional);
+                    console.log(`[Lumen Web Trader] Mode USDT détecté sur MEXC ➔ Saisie: ${valToEnter} USDT (~${(targetNotional/50).toFixed(1)}$ marge à 50x pour ${btcQty} BTC)`);
+                }
                 qtyInput.focus();
-                setNativeValue(qtyInput, String(valToEnter));
+                setNativeValue(qtyInput, valToEnter);
             }
             await new Promise(r => setTimeout(r, 120));
 

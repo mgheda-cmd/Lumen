@@ -21005,6 +21005,9 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
           bc.postMessage(webSignal);
         }
         localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
+        if (typeof GM_setValue === 'function') {
+          GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...webSignal, _ts: Date.now() }));
+        }
         toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${sendQty} BTC) transmis à MEXC (0.00% Maker visé / sécu 12 pts)`, '#10B981');
       } catch(err){}
     }
@@ -21071,6 +21074,9 @@ function closePos(i, customReason){
         bc.postMessage(webSignal);
       }
       localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
+      if (typeof GM_setValue === 'function') {
+        GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...webSignal, _ts: Date.now() }));
+      }
       toast('⚡ Web Auto-Trader : Clôture S2 ' + mexcPair + ' transmise à MEXC (0.00% Maker visé / sécu 12 pts)', '#EC4899');
     } catch(err){}
   }
