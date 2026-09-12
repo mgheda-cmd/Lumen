@@ -517,7 +517,7 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-0535</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-0545</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -537,9 +537,9 @@ footer{
   <button class="btn" id="collapse-panes-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
   </button>
-  <button class="btn" id="btn-elite-journal" onclick="toggleEliteJournalPanel()" title="Tableau latéral des 10-15 derniers trades Élite avec sortie ronde" style="font-size:12px;padding:3px 8px;font-weight:800;display:inline-flex;align-items:center;gap:4px;color:var(--text);border-color:#38BDF8;background:rgba(56,189,248,.14)">
-    <span style="font-size:13px">📊</span> <span class="btn-full-txt">Trades Élite</span>
-    <span id="badge-elite-count" class="mono" style="font-size:9.5px;background:#38BDF8;color:#0F172A;padding:1px 5px;border-radius:4px;font-weight:900;margin-left:2px">15</span>
+  <button class="btn" id="btn-elite-journal" onclick="window.openStrat11TradesJournal ? window.openStrat11TradesJournal('strat_11_11_elite', 's2') : toggleEliteJournalPanel()" title="Ouvrir le Journal des Trades & Coach Objectif Capital (78$ -> 200$ -> 100$/j)" style="font-size:12px;padding:3px 8px;font-weight:800;display:inline-flex;align-items:center;gap:4px;color:#00E5FF;border-color:#00E5FF;background:rgba(0,229,255,.14)">
+    <span style="font-size:13px">🎯</span> <span class="btn-full-txt">Coach & Trades</span>
+    <span id="badge-elite-count" class="mono" style="font-size:9.5px;background:#00E5FF;color:#0F172A;padding:1px 5px;border-radius:4px;font-weight:900;margin-left:2px">ÉLITE</span>
   </button>
   <button id="wake-btn" class="btn" onclick="toggleWakeLock()" title="Empêcher l'écran de s'éteindre pour ne rater aucune notification" style="font-size:11px;padding:3px 7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#A0AEC0;font-weight:700;display:inline-flex;align-items:center;gap:3px;margin-left:4px">🌙 VEILLE AUTO</button>
 
@@ -17288,6 +17288,7 @@ window.activerStrat11SurCompteDemo = function() {
   const vDef = (typeof STRAT11_VARIANTS_DEF !== 'undefined' ? STRAT11_VARIANTS_DEF.find(v => v.key === varKey) : null) || { name: 'Ultra Scalp', tfFMC: 1, tfKK: 6 };
   const exLabel = (exitKey === 's1') ? 'Ligne 0' : ((exitKey === 's2') ? 'Extrême' : 'Inversion');
   const label = vDef.name + ' [' + vDef.tfFMC + 'm×' + vDef.tfKK + 'm] · Sortie ' + exLabel;
+  const userQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032');
 
   // 1. Activer la stratégie sur le compte Démo
   window.activeDemoStrategy = {
@@ -17297,7 +17298,7 @@ window.activerStrat11SurCompteDemo = function() {
     exitKey: exitKey,
     modeLabel: label,
     capital: (typeof paper !== 'undefined' && paper.cash > 0) ? paper.cash : 100,
-    marge: 0.025,
+    marge: userQty,
     unite: 'BASE',
     lev: 50,
     feePct: 0.02,
@@ -17319,9 +17320,9 @@ window.activerStrat11SurCompteDemo = function() {
           sym: state.symbol || 'BTCUSDT',
           side: lastEnt.dir === 1 ? 'long' : 'short',
           entry: lastEnt.price,
-          qty: 0.025,
-          margin: (0.025 * lastEnt.price) / 50,
-          notional: 0.025 * lastEnt.price,
+          qty: userQty,
+          margin: (userQty * lastEnt.price) / 50,
+          notional: userQty * lastEnt.price,
           lev: 50,
           t: lastEnt.t || Date.now(),
           tradeNum: lastEnt.tradeNum,
@@ -18025,6 +18026,220 @@ window.renderStrat11TradesJournal = function() {
   });
 
   tbody.innerHTML = trHTML;
+
+  if (typeof window.updateStrat11CoachUI === 'function') {
+    window.updateStrat11CoachUI();
+  }
+};
+
+window.getCoachCapital = function() {
+  let cap = 0;
+  let source = 'manual';
+  if (typeof window.__mexcEquityUsdt === 'number' && window.__mexcEquityUsdt > 0) {
+    cap = window.__mexcEquityUsdt;
+    source = 'mexc';
+  } else if (typeof window.__mexcBalanceUsdt === 'number' && window.__mexcBalanceUsdt > 0) {
+    cap = window.__mexcBalanceUsdt;
+    source = 'mexc';
+  } else {
+    const saved = localStorage.getItem('lumen_user_capital');
+    cap = saved ? parseFloat(saved) : 78.00;
+    source = 'manual';
+  }
+  if (isNaN(cap) || cap <= 0) cap = 78.00;
+  return { capital: cap, source: source };
+};
+
+window.editerCapitalCoach = function() {
+  const cInfo = window.getCoachCapital();
+  const rep = prompt('🎯 COACH OBJECTIF CAPITAL :\nEntrez votre capital actuel en USDT :', cInfo.capital.toFixed(2));
+  if (rep !== null) {
+    const val = parseFloat(rep.replace(',', '.'));
+    if (!isNaN(val) && val > 0) {
+      localStorage.setItem('lumen_user_capital', val.toFixed(2));
+      if (typeof toast === 'function') {
+        toast('🎯 Capital mis à jour : ' + val.toFixed(2) + ' $ USDT', '#10B981');
+      }
+      window.updateStrat11CoachUI();
+    }
+  }
+};
+
+window.updateStrat11CoachUI = function() {
+  const box = document.getElementById('st-coach-box');
+  if (!box) return;
+
+  const capInfo = window.getCoachCapital();
+  const cap = capInfo.capital;
+  const isPhase2 = (cap >= 200);
+
+  const capDisplay = document.getElementById('st-coach-capital-display');
+  if (capDisplay) {
+    capDisplay.innerHTML = cap.toFixed(2) + ' $ <span style="font-size:9px;font-weight:700;color:' + (capInfo.source === 'mexc' ? '#38BDF8' : '#94A3B8') + '">' + (capInfo.source === 'mexc' ? '(MEXC)' : '(Manuel)') + '</span>';
+  }
+
+  const badgePhase = document.getElementById('st-coach-badge-phase');
+  const progLabel  = document.getElementById('st-coach-prog-label');
+  const progPctEl  = document.getElementById('st-coach-prog-pct');
+  const progBar    = document.getElementById('st-coach-prog-bar');
+  const detailsEl  = document.getElementById('st-coach-details');
+  const alertBox   = document.getElementById('st-coach-alert-box');
+  const alertTxt   = document.getElementById('st-coach-alert-txt');
+  const btnApply   = document.getElementById('btn-st-coach-apply');
+
+  const curVarKey = window.__stJournalVarKey || 'strat_11_11_ultra';
+  const curExit   = window.__stJournalExitMode || 's1';
+
+  const targetQty = isPhase2 ? 0.065 : 0.032;
+  window.__stCoachTargetQty = targetQty;
+
+  if (!isPhase2) {
+    // PHASE 1 : Cap vers 200 $ (Gain ~+5 $ NET/trade)
+    if (badgePhase) {
+      badgePhase.textContent = 'PHASE 1 (Cap 200$)';
+      badgePhase.style.background = 'rgba(56,189,248,0.2)';
+      badgePhase.style.borderColor = '#38BDF8';
+      badgePhase.style.color = '#38BDF8';
+    }
+    const pct = Math.min(100, Math.max(0, Math.round((cap / 200) * 100)));
+    if (progLabel) progLabel.textContent = 'Progression vers 200 $ : ' + cap.toFixed(1) + '$ / 200$';
+    if (progPctEl) progPctEl.textContent = pct + '%';
+    if (progBar) {
+      progBar.style.width = pct + '%';
+      progBar.style.background = 'linear-gradient(90deg,#00E5FF,#10B981)';
+    }
+
+    if (detailsEl) {
+      detailsEl.innerHTML =
+        '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+        + '<span style="color:#94A3B8">Stratégie optimale :</span>'
+        + '<b style="color:#00E5FF">Élite [5m × 10m] · Sortie S2</b>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+        + '<span style="color:#94A3B8">Taille position @ 50x :</span>'
+        + '<b style="color:#FBBF24">0.032 BTC <span style="font-size:9.5px;color:#94A3B8">(~53$ marge · reste 25$)</span></b>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+        + '<span style="color:#94A3B8">Gain NET visé / trade :</span>'
+        + '<b style="color:#10B981">+5.04 $ NET <span style="font-size:9.5px;color:#94A3B8">(frais MEXC 0.02% déduits)</span></b>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between">'
+        + '<span style="color:#94A3B8">Projection / jour :</span>'
+        + '<b style="color:#E2E8F0">+48.73 $ NET/j <span style="font-size:9.5px;color:#94A3B8">(Palier 200$ en ~2.5j)</span></b>'
+        + '</div>';
+    }
+
+    if (btnApply) {
+      btnApply.innerHTML = '⚡ Appliquer Réglages Coach (Élite · 0.032 BTC · Sortie S2)';
+      btnApply.style.background = 'linear-gradient(135deg,#00E5FF,#00B0FF)';
+    }
+  } else {
+    // PHASE 2 : Objectif 100 $ NET / jour
+    if (badgePhase) {
+      badgePhase.textContent = 'PHASE 2 (100$/JOUR) 🚀';
+      badgePhase.style.background = 'rgba(16,185,129,0.2)';
+      badgePhase.style.borderColor = '#10B981';
+      badgePhase.style.color = '#10B981';
+    }
+    if (progLabel) progLabel.textContent = 'Palier 200$ atteint ! Capital disponible : ' + cap.toFixed(2) + ' $';
+    if (progPctEl) progPctEl.textContent = '100% ✨';
+    if (progBar) {
+      progBar.style.width = '100%';
+      progBar.style.background = 'linear-gradient(90deg,#10B981,#FFD700)';
+    }
+
+    if (detailsEl) {
+      detailsEl.innerHTML =
+        '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+        + '<span style="color:#94A3B8">Stratégie active :</span>'
+        + '<b style="color:#10B981">Élite [5m × 10m] · Sortie S2 (80.2% WR)</b>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+        + '<span style="color:#94A3B8">Taille position @ 50x :</span>'
+        + '<b style="color:#FFD700">0.065 BTC <span style="font-size:9.5px;color:#94A3B8">(~108$ marge · reste ~92$)</span></b>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+        + '<span style="color:#94A3B8">Gain NET moyen / trade :</span>'
+        + '<b style="color:#10B981">+10.25 $ NET <span style="font-size:9.5px;color:#94A3B8">(après frais)</span></b>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between">'
+        + '<span style="color:#94A3B8">Objectif Quotidien :</span>'
+        + '<b style="color:#FFD700;font-size:12px">~100.00 $ NET / jour 🏆</b>'
+        + '</div>';
+    }
+
+    if (btnApply) {
+      btnApply.innerHTML = '🚀 Activer Mode Phase 2 (0.065 BTC · 100$/jour)';
+      btnApply.style.background = 'linear-gradient(135deg,#10B981,#FFD700)';
+    }
+  }
+
+  // Vérification et Alerte Dynamique si mauvaise stratégie ou palier atteint
+  if (alertBox && alertTxt) {
+    if (curVarKey !== 'strat_11_11_elite' || curExit !== 's2') {
+      alertBox.style.display = 'block';
+      alertBox.style.background = 'rgba(245,158,11,0.18)';
+      alertBox.style.border = '1px solid #F59E0B';
+      alertBox.style.color = '#FDE68A';
+      alertTxt.innerHTML = '⚠️ <b>Alerte Configuration :</b> Vous n\'êtes pas sur la variante optimale. Cliquez ci-dessous pour activer <b>Élite (5m×10m) Sortie S2</b> afin de garantir +5$ NET/trade.';
+    } else if (isPhase2 && (!window.__stCoachPhase2AlertShown)) {
+      alertBox.style.display = 'block';
+      alertBox.style.background = 'rgba(16,185,129,0.2)';
+      alertBox.style.border = '1px solid #10B981';
+      alertBox.style.color = '#A7F3D0';
+      alertTxt.innerHTML = '🎉 <b>FÉLICITATIONS !</b> Capital ≥ 200 $ atteint. Cliquez ci-dessous pour passer à 0.065 BTC et générer ~100 $ NET/jour.';
+    } else {
+      alertBox.style.display = 'none';
+    }
+  }
+};
+
+window.appliquerReglagesCoach = function() {
+  const capInfo = window.getCoachCapital();
+  const cap = capInfo.capital;
+  const isPhase2 = (cap >= 200);
+  const targetQty = isPhase2 ? 0.065 : 0.032;
+
+  window.__stCoachCustomQty = targetQty;
+  try { localStorage.setItem('lumen_coach_qty', String(targetQty)); } catch(e){}
+
+  if (isPhase2) window.__stCoachPhase2AlertShown = true;
+
+  // Activer variante Élite et Sortie S2
+  window.__stJournalVarKey = 'strat_11_11_elite';
+  window.__stJournalExitMode = 's2';
+  try { localStorage.setItem('strat11_active_var', 'strat_11_11_elite'); } catch(e){}
+  try { localStorage.setItem('strat11_exit_mode', 's2'); } catch(e){}
+
+  // Mettre à jour la stratégie active Démo si existante
+  if (window.activeDemoStrategy) {
+    window.activeDemoStrategy.varKey = 'strat_11_11_elite';
+    window.activeDemoStrategy.exitKey = 's2';
+    window.activeDemoStrategy.marge = targetQty;
+    window.activeDemoStrategy.modeLabel = 'Élite [5m×10m] · Sortie Extrême';
+    try { localStorage.setItem('lumen_active_demo_strategy', JSON.stringify(window.activeDemoStrategy)); } catch(e){}
+  }
+
+  // Activer aussi sur le graphique si l'indicateur existe
+  if (typeof state !== 'undefined' && state.indicators && state.indicators['strat_11_11_elite']) {
+    Object.keys(state.indicators).forEach(function(k) {
+      if (k.startsWith('strat_11_11_')) {
+        state.indicators[k].on = (k === 'strat_11_11_elite');
+      }
+    });
+    state.indicators['strat_11_11_elite'].showExitExtreme = true;
+    state.indicators['strat_11_11_elite'].showExitZero = false;
+  }
+
+  window.setStrat11JournalExit('s2', false);
+  window.renderStrat11TradesJournal();
+
+  if (typeof toast === 'function') {
+    const msg = isPhase2
+      ? '🚀 MODE PHASE 2 ACTIVÉ !\n• Stratégie : Élite (5m×10m) Sortie S2\n• Taille : 0.065 BTC (~108$ marge @ 50x)\n• Objectif : ~100 $ NET / jour !'
+      : '⚡ RÉGLAGES COACH APPLIQUÉS !\n• Stratégie : Élite (5m×10m) Sortie S2\n• Taille : 0.032 BTC (~53$ marge @ 50x)\n• Objectif : +5.04 $ NET / trade gagnant !';
+    toast(msg, '#00E5FF');
+  }
 };
 
 function resetDefaultPastilles() {
@@ -42125,7 +42340,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-0535';
+  window.__LUMEN_BUILD = 'B-0912-0545';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -45123,6 +45338,64 @@ window.balayerMM_MTF = async function(){
       <span>WR : <b id="st-stat-wr" style="color:#FFFFFF;font-weight:900">0%</b></span>
       <span>PF : <b id="st-stat-pf" style="color:#FFFFFF;font-weight:900">0.0</b></span>
       <span>Trades : <b id="st-stat-n" style="color:#FFFFFF;font-weight:900">0</b></span>
+    </div>
+
+    <!-- COACH OBJECTIF CAPITAL (78$ -> 200$ -> 100$/JOUR) -->
+    <div id="st-coach-box" style="margin-top:6px;background:linear-gradient(135deg,rgba(15,23,42,0.95),rgba(30,41,59,0.9));border:1.5px solid #00E5FF;border-radius:8px;padding:9px 11px;font-size:11px;box-shadow:0 4px 16px rgba(0,229,255,0.15)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:13px">🎯</span>
+          <span style="font-weight:900;color:#00E5FF;font-size:11px;letter-spacing:0.02em">COACH OBJECTIF CAPITAL</span>
+          <span id="st-coach-badge-phase" style="background:rgba(56,189,248,0.2);color:#38BDF8;border:1px solid #38BDF8;border-radius:4px;padding:1px 6px;font-size:9.5px;font-weight:900">PHASE 1 (Cap 200$)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span id="st-coach-capital-display" style="font-weight:900;color:#10B981;font-size:11.5px">78.00 $</span>
+          <button type="button" onclick="window.editerCapitalCoach()" title="Modifier manuellement le capital suivi ou voir solde MEXC" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#CBD5E1;border-radius:4px;padding:1px 5px;font-size:9.5px;cursor:pointer">✏️</button>
+        </div>
+      </div>
+
+      <!-- Barre de progression -->
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#94A3B8;margin-bottom:3px">
+          <span id="st-coach-prog-label">Progression vers 200 $ (Phase 1)</span>
+          <span id="st-coach-prog-pct" style="font-weight:800;color:#00E5FF">39%</span>
+        </div>
+        <div style="width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden">
+          <div id="st-coach-prog-bar" style="width:39%;height:100%;background:linear-gradient(90deg,#00E5FF,#10B981);border-radius:3px;transition:width 0.4s ease"></div>
+        </div>
+      </div>
+
+      <!-- Détails recommandation dynamique -->
+      <div id="st-coach-details" style="background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:7px 9px;margin-bottom:7px;line-height:1.4">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="color:#94A3B8">Stratégie optimale :</span>
+          <b style="color:#00E5FF">Élite [5m × 10m] · Sortie S2</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="color:#94A3B8">Taille position @ 50x :</span>
+          <b style="color:#FBBF24">0.032 BTC <span style="font-size:9.5px;color:#94A3B8">(~53$ marge · reste 25$)</span></b>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="color:#94A3B8">Gain NET visé / trade :</span>
+          <b style="color:#10B981">+5.04 $ NET <span style="font-size:9.5px;color:#94A3B8">(frais MEXC 0.02% déduits)</span></b>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:#94A3B8">Projection / jour :</span>
+          <b style="color:#E2E8F0">+48.73 $ NET/j <span style="font-size:9.5px;color:#94A3B8">(Palier 200$ en ~2.5j)</span></b>
+        </div>
+      </div>
+
+      <!-- Alerte Dynamique si mauvaise stratégie ou palier atteint -->
+      <div id="st-coach-alert-box" style="display:none;margin-bottom:7px;border-radius:6px;padding:5px 8px;font-size:10px">
+        <span id="st-coach-alert-txt"></span>
+      </div>
+
+      <!-- Bouton 1-Clic d'Application Automatique -->
+      <div style="display:flex;gap:6px">
+        <button id="btn-st-coach-apply" type="button" onclick="window.appliquerReglagesCoach()" style="flex:1;background:linear-gradient(135deg,#00E5FF,#00B0FF);color:#06101E;border:none;border-radius:6px;padding:6px 10px;font-size:10.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(0,229,255,0.3);transition:all 0.15s">
+          ⚡ Appliquer Réglages Coach (Élite · 0.032 BTC · Sortie S2)
+        </button>
+      </div>
     </div>
   </div>
 
