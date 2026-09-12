@@ -517,7 +517,11 @@ footer{
     </button>
   </div>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-0600</span>
+  <button class="btn" id="btn-header-mexc-direct" onclick="openLiveExchangeModal()" title="Compte MEXC Direct, Solde réel & Trading" style="font-weight:900;display:inline-flex;align-items:center;gap:6px;border:1.5px solid #00E5FF;color:#00E5FF;background:rgba(0,229,255,0.12);box-shadow:0 0 10px rgba(0,229,255,0.25);cursor:pointer">
+    <span>🟢</span> <span>MEXC Direct</span>
+  </button>
+
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0912-1610</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -31896,9 +31900,11 @@ window.openLiveExchangeModal = function(scIdOverride, slValOverride, levOverride
         const savedUrl = (parsed?.serviceUrl || '').trim();
         document.getElementById('live-ex-serviceurl').value = savedUrl || 'https://mexc-signer.vercel.app/api/mexc';
       }
-      if (parsed.lumenToken && document.getElementById('live-ex-token')) document.getElementById('live-ex-token').value = parsed.lumenToken;
+      if (document.getElementById('live-ex-token')) document.getElementById('live-ex-token').value = (parsed.lumenToken || '').trim() || 'lum1071';
       if (parsed.apiKey && document.getElementById('live-ex-apikey')) document.getElementById('live-ex-apikey').value = parsed.apiKey;
       if (parsed.apiSecret && document.getElementById('live-ex-apisecret')) document.getElementById('live-ex-apisecret').value = parsed.apiSecret;
+    } else {
+      if (document.getElementById('live-ex-token')) document.getElementById('live-ex-token').value = 'lum1071';
     }
 
     const savedBot = localStorage.getItem('lumen_live_exchange_bot');
@@ -42504,7 +42510,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0912-0600';
+  window.__LUMEN_BUILD = 'B-0912-1610';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
