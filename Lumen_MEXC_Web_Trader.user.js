@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.2
+// @version      2.1.3
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 12 pts (Entrée Limit 30s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
@@ -24,6 +24,10 @@
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
         console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen');
+        window.__LUMEN_USERSCRIPT_ACTIVE = true;
+        try {
+            window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.3' } }));
+        } catch(e){}
         let lChannel = null;
         try { lChannel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
         if (lChannel) {
@@ -45,6 +49,7 @@
         let lastSeenLocalSig = 0;
         setInterval(() => {
             try {
+                window.__LUMEN_USERSCRIPT_ACTIVE = true;
                 const raw = localStorage.getItem('lumen_mexc_web_signal');
                 if (raw) {
                     const sig = JSON.parse(raw);
@@ -61,7 +66,41 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.2 actif sur MEXC (0.00% Maker · Sécurité 12 pts · Fast-Catchup)');
+    console.log('>>> [Lumen Web Trader] Script v2.1.3 actif sur MEXC (0.00% Maker · Sécurité 12 pts · Fast-Catchup)');
+
+    let lastHandledSignalId = '';
+    let lastHandledSignalTs = 0;
+    let isBusy = false;
+
+    // --- HUD FLOTTANT SUR MEXC ---
+    function updateHud(statusHtml, holdMs = 0) {
+        let hud = document.getElementById('lumen-trader-hud');
+        if (!hud) {
+            hud = document.createElement('div');
+            hud.id = 'lumen-trader-hud';
+            hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.92);border:1.5px solid #10B981;border-radius:8px;padding:6px 12px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(8px);pointer-events:none;';
+            document.body.appendChild(hud);
+        }
+        hud.innerHTML = statusHtml;
+        if (holdMs > 0) {
+            clearTimeout(hud._resetTimer);
+            hud._resetTimer = setTimeout(() => {
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.3</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            }, holdMs);
+        }
+    }
+
+    // Afficher le statut vert dès l'injection du script
+    function ensureInitialHud() {
+        let hud = document.getElementById('lumen-trader-hud');
+        if (!hud && document.body) {
+            hud = document.createElement('div');
+            hud.id = 'lumen-trader-hud';
+            hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.92);border:1.5px solid #10B981;border-radius:8px;padding:6px 12px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(8px);pointer-events:none;';
+            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.3</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            document.body.appendChild(hud);
+        }
+    }
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -73,7 +112,7 @@
         const hud = document.createElement('div');
         hud.id = 'lumen-web-hud';
         hud.style.cssText = 'position:fixed;top:65px;right:20px;z-index:99999999;background:rgba(15,23,42,0.96);border:2.5px solid #10B981;border-radius:10px;padding:10px 16px;color:#FFFFFF;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:bold;box-shadow:0 0 25px rgba(16,185,129,0.7);display:flex;align-items:center;gap:10px;pointer-events:none;';
-        hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.2</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+        hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.3</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
         document.body.appendChild(hud);
     }
 
@@ -101,7 +140,7 @@
             if (hud) {
                 hud.style.borderColor = '#10B981';
                 hud.style.boxShadow = '0 0 25px rgba(16,185,129,0.7)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.2</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.3</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             }
         }, duration);
     }
@@ -545,34 +584,7 @@
     }
     initCloudSignalStream();
 
-    // Fallback Cloud Poll régulier
-    setInterval(async () => {
-        try {
-            const res = await fetch('https://ntfy.sh/lumen_mexc_direct_bridge/json?poll=1');
-            if (res.ok) {
-                const text = await res.text();
-                const lines = text.trim().split('\n');
-                for (const l of lines) {
-                    if (!l) continue;
-                    try {
-                        const raw = JSON.parse(l);
-                        if (raw && raw.message) {
-                            const sig = JSON.parse(raw.message);
-                            const sigTs = sig.timestamp || sig._ts || 0;
-                            const isPing = (sig.action === 'PING_TEST');
-                            const maxAge = isPing ? 180000 : 35000;
-                            if (sigTs > lastHandledCloudTs && Math.abs(Date.now() - sigTs) < maxAge) {
-                                lastHandledCloudTs = sigTs;
-                                console.log('[Lumen Web Trader] Signal reçu via Cloud Poll:', sig);
-                                executeMarketOrder(sig);
-                            }
-                        }
-                    } catch(err){}
-                }
-            }
-        } catch(e){}
-    }, 1500);
-
+    // Écoute des signaux inter-domaines locaux (storage)
     window.addEventListener('storage', (e) => {
         if (e.key === 'lumen_mexc_web_signal' && e.newValue) {
             try {

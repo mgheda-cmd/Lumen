@@ -17957,6 +17957,31 @@ window.testerConnexionMexcWeb = function() {
   }
 };
 
+window.expliquerAutorisationExtension = function() {
+  if (window.__LUMEN_USERSCRIPT_ACTIVE) {
+    toast('✅ Le pont Userscripts est déjà 100% actif et relié à MEXC !', '#10B981');
+    return;
+  }
+  alert("🧩 Pour synchroniser Lumen et MEXC sur Safari iPad :\n\n1. Touchez l'icône Extension (la pièce de puzzle 🧩) située dans la barre d'adresse de Safari en haut de l'écran.\n2. Touchez 'Userscripts'.\n3. Sélectionnez 'Toujours autoriser sur ce site web' (ou 'Toujours autoriser sur tous les sites web').\n\nDès que c'est fait, Lumen et MEXC communiquent instantanément à 100% !");
+};
+
+// Surveillance continue du statut du pont iPad
+if (!window.__stBridgeStatusTimer) {
+  window.__stBridgeStatusTimer = setInterval(function() {
+    const el = document.getElementById('st-coach-bridge-status');
+    if (!el) return;
+    if (window.__LUMEN_USERSCRIPT_ACTIVE) {
+      el.innerHTML = '🟢 <b style="color:#10B981">Pont Safari iPad Connecté</b> (Liaison MEXC 100% Active)';
+      el.style.background = 'rgba(16,185,129,0.08)';
+      el.style.border = '1px solid rgba(16,185,129,0.2)';
+    } else {
+      el.innerHTML = '🧩 <span style="color:#F59E0B;font-weight:700">Touchez ici ou l\'icône puzzle 🧩 pour synchroniser Safari</span>';
+      el.style.background = 'rgba(245,158,11,0.08)';
+      el.style.border = '1px solid rgba(245,158,11,0.25)';
+    }
+  }, 1000);
+}
+
 window.updateStrat11JournalExecUI = function() {
   const banner = document.getElementById('st-execution-status-banner');
   const bannerTxt = document.getElementById('st-execution-status-txt');
@@ -46465,6 +46490,7 @@ window.balayerMM_MTF = async function(){
           📡 Test Ping
         </button>
       </div>
+      <div id="st-coach-bridge-status" onclick="window.expliquerAutorisationExtension()" style="margin-top:5px;text-align:center;font-size:9.5px;cursor:pointer;padding:2px 4px;border-radius:4px;transition:all 0.2s"></div>
     </div>
   </div>
 
