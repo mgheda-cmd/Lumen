@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.3
+// @version      2.1.4
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 12 pts (Entrée Limit 30s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
@@ -26,7 +26,7 @@
         console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen');
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
         try {
-            window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.3' } }));
+            window.dispatchEvent(new CustomEvent('LumenUserscriptReady', { detail: { version: '2.1.4' } }));
         } catch(e){}
         let lChannel = null;
         try { lChannel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
@@ -66,64 +66,61 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.3 actif sur MEXC (0.00% Maker · Sécurité 12 pts · Fast-Catchup)');
+    console.log('>>> [Lumen Web Trader] Script v2.1.4 actif sur MEXC (0.00% Maker · Sécurité 12 pts · Fast-Catchup)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
     let isBusy = false;
 
-    // --- HUD FLOTTANT SUR MEXC ---
-    function updateHud(statusHtml, holdMs = 0) {
-        let hud = document.getElementById('lumen-trader-hud');
-        if (!hud) {
-            hud = document.createElement('div');
-            hud.id = 'lumen-trader-hud';
-            hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.92);border:1.5px solid #10B981;border-radius:8px;padding:6px 12px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(8px);pointer-events:none;';
-            document.body.appendChild(hud);
-        }
-        hud.innerHTML = statusHtml;
-        if (holdMs > 0) {
-            clearTimeout(hud._resetTimer);
-            hud._resetTimer = setTimeout(() => {
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.3</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
-            }, holdMs);
-        }
-    }
-
-    // Afficher le statut vert dès l'injection du script
-    function ensureInitialHud() {
+    // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
+    function getOrCreateHud() {
         let hud = document.getElementById('lumen-trader-hud');
         if (!hud && document.body) {
             hud = document.createElement('div');
             hud.id = 'lumen-trader-hud';
-            hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.92);border:1.5px solid #10B981;border-radius:8px;padding:6px 12px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(8px);pointer-events:none;';
-            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.3</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            hud.style.cssText = 'position:fixed;top:12px;right:75px;z-index:99999999;background:rgba(15,23,42,0.95);border:2px solid #10B981;border-radius:8px;padding:6px 14px;color:#F8FAFC;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4);backdrop-filter:blur(8px);pointer-events:none;transition:all 0.3s ease;';
+            hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.4</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
             document.body.appendChild(hud);
+        }
+        return hud;
+    }
+
+    function ensureInitialHud() {
+        getOrCreateHud();
+    }
+
+    function updateHud(statusHtml, holdMs = 0) {
+        const hud = getOrCreateHud();
+        if (!hud) return;
+        hud.innerHTML = statusHtml;
+        if (holdMs > 0) {
+            clearTimeout(hud._resetTimer);
+            hud._resetTimer = setTimeout(() => {
+                hud.style.borderColor = '#10B981';
+                hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.4</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            }, holdMs);
         }
     }
 
     let channel = null;
     try { channel = new BroadcastChannel('lumen_mexc_channel'); } catch(e){}
 
-    function createHud() {
-        if (document.getElementById('lumen-web-hud')) return;
-        if (!document.body) return;
+    setInterval(ensureInitialHud, 1000);
 
-        const hud = document.createElement('div');
-        hud.id = 'lumen-web-hud';
-        hud.style.cssText = 'position:fixed;top:65px;right:20px;z-index:99999999;background:rgba(15,23,42,0.96);border:2.5px solid #10B981;border-radius:10px;padding:10px 16px;color:#FFFFFF;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:bold;box-shadow:0 0 25px rgba(16,185,129,0.7);display:flex;align-items:center;gap:10px;pointer-events:none;';
-        hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.3</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
-        document.body.appendChild(hud);
-    }
-
-    setInterval(createHud, 800);
-
-    function notifyHud(msg, color='#10B981', duration=8000) {
-        const hud = document.getElementById('lumen-web-hud');
-        if (!hud) return;
-        hud.style.borderColor = color;
-        hud.style.boxShadow = `0 0 35px ${color}`;
-        hud.innerHTML = `⚡ <span style="color:${color};font-weight:900;font-size:13px">${msg}</span>`;
+    function notifyHud(msg, color='#10B981', duration=35000) {
+        const hud = getOrCreateHud();
+        if (hud) {
+            clearTimeout(hud._resetTimer);
+            hud.style.borderColor = color;
+            hud.style.boxShadow = `0 4px 25px rgba(0,0,0,0.7), 0 0 35px ${color}`;
+            hud.innerHTML = `⚡ <span style="color:${color};font-weight:900;font-size:13px">${msg}</span>`;
+            hud._resetTimer = setTimeout(() => {
+                hud.style.borderColor = '#10B981';
+                hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
+                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.4</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
+            }, duration);
+        }
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
@@ -136,13 +133,6 @@
             osc.start();
             osc.stop(ctx.currentTime + 0.35);
         } catch(e){}
-        setTimeout(() => {
-            if (hud) {
-                hud.style.borderColor = '#10B981';
-                hud.style.boxShadow = '0 0 25px rgba(16,185,129,0.7)';
-                hud.innerHTML = '🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v2.1.3</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>';
-            }
-        }, duration);
     }
 
     function setNativeValue(element, value) {
@@ -524,8 +514,11 @@
             if (!newVal) return;
             try {
                 const signal = typeof newVal === 'string' ? JSON.parse(newVal) : newVal;
-                if (signal && Date.now() - (signal.timestamp || signal._ts || 0) < 6000) {
-                    console.log('[Lumen Web Trader] Signal inter-domain reçu via Tampermonkey:', signal);
+                const sigTs = signal.timestamp || signal._ts || 0;
+                const isPing = (signal.action === 'PING_TEST');
+                const maxAge = isPing ? 300000 : 120000;
+                if (signal && Math.abs(Date.now() - sigTs) < maxAge) {
+                    console.log('[Lumen Web Trader] Signal inter-domaine reçu via GM listener:', signal);
                     executeMarketOrder(signal);
                 }
             } catch(e) {
@@ -534,7 +527,7 @@
         });
     }
 
-    // Fallback Polling GM_getValue (Pour compatibilité 100% garantie sur iPad Safari Userscripts)
+    // Polling GM_getValue très réactif (compatibilité garantie sur iPad Safari Userscripts)
     if (typeof GM_getValue === 'function') {
         let lastHandledCrossTs = 0;
         setInterval(() => {
@@ -543,46 +536,17 @@
                 if (raw) {
                     const signal = typeof raw === 'string' ? JSON.parse(raw) : raw;
                     const sigTs = signal.timestamp || signal._ts || 0;
-                    if (sigTs > lastHandledCrossTs && (Date.now() - sigTs) < 8000) {
+                    const isPing = (signal.action === 'PING_TEST');
+                    const maxAge = isPing ? 300000 : 120000;
+                    if (sigTs > lastHandledCrossTs && Math.abs(Date.now() - sigTs) < maxAge) {
                         lastHandledCrossTs = sigTs;
                         console.log('[Lumen Web Trader] Signal reçu via GM_getValue poll:', signal);
                         executeMarketOrder(signal);
                     }
                 }
             } catch(e){}
-        }, 350);
+        }, 300);
     }
-
-    // --- LIAISON CLOUD INSTANTANÉE SSE & POLL (100% Garantie Inter-Onglets Safari iPad) ---
-    let lastHandledCloudTs = 0;
-    function initCloudSignalStream() {
-        try {
-            if (typeof EventSource !== 'undefined') {
-                const sse = new EventSource('https://ntfy.sh/lumen_mexc_direct_bridge/sse');
-                sse.onmessage = (e) => {
-                    try {
-                        const raw = JSON.parse(e.data);
-                        if (raw && raw.event === 'message' && raw.message) {
-                            const sig = JSON.parse(raw.message);
-                            const sigTs = sig.timestamp || sig._ts || 0;
-                            const isPing = (sig.action === 'PING_TEST');
-                            const maxAge = isPing ? 180000 : 35000;
-                            if (sigTs > lastHandledCloudTs && Math.abs(Date.now() - sigTs) < maxAge) {
-                                lastHandledCloudTs = sigTs;
-                                console.log('[Lumen Web Trader] Signal reçu via Cloud SSE:', sig);
-                                executeMarketOrder(sig);
-                            }
-                        }
-                    } catch(err){}
-                };
-                sse.onerror = () => {
-                    try { sse.close(); } catch(e){}
-                    setTimeout(initCloudSignalStream, 3500);
-                };
-            }
-        } catch(e){}
-    }
-    initCloudSignalStream();
 
     // Écoute des signaux inter-domaines locaux (storage)
     window.addEventListener('storage', (e) => {

@@ -17899,16 +17899,8 @@ window.desactiverStrat11Execution = function() {
 window.emettreSignalMexcWeb = function(sig) {
   try {
     const payload = { ...sig, timestamp: sig.timestamp || Date.now() };
-    // 1. Canal Cloud Instantané SSE (100% garanti inter-onglets Safari iPad)
-    try {
-      fetch('https://ntfy.sh/lumen_mexc_direct_bridge', {
-        method: 'POST',
-        headers: { 'Title': 'Lumen Signal' },
-        body: JSON.stringify(payload)
-      }).catch(()=>{});
-    } catch(e){}
 
-    // 2. BroadcastChannel
+    // 1. BroadcastChannel inter-onglets
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const bc = new BroadcastChannel('lumen_mexc_channel');
@@ -17916,17 +17908,18 @@ window.emettreSignalMexcWeb = function(sig) {
       }
     } catch(e){}
 
-    // 3. window.postMessage pour le content script du même onglet
+    // 2. window.postMessage & CustomEvent vers l'extension Userscripts
     try {
       window.postMessage(payload, '*');
+      window.dispatchEvent(new CustomEvent('LumenEmitSignal', { detail: payload }));
     } catch(e){}
 
-    // 4. LocalStorage
+    // 3. LocalStorage
     try {
       localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(payload));
     } catch(e){}
 
-    // 5. GM_setValue si accessible
+    // 4. GM_setValue si directement injecté
     try {
       if (typeof GM_setValue === 'function') {
         GM_setValue('lumen_mexc_cross_signal', JSON.stringify({ ...payload, _ts: Date.now() }));
