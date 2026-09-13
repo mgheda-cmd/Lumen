@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0220</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0230</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -37569,7 +37569,15 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
     if (candleIdx >= s - 2 && candleIdx <= e + 2) {
       const cx = xOf(candleIdx);
       const candle = d[candleIdx];
-      const anchorY = candle ? (isLong ? yOf(candle.l) : yOf(candle.h)) : y;
+      // RÈGLE EXPRESSE DE L'UTILISATEUR :
+      // Les pastilles Démo se placent STRICTEMENT À L'OPPOSÉ du sens du trade !
+      // - Si VENTE (SHORT) : la pastille Démo est placée EN BAS (sous la mèche basse de la bougie)
+      //   pour laisser l'espace supérieur 100% libre et dégagé pour la pastille VENTE originale de la stratégie !
+      // - Si ACHAT (LONG) : la pastille Démo est placée EN HAUT (au-dessus de la mèche haute de la bougie)
+      //   pour laisser l'espace inférieur 100% libre et dégagé pour la pastille ACHAT originale de la stratégie !
+      const demoIsPlacedAbove = isLong; // VENTE -> false (en bas), ACHAT -> true (en haut)
+      const anchorY = candle ? (demoIsPlacedAbove ? yOf(candle.h) : yOf(candle.l)) : y;
+      const demoDir = demoIsPlacedAbove ? -1 : 1;
 
       let trigLabel = p.triggerSignal || (window.activeDemoStrategy?.modeLabel || 'Signal Stratégie');
       // Synchronisation directe avec le numéro de pastille d'entrée sur cette bougie
@@ -37603,17 +37611,15 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
 
       const ppTop = (_pricePaneObj && _pricePaneObj.y != null) ? (_pricePaneObj.y + 6) : 32;
       const ppBot = (_priceBot > 0) ? (_priceBot - bh - 6) : (H - AXIS_H - bh - 6);
-      let by = isLong ? (anchorY + 110) : (anchorY - bh - 110);
+      const baseSpacing = 42;
+      let by = demoIsPlacedAbove ? (anchorY - bh - baseSpacing) : (anchorY + baseSpacing);
 
       if (existingBadge) {
-        // Une pastille de signal existe déjà sur la même bougie : NE JAMAIS LA RECOUVRIR
-        if (!isLong) {
-          // VENTE : si assez de place au-dessus, empiler proprement avec espace de 10px
+        if (demoIsPlacedAbove) {
           const spaceAbove = existingBadge.y - bh - 10;
           if (spaceAbove >= ppTop) {
             by = spaceAbove;
           } else {
-            // Pas assez d'espace vertical : décaler sur le côté droit pour que la pastille de signal reste 100% visible
             const shiftRight = existingBadge.x + existingBadge.w + 12;
             if (shiftRight + bw < W - AXIS_W - 6) {
               bx = shiftRight;
@@ -37624,7 +37630,6 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
             }
           }
         } else {
-          // ACHAT : si assez de place en-dessous, empiler proprement avec espace de 10px
           const spaceBelow = existingBadge.y + existingBadge.h + 10;
           if (spaceBelow <= ppBot) {
             by = spaceBelow;
@@ -37643,10 +37648,10 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
 
       const outPosDemo = { x: bx, y: by };
       if (typeof placeBadge === 'function') {
-        by = placeBadge(bx, bw, by, bh, isLong ? 1 : -1, outPosDemo);
+        by = placeBadge(bx, bw, by, bh, demoDir, outPosDemo);
         bx = (outPosDemo.x != null) ? outPosDemo.x : bx;
       } else {
-        by = isLong ? Math.min(H - bh - 24, by) : Math.max(ppTop, by);
+        by = demoIsPlacedAbove ? Math.max(ppTop, by) : Math.min(H - bh - 24, by);
       }
 
       // Fond de pastille avec lueur : Vert fluo plein (#00E676) pour LONG, Rose fluo pour SHORT
@@ -37668,7 +37673,7 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       ctx.setLineDash([3, 2]);
       ctx.beginPath();
       ctx.moveTo(cx, anchorY);
-      ctx.lineTo(cx, isLong ? by : (by + bh));
+      ctx.lineTo(cx, demoIsPlacedAbove ? (by + bh) : by);
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -43581,7 +43586,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0220';
+  window.__LUMEN_BUILD = 'B-0913-0230';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
