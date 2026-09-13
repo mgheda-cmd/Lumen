@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0030</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0135</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -37517,6 +37517,7 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       const timeStr = typeof fmtTimeFr === 'function' ? fmtTimeFr(p.t || p.candleTime) : new Date(p.t || Date.now()).toLocaleTimeString();
       const elapsedStr = typeof fmtDurFr === 'function' ? fmtDurFr(p.t) : '';
 
+      const kT = 1;
       const l1Text = `🤖 DÉMO ${isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} ${p.lev ? p.lev + 'x' : '1x'}`;
       const l2Text = `⏰ ${timeStr}${elapsedStr ? ' · ⏱️ ' + elapsedStr : ''}`;
       const l3Text = `🎯 Cause : ${trigLabel}`;
@@ -37527,12 +37528,12 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       const w2 = ctx.measureText(l2Text).width;
       const w3 = ctx.measureText(l3Text).width;
       const w4 = ctx.measureText(l4Text).width;
-      const bw = Math.max(162, Math.max(w1, w2, w3, w4) + 18);
+      const bw = Math.max(168, Math.max(w1, w2, w3, w4) + 18);
       const bh = 58;
 
       const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, cx - bw / 2));
-      // Éloignement accru (90px) pour laisser les bougies totalement libres
-      let by = isLong ? (anchorY + 90) : (anchorY - bh - 90);
+      // Éloignement suffisant (140px) pour flotter au-dessus de la pastille de signal sans jamais la recouvrir
+      let by = isLong ? (anchorY + 140) : (anchorY - bh - 140);
       if (typeof placeBadge === 'function') {
         by = placeBadge(bx, bw, by, bh, isLong ? 1 : -1);
       } else {
@@ -37542,9 +37543,9 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       // Fond de pastille avec lueur : Vert fluo plein (#00E676) pour LONG, Rose fluo pour SHORT
       ctx.shadowColor = col;
       ctx.shadowBlur = 10;
-      ctx.fillStyle = isLong ? '#00E676' : '#FF3366';
-      ctx.strokeStyle = isLong ? '#059669' : '#DC2626';
-      ctx.lineWidth = 1.8;
+      ctx.fillStyle = isLong ? 'rgba(6, 36, 20, 0.94)' : 'rgba(44, 8, 16, 0.94)';
+      ctx.strokeStyle = isLong ? '#00E676' : '#FF3366';
+      ctx.lineWidth = 2.0;
       ctx.beginPath();
       if (typeof ctx.roundRect === 'function') ctx.roundRect(bx, by, bw, bh, 6);
       else ctx.rect(bx, by, bw, bh);
@@ -37568,29 +37569,29 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       ctx.arc(cx, anchorY, 3.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Contenu texte : ÉCRITURE EN NOIR SUR VERT FLUO (LONG) pour un contraste et une lisibilité parfaite
+      // Contenu texte : lisibilité optimale multi-lignes
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
 
       // L1 : Titre Démo
-      ctx.font = '900 10px "IBM Plex Sans", -apple-system, sans-serif';
-      ctx.fillStyle = isLong ? '#000000' : '#FFFFFF';
-      ctx.fillText(l1Text, bx + 8, by + 5);
+      ctx.font = '900 10.5px "IBM Plex Sans", -apple-system, sans-serif';
+      ctx.fillStyle = isLong ? '#00E676' : '#FF3366';
+      ctx.fillText(l1Text, bx + 8, by + 6);
 
       // L2 : Horodatage
       ctx.font = 'bold 8.5px "IBM Plex Mono", monospace';
-      ctx.fillStyle = isLong ? '#0F172A' : '#FFFFFF';
-      ctx.fillText(l2Text, bx + 8, by + 18 * kT);
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillText(l2Text, bx + 8, by + 19);
 
       // L3 : Cause / Signal déclencheur
       ctx.font = '800 9.5px "IBM Plex Sans", sans-serif';
-      ctx.fillStyle = isLong ? '#000000' : '#FFFFFF';
-      ctx.fillText(l3Text, bx + 8, by + 31 * kT);
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fillText(l3Text, bx + 8, by + 32);
 
       // L4 : Prix & PnL
       ctx.font = 'bold 8.5px "IBM Plex Mono", monospace';
-      ctx.fillStyle = isLong ? '#0F172A' : '#FFFFFF';
-      ctx.fillText(l4Text, bx + 8, by + 44);
+      ctx.fillStyle = pnl >= 0 ? '#34D399' : '#F87171';
+      ctx.fillText(l4Text, bx + 8, by + 45);
     }
 
     // 4. Ligne SL / TP si définis
@@ -43471,7 +43472,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0030';
+  window.__LUMEN_BUILD = 'B-0913-0135';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
