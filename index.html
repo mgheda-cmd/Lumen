@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0240</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0255</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -20661,15 +20661,35 @@ window.updateChartTradeHud = function() {
   }
 
   const px = livePrice(p.sym) || p.entry;
-  const pnlUsd = (p.side === 'long' ? (px - p.entry) : (p.entry - px)) * p.qty;
-  const margin = p.margin || (p.qty * p.entry / (p.lev || 1));
+  let pnlUsd = (p.side === 'long' ? (px - p.entry) : (p.entry - px)) * p.qty;
+  let margin = p.margin || (p.qty * p.entry / (p.lev || 1));
+
+  // Priorité et précision absolue si position RÉELLE sur MEXC
+  const isReal = !!p.isRealMexc;
+  let realMexcRef = null;
+  if (isReal && window.__mexcRawPositions && window.__mexcRawPositions.length > 0) {
+    const curCleanSym = String(p.sym || state.symbol || 'BTCUSDT').toUpperCase().replace(/[-_]/g, '');
+    realMexcRef = window.__mexcRawPositions.find(rp => {
+      const rpSym = String(rp.symbol || '').toUpperCase().replace(/[-_]/g, '');
+      return (rpSym === curCleanSym || (rpSym.includes('BTC') && curCleanSym.includes('BTC')));
+    });
+    if (realMexcRef) {
+      const rPnl = Number(realMexcRef.unrealisedPnl ?? realMexcRef.pnl ?? realMexcRef.unrealizedPnl);
+      if (isFinite(rPnl)) pnlUsd = rPnl;
+      const rMarg = Number(realMexcRef.im ?? realMexcRef.positionMargin ?? realMexcRef.oim);
+      if (isFinite(rMarg) && rMarg > 0) margin = rMarg;
+    }
+  }
+
   const pnlPct = margin > 0 ? (pnlUsd / margin) * 100 : 0;
 
   const isWin = pnlUsd >= 0;
   const mainColor = isWin ? '#22C55E' : '#EF4444';
-  const badgeBg = isWin ? '#16A34A' : '#DC2626';
-  const mainBorder = isWin ? '#22C55E' : '#EF4444';
-  const sideLabel = p.side === 'long' ? '🟢 LONG' : '🔴 SHORT';
+  const badgeBg = isReal ? (isWin ? '#059669' : '#DC2626') : (isWin ? '#16A34A' : '#DC2626');
+  const mainBorder = isReal ? '#00E5FF' : (isWin ? '#22C55E' : '#EF4444');
+  const sideLabel = isReal
+    ? (p.side === 'long' ? '🚀 LIVE MEXC LONG' : '🚀 LIVE MEXC SHORT')
+    : (p.side === 'long' ? '🟢 LONG' : '🔴 SHORT');
 
   const startTime = p.t || Date.now();
   const elapsedStr = formatElapsed(startTime);
@@ -20683,12 +20703,17 @@ window.updateChartTradeHud = function() {
   if (topBar) {
     topBar.style.display = 'block';
     topBar.style.borderBottom = `2px solid ${mainBorder}`;
-    const marginInfoStr = (p.mmode === 'isole') ? ` · Marge: $${fmtUsd(p.margin)}${p.bonusApplied ? ' (Bonus: +$' + fmtUsd(p.bonusApplied) + ')' : ''}` : '';
+    const marginInfoStr = isReal
+      ? ` · Marge Réelle: $${fmtUsd(margin)}`
+      : ((p.mmode === 'isole') ? ` · Marge: $${fmtUsd(p.margin)}${p.bonusApplied ? ' (Bonus: +$' + fmtUsd(p.bonusApplied) + ')' : ''}` : '');
+    const closeBtnOnClick = isReal
+      ? `if(confirm('Clôturer immédiatement la position réelle sur MEXC Futures ?')){ closePos(${posIdx}); }`
+      : `closePos(${posIdx})`;
     topBar.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:11px">
         <!-- Badge Sens, Levier & Symbole -->
         <div style="display:flex;align-items:center;gap:6px">
-          <span style="background:${badgeBg};color:#FFFFFF;font-weight:900;font-size:10.5px;padding:2px 7px;border-radius:4px;letter-spacing:0.3px">
+          <span style="background:${badgeBg};color:#FFFFFF;font-weight:900;font-size:10.5px;padding:2px 7px;border-radius:4px;letter-spacing:0.3px;box-shadow:${isReal ? '0 0 10px rgba(0,229,255,0.4)' : 'none'}">
             ${sideLabel} ${p.lev ? p.lev + 'x' : '1x'}
           </span>
           <span style="color:#FFFFFF;font-weight:800;font-size:12px">${p.sym}${p.tradeNum ? ' (#' + p.tradeNum + ')' : ''}</span>
@@ -20706,7 +20731,7 @@ window.updateChartTradeHud = function() {
         <!-- Temps écoulé & Clôture Trade -->
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:11px;color:#FFD700;font-family:'IBM Plex Mono',monospace;font-weight:700">⏱️ ${elapsedStr}</span>
-          <button onclick="closePos(${posIdx})" style="background:#EF4444;color:#FFFFFF;border:none;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(239,68,68,0.4)">
+          <button onclick="${closeBtnOnClick}" style="background:#EF4444;color:#FFFFFF;border:none;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(239,68,68,0.4)">
             ✕ Fermer
           </button>
         </div>
@@ -20715,8 +20740,21 @@ window.updateChartTradeHud = function() {
   }
 };
 
+let _mexcPollTick = 0;
 setInterval(() => {
   if (typeof updateChartTradeHud === 'function') updateChartTradeHud();
+  _mexcPollTick++;
+  if (_mexcPollTick % 4 === 0) { // Polling MEXC en arrière-plan toutes les 4s
+    try {
+      if (typeof window.fetchMexcAccountAndPositions === 'function') {
+        const cfg = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
+        const botCfg = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
+        if (cfg.apiKey || botCfg.apiKey || document.getElementById('live-ex-apikey')?.value) {
+          window.fetchMexcAccountAndPositions(true);
+        }
+      }
+    } catch(e){}
+  }
 }, 1000);
 
 function updatePaperDemoStrategyUI(){
@@ -21225,6 +21263,19 @@ function closePos(i, customReason){
   paper.history=paper.history.slice(0,50);
   paper.positions.splice(i,1);
   saveConfig(); updatePaper();
+
+  // Si c'est une position réelle ouverte sur MEXC Futures, déclencher l'ordre de fermeture réel
+  if (p.isRealMexc) {
+    try {
+      const mexcPair = ((p.sym || state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
+      const realVol = p.vol || (window.__mexcRawPositions && window.__mexcRawPositions[0] && (window.__mexcRawPositions[0].holdVol || window.__mexcRawPositions[0].vol)) || Math.round(p.qty / ((window.__csz && window.__csz[mexcPair]) || 0.0001));
+      if (typeof window.closeMexcPosition === 'function' && realVol > 0) {
+        window.closeMexcPosition(mexcPair, p.side, realVol);
+      }
+    } catch(eMexcClose){
+      console.warn('Erreur fermeture MEXC depuis closePos:', eMexcClose);
+    }
+  }
 
   // Relais Web Auto-Trader vers MEXC (Maker Chaser 0% / Sécurité 12 pts)
   if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
@@ -21902,6 +21953,66 @@ function checkAutoTrade(inputSignals){
 
   const coin = baseAsset(state.symbol);
   const px = livePrice(state.symbol) || d[d.length - 1].c;
+
+  // 1. Détection et synchronisation prioritaire avec la position RÉELLE ouverte sur MEXC Futures
+  let realMexcPos = null;
+  if (window.__mexcRawPositions && Array.isArray(window.__mexcRawPositions) && window.__mexcRawPositions.length > 0) {
+    const curCleanSym = String(state.symbol || 'BTCUSDT').toUpperCase().replace(/[-_]/g, '');
+    realMexcPos = window.__mexcRawPositions.find(rp => {
+      const rpSym = String(rp.symbol || '').toUpperCase().replace(/[-_]/g, '');
+      const holdV = Number(rp.holdVol || rp.vol || 0);
+      return holdV > 0 && (rpSym === curCleanSym || (rpSym.includes('BTC') && curCleanSym.includes('BTC')));
+    });
+  }
+
+  if (realMexcPos) {
+    const isRealLong = (realMexcPos.positionType != null) ? (Number(realMexcPos.positionType) === 1) : (realMexcPos.side === 'long' || realMexcPos.side === 1);
+    const realEntryPx = Number(realMexcPos.holdAvgPrice ?? realMexcPos.openAvgPrice ?? realMexcPos.openPrice ?? realMexcPos.costOpenPrice ?? 0);
+    const realLev = Number(realMexcPos.leverage || 50);
+    const realVol = Number(realMexcPos.holdVol || realMexcPos.vol || 0);
+    const realCsz = Number(realMexcPos.contractSize ?? (window.__csz && window.__csz[realMexcPos.symbol]) ?? 0.0001);
+    const realQty = realVol * realCsz;
+    const realMargin = Number(realMexcPos.im ?? realMexcPos.positionMargin ?? realMexcPos.oim ?? (realQty * realEntryPx / realLev));
+
+    if (!Array.isArray(paper.positions)) paper.positions = [];
+    if (paper.positions.length === 0) {
+      paper.positions[0] = {
+        side: isRealLong ? 'long' : 'short',
+        entry: realEntryPx,
+        qty: realQty,
+        lev: realLev,
+        margin: realMargin,
+        sym: state.symbol,
+        t: realMexcPos.createTime ? Number(realMexcPos.createTime) : (Date.now() - 3600000),
+        candleTime: realMexcPos.createTime ? Number(realMexcPos.createTime) : null,
+        triggerSignal: 'Position Réelle MEXC',
+        isRealMexc: true
+      };
+    } else {
+      paper.positions[0].entry = realEntryPx;
+      paper.positions[0].side = isRealLong ? 'long' : 'short';
+      paper.positions[0].isRealMexc = true;
+      if (realLev > 0) paper.positions[0].lev = realLev;
+      if (realQty > 0) paper.positions[0].qty = realQty;
+      if (realMargin > 0) paper.positions[0].margin = realMargin;
+    }
+  } else if (!realMexcPos && paper.positions && paper.positions.length > 0 && paper.positions[0].isRealMexc && window.__mexcLastFetchTime && (Date.now() - window.__mexcLastFetchTime < 15000)) {
+    const p = paper.positions[0];
+    const exitPx = livePrice(p.sym) || d[d.length - 1].c;
+    const pnl = (p.side === 'long' ? (exitPx - p.entry) : (p.entry - exitPx)) * p.qty;
+    paper.history.unshift({
+      sym: p.sym, side: p.side, entry: p.entry, exit: exitPx, pnl: pnl, qty: p.qty,
+      lev: p.lev || 1, t: Date.now(), t0: p.t,
+      triggerSignal: p.triggerSignal || 'Position Réelle MEXC',
+      exitReason: 'Clôture confirmée sur MEXC Futures',
+      isRealMexc: true
+    });
+    paper.history = paper.history.slice(0, 50);
+    paper.positions.splice(0, 1);
+    saveConfig();
+    updatePaper();
+  }
+
   const existingPos = paper.positions && paper.positions[0];
 
   // Restaurer la stratégie démo active si non en mémoire
@@ -32490,7 +32601,10 @@ window.submitMexcManualTrade = async function() {
   }
 };
 
-window.fetchMexcAccountAndPositions = async function() {
+window.fetchMexcAccountAndPositions = async function(isBackground = false) {
+  if (window.__mexcFetchInFlight) return;
+  window.__mexcFetchInFlight = true;
+
   const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
   const botConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
   const inputUrl = document.getElementById('live-ex-serviceurl')?.value?.trim();
@@ -32507,11 +32621,15 @@ window.fetchMexcAccountAndPositions = async function() {
   const elPosBadge = document.getElementById('mexc-pos-count-badge');
   const posContainer = document.getElementById('mexc-positions-container');
 
-  if (elFuturesAvail) elFuturesAvail.innerHTML = '⏳ ...';
-  if (elFuturesEquity) elFuturesEquity.innerHTML = '⏳ ...';
-  if (elSpotUsdt) elSpotUsdt.innerHTML = '⏳ ...';
-  if (elFuturesMargin) elFuturesMargin.innerHTML = '⏳ ...';
-  if (posContainer) posContainer.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px;text-align:center">⏳ Chargement des positions ouvertes...</div>';
+  if (!isBackground) {
+    if (elFuturesAvail) elFuturesAvail.innerHTML = '⏳ ...';
+    if (elFuturesEquity) elFuturesEquity.innerHTML = '⏳ ...';
+    if (elSpotUsdt) elSpotUsdt.innerHTML = '⏳ ...';
+    if (elFuturesMargin) elFuturesMargin.innerHTML = '⏳ ...';
+    if (posContainer && (!window.__mexcRawPositions || window.__mexcRawPositions.length === 0)) {
+      posContainer.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px;text-align:center">⏳ Chargement des positions ouvertes...</div>';
+    }
+  }
 
   try {
     const futuresBody = { endpoint: '/api/v1/private/account/assets', method: 'GET', isFutures: true, params: {} };
@@ -32580,6 +32698,8 @@ window.fetchMexcAccountAndPositions = async function() {
     }
 
     const positionsList = Array.isArray(posData) ? posData : [];
+    window.__mexcRawPositions = positionsList;
+    window.__mexcLastFetchTime = Date.now();
     if (elPosBadge) elPosBadge.innerText = String(positionsList.length);
 
     if (!posMarginUsdt && positionsList.length > 0) {
@@ -32596,7 +32716,6 @@ window.fetchMexcAccountAndPositions = async function() {
       if (!positionsList.length) {
         posContainer.innerHTML = '<div style="color:#10B981;font-weight:bold;font-size:12px;padding:14px;background:rgba(16,185,129,0.08);border-radius:8px;border:1px solid rgba(16,185,129,0.3);text-align:center">✅ Aucune position ouverte en cours sur MEXC Futures.</div>';
       } else {
-        window.__mexcRawPositions = positionsList;
         let posHtml = '<div style="text-align:right;margin-bottom:6px"><button onclick="window.showMexcRaw()" style="background:transparent;border:1px solid #64748B;color:#94A3B8;border-radius:5px;padding:3px 9px;font-size:10px;cursor:pointer">🔍 données brutes</button></div>';
         positionsList.forEach(p => {
           /* positionType seul fait foi : 1 = long, 2 = short. La condition
@@ -32663,22 +32782,22 @@ window.fetchMexcAccountAndPositions = async function() {
           posHtml += `
             <div style="background:var(--panel-2,#0F172A);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
               <div>
-                <span style="font-weight:900;color:${sideCol};background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;font-size:11px">${posSide}</span>
-                <b style="color:#FFF;margin-left:6px">${p.symbol}</b>
-                <span style="color:var(--muted);font-size:11px;margin-left:6px">${tailleBase.toFixed(4)} ${(p.symbol||'BTC_USDT').split('_')[0]} (${vol} ct) @ $${entryPx > 0 ? entryPx.toFixed(dP) : '—'}${lev ? ' · ' + lev + 'x' : ''}</span>
-                <div style="margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94A3B8;line-height:1.6">
-                  Repère <b style="color:${prixEstime ? '#F59E0B' : '#7DD3FC'}">${(markPx > 0 && !pnlInconnu) ? ('$' + markPx.toFixed(dP) + (prixEstime ? ' *' : '')) : '—'}</b> ·
-                  Liquidation <b style="color:#FF9F1C">${liqPx > 0 ? '$' + liqPx.toFixed(dP) : '—'}</b> ·
-                  Marge <b style="color:#FFD700">${margeN.toFixed(2)} $</b> ·
-                  Frais <b style="color:#F472B6">${fraisT !== 0 ? f6(fraisT) : '—'}</b>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                  <span style="font-weight:900;color:${sideCol};background:${isLong ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'};padding:2px 6px;border-radius:4px;font-size:11px">${posSide} ${lev ? lev + 'x' : ''}</span>
+                  <span style="font-weight:bold;color:#FFF;font-size:13px">${p.symbol}</span>
+                  <span style="font-size:11px;color:#94A3B8">(${f6(tailleBase)} ${p.symbol.replace(/_.*$/, '')})</span>
+                </div>
+                <div style="font-size:11px;color:#94A3B8;display:flex;gap:10px;flex-wrap:wrap">
+                  <span>Entrée: <b style="color:#FFF">$${entryPx.toFixed(dP)}</b></span>
+                  <span>Repère: <b style="color:#FFF">${markPx > 0 ? ('$' + markPx.toFixed(dP) + (prixEstime ? ' (est.)' : '')) : '-'}</b></span>
+                  <span>Liq: <b style="color:${liqPx > 0 ? '#FF5252' : '#94A3B8'}">${liqPx > 0 ? '$' + liqPx.toFixed(dP) : '-'}</b></span>
+                  <span>Marge: <b style="color:#FFF">$${margeN.toFixed(2)}</b></span>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:12px">
-                <div style="text-align:right">
-                  <div style="font-weight:bold;color:${pnlInconnu ? '#94A3B8' : pnlCol};font-size:12px">PNL: ${pnlInconnu ? '\u2014 prix indisponible' : ((pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT')}</div>
-                  <div style="font-size:10px;color:${pnlInconnu ? '#64748B' : roeCol};font-family:'IBM Plex Mono',monospace">${pnlInconnu ? '\u2014' : ((roe >= 0 ? '+' : '') + roe.toFixed(2) + ' % sur marge')}${prixEstime ? ' \u00b7 estim\u00e9' : ''}</div>
-                  <div style="font-size:10.5px;font-weight:800;color:${pnlInconnu ? '#64748B' : netCol};font-family:'IBM Plex Mono',monospace">${pnlInconnu ? 'net \u2014' : ('net ' + (pnlNet >= 0 ? '+' : '') + pnlNet.toFixed(2))}</div>
-                </div>
+              <div style="text-align:right">
+                <div style="font-weight:bold;font-size:13.5px;color:${pnlCol}">${pnlInconnu ? '-' : ((pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT')}</div>
+                <div style="font-size:10.5px;color:${roeCol}">${pnlInconnu ? '' : ('ROE: ' + (roe >= 0 ? '+' : '') + roe.toFixed(2) + '%')}</div>
+                ${fraisT > 0 ? `<div style="font-size:9.5px;color:#94A3B8">Frais: -$${fraisT.toFixed(2)} | Net: <b style="color:${netCol}">${pnlNet >= 0 ? '+' : ''}${pnlNet.toFixed(2)}$</b></div>` : ''}
                 <button onclick="window.closeMexcPosition('${p.symbol}', '${posSide.toLowerCase()}', ${vol})" style="background:rgba(239,68,68,0.2);border:1px solid #EF4444;color:#FF5252;padding:4px 8px;border-radius:5px;font-weight:bold;font-size:10.5px;cursor:pointer">Clôturer Market</button>
               </div>
             </div>
@@ -32690,8 +32809,12 @@ window.fetchMexcAccountAndPositions = async function() {
 
   } catch (err) {
     console.error('Erreur fetchMexcAccountAndPositions:', err);
-    if (elFuturesAvail) elFuturesAvail.innerHTML = '<span style="color:#FF5252">Erreur</span>';
-    if (posContainer) posContainer.innerHTML = `<div style="color:#FF5252;font-size:11.5px;padding:12px;text-align:center">Erreur lors de la récupération des informations : ${err.message}</div>`;
+    if (!isBackground) {
+      if (elFuturesAvail) elFuturesAvail.innerHTML = '<span style="color:#FF5252">Erreur</span>';
+      if (posContainer) posContainer.innerHTML = `<div style="color:#FF5252;font-size:11.5px;padding:12px;text-align:center">Erreur lors de la récupération des informations : ${err.message}</div>`;
+    }
+  } finally {
+    window.__mexcFetchInFlight = false;
   }
 };
 
@@ -37635,7 +37758,9 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
     ctx.setLineDash([]);
 
     // 2. Pilule sur l'axe droit avec PnL
-    const tagText = `${isLong ? '▲ DÉMO LONG' : '▼ DÉMO SHORT'} ${p.lev ? p.lev + 'x' : '1x'} : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} (${pnlSign}${pnl.toFixed(2)}$)`;
+    const isReal = !!p.isRealMexc;
+    const tagPrefix = isReal ? (isLong ? '🚀 MEXC RÉEL LONG' : '🚀 MEXC RÉEL SHORT') : (isLong ? '▲ DÉMO LONG' : '▼ DÉMO SHORT');
+    const tagText = `${tagPrefix} ${p.lev ? p.lev + 'x' : '1x'} : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} (${pnlSign}${pnl.toFixed(2)}$)`;
     ctx.font = 'bold 10px "IBM Plex Mono", monospace';
     const tw = ctx.measureText(tagText).width;
     const th = 20;
@@ -37686,9 +37811,11 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       const elapsedStr = typeof fmtDurFr === 'function' ? fmtDurFr(p.t) : '';
 
       const kT = 1;
-      const l1Text = `🤖 DÉMO ${isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} ${p.lev ? p.lev + 'x' : '1x'}`;
+      const l1Text = isReal
+        ? `🚀 MEXC RÉEL ${isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} ${p.lev ? p.lev + 'x' : '1x'}`
+        : `🤖 DÉMO ${isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} ${p.lev ? p.lev + 'x' : '1x'}`;
       const l2Text = `⏰ ${timeStr}${elapsedStr ? ' · ⏱️ ' + elapsedStr : ''}`;
-      const l3Text = `🎯 Cause : ${trigLabel}`;
+      const l3Text = isReal ? `🎯 Compte MEXC Futures en direct` : `🎯 Cause : ${trigLabel}`;
       const l4Text = `📍 Entrée : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} · PnL : ${pnlSign}${pnl.toFixed(2)}$`;
 
       ctx.font = 'bold 9.5px "IBM Plex Sans", sans-serif';
@@ -43681,7 +43808,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0240';
+  window.__LUMEN_BUILD = 'B-0913-0255';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
