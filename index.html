@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0210</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0220</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -36740,8 +36740,6 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const isKKRed   = (idx) => (netKK[idx] != null && sigKK[idx] != null) ? netKK[idx] <= sigKK[idx] : (idx > 0 && netKK[idx] < netKK[idx - 1]);
 
       let curDir = 0;
-      let lastEntryK = -999;
-      const minHoldBars = Math.max(4, tfFMC || 5);
       const rawCandidates = [];
 
       for (let k = 1; k < d.length; k++) {
@@ -36757,15 +36755,12 @@ function computeFMCSignals(cleFmc, cleStrat) {
         const trigBuy  = fmcG_now && kkG_now && !(fmcG_prev && kkG_prev);
         const trigSell = fmcR_now && kkR_now && !(fmcR_prev && kkR_prev);
 
-        // Filtre anti-bruit / anti-micro-oscillations 1m pour stratégies Multi-UT (5m×10m etc.)
-        if (trigBuy && curDir !== 1 && (lastEntryK < 0 || (k - lastEntryK) >= minHoldBars)) {
+        if (trigBuy && curDir !== 1) {
           curDir = 1;
-          lastEntryK = k;
           rawCandidates.push({ i: k, t: b.t, dir: 1, price: b.c, low: b.l, high: b.h });
         }
-        else if (trigSell && curDir !== -1 && (lastEntryK < 0 || (k - lastEntryK) >= minHoldBars)) {
+        else if (trigSell && curDir !== -1) {
           curDir = -1;
-          lastEntryK = k;
           rawCandidates.push({ i: k, t: b.t, dir: -1, price: b.c, low: b.l, high: b.h });
         }
       }
@@ -36776,54 +36771,60 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const regKey = 'lumen_strat11_reg_' + (state.symbol || 'BTCUSDT') + '_' + v.key;
       let reg = {};
       try {
-        reg = JSON.parse(localStorage.getItem(regKey) || '{}');
+        const rawReg = JSON.parse(localStorage.getItem(regKey) || '{}');
+        if (rawReg && typeof rawReg === 'object') {
+          for (const k in rawReg) {
+            const val = Number(rawReg[k]);
+            if (Number.isFinite(val) && val > 0) reg[k] = val;
+          }
+        }
       } catch(e) { reg = {}; }
 
-      // Ancrage officiel historique pour 11 11 Élite : le trade du 12 Sep ~20:47 est le repère officiel #68
-      if (v.key === 'strat_11_11_elite' && rawCandidates.length > 0) {
-        const anchorCand = rawCandidates.find(c => {
-          return Math.abs(c.t - 1789246020000) < 1800000 && c.dir === 1;
-        });
-        if (anchorCand && reg[anchorCand.t] !== 68) {
-          reg[anchorCand.t] = 68;
-        }
-      }
-
-      // Déterminer le point d'ancrage connu dans les candidats actuels
+      // Trouver si un trade candidat est déjà répertorié dans reg
       let anchorIdx = -1;
       let anchorNum = 0;
       for (let ci = 0; ci < rawCandidates.length; ci++) {
-        const t = rawCandidates[ci].t;
-        if (reg[t] != null) {
+        const cand = rawCandidates[ci];
+        if (cand && cand.t && reg[cand.t] != null) {
           anchorIdx = ci;
-          anchorNum = reg[t];
+          anchorNum = Number(reg[cand.t]) || 1;
           break;
         }
       }
 
-      if (anchorIdx === -1) {
-        anchorIdx = 0;
-        anchorNum = 1;
+      // Si aucun n'est répertorié : caler le repère historique sur 11 11 Élite (#68)
+      if (anchorIdx === -1 && rawCandidates.length > 0) {
+        if (v.key === 'strat_11_11_elite' && rawCandidates.length >= 2) {
+          anchorIdx = rawCandidates.length - 2;
+          anchorNum = 68;
+        } else {
+          anchorIdx = 0;
+          anchorNum = 1;
+        }
+        reg[rawCandidates[anchorIdx].t] = anchorNum;
       }
 
-      // Rétro-propagation stable vers le passé (vers index 0)
+      // 1. Assigner vers l'arrière (vers le début de l'historique)
+      let curN = anchorNum;
       for (let ci = anchorIdx - 1; ci >= 0; ci--) {
-        const t = rawCandidates[ci].t;
-        if (reg[t] == null) {
-          reg[t] = Math.max(1, anchorNum - (anchorIdx - ci));
-        }
+        const cand = rawCandidates[ci];
+        if (!cand) continue;
+        curN = Math.max(1, curN - 1);
+        if (reg[cand.t] == null) reg[cand.t] = curN;
+        else curN = reg[cand.t];
       }
 
-      // Propagation stricte et consécutive vers l'avenir (vers les trades récents)
-      for (let ci = anchorIdx; ci < rawCandidates.length; ci++) {
-        const t = rawCandidates[ci].t;
-        if (reg[t] == null) {
-          const prevT = rawCandidates[ci - 1].t;
-          reg[t] = (reg[prevT] || anchorNum) + 1;
-        }
+      // 2. Assigner vers l'avant (vers les trades les plus récents)
+      curN = anchorNum;
+      for (let ci = anchorIdx + 1; ci < rawCandidates.length; ci++) {
+        const cand = rawCandidates[ci];
+        if (!cand) continue;
+        curN = curN + 1;
+        if (reg[cand.t] == null) reg[cand.t] = curN;
+        else curN = reg[cand.t];
       }
 
-      // Sauvegarde du registre consolidé
+      // Sauvegarde sécurisée du registre consolidé
       try {
         localStorage.setItem(regKey, JSON.stringify(reg));
       } catch(e){}
@@ -43580,7 +43581,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0210';
+  window.__LUMEN_BUILD = 'B-0913-0220';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
