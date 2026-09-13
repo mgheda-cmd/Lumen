@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0230</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0240</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -18514,7 +18514,25 @@ window.renderStrat11TradesJournal = function() {
       });
       if (!ex) {
         // C'est le trade en cours (non encore fermé) :
-        // Règle stricte demandée : on s'arrête au trade en cours, on ne montre que les trades fermés
+        // Le user demande explicitement d'inclure le trade en cours dans le tableau !
+        const isBuy = ent.dir === 1;
+        const curPx = (typeof livePrice === 'function' ? livePrice(state.symbol) : null) || (state.data && state.data.length ? state.data[state.data.length - 1].c : ent.price);
+        const floatPnl = isBuy ? (curPx - ent.price) : (ent.price - curPx);
+        liveChartTrades.push({
+          num: ent.tradeNum || (ei + 1),
+          entryPastilleNum: ent.tradeNum || (ei + 1),
+          exitPastilleNum: '—',
+          dir: ent.dir,
+          type: isBuy ? 'ACHAT' : 'VENTE',
+          entryI: ent.i,
+          entryT: ent.t,
+          entryPx: ent.price,
+          exitT: null,
+          exitPx: curPx,
+          pnl: Math.round(floatPnl * 10) / 10,
+          exitReason: '⏳ En attente (en cours)',
+          isPending: true
+        });
         continue;
       }
       const isBuy = ent.dir === 1;
@@ -18565,6 +18583,7 @@ window.renderStrat11TradesJournal = function() {
 
   // Mapper les numéros de pastilles d'entrée et sortie depuis le graphique
   allTrades.forEach(function(t) {
+    if (t.isPending) return;
     const eMatch = entrySigs.find(function(s) {
       return (s.t === t.entryT || Math.abs(s.t - t.entryT) < 60000) ||
              (Math.abs(s.price - t.entryPx) < 2.0 && Math.abs(s.t - t.entryT) < 300000);
@@ -18690,12 +18709,33 @@ window.renderStrat11TradesJournal = function() {
     const entNum = t.entryPastilleNum || t.num;
     const exNum  = t.exitPastilleNum || entNum;
 
-    trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.08);transition:background 0.1s" onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'" onmouseout="this.style.background=\'transparent\'">'
+    const sortieBadge = t.isPending
+      ? '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,180,0,0.18);color:#FFB400;border:1px dashed rgba(255,180,0,0.5);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:900;white-space:nowrap">⏳ Sortie en attente</span>'
+      : '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,180,0,0.22);color:#FFB400;border:1px solid rgba(255,180,0,0.5);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:900;white-space:nowrap" title="Pastille de sortie #' + exNum + ' sur le graphique">🏁 Sortie #' + exNum + '</span>';
+
+    const tradeTitle = t.isPending
+      ? '<div style="font-weight:900;color:#F8FAFC;font-size:11px;margin-bottom:3px;display:flex;align-items:center;gap:4px">Trade #' + entNum + ' <span style="background:rgba(255,180,0,0.25);color:#FFB400;border:1px solid #FFB400;border-radius:3px;padding:0 4px;font-size:8px;font-weight:900">EN COURS</span></div>'
+      : '<div style="font-weight:900;color:#F8FAFC;font-size:11px;margin-bottom:3px">Trade #' + entNum + '</div>';
+
+    const sortieCell = t.isPending
+      ? '<div style="font-weight:900;color:#FFB400;font-size:10.5px">⏳ En attente</div>'
+        + '<div style="font-size:9px;color:#CBD5E1">Actuel : $' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
+        + '<div style="font-size:8.5px;font-weight:800;color:#FFB400">Sortie non atteinte</div>'
+      : '<div style="font-weight:900;color:#F8FAFC;font-size:10.5px">$' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
+        + '<div style="font-size:9px;color:#CBD5E1">' + fmtTime(t.exitT) + '</div>'
+        + '<div style="font-size:8.5px;font-weight:800;color:#FFB400">Pastille #' + exNum + (t.exitReason ? (' · ' + t.exitReason) : '') + '</div>';
+
+    const pnlCell = t.isPending
+      ? '<div style="font-size:11.5px;font-family:monospace;font-weight:900;color:' + pnlCol + '">' + pnlStr + '</div>'
+        + '<div style="font-size:8.5px;color:#FFB400;font-weight:700">Flottant (live)</div>'
+      : pnlStr;
+
+    trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.08);' + (t.isPending ? 'background:rgba(255,180,0,0.05);' : '') + 'transition:background 0.1s" onmouseover="this.style.background=\'rgba(255,255,255,0.05)\'" onmouseout="this.style.background=\'' + (t.isPending ? 'rgba(255,180,0,0.05)' : 'transparent') + '\'">'
       + '<td style="padding:6px 4px">'
-      + '<div style="font-weight:900;color:#F8FAFC;font-size:11px;margin-bottom:3px">Trade #' + entNum + '</div>'
+      + tradeTitle
       + '<div style="display:flex;flex-direction:column;gap:2px">'
       + '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(0,229,255,0.18);color:#00E5FF;border:1px solid rgba(0,229,255,0.45);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:900;white-space:nowrap" title="Pastille d\'entrée #' + entNum + ' sur le graphique">🟢 Entrée #' + entNum + '</span>'
-      + '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,180,0,0.22);color:#FFB400;border:1px solid rgba(255,180,0,0.5);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:900;white-space:nowrap" title="Pastille de sortie #' + exNum + ' sur le graphique">🏁 Sortie #' + exNum + '</span>'
+      + sortieBadge
       + '</div>'
       + '</td>'
       + '<td style="padding:6px 4px">' + badgeType + '</td>'
@@ -18704,12 +18744,8 @@ window.renderStrat11TradesJournal = function() {
       + '<div style="font-size:9px;color:#CBD5E1">' + fmtTime(t.entryT) + '</div>'
       + '<div style="font-size:8.5px;font-weight:800;color:#00E5FF">Pastille #' + entNum + '</div>'
       + '</td>'
-      + '<td style="padding:6px 4px">'
-      + '<div style="font-weight:900;color:#F8FAFC;font-size:10.5px">$' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
-      + '<div style="font-size:9px;color:#CBD5E1">' + fmtTime(t.exitT) + '</div>'
-      + '<div style="font-size:8.5px;font-weight:800;color:#FFB400">Pastille #' + exNum + (t.exitReason ? (' · ' + t.exitReason) : '') + '</div>'
-      + '</td>'
-      + '<td style="padding:6px 6px;text-align:right;font-family:monospace;font-weight:900;color:' + pnlCol + ';font-size:11.5px;white-space:nowrap">' + pnlStr + '</td>'
+      + '<td style="padding:6px 4px">' + sortieCell + '</td>'
+      + '<td style="padding:6px 6px;text-align:right;font-family:monospace;font-weight:900;color:' + pnlCol + ';font-size:11.5px;white-space:nowrap">' + pnlCell + '</td>'
       + '<td style="padding:6px 4px;text-align:center">'
       + '<button onclick="event.stopPropagation();if(typeof window.focusChartOnCandle===\'function\')window.focusChartOnCandle(' + t.entryI + ')" style="background:rgba(56,189,248,0.2);border:1px solid #38BDF8;color:#38BDF8;border-radius:5px;padding:4px 7px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s" title="Centrer le graphique sur l\'Entrée #' + entNum + '">🔍</button>'
       + '</td>'
@@ -36858,6 +36894,65 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
+      // GARANTIE ABSOLUE : Si une position active démo/paper existe pour cette stratégie,
+      // sa pastille d'entrée originale DOIT être gravée sur le graphique et dans signals !
+      if (typeof paper !== 'undefined' && Array.isArray(paper.positions) && paper.positions.length > 0) {
+        for (const pos of paper.positions) {
+          if (pos.sym && state.symbol && pos.sym !== state.symbol) continue;
+          const posTrig = pos.triggerSignal || (window.activeDemoStrategy && window.activeDemoStrategy.modeLabel) || '';
+          const isVarMatch = posTrig.includes(v.name) ||
+                             (window.activeDemoStrategy && window.activeDemoStrategy.varKey === v.key) ||
+                             (window.__stJournalVarKey === v.key);
+          if (!isVarMatch) continue;
+          const posT = pos.candleTime || pos.t;
+          const alreadyHasSig = signals.some(s => s.optKey === v.key && !s.isExit && (s.t === posT || Math.abs((s.t || 0) - (posT || 0)) < 180000));
+          if (!alreadyHasSig && posT) {
+            let candI = (typeof idxOfTime === 'function') ? idxOfTime(posT) : -1;
+            if (candI == null || candI < 0) {
+              candI = d.findIndex(c => c.t <= posT && (c.t + (state.tf || 5) * 60000) > posT);
+            }
+            if (candI >= 0 && candI < d.length) {
+              const b = d[candI];
+              const isPosBuy = pos.side === 'long';
+              const pNum = pos.tradeNum || (parseInt((posTrig || '').match(/#(\d+)/)?.[1], 10)) || (rawEntries.length ? (rawEntries[rawEntries.length - 1].tradeNum + 1) : 73);
+              const forcedCand = {
+                i: candI,
+                t: b.t,
+                dir: isPosBuy ? 1 : -1,
+                price: pos.entry || b.c,
+                low: b.l,
+                high: b.h,
+                tradeNum: pNum
+              };
+              rawEntries.push(forcedCand);
+              rawEntries.sort((a, b) => a.i - b.i);
+              signals.push({
+                i: candI,
+                t: b.t,
+                dir: isPosBuy ? 1 : -1,
+                type: (isPosBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+                optKey: v.key,
+                isStrat1111: true,
+                tradeNum: pNum,
+                num: pNum,
+                price: pos.entry || b.c,
+                low: b.l,
+                high: b.h,
+                score: (netKK && netKK[candI] != null) ? netKK[candI] : 0,
+                reason: 'FMC ' + tfFMC + 'm ' + (isPosBuy ? 'Vert' : 'Rouge') + ' + KK ' + tfKK + 'm ' + (isPosBuy ? 'Vert' : 'Rouge'),
+                label: (isPosBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+                badge: v.icon + ' #' + pNum + ' ' + (isPosBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+                sub: 'FMC ' + tfFMC + 'm ' + (isPosBuy ? 'Vert' : 'Rouge') + ' · KK ' + tfKK + 'm ' + (isPosBuy ? 'Vert' : 'Rouge'),
+                subStrategy: v.name,
+                color: isPosBuy ? v.cBuy : v.cSell,
+                borderCol: v.cBorder,
+                bgFill: isPosBuy ? 'rgba(6, 36, 30, 0.96)' : 'rgba(44, 8, 20, 0.96)'
+              });
+            }
+          }
+        }
+      }
+
       // --- CALCUL DES 2 MEILLEURES SORTIES 11 11 ---
       const showExitZero = cfg.showExitZero !== false;
       const showExitExtreme = cfg.showExitExtreme === true;
@@ -43586,7 +43681,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0230';
+  window.__LUMEN_BUILD = 'B-0913-0240';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
