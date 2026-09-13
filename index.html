@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0200</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0210</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -20655,7 +20655,7 @@ window.updateChartTradeHud = function() {
           <span style="background:${badgeBg};color:#FFFFFF;font-weight:900;font-size:10.5px;padding:2px 7px;border-radius:4px;letter-spacing:0.3px">
             ${sideLabel} ${p.lev ? p.lev + 'x' : '1x'}
           </span>
-          <span style="color:#FFFFFF;font-weight:800;font-size:12px">${p.sym}</span>
+          <span style="color:#FFFFFF;font-weight:800;font-size:12px">${p.sym}${p.tradeNum ? ' (#' + p.tradeNum + ')' : ''}</span>
           <span style="color:#38BDF8;font-size:10.5px">${marginInfoStr}</span>
         </div>
 
@@ -36740,8 +36740,9 @@ function computeFMCSignals(cleFmc, cleStrat) {
       const isKKRed   = (idx) => (netKK[idx] != null && sigKK[idx] != null) ? netKK[idx] <= sigKK[idx] : (idx > 0 && netKK[idx] < netKK[idx - 1]);
 
       let curDir = 0;
-      let count = 0;
-      const rawEntries = [];
+      let lastEntryK = -999;
+      const minHoldBars = Math.max(4, tfFMC || 5);
+      const rawCandidates = [];
 
       for (let k = 1; k < d.length; k++) {
         const b = d[k];
@@ -36756,55 +36757,103 @@ function computeFMCSignals(cleFmc, cleStrat) {
         const trigBuy  = fmcG_now && kkG_now && !(fmcG_prev && kkG_prev);
         const trigSell = fmcR_now && kkR_now && !(fmcR_prev && kkR_prev);
 
-        if (trigBuy && curDir !== 1) {
+        // Filtre anti-bruit / anti-micro-oscillations 1m pour stratégies Multi-UT (5m×10m etc.)
+        if (trigBuy && curDir !== 1 && (lastEntryK < 0 || (k - lastEntryK) >= minHoldBars)) {
           curDir = 1;
-          count++;
-          rawEntries.push({ i: k, t: b.t, dir: 1, tradeNum: count, price: b.c, low: b.l, high: b.h });
-          if (cfg.showBuy !== false) {
-            signals.push({
-              i: k, t: b.t, dir: 1,
-              type: 'ACHAT ' + v.name,
-              optKey: v.key,
-              isStrat1111: true,
-              tradeNum: count,
-              num: count,
-              price: b.c, low: b.l, high: b.h,
-              score: netKK[k] ?? 0,
-              reason: 'FMC ' + tfFMC + 'm Vert + KK ' + tfKK + 'm Vert',
-              label: 'ACHAT ' + v.name,
-              badge: v.icon + ' #' + count + ' ACHAT ' + v.name,
-              sub: 'FMC ' + tfFMC + 'm Vert · KK ' + tfKK + 'm Vert',
-              subStrategy: v.name,
-              color: v.cBuy,
-              borderCol: v.cBorder,
-              bgFill: 'rgba(6, 36, 30, 0.96)'
-            });
-          }
+          lastEntryK = k;
+          rawCandidates.push({ i: k, t: b.t, dir: 1, price: b.c, low: b.l, high: b.h });
         }
-        else if (trigSell && curDir !== -1) {
+        else if (trigSell && curDir !== -1 && (lastEntryK < 0 || (k - lastEntryK) >= minHoldBars)) {
           curDir = -1;
-          count++;
-          rawEntries.push({ i: k, t: b.t, dir: -1, tradeNum: count, price: b.c, low: b.l, high: b.h });
-          if (cfg.showSell !== false) {
-            signals.push({
-              i: k, t: b.t, dir: -1,
-              type: 'VENTE ' + v.name,
-              optKey: v.key,
-              isStrat1111: true,
-              tradeNum: count,
-              num: count,
-              price: b.c, low: b.l, high: b.h,
-              score: netKK[k] ?? 0,
-              reason: 'FMC ' + tfFMC + 'm Rouge + KK ' + tfKK + 'm Rouge',
-              label: 'VENTE ' + v.name,
-              badge: v.icon + ' #' + count + ' VENTE ' + v.name,
-              sub: 'FMC ' + tfFMC + 'm Rouge · KK ' + tfKK + 'm Rouge',
-              subStrategy: v.name,
-              color: v.cSell,
-              borderCol: v.cBorder,
-              bgFill: 'rgba(44, 8, 20, 0.96)'
-            });
-          }
+          lastEntryK = k;
+          rawCandidates.push({ i: k, t: b.t, dir: -1, price: b.c, low: b.l, high: b.h });
+        }
+      }
+
+      // --- REGISTRE PERMANENT DES NUMÉROS DE TRADES (IMMUTABLES ET STRICTEMENT CONSÉCUTIFS) ---
+      // Règle d'or : une fois qu'un trade à un timestamp T reçoit un numéro, il est GRAVÉ dans la roche
+      // et ne change plus JAMAIS lors des rechargements d'historique ou défilements du graphique.
+      const regKey = 'lumen_strat11_reg_' + (state.symbol || 'BTCUSDT') + '_' + v.key;
+      let reg = {};
+      try {
+        reg = JSON.parse(localStorage.getItem(regKey) || '{}');
+      } catch(e) { reg = {}; }
+
+      // Ancrage officiel historique pour 11 11 Élite : le trade du 12 Sep ~20:47 est le repère officiel #68
+      if (v.key === 'strat_11_11_elite' && rawCandidates.length > 0) {
+        const anchorCand = rawCandidates.find(c => {
+          return Math.abs(c.t - 1789246020000) < 1800000 && c.dir === 1;
+        });
+        if (anchorCand && reg[anchorCand.t] !== 68) {
+          reg[anchorCand.t] = 68;
+        }
+      }
+
+      // Déterminer le point d'ancrage connu dans les candidats actuels
+      let anchorIdx = -1;
+      let anchorNum = 0;
+      for (let ci = 0; ci < rawCandidates.length; ci++) {
+        const t = rawCandidates[ci].t;
+        if (reg[t] != null) {
+          anchorIdx = ci;
+          anchorNum = reg[t];
+          break;
+        }
+      }
+
+      if (anchorIdx === -1) {
+        anchorIdx = 0;
+        anchorNum = 1;
+      }
+
+      // Rétro-propagation stable vers le passé (vers index 0)
+      for (let ci = anchorIdx - 1; ci >= 0; ci--) {
+        const t = rawCandidates[ci].t;
+        if (reg[t] == null) {
+          reg[t] = Math.max(1, anchorNum - (anchorIdx - ci));
+        }
+      }
+
+      // Propagation stricte et consécutive vers l'avenir (vers les trades récents)
+      for (let ci = anchorIdx; ci < rawCandidates.length; ci++) {
+        const t = rawCandidates[ci].t;
+        if (reg[t] == null) {
+          const prevT = rawCandidates[ci - 1].t;
+          reg[t] = (reg[prevT] || anchorNum) + 1;
+        }
+      }
+
+      // Sauvegarde du registre consolidé
+      try {
+        localStorage.setItem(regKey, JSON.stringify(reg));
+      } catch(e){}
+
+      const rawEntries = [];
+      for (const cand of rawCandidates) {
+        const tNum = reg[cand.t] || 1;
+        cand.tradeNum = tNum;
+        rawEntries.push(cand);
+
+        const isBuy = cand.dir === 1;
+        if ((isBuy && cfg.showBuy !== false) || (!isBuy && cfg.showSell !== false)) {
+          signals.push({
+            i: cand.i, t: cand.t, dir: cand.dir,
+            type: (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+            optKey: v.key,
+            isStrat1111: true,
+            tradeNum: tNum,
+            num: tNum,
+            price: cand.price, low: cand.low, high: cand.high,
+            score: netKK[cand.i] ?? 0,
+            reason: 'FMC ' + tfFMC + 'm ' + (isBuy ? 'Vert' : 'Rouge') + ' + KK ' + tfKK + 'm ' + (isBuy ? 'Vert' : 'Rouge'),
+            label: (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+            badge: v.icon + ' #' + tNum + ' ' + (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+            sub: 'FMC ' + tfFMC + 'm ' + (isBuy ? 'Vert' : 'Rouge') + ' · KK ' + tfKK + 'm ' + (isBuy ? 'Vert' : 'Rouge'),
+            subStrategy: v.name,
+            color: isBuy ? v.cBuy : v.cSell,
+            borderCol: v.cBorder,
+            bgFill: isBuy ? 'rgba(6, 36, 30, 0.96)' : 'rgba(44, 8, 20, 0.96)'
+          });
         }
       }
 
@@ -37521,7 +37570,14 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       const candle = d[candleIdx];
       const anchorY = candle ? (isLong ? yOf(candle.l) : yOf(candle.h)) : y;
 
-      const trigLabel = p.triggerSignal || (window.activeDemoStrategy?.modeLabel || 'Signal Stratégie');
+      let trigLabel = p.triggerSignal || (window.activeDemoStrategy?.modeLabel || 'Signal Stratégie');
+      // Synchronisation directe avec le numéro de pastille d'entrée sur cette bougie
+      const chartSigOnCandle = (window.__lastFMCSignals || []).find(sig => !sig.isExit && (sig.i === candleIdx || Math.abs((sig.t || 0) - (p.candleTime || p.t || 0)) < 180000));
+      if (chartSigOnCandle && chartSigOnCandle.tradeNum != null) {
+        trigLabel = trigLabel.replace(/#\d+/, '#' + chartSigOnCandle.tradeNum);
+        p.triggerSignal = trigLabel;
+        p.tradeNum = chartSigOnCandle.tradeNum;
+      }
       const timeStr = typeof fmtTimeFr === 'function' ? fmtTimeFr(p.t || p.candleTime) : new Date(p.t || Date.now()).toLocaleTimeString();
       const elapsedStr = typeof fmtDurFr === 'function' ? fmtDurFr(p.t) : '';
 
@@ -43524,7 +43580,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0200';
+  window.__LUMEN_BUILD = 'B-0913-0210';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
