@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0135</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0200</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -8695,12 +8695,13 @@ function getCandleEnvelope(bx, bw) {
   return { highestY, lowestY };
 }
 
-function placeBadge(bx, bw, by, bh, dir) {
+function placeBadge(bx, bw, by, bh, dir, outObj) {
   const GAP = 8, MAXTRY = 100;
-  // Dégagement dynamique franc et généreux : la pastille flotte toujours à bonne distance (au moins 70px) des mèches
-  const CLEARANCE = 70;
+  // Dégagement dynamique franc et équilibré : au moins 28px des mèches sans être repoussé hors de l'écran
+  const CLEARANCE = 28;
 
-  const minY = 6;
+  const ppTop = (_pricePaneObj && _pricePaneObj.y != null) ? (_pricePaneObj.y + 6) : 32;
+  const minY = ppTop;
   const maxY = (_priceBot > 0) ? (_priceBot - bh - 6) : (H - AXIS_H - bh - 6);
 
   const env = getCandleEnvelope(bx, bw);
@@ -8737,7 +8738,7 @@ function placeBadge(bx, bw, by, bh, dir) {
         y = minY;
         // Si bloqué en haut et toujours en collision, décaler en X pour ne jamais masquer l'autre
         if (hit(y)) {
-          const shift = Math.round(bw * 0.45);
+          const shift = Math.round(bw * 0.55);
           if (bx + bw + shift < W - AXIS_W - 4) bx += shift;
           else if (bx - shift > 4) bx -= shift;
         }
@@ -8751,7 +8752,7 @@ function placeBadge(bx, bw, by, bh, dir) {
         y = maxY;
         // Si bloqué en bas et toujours en collision, décaler en X pour ne jamais masquer l'autre
         if (hit(y)) {
-          const shift = Math.round(bw * 0.45);
+          const shift = Math.round(bw * 0.55);
           if (bx + bw + shift < W - AXIS_W - 4) bx += shift;
           else if (bx - shift > 4) bx -= shift;
         }
@@ -8762,7 +8763,7 @@ function placeBadge(bx, bw, by, bh, dir) {
     n++;
   }
 
-  // Contrôle absolu de non-contact : aucune pastille ne peut jamais toucher ni s'approcher d'une bougie (avant, pendant ou après)
+  // Contrôle de non-contact avec les mèches
   if (env) {
     if (currentDir < 0 && isFinite(env.highestY)) {
       if (y + bh > env.highestY - CLEARANCE) {
@@ -8777,6 +8778,11 @@ function placeBadge(bx, bw, by, bh, dir) {
 
   if (y < minY) y = minY;
   if (y > maxY) y = maxY;
+
+  if (outObj && typeof outObj === 'object') {
+    outObj.x = bx;
+    outObj.y = y;
+  }
 
   _badgeRects.push({ x: bx, y, w: bw, h: bh });
   return y;
@@ -37318,9 +37324,11 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
 
       // Empilement dynamique garanti : les sorties et entrées s'espacent de manière fluide sans jamais se masquer
       const stackOffset = stackIdx * Math.round((bh + 14) * 1.08);
-      const baseClearance = isExit ? 46 : 82;
+      const baseClearance = isExit ? 36 : 48;
       const rawBy = isPlacedAbove ? (anchorY - bh - baseClearance - stackOffset) : (anchorY + baseClearance + stackOffset);
-      const by = (typeof placeBadge === 'function') ? placeBadge(bx, bw, rawBy, bh, isPlacedAbove ? -1 : 1) : rawBy;
+      const outPosSig = { x: bx, y: rawBy };
+      const by = (typeof placeBadge === 'function') ? placeBadge(bx, bw, rawBy, bh, isPlacedAbove ? -1 : 1, outPosSig) : rawBy;
+      bx = (outPosSig.x != null) ? outPosSig.x : bx;
 
       ctx.save();
       // Fond
@@ -37531,13 +37539,57 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       const bw = Math.max(168, Math.max(w1, w2, w3, w4) + 18);
       const bh = 58;
 
-      const bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, cx - bw / 2));
-      // Éloignement suffisant (140px) pour flotter au-dessus de la pastille de signal sans jamais la recouvrir
-      let by = isLong ? (anchorY + 140) : (anchorY - bh - 140);
+      let bx = Math.max(4, Math.min(W - AXIS_W - bw - 4, cx - bw / 2));
+      const existingBadge = (typeof _badgeRects !== 'undefined' && Array.isArray(_badgeRects))
+        ? _badgeRects.find(q => Math.abs((q.x + q.w / 2) - cx) < Math.max(q.w, bw) * 0.55)
+        : null;
+
+      const ppTop = (_pricePaneObj && _pricePaneObj.y != null) ? (_pricePaneObj.y + 6) : 32;
+      const ppBot = (_priceBot > 0) ? (_priceBot - bh - 6) : (H - AXIS_H - bh - 6);
+      let by = isLong ? (anchorY + 110) : (anchorY - bh - 110);
+
+      if (existingBadge) {
+        // Une pastille de signal existe déjà sur la même bougie : NE JAMAIS LA RECOUVRIR
+        if (!isLong) {
+          // VENTE : si assez de place au-dessus, empiler proprement avec espace de 10px
+          const spaceAbove = existingBadge.y - bh - 10;
+          if (spaceAbove >= ppTop) {
+            by = spaceAbove;
+          } else {
+            // Pas assez d'espace vertical : décaler sur le côté droit pour que la pastille de signal reste 100% visible
+            const shiftRight = existingBadge.x + existingBadge.w + 12;
+            if (shiftRight + bw < W - AXIS_W - 6) {
+              bx = shiftRight;
+              by = existingBadge.y;
+            } else {
+              bx = Math.max(4, existingBadge.x - bw - 12);
+              by = existingBadge.y;
+            }
+          }
+        } else {
+          // ACHAT : si assez de place en-dessous, empiler proprement avec espace de 10px
+          const spaceBelow = existingBadge.y + existingBadge.h + 10;
+          if (spaceBelow <= ppBot) {
+            by = spaceBelow;
+          } else {
+            const shiftRight = existingBadge.x + existingBadge.w + 12;
+            if (shiftRight + bw < W - AXIS_W - 6) {
+              bx = shiftRight;
+              by = existingBadge.y;
+            } else {
+              bx = Math.max(4, existingBadge.x - bw - 12);
+              by = existingBadge.y;
+            }
+          }
+        }
+      }
+
+      const outPosDemo = { x: bx, y: by };
       if (typeof placeBadge === 'function') {
-        by = placeBadge(bx, bw, by, bh, isLong ? 1 : -1);
+        by = placeBadge(bx, bw, by, bh, isLong ? 1 : -1, outPosDemo);
+        bx = (outPosDemo.x != null) ? outPosDemo.x : bx;
       } else {
-        by = isLong ? Math.min(H - bh - 24, by) : Math.max(6, by);
+        by = isLong ? Math.min(H - bh - 24, by) : Math.max(ppTop, by);
       }
 
       // Fond de pastille avec lueur : Vert fluo plein (#00E676) pour LONG, Rose fluo pour SHORT
@@ -43472,7 +43524,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0135';
+  window.__LUMEN_BUILD = 'B-0913-0200';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
