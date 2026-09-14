@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1830</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1900</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6542,8 +6542,16 @@ try{
     }catch(e){}
 
     // 3. Vider le sessionStorage — le localStorage est PRÉSERVÉ
-    //    (il contient la configuration de l'exchange et du bot).
+    //    (sauf l'ancien registre corrompu des pastilles strat11 qui est purgé).
     try{ sessionStorage.clear(); }catch(e){}
+    try{
+      if(window.localStorage){
+        for(let i = localStorage.length - 1; i >= 0; i--){
+          const k = localStorage.key(i);
+          if(k && k.indexOf('lumen_strat11_reg_') === 0) localStorage.removeItem(k);
+        }
+      }
+    }catch(e){}
 
     // 4. Redemander le fichier à l'origine pour invalider le cache HTTP
     try{ await fetch(base + '?bust=' + Date.now(), { cache:'reload' }); }catch(e){}
@@ -16852,8 +16860,8 @@ async function get8000Candles(forceFresh) {
       map.set(live[i].t, live[i]);
     }
     const merged = Array.from(map.values()).sort(function(a, b) { return a.t - b.t; });
-    // Conserver jusqu'à 8500 bougies pour préserver la mémoire et la réactivité
-    return (merged.length > 8500) ? merged.slice(-8500) : merged;
+    // Conserver jusqu'à 12 000 bougies (8 jours complets) pour couvrir la semaine complète depuis Lundi 00:00 UTC
+    return (merged.length > 12000) ? merged.slice(-12000) : merged;
   }
 
   return base.slice();
@@ -16861,8 +16869,8 @@ async function get8000Candles(forceFresh) {
 
 window.charger8000BougiesSurGraphique = async function() {
   const info = document.getElementById('bta-charge') || document.getElementById('btm-charge');
-  if (info) info.textContent = '⏳ Chargement des 8000 bougies réelles Binance sur le graphique...';
-  if (typeof toast === 'function') toast('⏳ Chargement des 8000 bougies réelles Binance sur le graphique...', '#FFB400');
+  if (info) info.textContent = '⏳ Chargement des 8 jours de bougies réelles Binance (11 520 bougies)...';
+  if (typeof toast === 'function') toast('⏳ Chargement des 8 jours de bougies réelles Binance (11 520 bougies)...', '#FFB400');
   try {
     const bars8000 = await get8000Candles(true);
     if (bars8000 && bars8000.length >= 1000) {
@@ -36965,96 +36973,61 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // --- REGISTRE PERMANENT DES NUMÉROS DE TRADES (IMMUTABLES ET STRICTEMENT CONSÉCUTIFS) ---
-      // Règle d'or : une fois qu'un trade à un timestamp T reçoit un numéro, il est GRAVÉ dans la roche
-      // et ne change plus JAMAIS lors des rechargements d'historique ou défilements du graphique.
-      const regKey = 'lumen_strat11_reg_' + (state.symbol || 'BTCUSDT') + '_' + v.key;
-      let reg = {};
-      try {
-        const rawReg = JSON.parse(localStorage.getItem(regKey) || '{}');
-        if (rawReg && typeof rawReg === 'object') {
-          for (const k in rawReg) {
-            const val = Number(rawReg[k]);
-            if (Number.isFinite(val) && val > 0) reg[k] = val;
-          }
-        }
-      } catch(e) { reg = {}; }
+      // --- ANCRAGE HEBDOMADAIRE : LUNDI 00H00 UTC ➔ DIMANCHE 23H59 UTC ---
+      // Règle absolue : Chaque semaine crypto débute le Lundi à 00:00:00 UTC.
+      // Le premier trade survenu à partir du Lundi 00:00 est strictement le #1 de la semaine.
+      // Chaque trade suivant est incrémenté consécutivement (1, 2, 3, ... N).
+      // Zéro localStorage, zéro conflit de cache, zéro dérive ou doublon possible !
+      function getMondayWeekUTC(t) {
+        const dt = new Date(t);
+        const day = dt.getUTCDay(); // 0: Dimanche, 1: Lundi, ..., 6: Samedi
+        const diff = (day === 0 ? 6 : day - 1);
+        return Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() - diff, 0, 0, 0, 0);
+      }
 
-      // Trouver si un trade candidat est déjà répertorié dans reg
-      let anchorIdx = -1;
-      let anchorNum = 0;
+      rawCandidates.sort(function(a, b) { return a.i - b.i; });
+
+      // Partitionner les trades par semaine (Lundi 00:00:00 UTC)
+      const weekBuckets = new Map();
       for (let ci = 0; ci < rawCandidates.length; ci++) {
         const cand = rawCandidates[ci];
-        if (cand && cand.t && reg[cand.t] != null) {
-          anchorIdx = ci;
-          anchorNum = Number(reg[cand.t]) || 1;
-          break;
-        }
+        const wKey = getMondayWeekUTC(cand.t);
+        if (!weekBuckets.has(wKey)) weekBuckets.set(wKey, []);
+        weekBuckets.get(wKey).push(cand);
       }
-
-      // Si aucun n'est répertorié : caler le repère historique sur 11 11 Élite (#68)
-      if (anchorIdx === -1 && rawCandidates.length > 0) {
-        if (v.key === 'strat_11_11_elite' && rawCandidates.length >= 2) {
-          anchorIdx = rawCandidates.length - 2;
-          anchorNum = 68;
-        } else {
-          anchorIdx = 0;
-          anchorNum = 1;
-        }
-        reg[rawCandidates[anchorIdx].t] = anchorNum;
-      }
-
-      // 1. Assigner vers l'arrière (vers le début de l'historique)
-      let curN = anchorNum;
-      for (let ci = anchorIdx - 1; ci >= 0; ci--) {
-        const cand = rawCandidates[ci];
-        if (!cand) continue;
-        curN = Math.max(1, curN - 1);
-        if (reg[cand.t] == null) reg[cand.t] = curN;
-        else curN = reg[cand.t];
-      }
-
-      // 2. Assigner vers l'avant (vers les trades les plus récents)
-      curN = anchorNum;
-      for (let ci = anchorIdx + 1; ci < rawCandidates.length; ci++) {
-        const cand = rawCandidates[ci];
-        if (!cand) continue;
-        curN = curN + 1;
-        if (reg[cand.t] == null) reg[cand.t] = curN;
-        else curN = reg[cand.t];
-      }
-
-      // Sauvegarde sécurisée du registre consolidé
-      try {
-        localStorage.setItem(regKey, JSON.stringify(reg));
-      } catch(e){}
 
       const rawEntries = [];
-      for (const cand of rawCandidates) {
-        const tNum = reg[cand.t] || 1;
-        cand.tradeNum = tNum;
-        rawEntries.push(cand);
+      for (const [wKey, cands] of weekBuckets.entries()) {
+        for (let wi = 0; wi < cands.length; wi++) {
+          const cand = cands[wi];
+          const tNum = wi + 1; // 1, 2, 3...
+          cand.tradeNum = tNum;
+          cand.num = tNum;
+          cand.weekMonday = wKey;
+          rawEntries.push(cand);
 
-        const isBuy = cand.dir === 1;
-        if ((isBuy && cfg.showBuy !== false) || (!isBuy && cfg.showSell !== false)) {
-          signals.push({
-            i: cand.i, t: cand.t, dir: cand.dir,
-            type: (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
-            optKey: v.key,
-            isStrat1111: true,
-            tradeNum: tNum,
-            num: tNum,
-            price: cand.price, low: cand.low, high: cand.high,
-            score: netKK[cand.i] ?? 0,
-            reason: 'FMC ' + tfFMC + 'm ' + (isBuy ? 'Vert' : 'Rouge') + ' + KK ' + tfKK + 'm ' + (isBuy ? 'Vert' : 'Rouge'),
-            label: (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
-            badge: v.icon + ' #' + tNum + ' ' + (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
-            sub: 'FMC ' + tfFMC + 'm ' + (isBuy ? 'Vert' : 'Rouge') + ' · KK ' + tfKK + 'm ' + (isBuy ? 'Vert' : 'Rouge'),
-            subStrategy: v.name,
-            color: isBuy ? v.cBuy : v.cSell,
-            borderCol: v.cBorder,
-            bgFill: isBuy ? 'rgba(6, 36, 30, 0.96)' : 'rgba(44, 8, 20, 0.96)'
-          });
+          const isBuy = cand.dir === 1;
+          if ((isBuy && cfg.showBuy !== false) || (!isBuy && cfg.showSell !== false)) {
+            signals.push({
+              i: cand.i, t: cand.t, dir: cand.dir,
+              type: (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+              optKey: v.key,
+              isStrat1111: true,
+              tradeNum: tNum,
+              num: tNum,
+              weekMonday: wKey,
+              price: cand.price, low: cand.low, high: cand.high,
+              score: netKK[cand.i] ?? 0,
+              reason: 'FMC ' + tfFMC + 'm ' + (isBuy ? 'Vert' : 'Rouge') + ' + KK ' + tfKK + 'm ' + (isBuy ? 'Vert' : 'Rouge'),
+              label: (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+              badge: v.icon + ' #' + tNum + ' ' + (isBuy ? 'ACHAT ' : 'VENTE ') + v.name,
+              sub: 'FMC ' + tfFMC + 'm ' + (isBuy ? 'Vert' : 'Rouge') + ' · KK ' + tfKK + 'm ' + (isBuy ? 'Vert' : 'Rouge'),
+              subStrategy: v.name,
+              color: isBuy ? v.cBuy : v.cSell,
+              borderCol: v.cBorder,
+              bgFill: isBuy ? 'rgba(6, 36, 30, 0.96)' : 'rgba(44, 8, 20, 0.96)'
+            });
+          }
         }
       }
 
@@ -43790,7 +43763,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0914-1830';
+  window.__LUMEN_BUILD = 'B-0914-1900';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
