@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1900</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1930</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -22151,6 +22151,10 @@ function checkAutoTrade(inputSignals){
             exitTriggered = true;
             exitReason = lastEx.badge ? lastEx.badge.replace(/^.*?SORTIE\s*/, '') : (exitKey === 's1' ? 'Pastille Sortie Ligne 0' : (exitKey === 's2' ? 'Pastille Sortie Extrême' : 'Pastille Sortie Inversion'));
             sigT = lastEx.t;
+          } else if (exIdx != null && exIdx < lastIdx - 2 && !existingPos.isRealMexc) {
+            // Sortie déjà survenue dans le passé pendant que le graphique était en veille :
+            // Libérer immédiatement la position interne pour ne pas bloquer les futurs signaux
+            closePos(0, 'Sortie passée (' + (lastEx.badge ? lastEx.badge.replace(/^.*?SORTIE\s*/, '') : exitKey) + ')');
           }
         }
 
@@ -22167,6 +22171,10 @@ function checkAutoTrade(inputSignals){
             sigT = lastOpp.t;
             if (lastOpp.dir === 1) buySignal = true;
             else if (lastOpp.dir === -1) sellSignal = true;
+          } else if (oppIdx != null && oppIdx < lastIdx - 2 && !existingPos.isRealMexc) {
+            // L'inversion a eu lieu plus tôt pendant que le graphique était en veille ou en arrière-plan :
+            // Libérer impérativement la position pour ne pas bloquer les futurs signaux !
+            closePos(0, 'Inversion passée (' + (lastOpp.dir === -1 ? 'Vente' : 'Achat') + ')');
           }
         }
       }
@@ -37146,8 +37154,8 @@ function computeFMCSignals(cleFmc, cleStrat) {
                 pnlStr: pnlStr,
                 price: b.c, low: b.l, high: b.h,
                 label: 'SORTIE ' + (isAchat ? 'ACHAT' : 'VENTE'),
-                badge: '🔄 #' + ent.tradeNum + ' SORTIE N°3 (Inversion)',
-                sub: (pnl >= 0 ? 'Gain ' : 'Perte ') + pnlStr + ' · Sortie N°3 Secours',
+                badge: '🔄 #' + ent.tradeNum + ' SORTIE Inversion',
+                sub: (pnl >= 0 ? 'Gain ' : 'Perte ') + pnlStr + ' · Inversion',
                 color: pnl >= 0 ? '#A855F7' : '#F87171',
                 borderCol: '#A855F7',
                 bgFill: 'rgba(28, 10, 44, 0.96)'
@@ -37423,7 +37431,9 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
           if (!cfg11 || !cfg11.on) continue;
           if (sig.exitType === 'kk_zero' && cfg11.showExitZero === false) continue;
           if (sig.exitType === 'kk_extreme' && cfg11.showExitExtreme === false) continue;
-          if (sig.exitType === 'reversal' && cfg11.showExitReversal === false) continue;
+          // Sortie de secours obligatoire sur inversion : si aucun TP n'a été touché,
+          // l'inversion DOIT impérativement s'afficher pour que le trade ne reste pas sans pastille de sortie
+          if (sig.exitType === 'reversal' && cfg11.showExitReversal === false && cfg11.showExitZero === false && cfg11.showExitExtreme === false) continue;
         } else {
           if (!indFmc.on) continue;
         if (sig.isPureNoAlma && indFmc.showPureNoAlma === false) continue;
@@ -37509,10 +37519,11 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
         const topIcon = sig.icon || (sig.exitType === 'kk_cross' ? '⨂' : 'Ø');
         ctx.fillText(topIcon + ' ' + numStr + 'SORTIE', x, by - 15 * kT);
 
-        // Ligne 2 : Type d'opération (ACHAT en vert émeraude, VENTE en rose bonbon)
+        // Ligne 2 : Type d'opération (ACHAT en vert émeraude, VENTE en rose bonbon) + Heure
         ctx.font = 'bold ' + Math.round(9.5 * kT) + 'px "IBM Plex Sans", sans-serif';
         ctx.fillStyle = isTradeAchat ? '#34D399' : '#FB7185';
-        ctx.fillText(dirLabel, x, by - 4 * kT);
+        const roundTimeStr = typeof fmtTime === 'function' ? fmtTime(sig.t) : (new Date(sig.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+        ctx.fillText(dirLabel + ' · ' + roundTimeStr, x, by - 4 * kT);
 
         // Ligne 3 : Prix de sortie (ex: $77 150.2)
         ctx.font = 'bold ' + Math.round(8 * kT) + 'px "IBM Plex Mono", monospace';
@@ -37537,8 +37548,8 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       const isRappel = !!sig.isRappel;
       const isExit = !!sig.isExit;
       const isStrat1111 = !!sig.isStrat1111;
-      const bw = Math.round((isExit ? (sig.isEliteExit || isPureNoAlma ? 156 : 132) : (isElite || isPureNoAlma || isStrat1111 ? 168 : (isConf ? 136 : 112))) * kT);
-      const bh = Math.round((isExit ? 27 : 44) * kT);
+      const bw = Math.round((isExit ? (sig.isEliteExit || isPureNoAlma ? 168 : 160) : (isElite || isPureNoAlma || isStrat1111 ? 172 : (isConf ? 136 : 112))) * kT);
+      const bh = Math.round((isExit ? 30 : 44) * kT);
 
       const color = isRappel ? (indFmc.cRappel || '#94A3B8') : (sig.color || (isLong ? '#00E676' : '#FF0055'));
       const borderCol = isRappel ? (indFmc.cRappelBorder || '#64748B') : (sig.borderCol || color);
@@ -37579,21 +37590,23 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       ctx.stroke();
       ctx.setLineDash([]);
 
+      const timeStr = typeof fmtTime === 'function' ? fmtTime(sig.t) : (new Date(sig.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+
       if (isExit) {
         // Format ultra-compact à 2 lignes :
-        // Ligne 1 : Titre (ex: 🏁 SORTIE ACHAT ou 🏁 SORTIE VENTE)
+        // Ligne 1 : Titre (ex: ⚡ #10 SORTIE KK Extrême ou 🔄 #9 SORTIE Inversion)
         ctx.font = 'bold ' + (8.5 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
         ctx.textAlign = 'center';
         ctx.fillStyle = color;
         const titleTxt = sig.badge || sig.label || sig.type;
         ctx.fillText(titleTxt, bx + bw / 2, by + 10.5 * kT);
 
-        // Ligne 2 : PnL + Prix (ex: +120.0 pts · $79 337.7)
+        // Ligne 2 : Heure d'apparition + PnL + Prix (ex: ⏰ 14:54 · +53.4 pts · $77 692.0)
         ctx.font = 'bold ' + (7.5 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
         const pnlPrefix = (sig.pnl != null ? ((sig.pnl >= 0 ? '+' : '') + sig.pnl.toFixed(1) + ' pts · ') : (sig.pnlStr ? (sig.pnlStr + ' · ') : ''));
         const priceSuffix = '$' + fmt(sig.price, 1);
         ctx.fillStyle = (sig.pnl != null && sig.pnl >= 0) ? '#34D399' : (sig.pnl != null ? '#F87171' : '#E2E8F0');
-        ctx.fillText(pnlPrefix + priceSuffix, bx + bw / 2, by + 21 * kT);
+        ctx.fillText('⏰ ' + timeStr + ' · ' + pnlPrefix + priceSuffix, bx + bw / 2, by + 21.5 * kT);
       } else {
         // Ligne 1 : type (ACHAT / VENTE FMC × KK ou RAPPEL ACHAT / RAPPEL VENTE ou ÉLITE ou SANS ALMA)
         ctx.font = 'bold ' + (10 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
@@ -37624,10 +37637,10 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
         const natureLabel = isStrat1111 ? (sig.sub || (isLong ? 'FMC Vert · KK Vert' : 'FMC Rouge · KK Rouge')) : (isPureNoAlma ? 'KK 10m · FMC 2m (SANS ALMA)' : (isElite ? 'ALMA 2m · KK 10m · FMC 2m' : (isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || ''))));
         ctx.fillText(natureLabel, bx + bw / 2, by + 25 * kT);
 
-        // Ligne 3 : prix
-        ctx.font = (8 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
-        ctx.fillStyle = isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#64748B' : '#94A3B8'));
-        ctx.fillText('$' + fmt(sig.price, 1) + (isStrat1111 ? (' · ' + (sig.subStrategy || '11 11')) : (isPureNoAlma ? ' · WR 74.5%' : (isElite ? ' · WR 66.7%' : ''))), bx + bw / 2, by + 37 * kT);
+        // Ligne 3 : Heure d'apparition + prix
+        ctx.font = 'bold ' + (8.5 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
+        ctx.fillStyle = isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#64748B' : (isLong ? '#34D399' : '#FB7185')));
+        ctx.fillText('⏰ ' + timeStr + ' · $' + fmt(sig.price, 1), bx + bw / 2, by + 37 * kT);
       }
 
       // Tige (lien pastille → bougie)
@@ -43763,7 +43776,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0914-1900';
+  window.__LUMEN_BUILD = 'B-0914-1930';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
