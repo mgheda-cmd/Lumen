@@ -165,7 +165,7 @@ header{
   background:var(--panel); flex-wrap:nowrap;
   overflow-x:auto; scrollbar-width:none;
   position:sticky; top:0; left:0; right:0;
-  z-index:100000; flex:none;
+  z-index:1000; flex:none;
   padding-top:max(4px, env(safe-area-inset-top));
 }
 header::-webkit-scrollbar{ display:none; }
@@ -481,77 +481,8 @@ footer{
 }
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
-<script>
-window.addEventListener('error', function(e) {
-  console.error('[Lumen Global Error]', e);
-  const b = document.getElementById('lumen-global-error-banner');
-  if (b) {
-    b.style.display = 'block';
-    b.textContent = '⚠️ Erreur JS: ' + (e.message || e) + (e.lineno ? (' (ligne ' + e.lineno + ')') : '');
-  }
-});
-window.addEventListener('unhandledrejection', function(e) {
-  console.error('[Lumen Unhandled Rejection]', e);
-  const b = document.getElementById('lumen-global-error-banner');
-  if (b) {
-    b.style.display = 'block';
-    b.textContent = '⚠️ Promesse Rejetée: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
-  }
-});
-window.lumenRechargerMaj = function(e){
-  if(e && e.stopPropagation) e.stopPropagation();
-  const mb = document.getElementById('maj-btn');
-  if(mb){ mb.textContent = '⏳ MAJ…'; mb.disabled = true; }
-  try{
-    if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
-  }catch(err){}
-  const base = window.location.href.split('?')[0].split('#')[0];
-  const u = new URL(base);
-  u.searchParams.set('maj', Date.now());
-  window.location.replace(u.toString());
-};
-window.lumenPurgerEtForcer = async function(e){
-  if(e && e.stopPropagation) e.stopPropagation();
-  const fb = document.getElementById('force-btn');
-  if(fb){ fb.textContent = '⏳ Purge…'; fb.disabled = true; }
-  try{
-    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
-      const regs = await navigator.serviceWorker.getRegistrations();
-      for(const reg of regs){ await reg.unregister(); }
-    }
-  }catch(err){}
-  try{
-    if(window.caches && caches.keys){
-      const ks = await caches.keys();
-      for(const k of ks){ await caches.delete(k); }
-    }
-  }catch(err){}
-  try{ sessionStorage.clear(); }catch(err){}
-  try{
-    if(window.localStorage){
-      for(let i = localStorage.length - 1; i >= 0; i--){
-        const k = localStorage.key(i);
-        if(k && k.indexOf('lumen_strat11_reg_') === 0) localStorage.removeItem(k);
-      }
-    }
-  }catch(err){}
-  const base = window.location.href.split('?')[0].split('#')[0];
-  const u = new URL(base);
-  u.searchParams.set('force', Date.now());
-  window.location.replace(u.toString());
-};
-try {
-  if (window.localStorage) {
-    for (let _i = localStorage.length - 1; _i >= 0; _i--) {
-      const _k = localStorage.key(_i);
-      if (_k && _k.indexOf('lumen_strat11_reg_') === 0) localStorage.removeItem(_k);
-    }
-  }
-} catch(e){}
-</script>
 </head>
 <body>
-<div id="lumen-global-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999999;background:#FF0055;color:#FFFFFF;padding:8px 12px;font-family:monospace;font-size:12px;font-weight:bold;box-shadow:0 4px 15px rgba(0,0,0,0.8);word-break:break-all"></div>
 
 <header>
   <div class="ind-wrap">
@@ -575,7 +506,7 @@ try {
   </div>
 
   <div class="ind-wrap" id="pastilles-wrap" style="position:relative">
-    <button class="btn btn-pastilles" id="btn-pastilles-menu" onclick="window.togglePastillesMenu(event)" aria-haspopup="true" aria-expanded="false" title="Gestionnaire direct des pastilles de signaux (cocher / décocher par stratégie)" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;border-color:rgba(255,180,0,.6);color:#FFB400;background:rgba(255,180,0,.08);padding:4px 9px;border-radius:6px;cursor:pointer">
+    <button class="btn btn-pastilles" id="btn-pastilles-menu" aria-haspopup="true" aria-expanded="false" title="Gestionnaire direct des pastilles de signaux (cocher / décocher par stratégie)" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;border-color:rgba(255,180,0,.6);color:#FFB400;background:rgba(255,180,0,.08);padding:4px 9px;border-radius:6px">
       <span style="font-size:13px">🏷️</span> <span>Pastilles</span> <span id="btn-pastilles-badge" class="mono" style="font-size:9.5px;background:rgba(255,180,0,.2);color:#FFB400;padding:1px 5px;border-radius:4px;font-weight:800;margin-left:2px">—</span> <span style="font-size:9px;opacity:.7">▾</span>
     </button>
   </div>
@@ -598,9 +529,9 @@ try {
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1815</span>
-  <button id="maj-btn" class="btn" onclick="window.lumenRechargerMaj(event)" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
-  <button id="force-btn" class="btn" onclick="window.lumenPurgerEtForcer(event)" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0330</span>
+  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
+  <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
   <div class="ind-wrap" id="alerts-wrap" style="position:relative">
     <button class="btn" id="btn-alerts-panel" onclick="toggleAlertsPanel()" title="Gestionnaire d'Alertes" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;color:var(--text)">
@@ -614,7 +545,7 @@ try {
   <button class="btn" id="collapse-panes-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
   </button>
-  <button class="btn" id="btn-elite-journal" onclick="window.toggleStrat11TradesJournal ? window.toggleStrat11TradesJournal('strat_11_11_elite', 's2') : (window.openStrat11TradesJournal ? window.openStrat11TradesJournal('strat_11_11_elite', 's2') : toggleEliteJournalPanel())" title="Ouvrir le Journal des Trades & Coach Objectif Capital (78$ -> 200$ -> 100$/j)" style="font-size:12px;padding:3px 8px;font-weight:800;display:inline-flex;align-items:center;gap:4px;color:#00E5FF;border-color:#00E5FF;background:rgba(0,229,255,.14)">
+  <button class="btn" id="btn-elite-journal" onclick="window.openStrat11TradesJournal ? window.openStrat11TradesJournal('strat_11_11_elite', 's2') : toggleEliteJournalPanel()" title="Ouvrir le Journal des Trades & Coach Objectif Capital (78$ -> 200$ -> 100$/j)" style="font-size:12px;padding:3px 8px;font-weight:800;display:inline-flex;align-items:center;gap:4px;color:#00E5FF;border-color:#00E5FF;background:rgba(0,229,255,.14)">
     <span style="font-size:13px">🎯</span> <span class="btn-full-txt">Coach & Trades</span>
     <span id="badge-elite-count" class="mono" style="font-size:9.5px;background:#00E5FF;color:#0F172A;padding:1px 5px;border-radius:4px;font-weight:900;margin-left:2px">ÉLITE</span>
   </button>
@@ -1623,9 +1554,6 @@ try {
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
         <div style="display:flex;gap:3px;flex-wrap:wrap">
-          <button class="btn tzb" id="tz-auto" data-tz="auto" title="Heure locale automatique de votre appareil (iPad / iPhone / PC)" style="font-size:10.5px;padding:4px 7px;font-weight:800;border:1.5px solid #00E5FF">📱 AUTO</button>
-          <button class="btn tzb" id="tz-dubai" data-tz="dubai" title="Heure de Dubaï / Golfe (UTC+4)" style="font-size:10.5px;padding:4px 6px">🇦🇪 DUBAÏ</button>
-          <button class="btn tzb" id="tz-riyadh" data-tz="riyadh" title="Heure de Riyad / Istanbul / Arabie (UTC+3)" style="font-size:10.5px;padding:4px 6px">🇸🇦 RIYAD</button>
           <button class="btn tzb" id="tz-tunis" data-tz="tunis" title="Heure de Tunis (Tunisie · UTC+1)" style="font-size:10.5px;padding:4px 7px;font-weight:800">🇹🇳 TUNIS</button>
           <button class="btn tzb" id="tz-paris" data-tz="paris" title="Heure de Paris (France / Europe)" style="font-size:10.5px;padding:4px 6px">PARIS</button>
           <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:10.5px;padding:4px 6px">LDN</button>
@@ -6143,7 +6071,7 @@ function mergeConfig(c){
   if(c.subLock&&typeof c.subLock==='object')state.subLock=c.subLock;
   if(c.subScale&&typeof c.subScale==='object')state.subScale=c.subScale;
   if(Array.isArray(c.zones))state.zones=c.zones.filter(z=>z&&typeof z.t0==='number');
-  if(c.tz && (['auto','dubai','riyadh','tunis','paris','london','ny','utc'].includes(c.tz) || c.tz.includes('/'))) state.tz = c.tz;
+  if(c.tz&&['ny','london','tunis'].includes(c.tz))state.tz=c.tz;
   if(Array.isArray(c.sessZones))state.sessZones=c.sessZones.filter(z=>z&&typeof z.t0==='number');
   if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
@@ -6514,21 +6442,16 @@ function loadViaWS(){
 /* Recharge la page avec un paramètre horodaté unique : le navigateur ne
    peut pas servir sa copie en cache, puisque l'adresse n'a jamais été
    visitée. C'est l'équivalent d'un rechargement forcé, en un appui. */
-window.lumenRechargerMaj = function(e){
-  if(e && e.stopPropagation) e.stopPropagation();
-  const mb = document.getElementById('maj-btn');
-  if(mb){ mb.textContent = '⏳ MAJ…'; mb.disabled = true; }
-  try{
-    if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
-  }catch(err){}
-  const base = window.location.href.split('?')[0].split('#')[0];
-  const u = new URL(base);
-  u.searchParams.set('maj', Date.now());
-  window.location.replace(u.toString());
-};
 try{
   const mb = document.getElementById('maj-btn');
-  if(mb) mb.addEventListener('click', window.lumenRechargerMaj);
+  if(mb) mb.addEventListener('click', function(){
+    try{
+      if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
+    }catch(e){}
+    const u = new URL(window.location.href);
+    u.searchParams.set('maj', Date.now());
+    window.location.replace(u.toString());
+  });
 }catch(e){}
 
 /* ============================================================
@@ -6566,56 +6489,73 @@ try{
 }catch(e){}
 
 /* ============================================================
-   BOUTON ⇩ FORCER — purge totale puis rechargement immédiat
-   Vider tout ce qui peut retenir une ancienne copie (service
-   workers, Cache API, sessionStorage) puis forcer le reload.
+   BOUTON ⇩ FORCER — purge totale puis rechargement
+   Étapes : interroger le serveur pour connaître la date de la
+   version publiée, la comparer à celle chargée, puis vider tout
+   ce qui peut retenir une ancienne copie (service workers,
+   Cache API, sessionStorage) avant de recharger sans cache.
    ============================================================ */
-window.lumenPurgerEtForcer = async function(e){
-  if(e && e.stopPropagation) e.stopPropagation();
-  const fb = document.getElementById('force-btn');
-  if(fb){ fb.textContent = '⏳ Purge…'; fb.disabled = true; }
-
-  const base = window.location.href.split('?')[0].split('#')[0];
-
-  // 1. Désinscrire les service workers (ils peuvent servir une copie hors ligne)
-  try{
-    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
-      const regs = await navigator.serviceWorker.getRegistrations();
-      for(const reg of regs){ await reg.unregister(); }
-    }
-  }catch(err){}
-
-  // 2. Vider la Cache API
-  try{
-    if(window.caches && caches.keys){
-      const ks = await caches.keys();
-      for(const k of ks){ await caches.delete(k); }
-    }
-  }catch(err){}
-
-  // 3. Vider le sessionStorage — le localStorage est PRÉSERVÉ (sauf registre corrompu strat11)
-  try{ sessionStorage.clear(); }catch(err){}
-  try{
-    if(window.localStorage){
-      for(let i = localStorage.length - 1; i >= 0; i--){
-        const k = localStorage.key(i);
-        if(k && k.indexOf('lumen_strat11_reg_') === 0) localStorage.removeItem(k);
-      }
-    }
-  }catch(err){}
-
-  if(typeof toast === 'function') toast('🔄 Purge terminée · Rechargement immédiat...', '#00E5FF');
-
-  setTimeout(() => {
-    const u = new URL(base);
-    u.searchParams.set('force', Date.now());
-    window.location.replace(u.toString());
-  }, 100);
-};
-
 try{
   const fb = document.getElementById('force-btn');
-  if(fb) fb.addEventListener('click', window.lumenPurgerEtForcer);
+  if(fb) fb.addEventListener('click', async function(){
+    const btn = this;
+    const original = btn.textContent;
+    btn.textContent = '⏳ Vérification…';
+    btn.disabled = true;
+
+    const base = window.location.href.split('?')[0].split('#')[0];
+    let serverDate = null;
+    try{
+      // cache:'no-store' force une requête vers l'origine, sans intermédiaire.
+      const r = await fetch(base + '?probe=' + Date.now(), { method:'HEAD', cache:'no-store' });
+      const lm = r.headers.get('last-modified');
+      if(lm){ const d = new Date(lm); if(!isNaN(d.getTime())) serverDate = d; }
+    }catch(e){}
+
+    const localDate = lumenBuildDate();
+    let verdict;
+    if(serverDate && localDate){
+      const diffMin = Math.round((serverDate.getTime() - localDate.getTime()) / 60000);
+      verdict = diffMin > 1
+        ? 'Une version plus récente est disponible sur le serveur (' + lumenFormatLocal(serverDate) + ' contre ' + lumenFormatLocal(localDate) + ' ici).\n\nElle va être chargée.'
+        : 'Vous avez déjà la dernière version publiée (' + lumenFormatLocal(localDate) + ').\n\nLa page va tout de même être rechargée proprement.';
+    } else {
+      verdict = 'Le serveur ne communique pas de date de publication.\n\nPurge complète puis rechargement.';
+    }
+
+    btn.textContent = '⏳ Purge…';
+
+    // 1. Désinscrire les service workers (ils peuvent servir une copie hors ligne)
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for(const reg of regs){ await reg.unregister(); }
+      }
+    }catch(e){}
+
+    // 2. Vider la Cache API
+    try{
+      if(window.caches && caches.keys){
+        const ks = await caches.keys();
+        for(const k of ks){ await caches.delete(k); }
+      }
+    }catch(e){}
+
+    // 3. Vider le sessionStorage — le localStorage est PRÉSERVÉ
+    //    (il contient la configuration de l'exchange et du bot).
+    try{ sessionStorage.clear(); }catch(e){}
+
+    // 4. Redemander le fichier à l'origine pour invalider le cache HTTP
+    try{ await fetch(base + '?bust=' + Date.now(), { cache:'reload' }); }catch(e){}
+
+    if(typeof toast === 'function') toast('🔄 Purge terminée · Rechargement immédiat...', '#00E5FF');
+
+    setTimeout(() => {
+      const u = new URL(base);
+      u.searchParams.set('force', Date.now());
+      window.location.replace(u.toString());
+    }, 300);
+  });
 }catch(e){}
 
 function reconnectNow(){ if(typeof loadData==='function')loadData(); }
@@ -6623,11 +6563,10 @@ try{document.getElementById('status').addEventListener('click',reconnectNow);}ca
 function setStatus(mode){
   const map={loading:['CHARGEMENT…','#7E8CA8'],live:['EN DIRECT','#25D0A4'],
     poll:['EN DIRECT (REST)','#25D0A4'],demo:['DÉMO — réseau indisponible','#F2C14E']};
-  const m = map[mode] || map.loading;
   const el=document.getElementById('status');
-  if(el){ el.textContent=m[0]; el.style.color=m[1]; }
+  el.textContent=map[mode][0]; el.style.color=map[mode][1];
   const p=document.querySelector('.pulse');
-  if(p){ p.style.background=m[1]; p.style.boxShadow='0 0 12px '+m[1]; }
+  p.style.background=map[mode][1]; p.style.boxShadow='0 0 12px '+map[mode][1];
 }
 function stopFeeds(){
   if(ws){try{ws.close()}catch(e){} ws=null;}
@@ -6683,7 +6622,7 @@ function applyTickPrice(px){
       }
       updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
-      if((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
+      if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
       if(typeof checkAllAlerts === 'function') checkAllAlerts();
       if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
     }
@@ -6701,7 +6640,7 @@ function applyKline(k, isLive=false){
   }
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
-  if((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
+  if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
   if(isLive && typeof checkAllAlerts === 'function') checkAllAlerts();
   if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   scheduleRender();
@@ -6725,31 +6664,27 @@ function startWatchdog(g){
   stopWatchdog();
   watchdog=setInterval(()=>{
     if(g!==gen)return;
-    const now=Date.now();
-    if(lastTick && (now - lastTick > 10000)){ // Flux figé plus de 10s : auto-guérison immédiate
-      lastTick=now;
+    if(lastTick&&Date.now()-lastTick>15000){   // flux figé : on relance
+      lastTick=Date.now();
       try{if(ws)ws.close();}catch(e){}
-      ws=null; wsRetry=0;
-      startStream(g);
-      resync(g, 50);
+      ws=null; startStream(g);
     }
-  },2500);
+  },3000);
 }
-async function resync(g, limitCount){
-  const lim = limitCount || 50;
+async function resync(g){
   try{
-    const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${lim}`);
+    const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=3`);
     if(g!==gen||!Array.isArray(rows))return;
     for(let i=0; i<rows.length; i++){
       const k=rows[i];
-      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, i === rows.length - 1);
+      // Ne déclencher les alertes que pour la toute dernière bougie du resync
+      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, false);
     }
     lastTick=Date.now();
   }catch(e){}
 }
 function startStream(g){
   if(g!==gen)return;
-  startWatchdog(g); // Watchdog permanent actif en continu
   try{
     const sym = state.symbol.toLowerCase();
     const tf = TF_MAP[state.tf];
@@ -6757,20 +6692,14 @@ function startStream(g){
     ws=new WebSocket(streamUrl);
     let opened=false;
     const guard=setTimeout(()=>{
-      if(!opened&&g===gen){
-        try{ws.close()}catch(e){}
-        ws=null;
-        setStatus('poll');
-        startPolling(g);
-        setTimeout(()=>{ if(g===gen && !ws) startStream(g); }, 2500);
-      }
+      if(!opened&&g===gen){try{ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}
     },4000);
     ws.onopen=()=>{
-      opened=true; wsRetry=0; clearTimeout(guard);
+      opened=true;wsRetry=0;clearTimeout(guard);
       if(g!==gen)return;
       setStatus('live'); lastTick=Date.now();
       if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
-      resync(g, 50);
+      startWatchdog(g); resync(g);
     };
     ws.onmessage=ev=>{
       if(g!==gen)return;
@@ -6791,37 +6720,23 @@ function startStream(g){
       ws=null; wsRetry++;
       setStatus('poll');
       if(!pollTimer)startPolling(g);
-      // RECONNEXION INFINIE ET CONTINUE : ne jamais s'arrêter après 6 retries !
-      const delay = Math.min(1000 + wsRetry * 500, 4000);
-      setTimeout(()=>{ if(g===gen && !ws) startStream(g); }, delay);
+      if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
     };
     ws.onerror=()=>{
       clearTimeout(guard);
       try{ if(ws) ws.close(); }catch(e){}
     };
-  }catch(e){
-    setStatus('poll');
-    startPolling(g);
-    setTimeout(()=>{ if(g===gen && !ws) startStream(g); }, 3000);
-  }
+  }catch(e){setStatus('poll');startPolling(g);}
 }
-
-// Auto-Heal immédiat sur réveil iPad / déverrouillage / retour onglet
-function autoHealConnection(){
-  if(document.visibilityState === 'hidden') return;
-  const g = gen;
-  const now = Date.now();
-  if(!ws || (now - lastTick > 8000)){
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  const g=gen; resync(g);
+  if(!ws || (Date.now() - lastTick > 15000)){
     if(ws){ try{ws.close();}catch(e){} ws=null; }
-    wsRetry = 0;
+    wsRetry=0;
     startStream(g);
-    resync(g, 50);
   }
   if(window._wlActive && typeof requestWakeLock === 'function') requestWakeLock();
-}
-
-['visibilitychange', 'focus', 'pageshow', 'online'].forEach(evt => {
-  window.addEventListener(evt, autoHealConnection, { passive: true });
 });
 
 let wakeLock = null;
@@ -7040,7 +6955,7 @@ async function loadData(){
     updateHeader(); render();
     startStream(g);
     ensureSR();
-    if((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
+    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
     if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   }catch(e){
     if(g!==gen)return;
@@ -7075,24 +6990,11 @@ async function loadData(){
     state.view={start:N_BARS-150,count:150};
     setStatus('demo');
     updateHeader(); render();
-    if(demoTimer) clearInterval(demoTimer);
-    let demoAttempts = 0;
     demoTimer=setInterval(()=>{
-      demoAttempts++;
-      // Auto-reconnexion toutes les 6 secondes vers le flux réel
-      if(demoAttempts % 4 === 0){
-        if(typeof loadData === 'function'){
-          loadData();
-          return;
-        }
-      }
-      const d=state.data;
-      if(d && d.length){
-        const last=d[d.length-1];
-        last.c*=1+(Math.random()-0.5)*0.001;
-        last.h=Math.max(last.h,last.c);last.l=Math.min(last.l,last.c);
-        state.cache={};updateHeader();render();
-      }
+      const d=state.data,last=d[d.length-1];
+      last.c*=1+(Math.random()-0.5)*0.001;
+      last.h=Math.max(last.h,last.c);last.l=Math.min(last.l,last.c);
+      state.cache={};updateHeader();render();
     },1500);
   }
 }
@@ -8354,61 +8256,17 @@ function fmtCompact(v){
   if(v>=1e3)return (v/1e3).toFixed(1)+' k';
   return v.toFixed(0);
 }
-const TZ_MAP={
-  auto: 'AUTO',
-  tunis: 'Africa/Tunis',
-  paris: 'Europe/Paris',
-  dubai: 'Asia/Dubai',
-  riyadh: 'Asia/Riyadh',
-  london: 'Europe/London',
-  ny: 'America/New_York',
-  utc: 'UTC'
-};
-
-function getActiveTz(){
-  if(!state.tz || state.tz === 'auto'){
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Tunis';
-    } catch(e) {
-      return 'Africa/Tunis';
-    }
-  }
-  return TZ_MAP[state.tz] || (state.tz.includes('/') ? state.tz : 'Africa/Tunis');
-}
-
-function getTzLabel(){
-  if(!state.tz || state.tz === 'auto'){
-    try {
-      const offsetMin = -new Date().getTimezoneOffset();
-      const sign = offsetMin >= 0 ? '+' : '-';
-      const hours = Math.floor(Math.abs(offsetMin) / 60);
-      const mins = Math.abs(offsetMin) % 60;
-      const offsetStr = `UTC${sign}${hours}${mins ? ':' + String(mins).padStart(2, '0') : ''}`;
-      return `📱 AUTO (${offsetStr})`;
-    } catch(e) {
-      return '📱 AUTO';
-    }
-  }
-  if(state.tz === 'tunis') return '🇹🇳 UTC+1';
-  if(state.tz === 'dubai') return '🇦🇪 UTC+4';
-  if(state.tz === 'riyadh') return '🇸🇦 UTC+3';
-  if(state.tz === 'paris') return '🇫🇷 PARIS';
-  if(state.tz === 'london') return '🇬🇧 LONDRES';
-  if(state.tz === 'ny') return '🇺🇸 NY';
-  if(state.tz === 'utc') return '🌐 UTC';
-  return (state.tz || '').toUpperCase();
-}
-
+const TZ_MAP={tunis:'Africa/Tunis',paris:'Europe/Paris',london:'Europe/London',ny:'America/New_York',utc:'UTC'};
 function fmtTime(t){
   const d=new Date(t);
-  const tz=getActiveTz(); const opt=tz?{timeZone:tz}:{};
+  const tz=TZ_MAP[state.tz] || 'Africa/Tunis'; const opt=tz?{timeZone:tz}:{};
   if(state.tf>=1440)return d.toLocaleDateString('fr-FR',Object.assign({day:'2-digit',month:'short'},opt));
   return d.toLocaleTimeString('fr-FR',Object.assign({hour:'2-digit',minute:'2-digit'},opt));
 }
 function fmtOBDate(t){
   if(!t) return '';
   const d=new Date(t);
-  const tz=getActiveTz(); const opt=tz?{timeZone:tz}:{};
+  const tz=TZ_MAP[state.tz]; const opt=tz?{timeZone:tz}:{};
   const dateStr=d.toLocaleDateString('fr-FR',Object.assign({day:'2-digit',month:'2-digit',year:'2-digit'},opt));
   const timeStr=d.toLocaleTimeString('fr-FR',Object.assign({hour:'2-digit',minute:'2-digit'},opt));
   if(state.tf>=1440) return dateStr;
@@ -8553,41 +8411,22 @@ try{
   applyCollapsed();
 }catch(e){}
 state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{}; state.subLock=state.subLock||{};
-state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'auto';
-const TZ_BUTTON_IDS = ['tz-auto','tz-dubai','tz-riyadh','tz-tunis','tz-paris','tz-london','tz-ny','tz-utc'];
+state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'tunis';
 function applyTzButtons(){
-  const activeTzKey = state.tz || 'auto';
-  for(const id of TZ_BUTTON_IDS){
+  for(const id of ['tz-tunis','tz-paris','tz-london','tz-ny','tz-utc']){
     const b=document.getElementById(id); if(!b)continue;
-    const on = b.dataset.tz === activeTzKey;
-    b.style.background=on?'var(--accent)':'';
-    b.style.color=on?'#0A111F':'';
+    const on=b.dataset.tz===state.tz;
+    b.style.background=on?'var(--accent)':''; b.style.color=on?'#0A111F':'';
     b.style.fontWeight=on?'800':'';
   }
 }
-function cycleTimezone(){
-  const tzs = ['auto', 'dubai', 'riyadh', 'tunis', 'paris', 'utc'];
-  const curTz = state.tz || 'auto';
-  let curIdx = tzs.indexOf(curTz);
-  if(curIdx === -1) curIdx = 0;
-  const nextIdx = (curIdx + 1) % tzs.length;
-  state.tz = tzs[nextIdx];
-  applyTzButtons();
-  saveConfig();
-  render();
-  if(typeof toast === 'function'){
-    toast('Fuseau horaire : ' + getTzLabel());
-  }
-}
-window.cycleTimezone = cycleTimezone;
 try{
-  TZ_BUTTON_IDS.forEach(id=>{
+  ['tz-tunis','tz-paris','tz-london','tz-ny','tz-utc'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) {
       el.addEventListener('click',()=>{
         state.tz=el.dataset.tz;
         applyTzButtons(); saveConfig(); render();
-        if(typeof toast === 'function') toast('Fuseau horaire : ' + getTzLabel());
       });
     }
   });
@@ -14346,12 +14185,12 @@ function drawTimeAxis(s,e){
     }
   }
 
-  // Fuseau horaire interactif TradingView en bas à droite
-  const tzLabel = (typeof getTzLabel === 'function') ? getTzLabel() : 'UTC';
+  // Fuseau horaire discret TradingView en bas à droite
+  const tzLabel = state.tz === 'tunis' ? '🇹🇳 UTC+1' : (state.tz ? state.tz.toUpperCase() : 'UTC+1');
   ctx.textAlign = 'right';
   ctx.font = '9.5px "IBM Plex Mono", monospace';
-  ctx.fillStyle = '#00E5FF';
-  ctx.fillText(tzLabel + ' ⇄', W - AXIS_W - 8, H - 7);
+  ctx.fillStyle = 'rgba(120, 123, 134, 0.75)';
+  ctx.fillText(tzLabel, W - AXIS_W - 8, H - 7);
   ctx.textAlign = 'left';
 }
 
@@ -14717,12 +14556,6 @@ function paneHeightOf(key){
 canvas.addEventListener('mousedown',e=>{
   const x=e.offsetX,y=e.offsetY;
 
-  // Clic sur le fuseau horaire en bas à droite (TradingView style)
-  if(y >= H - AXIS_H && x >= W - AXIS_W - 120 && x <= W - AXIS_W){
-    if(typeof cycleTimezone === 'function') cycleTimezone();
-    e.preventDefault(); return;
-  }
-
   // Clic sur les boutons AUTO & LOG en bas de l'axe des prix
   const pricePane = (state.lastPanes||[]).find(q=>q.key==='price');
   if(pricePane && x >= W - AXIS_W){
@@ -14912,21 +14745,6 @@ canvas.addEventListener('touchend',e=>{
       // Tap bref et précis (< 10px et < 350ms) : ouverture intentionnelle des réglages
       if(dist < 10 && elapsed < 350){
         openCfg(_touchCandidateLh.key);
-        _touchCandidateLh = null;
-        _touchStartPt = null;
-        return;
-      }
-    }
-  }
-  if(_touchStartPt){
-    const t = (e.changedTouches && e.changedTouches[0]);
-    if(t){
-      const r = canvas.getBoundingClientRect();
-      const endX = t.clientX - r.left, endY = t.clientY - r.top;
-      const dist = Math.hypot(endX - _touchStartPt.x, endY - _touchStartPt.y);
-      if(dist < 15 && endY >= H - AXIS_H && endX >= W - AXIS_W - 120 && endX <= W - AXIS_W){
-        if(e.cancelable) e.preventDefault();
-        if(typeof cycleTimezone === 'function') cycleTimezone();
         _touchCandidateLh = null;
         _touchStartPt = null;
         return;
@@ -17626,19 +17444,16 @@ async function runStrat11Backtest(isManualAction) {
       return;
     }
 
-    const results = [];
-    for (let vi = 0; vi < STRAT11_VARIANTS_DEF.length; vi++) {
-      const vDef = STRAT11_VARIANTS_DEF[vi];
+    const results = STRAT11_VARIANTS_DEF.map(function(vDef) {
       const stats = _backtestVariantSerious(bars8000, vDef);
-      results.push(Object.assign({
+      return Object.assign({
         key: vDef.key,
         name: vDef.name,
         catIdx: vDef.catIdx,
         tfFMC: vDef.tfFMC,
         tfKK: vDef.tfKK
-      }, stats));
-      await new Promise(r => setTimeout(r, 20));
-    }
+      }, stats);
+    });
 
     const prevRanking = window.__strat11Ranking;
     const curP = window.__strat11Period || 'all';
@@ -18210,21 +18025,6 @@ document.addEventListener('LumenUserscriptBridgeReady', function(e) {
 });
 
 window.testerConnexionMexcWeb = function() {
-  const btn = document.getElementById('btn-test-ping-mexc');
-  if (btn) {
-    const origText = btn.innerHTML;
-    const origBg = btn.style.background;
-    const origCol = btn.style.color;
-    btn.innerHTML = '⚡ PING ENVOYÉ !';
-    btn.style.background = '#10B981';
-    btn.style.color = '#0B1120';
-    setTimeout(() => {
-      btn.innerHTML = origText;
-      btn.style.background = origBg;
-      btn.style.color = origCol;
-    }, 2000);
-  }
-
   try {
     const rawSym = (state.symbol || 'BTCUSDT').toUpperCase();
     const mexcPair = `${rawSym.replace('USDT','')}_USDT`;
@@ -18239,7 +18039,7 @@ window.testerConnexionMexcWeb = function() {
       if (window.__LUMEN_USERSCRIPT_ACTIVE) {
         toast('📡 Signal PING envoyé ! Basculez sur votre onglet MEXC : le badge vert clignotera "🎉 TEST 100% VALIDÉ".', '#10B981', 6000);
       } else {
-        toast('⚠️ Signal envoyé ! 🧩 Sur iPad : touchez l\'icône puzzle 🧩 dans la barre d\'URL Safari pour autoriser l\'extension Userscripts sur Lumen et MEXC.', '#F59E0B', 8000);
+        toast('⚠️ Signal envoyé ! Si le badge MEXC ne réagit pas : activez l\'extension (icône puzzle 🧩 ou Tampermonkey) sur cet onglet Lumen puis actualisez la page.', '#F59E0B', 8000);
       }
     }
     try { if (typeof beep === 'function') beep(); } catch(e){}
@@ -18563,42 +18363,28 @@ window.initStrat11PanelDraggableAndResizable = function() {
 };
 
 window.openStrat11TradesJournal = function(varKey, exitKey) {
-  try {
-    if (varKey) window.__stJournalVarKey = varKey;
-    if (exitKey) window.__stJournalExitMode = exitKey;
-    else if (window.__strat11ExitMode) window.__stJournalExitMode = window.__strat11ExitMode;
+  if (varKey) window.__stJournalVarKey = varKey;
+  if (exitKey) window.__stJournalExitMode = exitKey;
+  else if (window.__strat11ExitMode) window.__stJournalExitMode = window.__strat11ExitMode;
 
-    const panel = document.getElementById('strat11-trades-panel');
-    if (!panel) return;
-    panel.style.display = 'flex';
-    panel.style.zIndex = '9999999';
+  const panel = document.getElementById('strat11-trades-panel');
+  if (!panel) return;
+  panel.style.display = 'flex';
 
-    if (typeof window.initStrat11PanelDraggableAndResizable === 'function') {
-      try { window.initStrat11PanelDraggableAndResizable(); } catch(e){}
-    }
-    const savedDock = localStorage.getItem('strat11_panel_dock') || 'right';
-    try { window.applyStrat11Dock(savedDock, false); } catch(e){}
-
-    try { window.setStrat11JournalPeriod(window.__stJournalPeriod || '3d', false); } catch(e){}
-    try { window.setStrat11JournalExit(window.__stJournalExitMode || 's2', false); } catch(e){}
-    try { window.renderStrat11TradesJournal(); } catch(e){}
-  } catch(err) {
-    console.error('Erreur openStrat11TradesJournal:', err);
+  if (typeof window.initStrat11PanelDraggableAndResizable === 'function') {
+    window.initStrat11PanelDraggableAndResizable();
   }
+  const savedDock = localStorage.getItem('strat11_panel_dock') || 'right';
+  window.applyStrat11Dock(savedDock, false);
+
+  window.setStrat11JournalPeriod(window.__stJournalPeriod || '3d', false);
+  window.setStrat11JournalExit(window.__stJournalExitMode || 's1', false);
+  window.renderStrat11TradesJournal();
 };
 
 window.closeStrat11TradesJournal = function() {
   const panel = document.getElementById('strat11-trades-panel');
   if (panel) panel.style.display = 'none';
-};
-
-window.toggleStrat11TradesJournal = function(varKey, exitKey) {
-  const panel = document.getElementById('strat11-trades-panel');
-  if (panel && panel.style.display !== 'none' && panel.style.display !== '') {
-    window.closeStrat11TradesJournal();
-  } else {
-    window.openStrat11TradesJournal(varKey, exitKey);
-  }
 };
 
 window.toggleStrat11PanelWidth = function() {
@@ -18662,7 +18448,6 @@ window.setStrat11JournalExit = function(exitKey, doRender) {
   if (state.indicators && state.indicators[varKey]) {
     state.indicators[varKey].showExitZero = (exitKey === 's1');
     state.indicators[varKey].showExitExtreme = (exitKey === 's2');
-    state.indicators[varKey].showExitReversal = (exitKey === 's3');
   }
   [
     { id: 's1', col: '#38BDF8', bg: 'rgba(56,189,248,0.18)' },
@@ -18723,25 +18508,10 @@ window.renderStrat11TradesJournal = function() {
   if (entrySigs.length > 0) {
     for (let ei = 0; ei < entrySigs.length; ei++) {
       const ent = entrySigs[ei];
-      // Trouver la sortie correspondante sur le graphique (impérativement postérieure à l'entrée et fidèle au mode sélectionné)
-      const candExits = exitSigs.filter(function(s) {
-        const isTimeValid = (s.t != null && ent.t != null) ? (s.t >= ent.t) : (s.i != null && ent.i != null ? s.i > ent.i : true);
-        if (!isTimeValid) return false;
+      // Trouver la sortie correspondante sur le graphique
+      const ex = exitSigs.find(function(s) {
         return (s.entryI != null && s.entryI === ent.i) || (s.tradeNum != null && s.tradeNum === ent.tradeNum);
       });
-
-      let ex = null;
-      if (candExits.length > 0) {
-        if (exitKey === 's2') {
-          ex = candExits.find(s => s.exitType === 'kk_extreme') || candExits.find(s => s.exitType === 'reversal') || candExits.find(s => s.exitType !== 'kk_zero') || candExits[0];
-        } else if (exitKey === 's1') {
-          ex = candExits.find(s => s.exitType === 'kk_zero') || candExits.find(s => s.exitType === 'reversal') || candExits[0];
-        } else if (exitKey === 's3') {
-          ex = candExits.find(s => s.exitType === 'reversal') || candExits[0];
-        } else {
-          ex = candExits[0];
-        }
-      }
       if (!ex) {
         // C'est le trade en cours (non encore fermé) :
         // Le user demande explicitement d'inclure le trade en cours dans le tableau !
@@ -18820,34 +18590,8 @@ window.renderStrat11TradesJournal = function() {
     });
     if (eMatch) {
       t.entryPastilleNum = eMatch.tradeNum;
-      t.entryPx = eMatch.price;
-      t.entryT = eMatch.t;
-      t.dir = eMatch.dir;
-      t.type = eMatch.dir === 1 ? 'ACHAT' : 'VENTE';
-
-      const candX = exitSigs.filter(function(s) {
-        const isTimeValid = (s.t != null && eMatch.t != null) ? (s.t >= eMatch.t) : (s.i != null && eMatch.i != null ? s.i > eMatch.i : true);
-        if (!isTimeValid) return false;
-        return (s.entryI != null && s.entryI === eMatch.i) || (s.tradeNum != null && s.tradeNum === eMatch.tradeNum);
-      });
-      let xMatch = null;
-      if (candX.length > 0) {
-        if (exitKey === 's2') xMatch = candX.find(s => s.exitType === 'kk_extreme') || candX.find(s => s.exitType === 'reversal') || candX.find(s => s.exitType !== 'kk_zero') || candX[0];
-        else if (exitKey === 's1') xMatch = candX.find(s => s.exitType === 'kk_zero') || candX.find(s => s.exitType === 'reversal') || candX[0];
-        else if (exitKey === 's3') xMatch = candX.find(s => s.exitType === 'reversal') || candX[0];
-        else xMatch = candX[0];
-      }
-      if (xMatch) {
-        t.exitPastilleNum = xMatch.tradeNum || eMatch.tradeNum;
-        t.exitPx = xMatch.price;
-        t.exitT = xMatch.t;
-        const isBuy = t.dir === 1;
-        const pnlVal = (xMatch.pnl != null) ? xMatch.pnl : (isBuy ? (xMatch.price - t.entryPx) : (t.entryPx - xMatch.price));
-        t.pnl = Math.round(pnlVal * 10) / 10;
-        t.exitReason = xMatch.badge ? xMatch.badge.replace(/^.*?SORTIE\s*/, '') : (xMatch.exitType === 'kk_zero' ? 'Ligne 0' : (xMatch.exitType === 'kk_extreme' ? 'Extrême' : 'Inversion'));
-      } else {
-        t.exitPastilleNum = eMatch.tradeNum;
-      }
+      const xMatch = exitSigs.find(function(s) { return (s.entryI != null && s.entryI === eMatch.i) || (s.tradeNum != null && s.tradeNum === eMatch.tradeNum); });
+      t.exitPastilleNum = xMatch ? xMatch.tradeNum : eMatch.tradeNum;
       t.num = eMatch.tradeNum;
     } else {
       t.entryPastilleNum = t.num;
@@ -18876,7 +18620,6 @@ window.renderStrat11TradesJournal = function() {
   // Mettre à jour les statistiques de synthèse
   let totalPnl = 0, wins = 0, gW = 0, gL = 0;
   filteredTrades.forEach(function(t) {
-    if (typeof t.pnl !== 'number' || isNaN(t.pnl)) t.pnl = 0;
     totalPnl += t.pnl;
     if (t.pnl >= 0) { wins++; gW += t.pnl; }
     else { gL += Math.abs(t.pnl); }
@@ -19406,79 +19149,72 @@ function resetDefaultPastilles() {
   }
 }
 
-window.togglePastillesMenu = function(e) {
-  if (e && e.stopPropagation) e.stopPropagation();
-  const btn = document.getElementById('btn-pastilles-menu');
-  const box = document.getElementById('pastilles-menu');
-  if (!box) return;
-  const isCurrentlyOpen = box.classList.contains('open') && box.style.display !== 'none';
-  const open = !isCurrentlyOpen;
-  if (open) {
-    box.classList.add('open');
-    box.style.display = 'flex';
-    box.style.zIndex = '999999';
-    // Si pas encore chargé en mémoire, charger le classement sauvegardé pour réactivité instantanée
-    if (!window.__strat11Ranking && typeof loadSavedStrat11Ranking === 'function') {
-      loadSavedStrat11Ranking();
+if (btnPastillesMenu && pastillesMenuEl) {
+  btnPastillesMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = pastillesMenuEl.classList.toggle('open');
+    if (open) {
+      // Règle stricte : test 8000 bougies à la 1ère ouverture du jour OU si pas encore calculé
+      const todayDateStr = new Date().toISOString().slice(0, 10);
+      const lastRunDate = localStorage.getItem('strat11_last_test_date');
+      const hasSaved = loadSavedStrat11Ranking();
+      if (!hasSaved || !window.__strat11Ranking || lastRunDate !== todayDateStr) {
+        localStorage.setItem('strat11_last_test_date', todayDateStr);
+        setTimeout(function() { runStrat11Backtest(false); }, 100);
+      }
+
+      // Synchroniser le style du sélecteur de période
+      const activeP = window.__strat11Period || 'all';
+      ['day', '3d', 'all'].forEach(function(pid) {
+        const btn = document.getElementById('btn-period-' + pid);
+        if (!btn) return;
+        if (pid === activeP) {
+          btn.style.borderColor = '#FFB400';
+          btn.style.background = 'rgba(255,180,0,0.18)';
+          btn.style.color = '#FFB400';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.style.borderColor = 'rgba(255,255,255,0.15)';
+          btn.style.background = 'rgba(255,255,255,0.05)';
+          btn.style.color = 'var(--text)';
+          btn.style.fontWeight = '600';
+        }
+      });
+
+      // Synchroniser le style du sélecteur de sortie
+      const activeEx = window.__strat11ExitMode || 's1';
+      const b1 = document.getElementById('btn-exit-s1');
+      const b2 = document.getElementById('btn-exit-s2');
+      const b3 = document.getElementById('btn-exit-s3');
+      [
+        { btn: b1, id: 's1', col: '#38BDF8', bg: 'rgba(56,189,248,0.22)' },
+        { btn: b2, id: 's2', col: '#FBBF24', bg: 'rgba(251,191,36,0.22)' },
+        { btn: b3, id: 's3', col: '#A855F7', bg: 'rgba(168,85,247,0.22)' }
+      ].forEach(function(item) {
+        if (!item.btn) return;
+        if (activeEx === item.id) {
+          item.btn.style.borderColor = item.col;
+          item.btn.style.background = item.bg;
+          item.btn.style.color = item.col;
+          item.btn.style.fontWeight = '800';
+        } else {
+          item.btn.style.borderColor = 'rgba(255,255,255,0.15)';
+          item.btn.style.background = 'rgba(255,255,255,0.05)';
+          item.btn.style.color = 'var(--text)';
+          item.btn.style.fontWeight = '600';
+        }
+      });
+
+      renderPastillesList(false);
+      anchorPastillesMenu(pastillesMenuEl, btnPastillesMenu);
+      if (typeof symMenu !== 'undefined') symMenu.classList.remove('open');
+      const sm = document.getElementById('sync-menu'); if (sm) sm.classList.remove('open');
+      const nm = document.getElementById('notif-menu'); if (nm) nm.classList.remove('open');
+      if (toolsMenuEl) toolsMenuEl.classList.remove('open');
+      const ap = document.getElementById('alerts-panel'); if (ap) ap.style.display = 'none';
     }
-
-    // Synchroniser le style du sélecteur de période
-    const activeP = window.__strat11Period || 'all';
-    ['day', '3d', 'all'].forEach(function(pid) {
-      const b = document.getElementById('btn-period-' + pid);
-      if (!b) return;
-      if (pid === activeP) {
-        b.style.borderColor = '#FFB400';
-        b.style.background = 'rgba(255,180,0,0.18)';
-        b.style.color = '#FFB400';
-        b.style.fontWeight = '800';
-      } else {
-        b.style.borderColor = 'rgba(255,255,255,0.15)';
-        b.style.background = 'rgba(255,255,255,0.05)';
-        b.style.color = 'var(--text)';
-        b.style.fontWeight = '600';
-      }
-    });
-
-    // Synchroniser le style du sélecteur de sortie
-    const activeEx = window.__strat11ExitMode || 's1';
-    const b1 = document.getElementById('btn-exit-s1');
-    const b2 = document.getElementById('btn-exit-s2');
-    const b3 = document.getElementById('btn-exit-s3');
-    [
-      { btn: b1, id: 's1', col: '#38BDF8', bg: 'rgba(56,189,248,0.22)' },
-      { btn: b2, id: 's2', col: '#FBBF24', bg: 'rgba(251,191,36,0.22)' },
-      { btn: b3, id: 's3', col: '#A855F7', bg: 'rgba(168,85,247,0.22)' }
-    ].forEach(function(item) {
-      if (!item.btn) return;
-      if (activeEx === item.id) {
-        item.btn.style.borderColor = item.col;
-        item.btn.style.background = item.bg;
-        item.btn.style.color = item.col;
-        item.btn.style.fontWeight = '800';
-      } else {
-        item.btn.style.borderColor = 'rgba(255,255,255,0.15)';
-        item.btn.style.background = 'rgba(255,255,255,0.05)';
-        item.btn.style.color = 'var(--text)';
-        item.btn.style.fontWeight = '600';
-      }
-    });
-
-    if (typeof renderPastillesList === 'function') renderPastillesList(false);
-    if (typeof anchorPastillesMenu === 'function') anchorPastillesMenu(box, btn);
-    if (typeof symMenu !== 'undefined') symMenu.classList.remove('open');
-    const sm = document.getElementById('sync-menu'); if (sm) sm.classList.remove('open');
-    const nm = document.getElementById('notif-menu'); if (nm) nm.classList.remove('open');
-    const tm = document.getElementById('tools-menu'); if (tm) tm.classList.remove('open');
-    const ap = document.getElementById('alerts-panel'); if (ap) ap.style.display = 'none';
-  } else {
-    box.classList.remove('open');
-    box.style.display = 'none';
-  }
-  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-};
-
-if (pastillesMenuEl) {
+    btnPastillesMenu.setAttribute('aria-expanded', open);
+  });
 
   const btnClosePast = document.getElementById('btn-close-pastilles');
   if (btnClosePast) {
@@ -20607,12 +20343,6 @@ function fmtTimeFr(ts) {
   if (!ts) return '—';
   const d = new Date(ts);
   if (isNaN(d.getTime())) return '—';
-  const tz = (typeof getActiveTz === 'function') ? getActiveTz() : undefined;
-  if (tz) {
-    try {
-      return d.toLocaleTimeString('fr-FR', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    } catch(e){}
-  }
   const pad = n => String(n).padStart(2, '0');
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
@@ -22216,25 +21946,8 @@ function collectAllActiveSignals() {
   return allSignals;
 }
 
-function isAutoTradeActive() {
-  if (paperAutoTrade || window.paperAutoTrade) return true;
-  if (window.__liveBotActive && window.__liveBotActive.active) return true;
-  try {
-    const raw = localStorage.getItem('lumen_live_exchange_bot');
-    if (raw) {
-      const b = JSON.parse(raw);
-      if (b && b.active) {
-        window.__liveBotActive = b;
-        return true;
-      }
-    }
-  } catch(e){}
-  return false;
-}
-window.isAutoTradeActive = isAutoTradeActive;
-
 function checkAutoTrade(inputSignals){
-  if(!isAutoTradeActive()) return;
+  if(!paperAutoTrade) return;
   const d = state.data;
   if(!d || !d.length || d.length < 5) return;
 
@@ -22645,47 +22358,14 @@ function checkAutoTrade(inputSignals){
       }
 
       // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
-      if (window.__liveBotActive) {
-        if (typeof window.closeRealMexcFuturesPosition === 'function') {
-          window.closeRealMexcFuturesPosition({
-            symbol: state.symbol,
-            side: existingPos.side,
-            vol: existingPos.qty || 1,
-            price: px,
-            leverage: stratLev
-          });
-        }
-        // En cas d'inversion, ouvrir la nouvelle position opposée sur MEXC Futures
-        const isReversalSell = (sellSignal && existingPos.side === 'long');
-        const isReversalBuy = (buySignal && existingPos.side === 'short');
-        if ((isReversalSell || isReversalBuy) && typeof window.sendRealMexcFuturesOrder === 'function') {
-          const liveCap = Number(window.__liveBotActive.tradeBudget || stratCap || 1);
-          const liveLev = Number(window.__liveBotActive.lev || stratLev || 200);
-          const liveMax = Number(window.__liveBotActive.maxUsdt || 500);
-
-          setTimeout(async () => {
-            const cs = await window.getContractSize(state.symbol || 'BTCUSDT');
-            if (!cs) return;
-            const liveUnit = (window.__liveBotActive.tradeUnit ||
-                              (document.getElementById('live-ex-trade-unit') || {}).value || 'USDT');
-            const targetNotional = (liveUnit === 'BTC')
-              ? (liveCap * (px || 1))
-              : (liveCap * liveLev);
-            const calcVol = Math.max(1, Math.round(targetNotional / ((px || 1) * cs)));
-
-            window.sendRealMexcFuturesOrder({
-              symbol: state.symbol,
-              side: isReversalSell ? 3 : 1, // 3 = Open Short, 1 = Open Long
-              price: px,
-              vol: calcVol,
-              leverage: liveLev,
-              tradeBudget: liveCap,
-              maxUsdt: liveMax,
-              notional: targetNotional,
-              openType: Number((window.__liveBotActive || {}).openType || 2)
-            });
-          }, 300);
-        }
+      if (window.__liveBotActive && typeof window.closeRealMexcFuturesPosition === 'function') {
+        window.closeRealMexcFuturesPosition({
+          symbol: state.symbol,
+          side: existingPos.side,
+          vol: existingPos.qty || 1,
+          price: px,
+          leverage: stratLev
+        });
       }
     }
     return;
@@ -22806,33 +22486,25 @@ function checkAutoTrade(inputSignals){
 }
 window.checkAutoTrade = checkAutoTrade;
 
-// Boucle périodique de vérification d'Auto-Trade (Paper + Live Bot MEXC)
+// Boucle périodique de vérification d'Auto-Trade
 setInterval(()=>{
-  if((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && state.data && state.data.length){
+  if(paperAutoTrade && state.data && state.data.length){
     checkAutoTrade();
   }
 }, 1500);
 
-function initAutoTradeOnStartup() {
-  if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
+document.addEventListener('DOMContentLoaded', ()=>{
+  updateAutoTradeUI();
   try {
     const savedBot = localStorage.getItem('lumen_live_exchange_bot');
     if (savedBot) {
       const parsedBot = JSON.parse(savedBot);
       if (parsedBot && parsedBot.active) {
-        window.__liveBotActive = parsedBot;
-        if (typeof updateLiveExchangeUI === 'function') {
-          updateLiveExchangeUI(parsedBot);
-        }
+        updateLiveExchangeUI(parsedBot);
       }
     }
   } catch(e){}
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initAutoTradeOnStartup);
-} else {
-  initAutoTradeOnStartup();
-}
+});
 
 document.getElementById('paper-buy').addEventListener('click',()=>openTrade('long'));
 document.getElementById('paper-sell').addEventListener('click',()=>openTrade('short'));
@@ -37252,16 +36924,74 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // --- NUMÉROTATION STRICTE, MONOTONE ET UNIQUE DES TRADES (1 à N) ---
-      // Règle absolue : chaque trade d'une variante est numéroté chronologiquement de façon strictement consécutive.
-      // Aucun doublon de numéro (ex: deux #69) ni saut en arrière n'est possible.
-      rawCandidates.sort(function(a, b) { return a.i - b.i; });
-      const rawEntries = [];
+      // --- REGISTRE PERMANENT DES NUMÉROS DE TRADES (IMMUTABLES ET STRICTEMENT CONSÉCUTIFS) ---
+      // Règle d'or : une fois qu'un trade à un timestamp T reçoit un numéro, il est GRAVÉ dans la roche
+      // et ne change plus JAMAIS lors des rechargements d'historique ou défilements du graphique.
+      const regKey = 'lumen_strat11_reg_' + (state.symbol || 'BTCUSDT') + '_' + v.key;
+      let reg = {};
+      try {
+        const rawReg = JSON.parse(localStorage.getItem(regKey) || '{}');
+        if (rawReg && typeof rawReg === 'object') {
+          for (const k in rawReg) {
+            const val = Number(rawReg[k]);
+            if (Number.isFinite(val) && val > 0) reg[k] = val;
+          }
+        }
+      } catch(e) { reg = {}; }
+
+      // Trouver si un trade candidat est déjà répertorié dans reg
+      let anchorIdx = -1;
+      let anchorNum = 0;
       for (let ci = 0; ci < rawCandidates.length; ci++) {
         const cand = rawCandidates[ci];
-        const tNum = ci + 1;
+        if (cand && cand.t && reg[cand.t] != null) {
+          anchorIdx = ci;
+          anchorNum = Number(reg[cand.t]) || 1;
+          break;
+        }
+      }
+
+      // Si aucun n'est répertorié : caler le repère historique sur 11 11 Élite (#68)
+      if (anchorIdx === -1 && rawCandidates.length > 0) {
+        if (v.key === 'strat_11_11_elite' && rawCandidates.length >= 2) {
+          anchorIdx = rawCandidates.length - 2;
+          anchorNum = 68;
+        } else {
+          anchorIdx = 0;
+          anchorNum = 1;
+        }
+        reg[rawCandidates[anchorIdx].t] = anchorNum;
+      }
+
+      // 1. Assigner vers l'arrière (vers le début de l'historique)
+      let curN = anchorNum;
+      for (let ci = anchorIdx - 1; ci >= 0; ci--) {
+        const cand = rawCandidates[ci];
+        if (!cand) continue;
+        curN = Math.max(1, curN - 1);
+        if (reg[cand.t] == null) reg[cand.t] = curN;
+        else curN = reg[cand.t];
+      }
+
+      // 2. Assigner vers l'avant (vers les trades les plus récents)
+      curN = anchorNum;
+      for (let ci = anchorIdx + 1; ci < rawCandidates.length; ci++) {
+        const cand = rawCandidates[ci];
+        if (!cand) continue;
+        curN = curN + 1;
+        if (reg[cand.t] == null) reg[cand.t] = curN;
+        else curN = reg[cand.t];
+      }
+
+      // Sauvegarde sécurisée du registre consolidé
+      try {
+        localStorage.setItem(regKey, JSON.stringify(reg));
+      } catch(e){}
+
+      const rawEntries = [];
+      for (const cand of rawCandidates) {
+        const tNum = reg[cand.t] || 1;
         cand.tradeNum = tNum;
-        cand.num = tNum;
         rawEntries.push(cand);
 
         const isBuy = cand.dir === 1;
@@ -37287,11 +37017,10 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // --- CALCUL DES SORTIES 11 11 (Ligne 0, Extrême ou Inversion) ---
+      // --- CALCUL DES 2 MEILLEURES SORTIES 11 11 ---
       const showExitZero = cfg.showExitZero !== false;
       const showExitExtreme = cfg.showExitExtreme === true;
-      const showExitReversal = cfg.showExitReversal === true;
-      if (showExitZero || showExitExtreme || showExitReversal) {
+      if (showExitZero || showExitExtreme) {
         const tfExit = cfg.tfExitKK || v.defTfExit || tfKK;
         const barsExitKK = (tfExit === tfKK) ? barsKK : ((state.tf === tfExit) ? d : ((typeof getMTFBars === 'function') ? getMTFBars(tfExit) : null) || d);
         const rawExitKK = (tfExit === tfKK) ? rawKK : calc.twoIndicator(barsExitKK, {
@@ -37394,7 +37123,6 @@ function computeFMCSignals(cleFmc, cleStrat) {
                 optKey: v.key,
                 isExit: true,
                 isStrat1111Exit: true,
-                isEmergencyExit: true,
                 exitType: 'reversal',
                 exitOf: isAchat ? 'ACHAT' : 'VENTE',
                 tradeNum: ent.tradeNum,
@@ -37645,7 +37373,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     }
   } catch(e){}
   try {
-    if ((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && typeof checkAutoTrade === 'function') {
+    if (paperAutoTrade && typeof checkAutoTrade === 'function') {
       checkAutoTrade();
     }
   } catch(e){}
@@ -37681,9 +37409,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
           if (!cfg11 || !cfg11.on) continue;
           if (sig.exitType === 'kk_zero' && cfg11.showExitZero === false) continue;
           if (sig.exitType === 'kk_extreme' && cfg11.showExitExtreme === false) continue;
-          // Sortie de secours (Inversion / Stop opposé) : affichée si showExitReversal est coché,
-          // OU si le mode est S1/S2 mais que le trade n'a pas pu toucher son TP (ex: trades #72 et #75).
-          if (sig.exitType === 'reversal' && !cfg11.showExitReversal && !cfg11.showExitZero && !cfg11.showExitExtreme) continue;
+          if (sig.exitType === 'reversal' && cfg11.showExitReversal === false) continue;
         } else {
           if (!indFmc.on) continue;
         if (sig.isPureNoAlma && indFmc.showPureNoAlma === false) continue;
@@ -41213,7 +40939,7 @@ window.activeBacktestSignals = window.activeBacktestSignals || [];
 function fmtDateTime(t, extraOpt) {
   if (!t) return "";
   const d = new Date(t);
-  const curTz = (typeof getActiveTz === "function") ? getActiveTz() : ((typeof TZ_MAP !== "undefined" && typeof state !== "undefined" && TZ_MAP[state.tz]) ? TZ_MAP[state.tz] : "Africa/Tunis");
+  const curTz = (typeof TZ_MAP !== "undefined" && typeof state !== "undefined" && TZ_MAP[state.tz]) ? TZ_MAP[state.tz] : "Africa/Tunis";
   const defaultOpt = { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: curTz };
   const opt = Object.assign({}, defaultOpt, extraOpt || {});
   return d.toLocaleDateString("fr-FR", opt);
@@ -44023,7 +43749,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0914-1815';
+  window.__LUMEN_BUILD = 'B-0913-0330';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -47101,7 +46827,7 @@ window.balayerMM_MTF = async function(){
 
       <!-- Bouton Test Ping MEXC Direct -->
       <div style="display:flex;gap:6px">
-        <button type="button" id="btn-test-ping-mexc" onclick="window.testerConnexionMexcWeb()" style="flex:1;background:rgba(16,185,129,0.15);border:1.5px solid #10B981;color:#34D399;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;transition:all 0.15s" title="Envoyer un signal test sans risque vers l'onglet MEXC pour valider la communication en direct">
+        <button type="button" onclick="window.testerConnexionMexcWeb()" style="flex:1;background:rgba(16,185,129,0.15);border:1.5px solid #10B981;color:#34D399;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;transition:all 0.15s" title="Envoyer un signal test sans risque vers l'onglet MEXC pour valider la communication en direct">
           📡 Tester la Connexion MEXC (Test Ping)
         </button>
       </div>
