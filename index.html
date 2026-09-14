@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-0255</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1535</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6664,27 +6664,31 @@ function startWatchdog(g){
   stopWatchdog();
   watchdog=setInterval(()=>{
     if(g!==gen)return;
-    if(lastTick&&Date.now()-lastTick>15000){   // flux figé : on relance
-      lastTick=Date.now();
+    const now=Date.now();
+    if(lastTick && (now - lastTick > 10000)){ // Flux figé plus de 10s : auto-guérison immédiate
+      lastTick=now;
       try{if(ws)ws.close();}catch(e){}
-      ws=null; startStream(g);
+      ws=null; wsRetry=0;
+      startStream(g);
+      resync(g, 50);
     }
-  },3000);
+  },2500);
 }
-async function resync(g){
+async function resync(g, limitCount){
+  const lim = limitCount || 50;
   try{
-    const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=3`);
+    const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${lim}`);
     if(g!==gen||!Array.isArray(rows))return;
     for(let i=0; i<rows.length; i++){
       const k=rows[i];
-      // Ne déclencher les alertes que pour la toute dernière bougie du resync
-      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, false);
+      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, i === rows.length - 1);
     }
     lastTick=Date.now();
   }catch(e){}
 }
 function startStream(g){
   if(g!==gen)return;
+  startWatchdog(g); // Watchdog permanent actif en continu
   try{
     const sym = state.symbol.toLowerCase();
     const tf = TF_MAP[state.tf];
@@ -6692,14 +6696,20 @@ function startStream(g){
     ws=new WebSocket(streamUrl);
     let opened=false;
     const guard=setTimeout(()=>{
-      if(!opened&&g===gen){try{ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}
+      if(!opened&&g===gen){
+        try{ws.close()}catch(e){}
+        ws=null;
+        setStatus('poll');
+        startPolling(g);
+        setTimeout(()=>{ if(g===gen && !ws) startStream(g); }, 2500);
+      }
     },4000);
     ws.onopen=()=>{
-      opened=true;wsRetry=0;clearTimeout(guard);
+      opened=true; wsRetry=0; clearTimeout(guard);
       if(g!==gen)return;
       setStatus('live'); lastTick=Date.now();
       if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
-      startWatchdog(g); resync(g);
+      resync(g, 50);
     };
     ws.onmessage=ev=>{
       if(g!==gen)return;
@@ -6720,23 +6730,37 @@ function startStream(g){
       ws=null; wsRetry++;
       setStatus('poll');
       if(!pollTimer)startPolling(g);
-      if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
+      // RECONNEXION INFINIE ET CONTINUE : ne jamais s'arrêter après 6 retries !
+      const delay = Math.min(1000 + wsRetry * 500, 4000);
+      setTimeout(()=>{ if(g===gen && !ws) startStream(g); }, delay);
     };
     ws.onerror=()=>{
       clearTimeout(guard);
       try{ if(ws) ws.close(); }catch(e){}
     };
-  }catch(e){setStatus('poll');startPolling(g);}
+  }catch(e){
+    setStatus('poll');
+    startPolling(g);
+    setTimeout(()=>{ if(g===gen && !ws) startStream(g); }, 3000);
+  }
 }
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState!=='visible')return;
-  const g=gen; resync(g);
-  if(!ws || (Date.now() - lastTick > 15000)){
+
+// Auto-Heal immédiat sur réveil iPad / déverrouillage / retour onglet
+function autoHealConnection(){
+  if(document.visibilityState === 'hidden') return;
+  const g = gen;
+  const now = Date.now();
+  if(!ws || (now - lastTick > 8000)){
     if(ws){ try{ws.close();}catch(e){} ws=null; }
-    wsRetry=0;
+    wsRetry = 0;
     startStream(g);
+    resync(g, 50);
   }
   if(window._wlActive && typeof requestWakeLock === 'function') requestWakeLock();
+}
+
+['visibilitychange', 'focus', 'pageshow', 'online'].forEach(evt => {
+  window.addEventListener(evt, autoHealConnection, { passive: true });
 });
 
 let wakeLock = null;
@@ -43790,7 +43814,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0914-0255';
+  window.__LUMEN_BUILD = 'B-0914-1535';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
