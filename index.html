@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0913-0330</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1830</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -18508,10 +18508,25 @@ window.renderStrat11TradesJournal = function() {
   if (entrySigs.length > 0) {
     for (let ei = 0; ei < entrySigs.length; ei++) {
       const ent = entrySigs[ei];
-      // Trouver la sortie correspondante sur le graphique
-      const ex = exitSigs.find(function(s) {
+      // Trouver la sortie correspondante sur le graphique (impérativement postérieure à l'entrée et fidèle au mode sélectionné)
+      const candExits = exitSigs.filter(function(s) {
+        const isTimeValid = (s.t != null && ent.t != null) ? (s.t >= ent.t) : (s.i != null && ent.i != null ? s.i > ent.i : true);
+        if (!isTimeValid) return false;
         return (s.entryI != null && s.entryI === ent.i) || (s.tradeNum != null && s.tradeNum === ent.tradeNum);
       });
+
+      let ex = null;
+      if (candExits.length > 0) {
+        if (exitKey === 's2') {
+          ex = candExits.find(s => s.exitType === 'kk_extreme') || candExits.find(s => s.exitType !== 'kk_zero') || candExits[0];
+        } else if (exitKey === 's1') {
+          ex = candExits.find(s => s.exitType === 'kk_zero') || candExits[0];
+        } else if (exitKey === 's3') {
+          ex = candExits.find(s => s.exitType === 'reversal') || candExits[0];
+        } else {
+          ex = candExits[0];
+        }
+      }
       if (!ex) {
         // C'est le trade en cours (non encore fermé) :
         // Le user demande explicitement d'inclure le trade en cours dans le tableau !
@@ -18590,8 +18605,34 @@ window.renderStrat11TradesJournal = function() {
     });
     if (eMatch) {
       t.entryPastilleNum = eMatch.tradeNum;
-      const xMatch = exitSigs.find(function(s) { return (s.entryI != null && s.entryI === eMatch.i) || (s.tradeNum != null && s.tradeNum === eMatch.tradeNum); });
-      t.exitPastilleNum = xMatch ? xMatch.tradeNum : eMatch.tradeNum;
+      t.entryPx = eMatch.price;
+      t.entryT = eMatch.t;
+      t.dir = eMatch.dir;
+      t.type = eMatch.dir === 1 ? 'ACHAT' : 'VENTE';
+
+      const candX = exitSigs.filter(function(s) {
+        const isTimeValid = (s.t != null && eMatch.t != null) ? (s.t >= eMatch.t) : (s.i != null && eMatch.i != null ? s.i > eMatch.i : true);
+        if (!isTimeValid) return false;
+        return (s.entryI != null && s.entryI === eMatch.i) || (s.tradeNum != null && s.tradeNum === eMatch.tradeNum);
+      });
+      let xMatch = null;
+      if (candX.length > 0) {
+        if (exitKey === 's2') xMatch = candX.find(s => s.exitType === 'kk_extreme') || candX.find(s => s.exitType !== 'kk_zero') || candX[0];
+        else if (exitKey === 's1') xMatch = candX.find(s => s.exitType === 'kk_zero') || candX[0];
+        else if (exitKey === 's3') xMatch = candX.find(s => s.exitType === 'reversal') || candX[0];
+        else xMatch = candX[0];
+      }
+      if (xMatch) {
+        t.exitPastilleNum = xMatch.tradeNum || eMatch.tradeNum;
+        t.exitPx = xMatch.price;
+        t.exitT = xMatch.t;
+        const isBuy = t.dir === 1;
+        const pnlVal = (xMatch.pnl != null) ? xMatch.pnl : (isBuy ? (xMatch.price - t.entryPx) : (t.entryPx - xMatch.price));
+        t.pnl = Math.round(pnlVal * 10) / 10;
+        t.exitReason = xMatch.badge ? xMatch.badge.replace(/^.*?SORTIE\s*/, '') : (xMatch.exitType === 'kk_zero' ? 'Ligne 0' : (xMatch.exitType === 'kk_extreme' ? 'Extrême' : 'Inversion'));
+      } else {
+        t.exitPastilleNum = eMatch.tradeNum;
+      }
       t.num = eMatch.tradeNum;
     } else {
       t.entryPastilleNum = t.num;
@@ -43749,7 +43790,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0913-0330';
+  window.__LUMEN_BUILD = 'B-0914-1830';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
