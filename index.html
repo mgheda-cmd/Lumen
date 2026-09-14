@@ -481,8 +481,61 @@ footer{
 }
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
+<script>
+window.addEventListener('error', function(e) {
+  console.error('[Lumen Global Error]', e);
+  const b = document.getElementById('lumen-global-error-banner');
+  if (b) {
+    b.style.display = 'block';
+    b.textContent = '⚠️ Erreur JS: ' + (e.message || e) + (e.lineno ? (' (ligne ' + e.lineno + ')') : '');
+  }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('[Lumen Unhandled Rejection]', e);
+  const b = document.getElementById('lumen-global-error-banner');
+  if (b) {
+    b.style.display = 'block';
+    b.textContent = '⚠️ Promesse Rejetée: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+  }
+});
+window.lumenRechargerMaj = function(e){
+  if(e && e.stopPropagation) e.stopPropagation();
+  const mb = document.getElementById('maj-btn');
+  if(mb){ mb.textContent = '⏳ MAJ…'; mb.disabled = true; }
+  try{
+    if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
+  }catch(err){}
+  const base = window.location.href.split('?')[0].split('#')[0];
+  const u = new URL(base);
+  u.searchParams.set('maj', Date.now());
+  window.location.replace(u.toString());
+};
+window.lumenPurgerEtForcer = async function(e){
+  if(e && e.stopPropagation) e.stopPropagation();
+  const fb = document.getElementById('force-btn');
+  if(fb){ fb.textContent = '⏳ Purge…'; fb.disabled = true; }
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){ await reg.unregister(); }
+    }
+  }catch(err){}
+  try{
+    if(window.caches && caches.keys){
+      const ks = await caches.keys();
+      for(const k of ks){ await caches.delete(k); }
+    }
+  }catch(err){}
+  try{ sessionStorage.clear(); }catch(err){}
+  const base = window.location.href.split('?')[0].split('#')[0];
+  const u = new URL(base);
+  u.searchParams.set('force', Date.now());
+  window.location.replace(u.toString());
+};
+</script>
 </head>
 <body>
+<div id="lumen-global-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999999;background:#FF0055;color:#FFFFFF;padding:8px 12px;font-family:monospace;font-size:12px;font-weight:bold;box-shadow:0 4px 15px rgba(0,0,0,0.8);word-break:break-all"></div>
 
 <header>
   <div class="ind-wrap">
@@ -529,7 +582,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1735</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1750</span>
   <button id="maj-btn" class="btn" onclick="window.lumenRechargerMaj(event)" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" onclick="window.lumenPurgerEtForcer(event)" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -545,7 +598,7 @@ footer{
   <button class="btn" id="collapse-panes-btn" title="Masquer / Déplier tous les indicateurs du bas d'un seul coup (style TradingView)" style="font-size:12.5px;padding:4px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px">
     <span style="font-size:14px">👁️</span> <span class="btn-full-txt">Volets du bas</span>
   </button>
-  <button class="btn" id="btn-elite-journal" onclick="window.openStrat11TradesJournal ? window.openStrat11TradesJournal('strat_11_11_elite', 's2') : toggleEliteJournalPanel()" title="Ouvrir le Journal des Trades & Coach Objectif Capital (78$ -> 200$ -> 100$/j)" style="font-size:12px;padding:3px 8px;font-weight:800;display:inline-flex;align-items:center;gap:4px;color:#00E5FF;border-color:#00E5FF;background:rgba(0,229,255,.14)">
+  <button class="btn" id="btn-elite-journal" onclick="window.toggleStrat11TradesJournal ? window.toggleStrat11TradesJournal('strat_11_11_elite', 's2') : (window.openStrat11TradesJournal ? window.openStrat11TradesJournal('strat_11_11_elite', 's2') : toggleEliteJournalPanel())" title="Ouvrir le Journal des Trades & Coach Objectif Capital (78$ -> 200$ -> 100$/j)" style="font-size:12px;padding:3px 8px;font-weight:800;display:inline-flex;align-items:center;gap:4px;color:#00E5FF;border-color:#00E5FF;background:rgba(0,229,255,.14)">
     <span style="font-size:13px">🎯</span> <span class="btn-full-txt">Coach & Trades</span>
     <span id="badge-elite-count" class="mono" style="font-size:9.5px;background:#00E5FF;color:#0F172A;padding:1px 5px;border-radius:4px;font-weight:900;margin-left:2px">ÉLITE</span>
   </button>
@@ -6546,10 +6599,11 @@ try{document.getElementById('status').addEventListener('click',reconnectNow);}ca
 function setStatus(mode){
   const map={loading:['CHARGEMENT…','#7E8CA8'],live:['EN DIRECT','#25D0A4'],
     poll:['EN DIRECT (REST)','#25D0A4'],demo:['DÉMO — réseau indisponible','#F2C14E']};
+  const m = map[mode] || map.loading;
   const el=document.getElementById('status');
-  el.textContent=map[mode][0]; el.style.color=map[mode][1];
+  if(el){ el.textContent=m[0]; el.style.color=m[1]; }
   const p=document.querySelector('.pulse');
-  p.style.background=map[mode][1]; p.style.boxShadow='0 0 12px '+map[mode][1];
+  if(p){ p.style.background=m[1]; p.style.boxShadow='0 0 12px '+m[1]; }
 }
 function stopFeeds(){
   if(ws){try{ws.close()}catch(e){} ws=null;}
@@ -6605,7 +6659,7 @@ function applyTickPrice(px){
       }
       updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
-      if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+      if((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
       if(typeof checkAllAlerts === 'function') checkAllAlerts();
       if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
     }
@@ -6623,7 +6677,7 @@ function applyKline(k, isLive=false){
   }
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
-  if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+  if((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
   if(isLive && typeof checkAllAlerts === 'function') checkAllAlerts();
   if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   scheduleRender();
@@ -6962,7 +7016,7 @@ async function loadData(){
     updateHeader(); render();
     startStream(g);
     ensureSR();
-    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+    if((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
     if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   }catch(e){
     if(g!==gen)return;
@@ -6997,11 +7051,24 @@ async function loadData(){
     state.view={start:N_BARS-150,count:150};
     setStatus('demo');
     updateHeader(); render();
+    if(demoTimer) clearInterval(demoTimer);
+    let demoAttempts = 0;
     demoTimer=setInterval(()=>{
-      const d=state.data,last=d[d.length-1];
-      last.c*=1+(Math.random()-0.5)*0.001;
-      last.h=Math.max(last.h,last.c);last.l=Math.min(last.l,last.c);
-      state.cache={};updateHeader();render();
+      demoAttempts++;
+      // Auto-reconnexion toutes les 6 secondes vers le flux réel
+      if(demoAttempts % 4 === 0){
+        if(typeof loadData === 'function'){
+          loadData();
+          return;
+        }
+      }
+      const d=state.data;
+      if(d && d.length){
+        const last=d[d.length-1];
+        last.c*=1+(Math.random()-0.5)*0.001;
+        last.h=Math.max(last.h,last.c);last.l=Math.min(last.l,last.c);
+        state.cache={};updateHeader();render();
+      }
     },1500);
   }
 }
@@ -18501,6 +18568,15 @@ window.closeStrat11TradesJournal = function() {
   if (panel) panel.style.display = 'none';
 };
 
+window.toggleStrat11TradesJournal = function(varKey, exitKey) {
+  const panel = document.getElementById('strat11-trades-panel');
+  if (panel && panel.style.display !== 'none' && panel.style.display !== '') {
+    window.closeStrat11TradesJournal();
+  } else {
+    window.openStrat11TradesJournal(varKey, exitKey);
+  }
+};
+
 window.toggleStrat11PanelWidth = function() {
   const panel = document.getElementById('strat11-trades-panel');
   const btn = document.getElementById('btn-st-panel-resize');
@@ -19306,17 +19382,17 @@ function resetDefaultPastilles() {
   }
 }
 
-let _lastTogglePastillesMenuTime = 0;
 window.togglePastillesMenu = function(e) {
-  const now = Date.now();
-  if (now - _lastTogglePastillesMenuTime < 250) return;
-  _lastTogglePastillesMenuTime = now;
   if (e && e.stopPropagation) e.stopPropagation();
   const btn = document.getElementById('btn-pastilles-menu');
   const box = document.getElementById('pastilles-menu');
   if (!box) return;
-  const open = box.classList.toggle('open');
+  const isCurrentlyOpen = box.classList.contains('open') && box.style.display !== 'none';
+  const open = !isCurrentlyOpen;
   if (open) {
+    box.classList.add('open');
+    box.style.display = 'flex';
+    box.style.zIndex = '999999';
     // Si pas encore chargé en mémoire, charger le classement sauvegardé pour réactivité instantanée
     if (!window.__strat11Ranking && typeof loadSavedStrat11Ranking === 'function') {
       loadSavedStrat11Ranking();
@@ -19371,6 +19447,9 @@ window.togglePastillesMenu = function(e) {
     const nm = document.getElementById('notif-menu'); if (nm) nm.classList.remove('open');
     const tm = document.getElementById('tools-menu'); if (tm) tm.classList.remove('open');
     const ap = document.getElementById('alerts-panel'); if (ap) ap.style.display = 'none';
+  } else {
+    box.classList.remove('open');
+    box.style.display = 'none';
   }
   if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 };
@@ -22113,8 +22192,25 @@ function collectAllActiveSignals() {
   return allSignals;
 }
 
+function isAutoTradeActive() {
+  if (paperAutoTrade || window.paperAutoTrade) return true;
+  if (window.__liveBotActive && window.__liveBotActive.active) return true;
+  try {
+    const raw = localStorage.getItem('lumen_live_exchange_bot');
+    if (raw) {
+      const b = JSON.parse(raw);
+      if (b && b.active) {
+        window.__liveBotActive = b;
+        return true;
+      }
+    }
+  } catch(e){}
+  return false;
+}
+window.isAutoTradeActive = isAutoTradeActive;
+
 function checkAutoTrade(inputSignals){
-  if(!paperAutoTrade) return;
+  if(!isAutoTradeActive()) return;
   const d = state.data;
   if(!d || !d.length || d.length < 5) return;
 
@@ -22686,25 +22782,33 @@ function checkAutoTrade(inputSignals){
 }
 window.checkAutoTrade = checkAutoTrade;
 
-// Boucle périodique de vérification d'Auto-Trade
+// Boucle périodique de vérification d'Auto-Trade (Paper + Live Bot MEXC)
 setInterval(()=>{
-  if(paperAutoTrade && state.data && state.data.length){
+  if((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && state.data && state.data.length){
     checkAutoTrade();
   }
 }, 1500);
 
-document.addEventListener('DOMContentLoaded', ()=>{
-  updateAutoTradeUI();
+function initAutoTradeOnStartup() {
+  if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
   try {
     const savedBot = localStorage.getItem('lumen_live_exchange_bot');
     if (savedBot) {
       const parsedBot = JSON.parse(savedBot);
       if (parsedBot && parsedBot.active) {
-        updateLiveExchangeUI(parsedBot);
+        window.__liveBotActive = parsedBot;
+        if (typeof updateLiveExchangeUI === 'function') {
+          updateLiveExchangeUI(parsedBot);
+        }
       }
     }
   } catch(e){}
-});
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAutoTradeOnStartup);
+} else {
+  initAutoTradeOnStartup();
+}
 
 document.getElementById('paper-buy').addEventListener('click',()=>openTrade('long'));
 document.getElementById('paper-sell').addEventListener('click',()=>openTrade('short'));
@@ -37575,7 +37679,7 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     }
   } catch(e){}
   try {
-    if (paperAutoTrade && typeof checkAutoTrade === 'function') {
+    if ((typeof isAutoTradeActive === 'function' ? isAutoTradeActive() : paperAutoTrade) && typeof checkAutoTrade === 'function') {
       checkAutoTrade();
     }
   } catch(e){}
@@ -43953,7 +44057,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0914-1735';
+  window.__LUMEN_BUILD = 'B-0914-1750';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
