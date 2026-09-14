@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-2200</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-2215</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -8482,7 +8482,7 @@ try{
   applyCollapsed();
 }catch(e){}
 state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{}; state.subLock=state.subLock||{};
-state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'local';
+state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'tunis';
 function applyTzButtons(){
   for(const id of ['tz-local','tz-tunis','tz-paris','tz-london','tz-ny','tz-utc']){
     const b=document.getElementById(id); if(!b)continue;
@@ -14222,12 +14222,19 @@ function drawTimeAxis(s,e){
   const every = Math.max(1, Math.round(state.view.count / ((W - AXIS_W) / px)));
   const d = state.data;
   let lastDay = null;
+  let lastLabelX = -999;
+  const tz = (state.tz && TZ_MAP[state.tz]) ? TZ_MAP[state.tz] : DEVICE_TZ;
 
   for(let i=s; i<e; i++){
     const b = d[i];
     if(!b || !b.t) continue;
     const curDate = new Date(b.t);
-    const dayKey = curDate.getDate();
+    let dayKey;
+    try {
+      dayKey = curDate.toLocaleDateString('en-CA', { timeZone: tz });
+    } catch(err) {
+      dayKey = curDate.getDate();
+    }
     const isNewDay = (lastDay !== null && dayKey !== lastDay);
     lastDay = dayKey;
 
@@ -14243,15 +14250,22 @@ function drawTimeAxis(s,e){
       ctx.stroke();
 
       if(isNewDay){
-        const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
-        const dayStr = `${curDate.getDate()} ${months[curDate.getMonth()]}`;
+        let dayStr;
+        try {
+          dayStr = curDate.toLocaleDateString('fr-FR', { timeZone: tz, day: 'numeric', month: 'short' });
+        } catch(e) {
+          const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+          dayStr = `${curDate.getDate()} ${months[curDate.getMonth()]}`;
+        }
         ctx.fillStyle = css('--text') || '#E7EDF8';
         ctx.font = 'bold 10.5px "IBM Plex Mono", sans-serif';
         ctx.fillText(dayStr, x, H - 7);
         ctx.font = '10.5px "IBM Plex Mono", sans-serif';
         ctx.fillStyle = css('--muted') || '#787B86';
-      } else {
+        lastLabelX = x;
+      } else if(x - lastLabelX >= 42) {
         ctx.fillText(fmtTime(b.t), x, H - 7);
+        lastLabelX = x;
       }
     }
   }
@@ -20480,8 +20494,13 @@ function fmtTimeFr(ts) {
   if (!ts) return '—';
   const d = new Date(ts);
   if (isNaN(d.getTime())) return '—';
-  const pad = n => String(n).padStart(2, '0');
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const tz = (typeof state !== 'undefined' && state.tz && typeof TZ_MAP !== 'undefined' && TZ_MAP[state.tz]) ? TZ_MAP[state.tz] : (typeof DEVICE_TZ !== 'undefined' ? DEVICE_TZ : 'Africa/Tunis');
+  try {
+    return d.toLocaleTimeString('fr-FR', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch(e) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
 }
 
 function fmtDurFr(t0, t1) {
