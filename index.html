@@ -165,7 +165,7 @@ header{
   background:var(--panel); flex-wrap:nowrap;
   overflow-x:auto; scrollbar-width:none;
   position:sticky; top:0; left:0; right:0;
-  z-index:1000; flex:none;
+  z-index:100000; flex:none;
   padding-top:max(4px, env(safe-area-inset-top));
 }
 header::-webkit-scrollbar{ display:none; }
@@ -529,9 +529,9 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1700</span>
-  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
-  <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1735</span>
+  <button id="maj-btn" class="btn" onclick="window.lumenRechargerMaj(event)" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
+  <button id="force-btn" class="btn" onclick="window.lumenPurgerEtForcer(event)" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
   <div class="ind-wrap" id="alerts-wrap" style="position:relative">
     <button class="btn" id="btn-alerts-panel" onclick="toggleAlertsPanel()" title="Gestionnaire d'Alertes" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;color:var(--text)">
@@ -6445,16 +6445,21 @@ function loadViaWS(){
 /* Recharge la page avec un paramètre horodaté unique : le navigateur ne
    peut pas servir sa copie en cache, puisque l'adresse n'a jamais été
    visitée. C'est l'équivalent d'un rechargement forcé, en un appui. */
+window.lumenRechargerMaj = function(e){
+  if(e && e.stopPropagation) e.stopPropagation();
+  const mb = document.getElementById('maj-btn');
+  if(mb){ mb.textContent = '⏳ MAJ…'; mb.disabled = true; }
+  try{
+    if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
+  }catch(err){}
+  const base = window.location.href.split('?')[0].split('#')[0];
+  const u = new URL(base);
+  u.searchParams.set('maj', Date.now());
+  window.location.replace(u.toString());
+};
 try{
   const mb = document.getElementById('maj-btn');
-  if(mb) mb.addEventListener('click', function(){
-    try{
-      if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
-    }catch(e){}
-    const u = new URL(window.location.href);
-    u.searchParams.set('maj', Date.now());
-    window.location.replace(u.toString());
-  });
+  if(mb) mb.addEventListener('click', window.lumenRechargerMaj);
 }catch(e){}
 
 /* ============================================================
@@ -6492,73 +6497,48 @@ try{
 }catch(e){}
 
 /* ============================================================
-   BOUTON ⇩ FORCER — purge totale puis rechargement
-   Étapes : interroger le serveur pour connaître la date de la
-   version publiée, la comparer à celle chargée, puis vider tout
-   ce qui peut retenir une ancienne copie (service workers,
-   Cache API, sessionStorage) avant de recharger sans cache.
+   BOUTON ⇩ FORCER — purge totale puis rechargement immédiat
+   Vider tout ce qui peut retenir une ancienne copie (service
+   workers, Cache API, sessionStorage) puis forcer le reload.
    ============================================================ */
+window.lumenPurgerEtForcer = async function(e){
+  if(e && e.stopPropagation) e.stopPropagation();
+  const fb = document.getElementById('force-btn');
+  if(fb){ fb.textContent = '⏳ Purge…'; fb.disabled = true; }
+
+  const base = window.location.href.split('?')[0].split('#')[0];
+
+  // 1. Désinscrire les service workers (ils peuvent servir une copie hors ligne)
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){ await reg.unregister(); }
+    }
+  }catch(err){}
+
+  // 2. Vider la Cache API
+  try{
+    if(window.caches && caches.keys){
+      const ks = await caches.keys();
+      for(const k of ks){ await caches.delete(k); }
+    }
+  }catch(err){}
+
+  // 3. Vider le sessionStorage — le localStorage est PRÉSERVÉ
+  try{ sessionStorage.clear(); }catch(err){}
+
+  if(typeof toast === 'function') toast('🔄 Purge terminée · Rechargement immédiat...', '#00E5FF');
+
+  setTimeout(() => {
+    const u = new URL(base);
+    u.searchParams.set('force', Date.now());
+    window.location.replace(u.toString());
+  }, 100);
+};
+
 try{
   const fb = document.getElementById('force-btn');
-  if(fb) fb.addEventListener('click', async function(){
-    const btn = this;
-    const original = btn.textContent;
-    btn.textContent = '⏳ Vérification…';
-    btn.disabled = true;
-
-    const base = window.location.href.split('?')[0].split('#')[0];
-    let serverDate = null;
-    try{
-      // cache:'no-store' force une requête vers l'origine, sans intermédiaire.
-      const r = await fetch(base + '?probe=' + Date.now(), { method:'HEAD', cache:'no-store' });
-      const lm = r.headers.get('last-modified');
-      if(lm){ const d = new Date(lm); if(!isNaN(d.getTime())) serverDate = d; }
-    }catch(e){}
-
-    const localDate = lumenBuildDate();
-    let verdict;
-    if(serverDate && localDate){
-      const diffMin = Math.round((serverDate.getTime() - localDate.getTime()) / 60000);
-      verdict = diffMin > 1
-        ? 'Une version plus récente est disponible sur le serveur (' + lumenFormatLocal(serverDate) + ' contre ' + lumenFormatLocal(localDate) + ' ici).\n\nElle va être chargée.'
-        : 'Vous avez déjà la dernière version publiée (' + lumenFormatLocal(localDate) + ').\n\nLa page va tout de même être rechargée proprement.';
-    } else {
-      verdict = 'Le serveur ne communique pas de date de publication.\n\nPurge complète puis rechargement.';
-    }
-
-    btn.textContent = '⏳ Purge…';
-
-    // 1. Désinscrire les service workers (ils peuvent servir une copie hors ligne)
-    try{
-      if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
-        const regs = await navigator.serviceWorker.getRegistrations();
-        for(const reg of regs){ await reg.unregister(); }
-      }
-    }catch(e){}
-
-    // 2. Vider la Cache API
-    try{
-      if(window.caches && caches.keys){
-        const ks = await caches.keys();
-        for(const k of ks){ await caches.delete(k); }
-      }
-    }catch(e){}
-
-    // 3. Vider le sessionStorage — le localStorage est PRÉSERVÉ
-    //    (il contient la configuration de l'exchange et du bot).
-    try{ sessionStorage.clear(); }catch(e){}
-
-    // 4. Redemander le fichier à l'origine pour invalider le cache HTTP
-    try{ await fetch(base + '?bust=' + Date.now(), { cache:'reload' }); }catch(e){}
-
-    if(typeof toast === 'function') toast('🔄 Purge terminée · Rechargement immédiat...', '#00E5FF');
-
-    setTimeout(() => {
-      const u = new URL(base);
-      u.searchParams.set('force', Date.now());
-      window.location.replace(u.toString());
-    }, 300);
-  });
+  if(fb) fb.addEventListener('click', window.lumenPurgerEtForcer);
 }catch(e){}
 
 function reconnectNow(){ if(typeof loadData==='function')loadData(); }
@@ -17555,16 +17535,19 @@ async function runStrat11Backtest(isManualAction) {
       return;
     }
 
-    const results = STRAT11_VARIANTS_DEF.map(function(vDef) {
+    const results = [];
+    for (let vi = 0; vi < STRAT11_VARIANTS_DEF.length; vi++) {
+      const vDef = STRAT11_VARIANTS_DEF[vi];
       const stats = _backtestVariantSerious(bars8000, vDef);
-      return Object.assign({
+      results.push(Object.assign({
         key: vDef.key,
         name: vDef.name,
         catIdx: vDef.catIdx,
         tfFMC: vDef.tfFMC,
         tfKK: vDef.tfKK
-      }, stats);
-    });
+      }, stats));
+      await new Promise(r => setTimeout(r, 20));
+    }
 
     const prevRanking = window.__strat11Ranking;
     const curP = window.__strat11Period || 'all';
@@ -18489,23 +18472,28 @@ window.initStrat11PanelDraggableAndResizable = function() {
 };
 
 window.openStrat11TradesJournal = function(varKey, exitKey) {
-  if (varKey) window.__stJournalVarKey = varKey;
-  if (exitKey) window.__stJournalExitMode = exitKey;
-  else if (window.__strat11ExitMode) window.__stJournalExitMode = window.__strat11ExitMode;
+  try {
+    if (varKey) window.__stJournalVarKey = varKey;
+    if (exitKey) window.__stJournalExitMode = exitKey;
+    else if (window.__strat11ExitMode) window.__stJournalExitMode = window.__strat11ExitMode;
 
-  const panel = document.getElementById('strat11-trades-panel');
-  if (!panel) return;
-  panel.style.display = 'flex';
+    const panel = document.getElementById('strat11-trades-panel');
+    if (!panel) return;
+    panel.style.display = 'flex';
+    panel.style.zIndex = '9999999';
 
-  if (typeof window.initStrat11PanelDraggableAndResizable === 'function') {
-    window.initStrat11PanelDraggableAndResizable();
+    if (typeof window.initStrat11PanelDraggableAndResizable === 'function') {
+      try { window.initStrat11PanelDraggableAndResizable(); } catch(e){}
+    }
+    const savedDock = localStorage.getItem('strat11_panel_dock') || 'right';
+    try { window.applyStrat11Dock(savedDock, false); } catch(e){}
+
+    try { window.setStrat11JournalPeriod(window.__stJournalPeriod || '3d', false); } catch(e){}
+    try { window.setStrat11JournalExit(window.__stJournalExitMode || 's2', false); } catch(e){}
+    try { window.renderStrat11TradesJournal(); } catch(e){}
+  } catch(err) {
+    console.error('Erreur openStrat11TradesJournal:', err);
   }
-  const savedDock = localStorage.getItem('strat11_panel_dock') || 'right';
-  window.applyStrat11Dock(savedDock, false);
-
-  window.setStrat11JournalPeriod(window.__stJournalPeriod || '3d', false);
-  window.setStrat11JournalExit(window.__stJournalExitMode || 's1', false);
-  window.renderStrat11TradesJournal();
 };
 
 window.closeStrat11TradesJournal = function() {
@@ -18574,6 +18562,7 @@ window.setStrat11JournalExit = function(exitKey, doRender) {
   if (state.indicators && state.indicators[varKey]) {
     state.indicators[varKey].showExitZero = (exitKey === 's1');
     state.indicators[varKey].showExitExtreme = (exitKey === 's2');
+    state.indicators[varKey].showExitReversal = (exitKey === 's3');
   }
   [
     { id: 's1', col: '#38BDF8', bg: 'rgba(56,189,248,0.18)' },
@@ -18644,9 +18633,9 @@ window.renderStrat11TradesJournal = function() {
       let ex = null;
       if (candExits.length > 0) {
         if (exitKey === 's2') {
-          ex = candExits.find(s => s.exitType === 'kk_extreme') || candExits.find(s => s.exitType !== 'kk_zero') || candExits[0];
+          ex = candExits.find(s => s.exitType === 'kk_extreme') || candExits.find(s => s.exitType === 'reversal') || candExits.find(s => s.exitType !== 'kk_zero') || candExits[0];
         } else if (exitKey === 's1') {
-          ex = candExits.find(s => s.exitType === 'kk_zero') || candExits[0];
+          ex = candExits.find(s => s.exitType === 'kk_zero') || candExits.find(s => s.exitType === 'reversal') || candExits[0];
         } else if (exitKey === 's3') {
           ex = candExits.find(s => s.exitType === 'reversal') || candExits[0];
         } else {
@@ -18743,8 +18732,8 @@ window.renderStrat11TradesJournal = function() {
       });
       let xMatch = null;
       if (candX.length > 0) {
-        if (exitKey === 's2') xMatch = candX.find(s => s.exitType === 'kk_extreme') || candX.find(s => s.exitType !== 'kk_zero') || candX[0];
-        else if (exitKey === 's1') xMatch = candX.find(s => s.exitType === 'kk_zero') || candX[0];
+        if (exitKey === 's2') xMatch = candX.find(s => s.exitType === 'kk_extreme') || candX.find(s => s.exitType === 'reversal') || candX.find(s => s.exitType !== 'kk_zero') || candX[0];
+        else if (exitKey === 's1') xMatch = candX.find(s => s.exitType === 'kk_zero') || candX.find(s => s.exitType === 'reversal') || candX[0];
         else if (exitKey === 's3') xMatch = candX.find(s => s.exitType === 'reversal') || candX[0];
         else xMatch = candX[0];
       }
@@ -18787,6 +18776,7 @@ window.renderStrat11TradesJournal = function() {
   // Mettre à jour les statistiques de synthèse
   let totalPnl = 0, wins = 0, gW = 0, gL = 0;
   filteredTrades.forEach(function(t) {
+    if (typeof t.pnl !== 'number' || isNaN(t.pnl)) t.pnl = 0;
     totalPnl += t.pnl;
     if (t.pnl >= 0) { wins++; gW += t.pnl; }
     else { gL += Math.abs(t.pnl); }
@@ -19316,20 +19306,20 @@ function resetDefaultPastilles() {
   }
 }
 
+let _lastTogglePastillesMenuTime = 0;
 window.togglePastillesMenu = function(e) {
+  const now = Date.now();
+  if (now - _lastTogglePastillesMenuTime < 250) return;
+  _lastTogglePastillesMenuTime = now;
   if (e && e.stopPropagation) e.stopPropagation();
   const btn = document.getElementById('btn-pastilles-menu');
   const box = document.getElementById('pastilles-menu');
   if (!box) return;
   const open = box.classList.toggle('open');
   if (open) {
-    // Règle stricte : test 8000 bougies à la 1ère ouverture du jour OU si pas encore calculé
-    const todayDateStr = new Date().toISOString().slice(0, 10);
-    const lastRunDate = localStorage.getItem('strat11_last_test_date');
-    const hasSaved = typeof loadSavedStrat11Ranking === 'function' ? loadSavedStrat11Ranking() : false;
-    if (!hasSaved || !window.__strat11Ranking || lastRunDate !== todayDateStr) {
-      localStorage.setItem('strat11_last_test_date', todayDateStr);
-      setTimeout(function() { if (typeof runStrat11Backtest === 'function') runStrat11Backtest(false); }, 100);
+    // Si pas encore chargé en mémoire, charger le classement sauvegardé pour réactivité instantanée
+    if (!window.__strat11Ranking && typeof loadSavedStrat11Ranking === 'function') {
+      loadSavedStrat11Ranking();
     }
 
     // Synchroniser le style du sélecteur de période
@@ -19385,10 +19375,7 @@ window.togglePastillesMenu = function(e) {
   if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 };
 
-if (btnPastillesMenu && pastillesMenuEl) {
-  btnPastillesMenu.addEventListener('click', (e) => {
-    window.togglePastillesMenu(e);
-  });
+if (pastillesMenuEl) {
 
   const btnClosePast = document.getElementById('btn-close-pastilles');
   if (btnClosePast) {
@@ -22538,14 +22525,47 @@ function checkAutoTrade(inputSignals){
       }
 
       // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
-      if (window.__liveBotActive && typeof window.closeRealMexcFuturesPosition === 'function') {
-        window.closeRealMexcFuturesPosition({
-          symbol: state.symbol,
-          side: existingPos.side,
-          vol: existingPos.qty || 1,
-          price: px,
-          leverage: stratLev
-        });
+      if (window.__liveBotActive) {
+        if (typeof window.closeRealMexcFuturesPosition === 'function') {
+          window.closeRealMexcFuturesPosition({
+            symbol: state.symbol,
+            side: existingPos.side,
+            vol: existingPos.qty || 1,
+            price: px,
+            leverage: stratLev
+          });
+        }
+        // En cas d'inversion, ouvrir la nouvelle position opposée sur MEXC Futures
+        const isReversalSell = (sellSignal && existingPos.side === 'long');
+        const isReversalBuy = (buySignal && existingPos.side === 'short');
+        if ((isReversalSell || isReversalBuy) && typeof window.sendRealMexcFuturesOrder === 'function') {
+          const liveCap = Number(window.__liveBotActive.tradeBudget || stratCap || 1);
+          const liveLev = Number(window.__liveBotActive.lev || stratLev || 200);
+          const liveMax = Number(window.__liveBotActive.maxUsdt || 500);
+
+          setTimeout(async () => {
+            const cs = await window.getContractSize(state.symbol || 'BTCUSDT');
+            if (!cs) return;
+            const liveUnit = (window.__liveBotActive.tradeUnit ||
+                              (document.getElementById('live-ex-trade-unit') || {}).value || 'USDT');
+            const targetNotional = (liveUnit === 'BTC')
+              ? (liveCap * (px || 1))
+              : (liveCap * liveLev);
+            const calcVol = Math.max(1, Math.round(targetNotional / ((px || 1) * cs)));
+
+            window.sendRealMexcFuturesOrder({
+              symbol: state.symbol,
+              side: isReversalSell ? 3 : 1, // 3 = Open Short, 1 = Open Long
+              price: px,
+              vol: calcVol,
+              leverage: liveLev,
+              tradeBudget: liveCap,
+              maxUsdt: liveMax,
+              notional: targetNotional,
+              openType: Number((window.__liveBotActive || {}).openType || 2)
+            });
+          }, 300);
+        }
       }
     }
     return;
@@ -37197,10 +37217,11 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // --- CALCUL DES 2 MEILLEURES SORTIES 11 11 ---
+      // --- CALCUL DES SORTIES 11 11 (Ligne 0, Extrême ou Inversion) ---
       const showExitZero = cfg.showExitZero !== false;
       const showExitExtreme = cfg.showExitExtreme === true;
-      if (showExitZero || showExitExtreme) {
+      const showExitReversal = cfg.showExitReversal === true;
+      if (showExitZero || showExitExtreme || showExitReversal) {
         const tfExit = cfg.tfExitKK || v.defTfExit || tfKK;
         const barsExitKK = (tfExit === tfKK) ? barsKK : ((state.tf === tfExit) ? d : ((typeof getMTFBars === 'function') ? getMTFBars(tfExit) : null) || d);
         const rawExitKK = (tfExit === tfKK) ? rawKK : calc.twoIndicator(barsExitKK, {
@@ -37303,6 +37324,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
                 optKey: v.key,
                 isExit: true,
                 isStrat1111Exit: true,
+                isEmergencyExit: true,
                 exitType: 'reversal',
                 exitOf: isAchat ? 'ACHAT' : 'VENTE',
                 tradeNum: ent.tradeNum,
@@ -37589,7 +37611,9 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
           if (!cfg11 || !cfg11.on) continue;
           if (sig.exitType === 'kk_zero' && cfg11.showExitZero === false) continue;
           if (sig.exitType === 'kk_extreme' && cfg11.showExitExtreme === false) continue;
-          if (sig.exitType === 'reversal' && cfg11.showExitReversal === false) continue;
+          // Sortie de secours (Inversion / Stop opposé) : affichée si showExitReversal est coché,
+          // OU si le mode est S1/S2 mais que le trade n'a pas pu toucher son TP (ex: trades #72 et #75).
+          if (sig.exitType === 'reversal' && !cfg11.showExitReversal && !cfg11.showExitZero && !cfg11.showExitExtreme) continue;
         } else {
           if (!indFmc.on) continue;
         if (sig.isPureNoAlma && indFmc.showPureNoAlma === false) continue;
@@ -43929,7 +43953,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0914-1700';
+  window.__LUMEN_BUILD = 'B-0914-1735';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
