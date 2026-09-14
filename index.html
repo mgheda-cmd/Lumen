@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-2030</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-2200</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -7221,33 +7221,32 @@ function aggregateData(data, targetTfMin, baseTfMin){
   return agg;
 }
 
+const _aggMemo = {};
 function getMTFBars(tf){
   tf = +tf;
   if(isNaN(tf) || tf <= 0) return state.data;
   if(tf === state.tf) return state.data;
-  ensureMTF(tf);
-  const mtfBars = mtfStore.data[tf];
 
-  /* Le magasin multi-TF ne garde qu'un nombre limité de bougies. Dès qu'on
-     recule au-delà de sa première bougie, mapHTF ne trouve plus rien et
-     laisse des trous : l'indicateur s'arrêtait net au milieu du graphique.
-     Quand l'unité de base est plus fine, on peut toujours reconstruire les
-     bougies manquantes par agrégation. On préfère donc la source qui couvre
-     réellement tout l'historique affiché. */
-  if(state.tf < tf){
-    const agg = aggregateData(state.data, tf);
-    if(!mtfBars || !mtfBars.length) return agg;
-    if(agg && agg.length && state.data.length){
-      const baseT = state.data[0].t;
-      // le magasin ne remonte pas assez loin : on complète par l'agrégation
-      if(mtfBars[0].t > baseT + tf * 60000){
-        const older = agg.filter(function(b){ return b.t < mtfBars[0].t; });
-        return older.length ? older.concat(mtfBars) : mtfBars;
-      }
+  /* Quand l'unité de base est plus fine (ex. 1m sur le graphique, et 5m, 10m ou 3m pour les indicateurs MTF),
+     on calcule TOUJOURS les bougies d'unité supérieure directement par agrégation en mémoire vive de state.data.
+     Cela garantit que chaque nouveau tick / nouvelle bougie reçue en temps réel par le WebSocket
+     met à jour instantanément les bougies MTF sans aucun délai, sans dépendance réseau et sans risque
+     d'instantané figé dans le passé. */
+  if(state.tf < tf && state.data && state.data.length){
+    const lastBar = state.data[state.data.length - 1];
+    const memoKey = tf + '_' + state.data.length + '_' + (lastBar ? (lastBar.t + '_' + lastBar.c) : '');
+    if(_aggMemo[memoKey]) return _aggMemo[memoKey];
+    const agg = (typeof aggregateData === 'function') ? aggregateData(state.data, tf) : null;
+    if(agg && agg.length){
+      const keys = Object.keys(_aggMemo);
+      if(keys.length > 20) delete _aggMemo[keys[0]];
+      _aggMemo[memoKey] = agg;
+      return agg;
     }
-    return rafraichirMTF(tf, mtfBars);
   }
 
+  ensureMTF(tf);
+  const mtfBars = mtfStore.data[tf];
   if(mtfBars && mtfBars.length) return rafraichirMTF(tf, mtfBars);
   return state.data;
 }
