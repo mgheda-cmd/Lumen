@@ -529,7 +529,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1535</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-1640</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -1554,6 +1554,9 @@ footer{
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
         <div style="display:flex;gap:3px;flex-wrap:wrap">
+          <button class="btn tzb" id="tz-auto" data-tz="auto" title="Heure locale automatique de votre appareil (iPad / iPhone / PC)" style="font-size:10.5px;padding:4px 7px;font-weight:800;border:1.5px solid #00E5FF">📱 AUTO</button>
+          <button class="btn tzb" id="tz-dubai" data-tz="dubai" title="Heure de Dubaï / Golfe (UTC+4)" style="font-size:10.5px;padding:4px 6px">🇦🇪 DUBAÏ</button>
+          <button class="btn tzb" id="tz-riyadh" data-tz="riyadh" title="Heure de Riyad / Istanbul / Arabie (UTC+3)" style="font-size:10.5px;padding:4px 6px">🇸🇦 RIYAD</button>
           <button class="btn tzb" id="tz-tunis" data-tz="tunis" title="Heure de Tunis (Tunisie · UTC+1)" style="font-size:10.5px;padding:4px 7px;font-weight:800">🇹🇳 TUNIS</button>
           <button class="btn tzb" id="tz-paris" data-tz="paris" title="Heure de Paris (France / Europe)" style="font-size:10.5px;padding:4px 6px">PARIS</button>
           <button class="btn tzb" id="tz-london" data-tz="london" title="Heure de Londres" style="font-size:10.5px;padding:4px 6px">LDN</button>
@@ -6071,7 +6074,7 @@ function mergeConfig(c){
   if(c.subLock&&typeof c.subLock==='object')state.subLock=c.subLock;
   if(c.subScale&&typeof c.subScale==='object')state.subScale=c.subScale;
   if(Array.isArray(c.zones))state.zones=c.zones.filter(z=>z&&typeof z.t0==='number');
-  if(c.tz&&['ny','london','tunis'].includes(c.tz))state.tz=c.tz;
+  if(c.tz && (['auto','dubai','riyadh','tunis','paris','london','ny','utc'].includes(c.tz) || c.tz.includes('/'))) state.tz = c.tz;
   if(Array.isArray(c.sessZones))state.sessZones=c.sessZones.filter(z=>z&&typeof z.t0==='number');
   if(c.subSameScale&&typeof c.subSameScale==='object')state.subSameScale=c.subSameScale;
   if(c.paneH&&typeof c.paneH==='object'){
@@ -8280,17 +8283,61 @@ function fmtCompact(v){
   if(v>=1e3)return (v/1e3).toFixed(1)+' k';
   return v.toFixed(0);
 }
-const TZ_MAP={tunis:'Africa/Tunis',paris:'Europe/Paris',london:'Europe/London',ny:'America/New_York',utc:'UTC'};
+const TZ_MAP={
+  auto: 'AUTO',
+  tunis: 'Africa/Tunis',
+  paris: 'Europe/Paris',
+  dubai: 'Asia/Dubai',
+  riyadh: 'Asia/Riyadh',
+  london: 'Europe/London',
+  ny: 'America/New_York',
+  utc: 'UTC'
+};
+
+function getActiveTz(){
+  if(!state.tz || state.tz === 'auto'){
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Tunis';
+    } catch(e) {
+      return 'Africa/Tunis';
+    }
+  }
+  return TZ_MAP[state.tz] || (state.tz.includes('/') ? state.tz : 'Africa/Tunis');
+}
+
+function getTzLabel(){
+  if(!state.tz || state.tz === 'auto'){
+    try {
+      const offsetMin = -new Date().getTimezoneOffset();
+      const sign = offsetMin >= 0 ? '+' : '-';
+      const hours = Math.floor(Math.abs(offsetMin) / 60);
+      const mins = Math.abs(offsetMin) % 60;
+      const offsetStr = `UTC${sign}${hours}${mins ? ':' + String(mins).padStart(2, '0') : ''}`;
+      return `📱 AUTO (${offsetStr})`;
+    } catch(e) {
+      return '📱 AUTO';
+    }
+  }
+  if(state.tz === 'tunis') return '🇹🇳 UTC+1';
+  if(state.tz === 'dubai') return '🇦🇪 UTC+4';
+  if(state.tz === 'riyadh') return '🇸🇦 UTC+3';
+  if(state.tz === 'paris') return '🇫🇷 PARIS';
+  if(state.tz === 'london') return '🇬🇧 LONDRES';
+  if(state.tz === 'ny') return '🇺🇸 NY';
+  if(state.tz === 'utc') return '🌐 UTC';
+  return (state.tz || '').toUpperCase();
+}
+
 function fmtTime(t){
   const d=new Date(t);
-  const tz=TZ_MAP[state.tz] || 'Africa/Tunis'; const opt=tz?{timeZone:tz}:{};
+  const tz=getActiveTz(); const opt=tz?{timeZone:tz}:{};
   if(state.tf>=1440)return d.toLocaleDateString('fr-FR',Object.assign({day:'2-digit',month:'short'},opt));
   return d.toLocaleTimeString('fr-FR',Object.assign({hour:'2-digit',minute:'2-digit'},opt));
 }
 function fmtOBDate(t){
   if(!t) return '';
   const d=new Date(t);
-  const tz=TZ_MAP[state.tz]; const opt=tz?{timeZone:tz}:{};
+  const tz=getActiveTz(); const opt=tz?{timeZone:tz}:{};
   const dateStr=d.toLocaleDateString('fr-FR',Object.assign({day:'2-digit',month:'2-digit',year:'2-digit'},opt));
   const timeStr=d.toLocaleTimeString('fr-FR',Object.assign({hour:'2-digit',minute:'2-digit'},opt));
   if(state.tf>=1440) return dateStr;
@@ -8435,22 +8482,41 @@ try{
   applyCollapsed();
 }catch(e){}
 state.xhairMode=false; state.subSameScale=state.subSameScale||{}; state.subFront=state.subFront||{}; state.subLock=state.subLock||{};
-state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'tunis';
+state.zones=state.zones||[]; state.zoneMode=false; state.sessZones=state.sessZones||[]; state.tz=state.tz||'auto';
+const TZ_BUTTON_IDS = ['tz-auto','tz-dubai','tz-riyadh','tz-tunis','tz-paris','tz-london','tz-ny','tz-utc'];
 function applyTzButtons(){
-  for(const id of ['tz-tunis','tz-paris','tz-london','tz-ny','tz-utc']){
+  const activeTzKey = state.tz || 'auto';
+  for(const id of TZ_BUTTON_IDS){
     const b=document.getElementById(id); if(!b)continue;
-    const on=b.dataset.tz===state.tz;
-    b.style.background=on?'var(--accent)':''; b.style.color=on?'#0A111F':'';
+    const on = b.dataset.tz === activeTzKey;
+    b.style.background=on?'var(--accent)':'';
+    b.style.color=on?'#0A111F':'';
     b.style.fontWeight=on?'800':'';
   }
 }
+function cycleTimezone(){
+  const tzs = ['auto', 'dubai', 'riyadh', 'tunis', 'paris', 'utc'];
+  const curTz = state.tz || 'auto';
+  let curIdx = tzs.indexOf(curTz);
+  if(curIdx === -1) curIdx = 0;
+  const nextIdx = (curIdx + 1) % tzs.length;
+  state.tz = tzs[nextIdx];
+  applyTzButtons();
+  saveConfig();
+  render();
+  if(typeof toast === 'function'){
+    toast('Fuseau horaire : ' + getTzLabel());
+  }
+}
+window.cycleTimezone = cycleTimezone;
 try{
-  ['tz-tunis','tz-paris','tz-london','tz-ny','tz-utc'].forEach(id=>{
+  TZ_BUTTON_IDS.forEach(id=>{
     const el = document.getElementById(id);
     if(el) {
       el.addEventListener('click',()=>{
         state.tz=el.dataset.tz;
         applyTzButtons(); saveConfig(); render();
+        if(typeof toast === 'function') toast('Fuseau horaire : ' + getTzLabel());
       });
     }
   });
@@ -14209,12 +14275,12 @@ function drawTimeAxis(s,e){
     }
   }
 
-  // Fuseau horaire discret TradingView en bas à droite
-  const tzLabel = state.tz === 'tunis' ? '🇹🇳 UTC+1' : (state.tz ? state.tz.toUpperCase() : 'UTC+1');
+  // Fuseau horaire interactif TradingView en bas à droite
+  const tzLabel = (typeof getTzLabel === 'function') ? getTzLabel() : 'UTC';
   ctx.textAlign = 'right';
   ctx.font = '9.5px "IBM Plex Mono", monospace';
-  ctx.fillStyle = 'rgba(120, 123, 134, 0.75)';
-  ctx.fillText(tzLabel, W - AXIS_W - 8, H - 7);
+  ctx.fillStyle = '#00E5FF';
+  ctx.fillText(tzLabel + ' ⇄', W - AXIS_W - 8, H - 7);
   ctx.textAlign = 'left';
 }
 
@@ -14580,6 +14646,12 @@ function paneHeightOf(key){
 canvas.addEventListener('mousedown',e=>{
   const x=e.offsetX,y=e.offsetY;
 
+  // Clic sur le fuseau horaire en bas à droite (TradingView style)
+  if(y >= H - AXIS_H && x >= W - AXIS_W - 120 && x <= W - AXIS_W){
+    if(typeof cycleTimezone === 'function') cycleTimezone();
+    e.preventDefault(); return;
+  }
+
   // Clic sur les boutons AUTO & LOG en bas de l'axe des prix
   const pricePane = (state.lastPanes||[]).find(q=>q.key==='price');
   if(pricePane && x >= W - AXIS_W){
@@ -14769,6 +14841,21 @@ canvas.addEventListener('touchend',e=>{
       // Tap bref et précis (< 10px et < 350ms) : ouverture intentionnelle des réglages
       if(dist < 10 && elapsed < 350){
         openCfg(_touchCandidateLh.key);
+        _touchCandidateLh = null;
+        _touchStartPt = null;
+        return;
+      }
+    }
+  }
+  if(_touchStartPt){
+    const t = (e.changedTouches && e.changedTouches[0]);
+    if(t){
+      const r = canvas.getBoundingClientRect();
+      const endX = t.clientX - r.left, endY = t.clientY - r.top;
+      const dist = Math.hypot(endX - _touchStartPt.x, endY - _touchStartPt.y);
+      if(dist < 15 && endY >= H - AXIS_H && endX >= W - AXIS_W - 120 && endX <= W - AXIS_W){
+        if(e.cancelable) e.preventDefault();
+        if(typeof cycleTimezone === 'function') cycleTimezone();
         _touchCandidateLh = null;
         _touchStartPt = null;
         return;
@@ -20408,6 +20495,12 @@ function fmtTimeFr(ts) {
   if (!ts) return '—';
   const d = new Date(ts);
   if (isNaN(d.getTime())) return '—';
+  const tz = (typeof getActiveTz === 'function') ? getActiveTz() : undefined;
+  if (tz) {
+    try {
+      return d.toLocaleTimeString('fr-FR', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch(e){}
+  }
   const pad = n => String(n).padStart(2, '0');
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
@@ -41004,7 +41097,7 @@ window.activeBacktestSignals = window.activeBacktestSignals || [];
 function fmtDateTime(t, extraOpt) {
   if (!t) return "";
   const d = new Date(t);
-  const curTz = (typeof TZ_MAP !== "undefined" && typeof state !== "undefined" && TZ_MAP[state.tz]) ? TZ_MAP[state.tz] : "Africa/Tunis";
+  const curTz = (typeof getActiveTz === "function") ? getActiveTz() : ((typeof TZ_MAP !== "undefined" && typeof state !== "undefined" && TZ_MAP[state.tz]) ? TZ_MAP[state.tz] : "Africa/Tunis");
   const defaultOpt = { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: curTz };
   const opt = Object.assign({}, defaultOpt, extraOpt || {});
   return d.toLocaleDateString("fr-FR", opt);
@@ -43814,7 +43907,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0914-1535';
+  window.__LUMEN_BUILD = 'B-0914-1640';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
