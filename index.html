@@ -521,19 +521,19 @@ footer{
     </button>
   </div>
 
-  <button class="btn" id="btn-header-mexc-direct" onclick="openLiveExchangeModal()" title="Compte MEXC Direct, Solde réel & Trading" style="font-weight:900;display:inline-flex;align-items:center;gap:6px;border:1.5px solid #00E5FF;color:#00E5FF;background:rgba(0,229,255,0.12);box-shadow:0 0 10px rgba(0,229,255,0.25);cursor:pointer">
+  <button class="btn" id="btn-header-mexc-direct" onclick="openLiveExchangeModal()" title="Compte MEXC Direct, Solde réel & Trading" style="display:none !important">
     <span>🟢</span> <span>MEXC Direct</span>
   </button>
 
-  <button class="btn" id="btn-header-web-at" onclick="toggleWebAutoTrader()" title="Actionner ou désactiver le Web Auto-Trader MEXC (Frais 0.02%)" style="font-weight:900;display:inline-flex;align-items:center;gap:5px;border:1.5px solid #64748B;color:#94A3B8;background:rgba(15,23,42,0.85);cursor:pointer;padding:4px 9px;border-radius:6px;white-space:nowrap;transition:all 0.2s">
-    <span id="web-at-header-dot">⚪</span> <span id="web-at-header-txt">Auto-Trader</span>
+  <button class="btn" id="btn-header-web-at" onclick="toggleWebAutoTrader()" title="Actionner ou désactiver le Web Auto-Trader MEXC (Frais 0.00% Maker via Userscript)" style="font-weight:900;display:inline-flex;align-items:center;gap:5px;border:1.5px solid #64748B;color:#94A3B8;background:rgba(15,23,42,0.85);cursor:pointer;padding:4px 9px;border-radius:6px;white-space:nowrap;transition:all 0.2s">
+    <span id="web-at-header-dot">⚪</span> <span id="web-at-header-txt">Auto-Trader (Script)</span>
   </button>
 
   <button class="btn" id="btn-header-all-strats" onclick="window.openAllStrategiesModal()" title="Comparatif & Audit de TOUTES les stratégies développées sur 8000 bougies" style="font-weight:900;display:inline-flex;align-items:center;gap:6px;border:1.5px solid #FFD700;color:#FFD700;background:rgba(255,215,0,0.14);box-shadow:0 0 10px rgba(255,215,0,0.25);cursor:pointer">
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0915-1555</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0915-1615</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -22256,23 +22256,28 @@ function checkAutoTrade(inputSignals){
           return true;
         });
 
-        if (matchedExits.length > 0) {
-          const lastEx = matchedExits[matchedExits.length - 1];
+        // Clôture uniquement sur pastille de sortie confirmée (bougie clôturée : exIdx < lastIdx)
+        const confirmedExits = matchedExits.filter(function(s) {
+          const sIdx = (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i;
+          return sIdx != null && sIdx < lastIdx;
+        });
+
+        if (confirmedExits.length > 0) {
+          const lastEx = confirmedExits[confirmedExits.length - 1];
           const exIdx = (lastEx.t != null && typeof idxOfTime === 'function' ? idxOfTime(lastEx.t) : null) ?? lastEx.i;
           if (exIdx != null && exIdx >= lastIdx - 2) {
             exitTriggered = true;
             exitReason = lastEx.badge ? lastEx.badge.replace(/^.*?SORTIE\s*/, '') : (exitKey === 's1' ? 'Pastille Sortie Ligne 0' : (exitKey === 's2' ? 'Pastille Sortie Extrême' : 'Pastille Sortie Inversion'));
             sigT = lastEx.t;
           } else if (exIdx != null && exIdx < lastIdx - 2 && !existingPos.isRealMexc) {
-            // Sortie déjà survenue dans le passé pendant que le graphique était en veille :
-            // Libérer immédiatement la position interne pour ne pas bloquer les futurs signaux
             closePos(0, 'Sortie passée (' + (lastEx.badge ? lastEx.badge.replace(/^.*?SORTIE\s*/, '') : exitKey) + ')');
           }
         }
 
-        // Sortie et retournement impératif si signal opposé (Inversion)
+        // Sortie et retournement impératif si signal opposé confirmé (Inversion sur bougie clôturée)
         const oppEntries = candidateSignals.filter(function(s) {
-          return s.t > posEntryTime && ((existingPos.side === 'long' && s.dir === -1) || (existingPos.side === 'short' && s.dir === 1));
+          const sIdx = (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i;
+          return sIdx != null && sIdx < lastIdx && s.t > posEntryTime && ((existingPos.side === 'long' && s.dir === -1) || (existingPos.side === 'short' && s.dir === 1));
         });
         if (oppEntries.length > 0) {
           const lastOpp = oppEntries[oppEntries.length - 1];
@@ -22284,22 +22289,27 @@ function checkAutoTrade(inputSignals){
             if (lastOpp.dir === 1) buySignal = true;
             else if (lastOpp.dir === -1) sellSignal = true;
           } else if (oppIdx != null && oppIdx < lastIdx - 2 && !existingPos.isRealMexc) {
-            // L'inversion a eu lieu plus tôt pendant que le graphique était en veille ou en arrière-plan :
-            // Libérer impérativement la position pour ne pas bloquer les futurs signaux !
             closePos(0, 'Inversion passée (' + (lastOpp.dir === -1 ? 'Vente' : 'Achat') + ')');
           }
         }
       }
 
-      // 2. Si aucune position n'est ouverte : chercher la dernière pastille d'entrée récente
+      // 2. Si aucune position n'est ouverte : chercher la dernière pastille d'entrée confirmée (bougie clôturée)
       if (!existingPos && candidateSignals.length > 0) {
-        const lastSig = candidateSignals[candidateSignals.length - 1];
-        const sigIdx = (lastSig.t != null && typeof idxOfTime === 'function' ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
-        if (sigIdx != null && sigIdx >= lastIdx - 2) {
-          sigT = lastSig.t;
-          if (lastSig.dir === 1) buySignal = true;
-          else if (lastSig.dir === -1) sellSignal = true;
-          sigTriggerName = lastSig.badge || (lastSig.dir === 1 ? 'Pastille Achat 11 11' : 'Pastille Vente 11 11');
+        // Exécution UNIQUEMENT sur bougie clôturée (sigIdx < lastIdx) afin de ne JAMAIS trader sur une pastille temporaire
+        const confirmedEntries = candidateSignals.filter(function(s) {
+          const sIdx = (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i;
+          return sIdx != null && sIdx < lastIdx;
+        });
+        if (confirmedEntries.length > 0) {
+          const lastSig = confirmedEntries[confirmedEntries.length - 1];
+          const sigIdx = (lastSig.t != null && typeof idxOfTime === 'function' ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
+          if (sigIdx != null && sigIdx >= lastIdx - 2) {
+            sigT = lastSig.t;
+            if (lastSig.dir === 1) buySignal = true;
+            else if (lastSig.dir === -1) sellSignal = true;
+            sigTriggerName = lastSig.badge || (lastSig.dir === 1 ? 'Pastille Achat 11 11' : 'Pastille Vente 11 11');
+          }
         }
       }
     } else if (stratMode === 'strat_zz' || stratMode === 'strat_zz2') {
@@ -37597,17 +37607,23 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
+        const isTemp = (sig.i >= d.length - 1);
+        if (isTemp) {
+          ctx.setLineDash([3, 2]);
+          ctx.strokeStyle = '#F59E0B';
+        }
         const numStr = (sig.tradeNum != null) ? ('#' + sig.tradeNum + ' ') : '';
         const dirLabel = sig.exitOf || (sig.type.includes('ACHAT') ? 'ACHAT' : 'VENTE');
         const isTradeAchat = dirLabel === 'ACHAT';
 
-        // Ligne 1 : Icône + Numéro commun + SORTIE (ex: ⨂ #1 SORTIE ou Ø #1 SORTIE)
+        // Ligne 1 : Icône + Numéro commun + SORTIE (ex: ⨂ #1 SORTIE ou Ø #1 SORTIE ⏳ TEMPO)
         ctx.font = 'bold ' + Math.round(8.5 * kT) + 'px "IBM Plex Sans", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = sig.color;
+        ctx.fillStyle = isTemp ? '#FBBF24' : sig.color;
         const topIcon = sig.icon || (sig.exitType === 'kk_cross' ? '⨂' : 'Ø');
-        ctx.fillText(topIcon + ' ' + numStr + 'SORTIE', x, by - 15 * kT);
+        const exitTitle = isTemp ? (topIcon + ' ' + numStr + 'SORTIE ⏳ TEMPO') : (topIcon + ' ' + numStr + 'SORTIE');
+        ctx.fillText(exitTitle, x, by - 15 * kT);
 
         // Ligne 2 : Type d'opération (ACHAT en vert émeraude, VENTE en rose bonbon) + Heure
         ctx.font = 'bold ' + Math.round(9.5 * kT) + 'px "IBM Plex Sans", sans-serif';
@@ -37638,8 +37654,9 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       const isRappel = !!sig.isRappel;
       const isExit = !!sig.isExit;
       const isStrat1111 = !!sig.isStrat1111;
-      const bw = Math.round((isExit ? (sig.isEliteExit || isPureNoAlma ? 168 : 160) : (isElite || isPureNoAlma || isStrat1111 ? 172 : (isConf ? 136 : 112))) * kT);
-      const bh = Math.round((isExit ? 30 : 44) * kT);
+      const isTemp = (sig.i >= d.length - 1);
+      const bw = Math.round((isExit ? (sig.isEliteExit || isPureNoAlma ? (isTemp ? 188 : 168) : (isTemp ? 180 : 160)) : (isElite || isPureNoAlma || isStrat1111 ? (isTemp ? 204 : 172) : (isConf ? (isTemp ? 160 : 136) : (isTemp ? 136 : 112)))) * kT);
+      const bh = Math.round((isExit ? (isTemp ? 36 : 30) : (isTemp ? 48 : 44)) * kT);
 
       const color = isRappel ? (indFmc.cRappel || '#94A3B8') : (sig.color || (isLong ? '#00E676' : '#FF0055'));
       const borderCol = isRappel ? (indFmc.cRappelBorder || '#64748B') : (sig.borderCol || color);
@@ -37672,10 +37689,10 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
       ctx.fill();
 
       // Bordure
-      ctx.strokeStyle = borderCol;
+      ctx.strokeStyle = isTemp ? '#F59E0B' : borderCol;
       ctx.lineWidth = (isElite || isPureNoAlma || isStrat1111) ? 2.2 : (isRappel ? 1.3 : (isExit ? 1.4 : (isConf ? 2.0 : 1.5)));
-      if (isRappel) {
-        ctx.setLineDash([3, 2]);
+      if (isRappel || isTemp) {
+        ctx.setLineDash([4, 2]);
       }
       ctx.stroke();
       ctx.setLineDash([]);
@@ -37684,52 +37701,58 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
 
       if (isExit) {
         // Format ultra-compact à 2 lignes :
-        // Ligne 1 : Titre (ex: ⚡ #10 SORTIE KK Extrême ou 🔄 #9 SORTIE Inversion)
         ctx.font = 'bold ' + (8.5 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillStyle = color;
-        const titleTxt = sig.badge || sig.label || sig.type;
+        ctx.fillStyle = isTemp ? '#FBBF24' : color;
+        const titleTxt = (sig.badge || sig.label || sig.type) + (isTemp ? ' ⏳ TEMPO' : '');
         ctx.fillText(titleTxt, bx + bw / 2, by + 10.5 * kT);
 
-        // Ligne 2 : Heure d'apparition + PnL + Prix (ex: ⏰ 14:54 · +53.4 pts · $77 692.0)
+        // Ligne 2 : Heure d'apparition + PnL + Prix
         ctx.font = 'bold ' + (7.5 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
         const pnlPrefix = (sig.pnl != null ? ((sig.pnl >= 0 ? '+' : '') + sig.pnl.toFixed(1) + ' pts · ') : (sig.pnlStr ? (sig.pnlStr + ' · ') : ''));
         const priceSuffix = '$' + fmt(sig.price, 1);
-        ctx.fillStyle = (sig.pnl != null && sig.pnl >= 0) ? '#34D399' : (sig.pnl != null ? '#F87171' : '#E2E8F0');
-        ctx.fillText('⏰ ' + timeStr + ' · ' + pnlPrefix + priceSuffix, bx + bw / 2, by + 21.5 * kT);
+        ctx.fillStyle = isTemp ? '#FBBF24' : ((sig.pnl != null && sig.pnl >= 0) ? '#34D399' : (sig.pnl != null ? '#F87171' : '#E2E8F0'));
+        const tempNotice = isTemp ? ' [⏳ EN COURS]' : '';
+        ctx.fillText('⏰ ' + timeStr + ' · ' + pnlPrefix + priceSuffix + tempNotice, bx + bw / 2, by + 21.5 * kT);
       } else {
         // Ligne 1 : type (ACHAT / VENTE FMC × KK ou RAPPEL ACHAT / RAPPEL VENTE ou ÉLITE ou SANS ALMA)
         ctx.font = 'bold ' + (10 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillStyle = isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#CBD5E1' : color));
+        ctx.fillStyle = isTemp ? '#FBBF24' : (isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#CBD5E1' : color)));
         let titleTxt = '';
         const numStr = (sig.tradeNum != null) ? ('#' + sig.tradeNum + ' ') : '';
+        const tempTag = isTemp ? ' ⏳ TEMPORAIRE' : '';
         if (isStrat1111) {
           const sigBadgeName = sig.label ? sig.label.replace('ACHAT ', '').replace('VENTE ', '') : '11 11';
           const iconP = sigBadgeName.includes('5m') ? '💎 ' : '🎯 ';
-          titleTxt = isLong ? (iconP + numStr + 'ACHAT ' + sigBadgeName) : (iconP + numStr + 'VENTE ' + sigBadgeName);
+          titleTxt = isLong ? (iconP + numStr + 'ACHAT ' + sigBadgeName + tempTag) : (iconP + numStr + 'VENTE ' + sigBadgeName + tempTag);
         } else if (isPureNoAlma) {
-          titleTxt = isLong ? ('⚡ ' + numStr + 'ACHAT SANS ALMA') : ('⚡ ' + numStr + 'VENTE SANS ALMA');
+          titleTxt = isLong ? ('⚡ ' + numStr + 'ACHAT SANS ALMA' + tempTag) : ('⚡ ' + numStr + 'VENTE SANS ALMA' + tempTag);
         } else if (isElite) {
-          titleTxt = isLong ? ('🏆 ' + numStr + 'ACHAT ÉLITE') : ('🏆 ' + numStr + 'VENTE ÉLITE');
+          titleTxt = isLong ? ('🏆 ' + numStr + 'ACHAT ÉLITE' + tempTag) : ('🏆 ' + numStr + 'VENTE ÉLITE' + tempTag);
         } else if (isRappel) {
-          titleTxt = isLong ? '⚡ RAPPEL ACHAT' : '⚡ RAPPEL VENTE';
+          titleTxt = isLong ? ('⚡ RAPPEL ACHAT' + tempTag) : ('⚡ RAPPEL VENTE' + tempTag);
         } else if (isConf) {
-          titleTxt = isLong ? ('⚡ ' + numStr + 'ACHAT ' + nomFmc + ' × KK') : ('⚡ ' + numStr + 'VENTE ' + nomFmc + ' × KK');
+          titleTxt = isLong ? ('⚡ ' + numStr + 'ACHAT ' + nomFmc + ' × KK' + tempTag) : ('⚡ ' + numStr + 'VENTE ' + nomFmc + ' × KK' + tempTag);
         } else {
-          titleTxt = (numStr ? (numStr + ' ') : '') + sig.type + ' ' + nomFmc;
+          titleTxt = (numStr ? (numStr + ' ') : '') + sig.type + ' ' + nomFmc + tempTag;
         }
         ctx.fillText(titleTxt, bx + bw / 2, by + 13 * kT);
 
-        // Ligne 2 : motif / nature
+        // Ligne 2 : motif / nature ou avertissement temporaire
         ctx.font = 'bold ' + (8.5 * kT).toFixed(1) + 'px "IBM Plex Sans", sans-serif';
-        ctx.fillStyle = isPureNoAlma ? '#BAE6FD' : (isElite ? '#E2E8F0' : (isRappel ? '#94A3B8' : (isConf ? '#FCD34D' : '#CBD5E1')));
-        const natureLabel = isStrat1111 ? (sig.sub || (isLong ? 'FMC Vert · KK Vert' : 'FMC Rouge · KK Rouge')) : (isPureNoAlma ? 'KK 10m · FMC 2m (SANS ALMA)' : (isElite ? 'ALMA 2m · KK 10m · FMC 2m' : (isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || ''))));
-        ctx.fillText(natureLabel, bx + bw / 2, by + 25 * kT);
+        if (isTemp) {
+          ctx.fillStyle = '#FBBF24';
+          ctx.fillText('⏳ EN COURS (Validation à la clôture)', bx + bw / 2, by + 25 * kT);
+        } else {
+          ctx.fillStyle = isPureNoAlma ? '#BAE6FD' : (isElite ? '#E2E8F0' : (isRappel ? '#94A3B8' : (isConf ? '#FCD34D' : '#CBD5E1')));
+          const natureLabel = isStrat1111 ? (sig.sub || (isLong ? 'FMC Vert · KK Vert' : 'FMC Rouge · KK Rouge')) : (isPureNoAlma ? 'KK 10m · FMC 2m (SANS ALMA)' : (isElite ? 'ALMA 2m · KK 10m · FMC 2m' : (isRappel ? (isLong ? '▲ Confirmation Achat' : '▼ Confirmation Vente') : (sig.reason || sig.optKey || ''))));
+          ctx.fillText(natureLabel, bx + bw / 2, by + 25 * kT);
+        }
 
         // Ligne 3 : Heure d'apparition + prix
         ctx.font = 'bold ' + (8.5 * kT).toFixed(1) + 'px "IBM Plex Mono", monospace';
-        ctx.fillStyle = isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#64748B' : (isLong ? '#34D399' : '#FB7185')));
+        ctx.fillStyle = isTemp ? '#FDE68A' : (isPureNoAlma ? '#38BDF8' : (isElite ? '#FACC15' : (isRappel ? '#64748B' : (isLong ? '#34D399' : '#FB7185'))));
         ctx.fillText('⏰ ' + timeStr + ' · $' + fmt(sig.price, 1), bx + bw / 2, by + 37 * kT);
       }
 
@@ -39590,59 +39613,48 @@ window.viewMexcOrderLogs = async function() {
 
 /* ===== ENTREE MANUELLE "PUSH" DIRECTE SUR MEXC FUTURES ===== */
 window.pushManualMexcTrade = async function(side) {
-  const botConfig = window.__liveBotActive || JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
-  if (!botConfig || !botConfig.active) {
-    toast('❌ Le bot de trading en direct sur MEXC doit être actif !', '#FF5252');
-    return;
-  }
   const rawSym = state.symbol || 'BTCUSDT';
   const px = livePrice(rawSym) || 0;
   if (!px) {
     toast('❌ Prix du marché indisponible. Veuillez réessayer.', '#FF5252');
     return;
   }
-  const tradeUnit = botConfig.tradeUnit || 'USDT';
-  const rawBudget = Number(botConfig.tradeBudget || (tradeUnit === 'BTC' ? 0.0005 : 1));
-  const maxUsdt = Number(botConfig.maxUsdt || 500);
-  const lev = Number(botConfig.lev || 200);
-
-  const calc = await window.calcMexcVol(rawSym, rawBudget, tradeUnit, px, lev);
+  const coachQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032') || 0.032;
+  const sendQty = coachQty;
+  const lev = 50;
+  const targetNotional = Math.round(sendQty * px);
   const isLong = (side === 1 || side === 'long');
-  const sideNum = isLong ? 1 : 3; // 1 = Open Long, 3 = Open Short
   const actionTxt = isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)';
 
-  const msgConfirm =
-    `🚀 CONFIRMER L'ENVOI DE L'ORDRE RÉEL SUR MEXC FUTURES ?\n\n` +
-    `• Sens : ${actionTxt}\n` +
-    `• Taille de Trade : ${rawBudget} ${tradeUnit}\n` +
-    `• Marge Engagée : $${calc.marginUsdt.toFixed(2)} USDT\n` +
-    `• Notionnel : $${calc.notionalUsdt.toFixed(2)} USDT\n` +
-    `• Plafond Sécurité Marge : ${maxUsdt} USDT\n` +
-    `• Levier : ${lev}x\n` +
-    `• Volume Calculé : ${calc.vol} contrat(s)\n\n` +
-    `Souhaitez-vous envoyer cet ordre au marché directement sur votre compte MEXC ?`;
+  toast(`⏳ [Manuel Web Script] Envoi de l'ordre ${actionTxt} (${sendQty} BTC)...`, '#00E5FF');
 
-  if (!confirm(msgConfirm)) { toast('Ordre annulé.', '#94A3B8'); return; }
-
-  toast(`⏳ [Push Marché Direct] Envoi de l'ordre ${actionTxt} ${calc.vol} contrat(s) (${rawBudget} ${tradeUnit} @ ${lev}x) @ $${px.toFixed(2)}...`, '#00E5FF');
-
-  const res = await window.sendRealMexcFuturesOrder({
-    symbol: rawSym,
-    side: sideNum,
+  const mexcPair = ((rawSym.replace('USDT', '') || 'BTC') + '_USDT').toUpperCase();
+  const webSignal = {
+    type: 'LUMEN_TRADE_SIGNAL',
+    action: isLong ? 'BUY' : 'SELL',
+    symbol: mexcPair,
+    side: isLong ? 'BUY' : 'SELL',
+    posSide: isLong ? 'LONG' : 'SHORT',
+    tradeDir: 'both',
     price: px,
-    vol: calc.vol,
+    qty: sendQty,
+    btcQty: sendQty,
+    notional: targetNotional,
+    budget: targetNotional,
+    margin: targetNotional / lev,
+    unit: 'USDT',
     leverage: lev,
-    tradeBudget: calc.marginUsdt,
-    tradeBudgetVal: rawBudget,
-    tradeUnit: tradeUnit,
-    notional: calc.notionalUsdt,
-    maxUsdt: maxUsdt,
-    openType: Number(botConfig.openType || document.getElementById('live-ex-margin')?.value || 2)
-  });
+    executionMode: 'MAKER_CHASER',
+    offsetPts: 4,
+    limitTimeoutMs: 90000,
+    maxDeviationPts: 15,
+    timestamp: Date.now()
+  };
 
-  if (res && res.success) {
-    toast(`🚀 [Push Réussi] Ordre ${actionTxt} (${rawBudget} ${tradeUnit} @ ${lev}x) exécuté au marché sur MEXC !`, '#10B981');
+  if (typeof window.emettreSignalMexcWeb === 'function') {
+    window.emettreSignalMexcWeb(webSignal);
   }
+  toast(`🚀 [Web Script] Ordre Manuel ${actionTxt} (${sendQty} BTC) transmis à MEXC (0.00% Maker) !`, '#10B981');
 };
 
 function updateLiveExchangeUI(bot) {
