@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.7
+// @version      2.1.8
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @match        *://*.mexc.com/*
@@ -24,7 +24,7 @@
     // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
-        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.1.7)');
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.1.8)');
         const pageWin = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 
         const sendSignal = function(sig) {
@@ -40,9 +40,9 @@
         };
 
         pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.7';
+        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.8';
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
-        window.__LUMEN_USERSCRIPT_VERSION = '2.1.7';
+        window.__LUMEN_USERSCRIPT_VERSION = '2.1.8';
         pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
         window.__LUMEN_SEND_SIGNAL = sendSignal;
 
@@ -57,12 +57,12 @@
         const keepBridgeAlive = () => {
             try {
                 pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.7';
+                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.8';
                 window.__LUMEN_USERSCRIPT_ACTIVE = true;
-                window.__LUMEN_USERSCRIPT_VERSION = '2.1.7';
+                window.__LUMEN_USERSCRIPT_VERSION = '2.1.8';
                 pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
                 window.__LUMEN_SEND_SIGNAL = sendSignal;
-                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.1.7' } }));
+                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.1.8' } }));
             } catch(e){}
         };
         keepBridgeAlive();
@@ -99,14 +99,14 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.7 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
+    console.log('>>> [Lumen Web Trader] Script v2.1.8 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
     let isBusy = false;
 
     // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
-    const SCRIPT_VERSION = '2.1.7';
+    const SCRIPT_VERSION = '2.1.8';
 
     function renderDefaultHud(hud) {
         if (!hud) return;
@@ -432,7 +432,8 @@
                                 }
                                 if (!refPx || refPx < 1000) refPx = 77150;
                             }
-                            const btcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+                            const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+                            const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal de sécurité 0.05 BTC
                             let valToEnter = '';
                             if (isBtcMode) {
                                 valToEnter = btcQty.toFixed(3);
@@ -507,7 +508,8 @@
                     }
                     if (!refPx || refPx < 1000) refPx = 77150;
                 }
-                const btcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+                const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+                const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal de sécurité 0.05 BTC
                 let valToEnter = '';
                 if (isBtcMode) {
                     valToEnter = btcQty.toFixed(3);

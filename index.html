@@ -533,7 +533,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0915-1615</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0135</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -21246,6 +21246,14 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
       qty = px > 0 ? notional / px : 0;
     }
 
+    // Plafond maximal de sécurité fixé à 0.05 BTC
+    const MAX_BTC_CAP = 0.05;
+    if (qty > MAX_BTC_CAP) {
+      qty = MAX_BTC_CAP;
+      notional = qty * px;
+      margin = notional / lev;
+    }
+
     const fee = notional * feeRate;
 
     if (margin <= 0 || (margin + fee) > paper.cash + 0.001) {
@@ -21356,10 +21364,10 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
     if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
       try {
         const mexcPair = ((state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
-        // Taille dynamique synchronisée à 100% avec le Paper Trade et le réglage Coach actif
+        // Taille synchronisée avec plafond strict de 0.05 BTC
         const coachQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032') || 0.032;
-        const sendQty = qty || coachQty;
-        const targetNotional = Math.round(notional || (sendQty * px));
+        let sendQty = Math.min(qty || coachQty, 0.05);
+        const targetNotional = Math.round(sendQty * px);
         const webSignal = {
           type: 'LUMEN_TRADE_SIGNAL',
           symbol: mexcPair,
@@ -21381,7 +21389,7 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
           timestamp: Date.now()
         };
         window.emettreSignalMexcWeb(webSignal);
-        toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${sendQty} BTC) transmis à MEXC (0.00% Maker visé · attente 90s)`, '#10B981');
+        toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${sendQty} BTC [Plafond 0.05]) transmis à MEXC (0.00% Maker visé · attente 90s)`, '#10B981');
       } catch(err){}
     }
   }
@@ -39514,7 +39522,8 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
   const lev = Number(orderConfig.leverage || 50);
 
   const coachQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032') || 0.032;
-  const sendQty = orderConfig.tradeBudgetVal ? Number(orderConfig.tradeBudgetVal) : (orderConfig.vol ? (orderConfig.vol * 0.0001) : coachQty);
+  const rawSendQty = orderConfig.tradeBudgetVal ? Number(orderConfig.tradeBudgetVal) : (orderConfig.vol ? (orderConfig.vol * 0.0001) : coachQty);
+  const sendQty = Math.min(rawSendQty, 0.05);
   const targetNotional = Math.round(orderConfig.notional || (sendQty * price));
 
   let webSignal = null;
@@ -39559,7 +39568,7 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
   if (typeof window.emettreSignalMexcWeb === 'function') {
     window.emettreSignalMexcWeb(webSignal);
   }
-  toast(`⚡ Ordre Manuel (${webSignal.side || webSignal.action} ${sendQty || ''} BTC) transmis à MEXC Web (0.00% Frais Maker) !`, '#10B981');
+  toast(`⚡ Ordre (${webSignal.side || webSignal.action} ${sendQty || ''} BTC [Plafond 0.05]) transmis à MEXC Web (0.00% Frais Maker) !`, '#10B981');
   return { success: true, data: { msg: 'Transmis via Web Script 0.00% Maker' } };
 };
 
@@ -39620,7 +39629,7 @@ window.pushManualMexcTrade = async function(side) {
     return;
   }
   const coachQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032') || 0.032;
-  const sendQty = coachQty;
+  const sendQty = Math.min(coachQty, 0.05);
   const lev = 50;
   const targetNotional = Math.round(sendQty * px);
   const isLong = (side === 1 || side === 'long');
