@@ -533,7 +533,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0915-1540</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0915-1555</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -22525,17 +22525,6 @@ function checkAutoTrade(inputSignals){
           sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] INVERSION ➔ ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>`, 'mexc');
         }
       }
-
-      // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
-      if (window.__liveBotActive && typeof window.closeRealMexcFuturesPosition === 'function') {
-        window.closeRealMexcFuturesPosition({
-          symbol: state.symbol,
-          side: existingPos.side,
-          vol: existingPos.qty || 1,
-          price: px,
-          leverage: stratLev
-        });
-      }
     }
     return;
   }
@@ -22562,39 +22551,6 @@ function checkAutoTrade(inputSignals){
         if (typeof sendTelegramNotification === 'function') {
           sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] NOUVEL ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>\n• Signal : <b>${trigName}</b>`, 'mexc');
         }
-
-        // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
-        if (window.__liveBotActive && typeof window.sendRealMexcFuturesOrder === 'function') {
-          const liveCap = Number(window.__liveBotActive.tradeBudget || stratCap || 1);
-          const liveLev = Number(window.__liveBotActive.lev || stratLev || 200);
-          const liveMax = Number(window.__liveBotActive.maxUsdt || 500);
-
-          (async () => {
-            const cs = await window.getContractSize(state.symbol || 'BTCUSDT');
-            if (!cs) {
-              toast(`❌ Erreur Auto-Trade: contractSize introuvable pour ${state.symbol}`, '#FF5252');
-              return;
-            }
-            const liveUnit = (window.__liveBotActive.tradeUnit ||
-                              (document.getElementById('live-ex-trade-unit') || {}).value || 'USDT');
-            const targetNotional = (liveUnit === 'BTC')
-              ? (liveCap * (px || 1))
-              : (liveCap * liveLev);
-            const calcVol = Math.max(1, Math.round(targetNotional / ((px || 1) * cs)));
-
-            window.sendRealMexcFuturesOrder({
-              symbol: state.symbol,
-              side: 1, // 1 = Open Long
-              price: px,
-              vol: calcVol,
-              leverage: liveLev,
-              tradeBudget: liveCap,
-              maxUsdt: liveMax,
-              notional: targetNotional,
-              openType: Number((window.__liveBotActive || {}).openType || 2)
-            });
-          })();
-        }
       }
     } else if (sellSignal) {
       const sigId = `${state.symbol}|${state.tf}|${sigT}|sell`;
@@ -22616,39 +22572,6 @@ function checkAutoTrade(inputSignals){
         if (typeof sendTelegramNotification === 'function') {
           sendTelegramNotification(`🔴 <b>[Lumen Auto-Trade] NOUVELLE VENTE (SHORT)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>\n• Signal : <b>${trigName}</b>`, 'mexc');
         }
-
-        // --- EXÉCUTION RÉELLE MEXC FUTURES (SI BOT RÉEL ACTIF) ---
-        if (window.__liveBotActive && typeof window.sendRealMexcFuturesOrder === 'function') {
-          const liveCap = Number(window.__liveBotActive.tradeBudget || stratCap || 1);
-          const liveLev = Number(window.__liveBotActive.lev || stratLev || 200);
-          const liveMax = Number(window.__liveBotActive.maxUsdt || 500);
-
-          (async () => {
-            const cs = await window.getContractSize(state.symbol || 'BTCUSDT');
-            if (!cs) {
-              toast(`❌ Erreur Auto-Trade: contractSize introuvable pour ${state.symbol}`, '#FF5252');
-              return;
-            }
-            const liveUnit = (window.__liveBotActive.tradeUnit ||
-                              (document.getElementById('live-ex-trade-unit') || {}).value || 'USDT');
-            const targetNotional = (liveUnit === 'BTC')
-              ? (liveCap * (px || 1))
-              : (liveCap * liveLev);
-            const calcVol = Math.max(1, Math.round(targetNotional / ((px || 1) * cs)));
-
-            window.sendRealMexcFuturesOrder({
-              symbol: state.symbol,
-              side: 3, // 3 = Open Short
-              price: px,
-              vol: calcVol,
-              leverage: liveLev,
-              tradeBudget: liveCap,
-              maxUsdt: liveMax,
-              notional: targetNotional,
-              openType: Number((window.__liveBotActive || {}).openType || 2)
-            });
-          })();
-        }
       }
     }
   }
@@ -22665,13 +22588,9 @@ setInterval(()=>{
 document.addEventListener('DOMContentLoaded', ()=>{
   updateAutoTradeUI();
   try {
-    const savedBot = localStorage.getItem('lumen_live_exchange_bot');
-    if (savedBot) {
-      const parsedBot = JSON.parse(savedBot);
-      if (parsedBot && parsedBot.active) {
-        updateLiveExchangeUI(parsedBot);
-      }
-    }
+    localStorage.removeItem('lumen_live_exchange_bot');
+    window.__liveBotActive = null;
+    if (typeof updateLiveExchangeUI === 'function') updateLiveExchangeUI(null);
   } catch(e){}
 });
 
@@ -39554,236 +39473,86 @@ window.getContractSize = async function(symbol) {
  * side: 1 = Open Long, 2 = Close Long, 3 = Open Short, 4 = Close Short
  * openType: 1 = Marge isolée, 2 = Marge croisée (CHAMP OBLIGATOIRE)
  */
+/**
+ * Exécution d'Ordres MEXC Futures UNIQUEMENT via le Web Script (0.00% Frais Maker)
+ * Plus aucun appel réseau API n'est effectué ! Tous les ordres manuels et automatiques
+ * transitent instantanément par window.emettreSignalMexcWeb vers l'onglet MEXC.
+ */
 window.sendRealMexcFuturesOrder = async function(orderConfig) {
-  const botConfig = window.__liveBotActive || JSON.parse(localStorage.getItem('lumen_live_exchange_bot') || '{}');
-  const serviceConfig = JSON.parse(localStorage.getItem('lumen_live_exchange_config') || '{}');
-  
-  const serviceUrl = orderConfig.serviceUrl || document.getElementById('live-ex-serviceurl')?.value || serviceConfig.serviceUrl || botConfig.serviceUrl || 'https://mexc-signer.vercel.app/api/mexc';
-  const rawToken = orderConfig.lumenToken || document.getElementById('live-ex-token')?.value || serviceConfig.lumenToken || botConfig.lumenToken || '';
-  const lumenToken = (rawToken || '').trim().replace(/^['"]|['"]$/g, '');
-  const apiKey = (orderConfig.apiKey || document.getElementById('live-ex-apikey')?.value || serviceConfig.apiKey || botConfig.apiKey || '').trim();
-  const apiSecret = (orderConfig.apiSecret || document.getElementById('live-ex-apisecret')?.value || serviceConfig.apiSecret || botConfig.apiSecret || '').trim();
-
   const rawSym = orderConfig.symbol || state.symbol || 'BTCUSDT';
-  let mexcSymbol = rawSym.replace('/', '').replace('-', '').toUpperCase();
-  if (mexcSymbol.endsWith('USDT') && !mexcSymbol.includes('_')) {
-    mexcSymbol = mexcSymbol.replace('USDT', '_USDT');
+  let mexcPair = rawSym.replace('/', '').replace('-', '').toUpperCase();
+  if (mexcPair.endsWith('USDT') && !mexcPair.includes('_')) {
+    mexcPair = mexcPair.replace('USDT', '_USDT');
   }
 
   const price = Number(orderConfig.price || livePrice(state.symbol) || 0);
-  const vol = Number(orderConfig.vol || orderConfig.contracts || 1);
   const side = Number(orderConfig.side); // 1 = Open Long, 2 = Close Long, 3 = Open Short, 4 = Close Short
-  const type = Number(orderConfig.type || 5); // 5 = Ordre au marché
-  /* Marge croisée par défaut : le solde entier du compte adosse la position,
-     ce qui éloigne fortement le prix de liquidation mais met tout le capital
-     en jeu. C'est le mode que simule le backtest. Le mode doit aussi être
-     réglé sur croisé côté MEXC pour la paire, sinon l'ordre est refusé. */
-  const openType = Number(orderConfig.openType || 2); // 1 = Isolée, 2 = Croisée (CHAMP OBLIGATOIRE)
-  const leverage = Number(orderConfig.leverage || botConfig.lev || 200);
-  const stopLossPrice = orderConfig.stopLossPrice ? Number(orderConfig.stopLossPrice) : null;
-  const takeProfitPrice = orderConfig.takeProfitPrice ? Number(orderConfig.takeProfitPrice) : null;
+  const isClose = (side === 2 || side === 4);
+  const lev = Number(orderConfig.leverage || 50);
 
-  const isOpening = (side === 1 || side === 3);
-  const sideLabel = side === 1 ? 'OPEN LONG (1)' : side === 2 ? 'CLOSE LONG (2)' : side === 3 ? 'OPEN SHORT (3)' : 'CLOSE SHORT (4)';
-  const now = Date.now();
+  const coachQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032') || 0.032;
+  const sendQty = orderConfig.tradeBudgetVal ? Number(orderConfig.tradeBudgetVal) : (orderConfig.vol ? (orderConfig.vol * 0.0001) : coachQty);
+  const targetNotional = Math.round(orderConfig.notional || (sendQty * price));
 
-  // --- PROTECTION 0 : RÉCUPÉRATION DU CONTRACT SIZE MEXC ---
-  const contractSize = await window.getContractSize(mexcSymbol);
-  if (!contractSize) {
-    const reason = `[Erreur ContractSize] Impossible de récupérer la taille de contrat pour ${mexcSymbol} depuis MEXC Futures. Ordre annulé.`;
-    toast(`🛡️ ${reason}`, '#FF5252');
-    logMexcClientOrder({
-      timestamp: now,
-      endpoint: '/api/v1/private/order/submit',
-      status: 'REJECTED_PROTECTION',
-      rejectionReason: reason,
-      params: { symbol: mexcSymbol, price, vol, side, sideLabel }
-    });
-    return { success: false, error: reason };
-  }
-
-  // --- PROTECTION 1 : PLAFOND SÉCURITÉ DE MARGE (USDT) ---
-  const maxUsdt = Number(orderConfig.maxUsdt || botConfig.maxUsdt || 500);
-  const tradeBudget = Number(orderConfig.tradeBudget || botConfig.tradeBudget || 1);
-  const notional = vol * contractSize * price;
-  const margin = leverage > 0 ? notional / leverage : notional;
-
-  if (isOpening && margin > maxUsdt) {
-    const reason = `[Plafond Marge Sécurité] La marge requise (${margin.toFixed(2)} USDT) dépasse le plafond fixé à ${maxUsdt.toFixed(2)} USDT. (Notionnel: ${notional.toFixed(2)} USDT, Marge: ${margin.toFixed(2)} USDT, ContractSize: ${contractSize}, Levier: ${leverage}x). Ordre annulé avant envoi.`;
-    toast(`🛡️ ${reason}`, '#FF5252');
-    logMexcClientOrder({
-      timestamp: now,
-      endpoint: '/api/v1/private/order/submit',
-      status: 'REJECTED_PROTECTION',
-      rejectionReason: reason,
-      params: { symbol: mexcSymbol, price, vol, side, sideLabel, openType, leverage, notional, margin, maxUsdt }
-    });
-    return { success: false, error: reason };
-  }
-
-  // --- PROTECTION 1.5 : NOTIONNEL MINIMUM (5 USDT) ---
-  const MIN_NOTIONAL = 5;
-  if (isOpening && notional < MIN_NOTIONAL) {
-    const minMarginNeeded = (MIN_NOTIONAL / leverage).toFixed(2);
-    const minVolNeeded = Math.ceil(MIN_NOTIONAL / (price * contractSize));
-    const reason = `[Notionnel Minimum Refusé] Le montant notionnel de l'ordre (${notional.toFixed(2)} USDT) est inférieur au minimum requis par MEXC (5 USDT). Pour un levier de ${leverage}x, saisissez une marge d'au moins ${minMarginNeeded} USDT (soit au moins ${minVolNeeded} contrat(s)).`;
-    toast(`🛡️ ${reason}`, '#FF5252');
-    logMexcClientOrder({
-      timestamp: now,
-      endpoint: '/api/v1/private/order/submit',
-      status: 'REJECTED_PROTECTION',
-      rejectionReason: reason,
-      params: { symbol: mexcSymbol, price, vol, side, sideLabel, openType, leverage, notional, margin }
-    });
-    return { success: false, error: reason };
-  }
-
-  // --- PROTECTION 2 : ANTI-DOUBLON (5 SECONDES) ---
-  const orderHash = `${mexcSymbol}_${side}_${vol}_${price}`;
-  if (now - window.__lastMexcOrderTime < 5000 && window.__lastMexcOrderHash === orderHash) {
-    const reason = `[Anti-Doublon 5s] Ordre identique refusé (<5s depuis la dernière tentative).`;
-    toast(`🛡️ ${reason}`, '#FF5252');
-    logMexcClientOrder({
-      timestamp: now,
-      endpoint: '/api/v1/private/order/submit',
-      status: 'REJECTED_PROTECTION',
-      rejectionReason: reason,
-      params: { symbol: mexcSymbol, side, sideLabel }
-    });
-    return { success: false, error: reason };
-  }
-
-  // Enregistrement des données anti-doublon
-  window.__lastMexcOrderTime = now;
-  window.__lastMexcOrderHash = orderHash;
-
-  // Parameters pour /api/v1/private/order/submit (MEXC Contract API V1)
-  const payloadParams = {
-    symbol: mexcSymbol,
-    price: price,
-    vol: vol,
-    side: side,
-    type: type,
-    openType: openType,
-    leverage: leverage,
-    maxUsdt: maxUsdt,
-    tradeBudget: tradeBudget,
-    contractSize: contractSize,
-    notional: notional,
-    margin: margin
-  };
-
-  if (stopLossPrice) payloadParams.stopLossPrice = stopLossPrice;
-  if (takeProfitPrice) payloadParams.takeProfitPrice = takeProfitPrice;
-
-  toast(`⏳ Transmission de l'ordre à MEXC Futures [${sideLabel}] ${vol} contrat(s) ${mexcSymbol} @ $${price.toFixed(2)} (${leverage}x)...`, '#00E5FF');
-
-  try {
-    const bodyObj = {
-      endpoint: '/api/v1/private/order/submit',
-      method: 'POST',
-      isFutures: true,
-      params: payloadParams
+  let webSignal = null;
+  if (isClose) {
+    webSignal = {
+      type: 'LUMEN_TRADE_SIGNAL',
+      action: 'CLOSE',
+      symbol: mexcPair,
+      side: side === 2 ? 'CLOSE_LONG' : 'CLOSE_SHORT',
+      reason: 'Ordre Manuel Clôture',
+      price: price,
+      executionMode: 'MAKER_CHASER',
+      offsetPts: 6,
+      limitTimeoutMs: 25000,
+      maxDeviationPts: 12,
+      timestamp: Date.now()
     };
-    if (apiKey) bodyObj.apiKey = apiKey;
-    if (apiSecret) bodyObj.apiSecret = apiSecret;
-
-    const resp = await fetch(serviceUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Lumen-Token': lumenToken
-      },
-      body: JSON.stringify(bodyObj)
-    });
-
-    const data = await resp.json();
-    const mexcData = data.data || data;
-    const mexcCode = mexcData.code !== undefined ? mexcData.code : data.code;
-    const isSuccess = resp.ok && data.success !== false && (mexcCode === 0 || mexcCode === 200 || mexcData.orderId || typeof mexcData === 'number' || typeof mexcData === 'string') && (mexcCode === 0 || mexcCode === 200 || mexcCode === undefined);
-
-    logMexcClientOrder({
-      timestamp: now,
-      endpoint: '/api/v1/private/order/submit',
-      status: isSuccess ? 'SUCCESS' : 'ERROR',
-      params: payloadParams,
-      mexcResponse: data
-    });
-
-    if (isSuccess) {
-      toast(`🚀 ORDRE MEXC FUTURES EXÉCUTÉ AVEC SUCCÈS ! (${sideLabel} ${mexcSymbol})`, '#10B981');
-
-      /* Renforcement de la marge en isolée. La position est déjà ouverte :
-         un échec ici ne remet pas l'ordre en cause, il laisse simplement la
-         marge d'origine et la liquidation à sa distance initiale. */
-      if (openType === 1) {
-        const pctMarge = Number(document.getElementById('live-ex-marginpct')?.value || 0);
-        if (pctMarge > 0) {
-          /* Le pourcentage porte sur le CAPITAL TOTAL, pas sur le disponible :
-             après l'ouverture, le disponible est déjà amputé de la marge
-             engagée, et 50 % du disponible ne vaut pas 50 % du capital. */
-          const capitalTotal = Number(window.__mexcEquityUsdt || window.__mexcAvailUsdt || 0);
-          const margeCible = capitalTotal * pctMarge / 100;
-          if (margeCible > 0) {
-            window.renforcerMargeIsolee({
-              serviceUrl: serviceUrl, lumenToken: lumenToken,
-              apiKey: apiKey, apiSecret: apiSecret,
-              symbol: mexcSymbol, margeCible: margeCible
-            }).catch(function(e){ console.warn('Renforcement de marge :', e); });
-          } else {
-            toast('\u26A0 Solde disponible inconnu, marge non renforcée', '#FF9F1C');
-          }
-        }
-      }
-
-      if (typeof window.triggerInsistentMexcTradeAlert === 'function') {
-        window.triggerInsistentMexcTradeAlert({
-          symbol: mexcSymbol,
-          side: side,
-          sideLabel: sideLabel,
-          vol: vol,
-          price: price,
-          leverage: leverage,
-          notional: notional,
-          margin: margin
-        });
-      }
-
-      return { success: true, data };
-    } else {
-      const errMsg = mexcData.msg || mexcData.message || data.error || data.msg || JSON.stringify(data);
-      console.warn(`[MEXC Futures Reject] ${errMsg}`, { mexcSymbol, vol, leverage });
-      toast(`⚠️ Rejet MEXC Futures (${mexcSymbol} ${vol}ct @ ${leverage}x) : ${errMsg}`, '#FF5252', 8000);
-      return { success: false, error: errMsg, data };
-    }
-
-  } catch (err) {
-    const errMsg = err.message || 'Erreur réseau lors de la communication avec le microservice.';
-    logMexcClientOrder({
-      timestamp: now,
-      endpoint: '/api/v1/private/order/submit',
-      status: 'ERROR',
-      params: payloadParams,
-      rejectionReason: errMsg
-    });
-    toast(`❌ Erreur réseau microservice : ${errMsg}`, '#FF5252');
-    return { success: false, error: errMsg };
+  } else {
+    webSignal = {
+      type: 'LUMEN_TRADE_SIGNAL',
+      action: side === 1 ? 'BUY' : 'SELL',
+      symbol: mexcPair,
+      side: side === 1 ? 'BUY' : 'SELL',
+      posSide: side === 1 ? 'LONG' : 'SHORT',
+      tradeDir: 'both',
+      price: price,
+      qty: sendQty,
+      btcQty: sendQty,
+      notional: targetNotional,
+      budget: targetNotional,
+      margin: targetNotional / lev,
+      unit: 'USDT',
+      leverage: lev,
+      executionMode: 'MAKER_CHASER',
+      offsetPts: 4,
+      limitTimeoutMs: 90000,
+      maxDeviationPts: 15,
+      timestamp: Date.now()
+    };
   }
+
+  if (typeof window.emettreSignalMexcWeb === 'function') {
+    window.emettreSignalMexcWeb(webSignal);
+  }
+  toast(`⚡ Ordre Manuel (${webSignal.side || webSignal.action} ${sendQty || ''} BTC) transmis à MEXC Web (0.00% Frais Maker) !`, '#10B981');
+  return { success: true, data: { msg: 'Transmis via Web Script 0.00% Maker' } };
 };
 
 /**
- * Fermeture de position MEXC Futures (side 2 = Close Long, side 4 = Close Short)
+ * Fermeture de position MEXC Futures via Web Script (side 2 = Close Long, side 4 = Close Short)
  */
 window.closeRealMexcFuturesPosition = async function(posInfo) {
   const isLong = posInfo.side === 'long' || posInfo.side === 1;
-  const closeSide = isLong ? 2 : 4; // 2 = Fermer Long, 4 = Fermer Short
+  const closeSide = isLong ? 2 : 4;
   return await window.sendRealMexcFuturesOrder({
     symbol: posInfo.symbol || state.symbol,
     side: closeSide,
     vol: posInfo.vol || posInfo.qty || 1,
     price: posInfo.price || livePrice(state.symbol) || 0,
-    leverage: posInfo.leverage || 200,
-    openType: posInfo.openType || 2
+    leverage: posInfo.leverage || 50,
+    openType: 2
   });
 };
 
