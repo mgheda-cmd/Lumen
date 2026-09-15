@@ -533,7 +533,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0914-2240</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0915-1540</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -39752,8 +39752,8 @@ window.sendRealMexcFuturesOrder = async function(orderConfig) {
       return { success: true, data };
     } else {
       const errMsg = mexcData.msg || mexcData.message || data.error || data.msg || JSON.stringify(data);
-      toast(`❌ Rejet MEXC Futures : ${errMsg}`, '#FF5252');
-      alert(`⚠️ ERREUR EXÉCUTION MEXC FUTURES :\n\nL'ordre a été REJETÉ par MEXC.\n\n• Raison : ${errMsg}\n• Symbole : ${mexcSymbol}\n• Contrats : ${vol}\n• Levier : ${leverage}x\n\nVérifiez votre solde USDT disponible sur MEXC Futures et vos clés API.`);
+      console.warn(`[MEXC Futures Reject] ${errMsg}`, { mexcSymbol, vol, leverage });
+      toast(`⚠️ Rejet MEXC Futures (${mexcSymbol} ${vol}ct @ ${leverage}x) : ${errMsg}`, '#FF5252', 8000);
       return { success: false, error: errMsg, data };
     }
 
