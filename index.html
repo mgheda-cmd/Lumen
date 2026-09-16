@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0530</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0600</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -7109,6 +7109,34 @@ async function loadData(){
     if(g!==gen)return;
     if(!Array.isArray(rows))throw new Error('format');
     state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
+
+    // Garantir que state.data couvre TOUJOURS depuis au moins Lundi 00:00:00 UTC (ancre hebdomadaire)
+    // afin que la numérotation des pastilles (#1, #2... #N) soit 100% immuable et stable
+    try {
+      const nowD = new Date();
+      const day = nowD.getUTCDay();
+      const diffDays = (day === 0 ? 6 : day - 1);
+      const mondayUTC = Date.UTC(nowD.getUTCFullYear(), nowD.getUTCMonth(), nowD.getUTCDate() - diffDays, 0, 0, 0, 0);
+
+      let loopGuard = 0;
+      while (state.data.length > 0 && state.data[0].t > mondayUTC && loopGuard < 10) {
+        loopGuard++;
+        const oldestT = state.data[0].t;
+        const olderRows = await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000&endTime=${oldestT - 1}`);
+        if (g !== gen) return;
+        if (Array.isArray(olderRows) && olderRows.length > 0) {
+          const olderBars = olderRows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}))
+                                    .filter(b => b.t < oldestT);
+          if (olderBars.length === 0) break;
+          state.data = olderBars.concat(state.data);
+        } else {
+          break;
+        }
+      }
+    } catch(errHist) {
+      console.warn('[Lumen] Pagination Lundi UTC:', errHist);
+    }
+
     if(state.symbol === 'BTCUSDT' && state.tf === 1){
       try{
         if(typeof get8000Candles === 'function'){
@@ -7144,6 +7172,29 @@ async function loadData(){
         if(g!==gen)return;
         if(Array.isArray(rows)){
           state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
+          try {
+            const nowD = new Date();
+            const day = nowD.getUTCDay();
+            const diffDays = (day === 0 ? 6 : day - 1);
+            const mondayUTC = Date.UTC(nowD.getUTCFullYear(), nowD.getUTCMonth(), nowD.getUTCDate() - diffDays, 0, 0, 0, 0);
+
+            let loopGuard = 0;
+            while (state.data.length > 0 && state.data[0].t > mondayUTC && loopGuard < 10) {
+              loopGuard++;
+              const oldestT = state.data[0].t;
+              const olderRows = await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000&endTime=${oldestT - 1}`);
+              if (g !== gen) return;
+              if (Array.isArray(olderRows) && olderRows.length > 0) {
+                const olderBars = olderRows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}))
+                                          .filter(b => b.t < oldestT);
+                if (olderBars.length === 0) break;
+                state.data = olderBars.concat(state.data);
+              } else {
+                break;
+              }
+            }
+          } catch(e){}
+
           if(state.symbol === 'BTCUSDT' && state.tf === 1){
             try{
               if(typeof get8000Candles === 'function'){
@@ -44094,7 +44145,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0916-0530';
+  window.__LUMEN_BUILD = 'B-0916-0600';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
