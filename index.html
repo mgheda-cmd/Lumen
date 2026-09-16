@@ -533,7 +533,11 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0510</span>
+  <button class="btn" id="btn-header-real-trades" onclick="window.openRealTradesModal()" title="Tableau et Journal des Trades Réels (Aujourd'hui / 3 Jours / Tous)" style="font-weight:900;display:inline-flex;align-items:center;gap:6px;border:1.5px solid #00E5FF;color:#00E5FF;background:rgba(0,229,255,0.14);box-shadow:0 0 10px rgba(0,229,255,0.25);cursor:pointer">
+    <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
+  </button>
+
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0520</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -2850,6 +2854,100 @@ footer{
         💡 <em>Note : Les données présentées ici sont issues du backtest exhaustif et servent de référence informative. La recommandation active reste verrouillée sur Élite S2.</em>
       </div>
       <button onclick="window.closeAllStrategiesModal()" style="background:#334155;color:#F8FAFC;border:none;border-radius:6px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer">Fermer</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL TABLEAU DES TRADES RÉELS (FMC ÉLITE S2 · FILTRES AUJOURD'HUI / 3 JOURS / TOUS) -->
+<div id="modal-real-trades" onclick="if(event.target===this)window.closeRealTradesModal()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(5,10,20,0.85);backdrop-filter:blur(8px);z-index:999999;align-items:center;justify-content:center;padding:14px;box-sizing:border-box">
+  <div style="background:#0F172A;border:2px solid #00E5FF;border-radius:16px;max-width:1080px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,229,255,0.25);overflow:hidden;font-family:'Space Grotesk',sans-serif">
+    
+    <!-- Modal Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(90deg,#0B132B,#1E293B);border-bottom:1.5px solid rgba(0,229,255,0.3)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:24px">📋</span>
+        <div>
+          <div style="font-size:16px;font-weight:900;color:#F8FAFC;letter-spacing:0.3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span>JOURNAL & LISTE DES TRADES RÉELS</span>
+            <span style="font-size:10.5px;background:rgba(0,229,255,0.18);color:#00E5FF;border:1px solid #00E5FF;border-radius:20px;padding:2px 9px;font-weight:800">FMC Élite [5m × 10m] · Sortie S2</span>
+          </div>
+          <div style="font-size:11.5px;color:#94A3B8;margin-top:2px">
+            Exécutions directes synchronisées avec les pastilles du graphique · Frais 0.00% Maker
+          </div>
+        </div>
+      </div>
+      <button onclick="window.closeRealTradesModal()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#F1F5F9;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .15s">✕</button>
+    </div>
+
+    <!-- Filter & Toolbar Bar -->
+    <div style="padding:10px 18px;background:rgba(11,19,43,0.85);border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <!-- Période Selector -->
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;font-weight:800;color:#E2E8F0">Période :</span>
+        <div style="display:flex;gap:6px">
+          <button id="modal-rt-p-day" onclick="window.setStrat11JournalPeriod('day');" style="font-size:11.5px;padding:6px 12px;border-radius:7px;font-weight:900;border:1.5px solid #38BDF8;background:rgba(56,189,248,0.2);color:#38BDF8;cursor:pointer;transition:all .15s">📅 Aujourd'hui</button>
+          <button id="modal-rt-p-3d" onclick="window.setStrat11JournalPeriod('3d');" style="font-size:11.5px;padding:6px 12px;border-radius:7px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#CBD5E1;cursor:pointer;transition:all .15s">📊 3 Derniers Jours</button>
+          <button id="modal-rt-p-all" onclick="window.setStrat11JournalPeriod('all');" style="font-size:11.5px;padding:6px 12px;border-radius:7px;font-weight:700;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#CBD5E1;cursor:pointer;transition:all .15s">🏆 Tous (8000 bougies)</button>
+        </div>
+      </div>
+      <!-- Robot Status Tag -->
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.14);border:1px solid #10B981;border-radius:20px;padding:4px 10px;font-size:11px;color:#A7F3D0;font-weight:800">
+        <span style="width:7px;height:7px;border-radius:50%;background:#10B981;display:inline-block;box-shadow:0 0 6px #10B981"></span>
+        Robot MEXC Actif (Maker Chaser 0.00% Frais)
+      </div>
+    </div>
+
+    <!-- Summary KPI Cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;padding:12px 18px;background:rgba(0,0,0,0.25);border-bottom:1px solid rgba(255,255,255,0.08)">
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px">
+        <div style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.04em">GAIN TOTAL (PNL)</div>
+        <div id="modal-rt-kpi-pnl" class="mono" style="font-size:16px;font-weight:900;color:#10B981;margin-top:2px">+0 pts</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px">
+        <div style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.04em">TAUX DE RÉUSSITE</div>
+        <div id="modal-rt-kpi-wr" class="mono" style="font-size:16px;font-weight:900;color:#38BDF8;margin-top:2px">0%</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px">
+        <div style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.04em">GAGNANTS / PERDANTS</div>
+        <div id="modal-rt-kpi-wl" class="mono" style="font-size:13px;font-weight:800;color:#F8FAFC;margin-top:4px">0 V / 0 D</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px">
+        <div style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.04em">PROFIT FACTOR</div>
+        <div id="modal-rt-kpi-pf" class="mono" style="font-size:16px;font-weight:900;color:#FFD700;margin-top:2px">0.0</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px">
+        <div style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.04em">TOTAL TRADES</div>
+        <div id="modal-rt-kpi-count" class="mono" style="font-size:16px;font-weight:900;color:#F1F5F9;margin-top:2px">0 trades</div>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;background:#0A0F1E">
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px">
+        <thead style="position:sticky;top:0;background:#1E293B;border-bottom:1.5px solid rgba(255,255,255,0.12);z-index:2">
+          <tr style="color:#94A3B8;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;text-align:left">
+            <th style="padding:10px 12px"># / Sens</th>
+            <th style="padding:10px 12px">Entrée</th>
+            <th style="padding:10px 12px">Sortie</th>
+            <th style="padding:10px 12px">Points</th>
+            <th style="padding:10px 12px">Gain Net ($)</th>
+            <th style="padding:10px 12px">Statut</th>
+            <th style="padding:10px 12px;text-align:center">Graphique</th>
+          </tr>
+        </thead>
+        <tbody id="modal-real-trades-tbody">
+          <!-- Rendu dynamique via renderRealTradesModal -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#0B132B;border-top:1px solid rgba(255,255,255,0.1)">
+      <div style="font-size:11.5px;color:#94A3B8">
+        💡 <em>Frais 0.00% Maker garantis : les gains affichés sont 100% nets sans aucune déduction de commission de courtage.</em>
+      </div>
+      <button onclick="window.closeRealTradesModal()" style="background:#334155;color:#F8FAFC;border:none;border-radius:6px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer">Fermer</button>
     </div>
 
   </div>
@@ -18188,9 +18286,18 @@ if (!window.__stBridgeStatusTimer) {
 window.updateStrat11JournalExecUI = function() {
   const banner = document.getElementById('st-execution-status-banner');
   const bannerTxt = document.getElementById('st-execution-status-txt');
+  const btnReal = document.getElementById('btn-st-real-trades');
   const btnDemo = document.getElementById('btn-st-apply-demo');
   const btnMexc = document.getElementById('btn-st-apply-mexc');
-  if (!btnDemo || !btnMexc) return;
+  if (!btnMexc) return;
+
+  if (btnReal) {
+    btnReal.innerHTML = '📋 Trades Réels';
+    btnReal.style.background = 'linear-gradient(135deg,#0284C7,#00E5FF)';
+    btnReal.style.color = '#04121F';
+    btnReal.style.boxShadow = '0 3px 12px rgba(0,229,255,0.35)';
+    btnReal.style.fontWeight = '900';
+  }
 
   const isWebOn = (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive());
   const isLiveOn = isWebOn || !!(window.__liveBotActive && window.__liveBotActive.active);
@@ -18214,10 +18321,12 @@ window.updateStrat11JournalExecUI = function() {
       banner.style.color = '#A7F3D0';
     }
     if (bannerTxt) bannerTxt.innerHTML = '🟢 <b>ROBOT MEXC WEB ACTIF (0.00% FRAIS MAKER)</b>' + timeTag + ' : suit les pastilles ' + (window.activeDemoStrategy?.modeLabel || 'Élite S2') + ' (' + (window.__stCoachCustomQty || '0.032') + ' BTC @ 50x) · <i>Chaser 12 pts</i>';
-    btnDemo.style.background = 'rgba(255,255,255,0.06)';
-    btnDemo.style.color = '#94A3B8';
-    btnDemo.style.boxShadow = 'none';
-    btnDemo.innerHTML = '🤖 Lancer en DÉMO';
+    if (btnDemo && btnDemo.style.display !== 'none') {
+      btnDemo.style.background = 'rgba(255,255,255,0.06)';
+      btnDemo.style.color = '#94A3B8';
+      btnDemo.style.boxShadow = 'none';
+      btnDemo.innerHTML = '🤖 Lancer en DÉMO';
+    }
     btnMexc.style.background = 'linear-gradient(135deg,#10B981,#059669)';
     btnMexc.style.color = '#FFFFFF';
     btnMexc.style.boxShadow = '0 0 16px rgba(16,185,129,0.7)';
@@ -18230,20 +18339,24 @@ window.updateStrat11JournalExecUI = function() {
       banner.style.color = '#7DD3FC';
     }
     if (bannerTxt) bannerTxt.innerHTML = '🤖 <b>DÉMO ACTIF</b>' + timeTag + ' : suit les pastilles d\'entrée et de sortie';
-    btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
-    btnDemo.style.color = '#06101E';
-    btnDemo.style.boxShadow = '0 0 16px rgba(0,230,118,0.7)';
-    btnDemo.innerHTML = '🟢 DÉMO ACTIF (Arrêter)';
+    if (btnDemo && btnDemo.style.display !== 'none') {
+      btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
+      btnDemo.style.color = '#06101E';
+      btnDemo.style.boxShadow = '0 0 16px rgba(0,230,118,0.7)';
+      btnDemo.innerHTML = '🟢 DÉMO ACTIF (Arrêter)';
+    }
     btnMexc.style.background = 'rgba(255,255,255,0.06)';
     btnMexc.style.color = '#94A3B8';
     btnMexc.style.boxShadow = 'none';
     btnMexc.innerHTML = '⚡ Lancer sur MEXC (0% Frais)';
   } else {
     if (banner) banner.style.display = 'none';
-    btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
-    btnDemo.style.color = '#06101E';
-    btnDemo.style.boxShadow = '0 3px 12px rgba(0,230,118,0.35)';
-    btnDemo.innerHTML = '🤖 Lancer en DÉMO';
+    if (btnDemo && btnDemo.style.display !== 'none') {
+      btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
+      btnDemo.style.color = '#06101E';
+      btnDemo.style.boxShadow = '0 3px 12px rgba(0,230,118,0.35)';
+      btnDemo.innerHTML = '🤖 Lancer en DÉMO';
+    }
     btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
     btnMexc.style.color = '#06101E';
     btnMexc.style.boxShadow = '0 3px 12px rgba(255,215,0,0.35)';
@@ -18552,6 +18665,7 @@ window.setStrat11JournalPeriod = function(p, doRender) {
   });
   if (typeof renderPastillesList === 'function') renderPastillesList(true);
   if (doRender !== false) window.renderStrat11TradesJournal();
+  if (typeof window.renderRealTradesModal === 'function') window.renderRealTradesModal();
 };
 
 window.setStrat11JournalExit = function(exitKey, doRender) {
@@ -18910,6 +19024,245 @@ window.renderStrat11TradesJournal = function() {
   if (typeof window.updateStrat11CoachUI === 'function') {
     window.updateStrat11CoachUI();
   }
+};
+
+window.openRealTradesModal = function(requestedPeriod) {
+  const modal = document.getElementById('modal-real-trades');
+  if (!modal) return;
+  if (requestedPeriod) {
+    window.__stJournalPeriod = requestedPeriod;
+  }
+  modal.style.display = 'flex';
+  window.renderRealTradesModal();
+};
+
+window.closeRealTradesModal = function() {
+  const modal = document.getElementById('modal-real-trades');
+  if (modal) modal.style.display = 'none';
+};
+
+window.renderRealTradesModal = function() {
+  const tbody = document.getElementById('modal-real-trades-tbody');
+  if (!tbody) return;
+
+  const varKey = window.__stJournalVarKey || 'strat_11_11_elite';
+  const exitKey = window.__stJournalExitMode || 's2';
+  const period = window.__stJournalPeriod || '3d';
+
+  // Highlight buttons in modal toolbar
+  ['day', '3d', 'all'].forEach(function(pid) {
+    const btn = document.getElementById('modal-rt-p-' + pid);
+    if (!btn) return;
+    if (pid === period) {
+      btn.style.background = '#0284C7';
+      btn.style.color = '#FFFFFF';
+      btn.style.borderColor = '#38BDF8';
+      btn.style.fontWeight = '900';
+      btn.style.boxShadow = '0 0 10px rgba(56,189,248,0.45)';
+    } else {
+      btn.style.background = 'rgba(255,255,255,0.06)';
+      btn.style.color = '#94A3B8';
+      btn.style.borderColor = 'rgba(255,255,255,0.15)';
+      btn.style.fontWeight = '700';
+      btn.style.boxShadow = 'none';
+    }
+  });
+
+  // Extract chart signals
+  const chartSignals = window.__lastFMCSignals || [];
+  const entrySigs = chartSignals.filter(function(s) { return s.optKey === varKey && !s.isExit; }).sort(function(a, b) { return a.i - b.i; });
+  const exitSigs  = chartSignals.filter(function(s) { return s.optKey === varKey && s.isExit; }).sort(function(a, b) { return a.i - b.i; });
+
+  let liveChartTrades = [];
+  if (entrySigs.length > 0) {
+    for (let ei = 0; ei < entrySigs.length; ei++) {
+      const ent = entrySigs[ei];
+      const candExits = exitSigs.filter(function(s) {
+        const isTimeValid = (s.t != null && ent.t != null) ? (s.t >= ent.t) : (s.i != null && ent.i != null ? s.i > ent.i : true);
+        if (!isTimeValid) return false;
+        return (s.entryI != null && s.entryI === ent.i) || (s.tradeNum != null && s.tradeNum === ent.tradeNum);
+      });
+
+      let ex = null;
+      if (candExits.length > 0) {
+        if (exitKey === 's2') {
+          ex = candExits.find(s => s.exitType === 'kk_extreme') || candExits.find(s => s.exitType !== 'kk_zero') || candExits[0];
+        } else if (exitKey === 's1') {
+          ex = candExits.find(s => s.exitType === 'kk_zero') || candExits[0];
+        } else if (exitKey === 's3') {
+          ex = candExits.find(s => s.exitType === 'reversal') || candExits[0];
+        } else {
+          ex = candExits[0];
+        }
+      }
+      if (!ex) {
+        const isBuy = ent.dir === 1;
+        const curPx = (typeof livePrice === 'function' ? livePrice(state.symbol) : null) || (state.data && state.data.length ? state.data[state.data.length - 1].c : ent.price);
+        const floatPnl = isBuy ? (curPx - ent.price) : (ent.price - curPx);
+        liveChartTrades.push({
+          num: ent.tradeNum || (ei + 1),
+          entryPastilleNum: ent.tradeNum || (ei + 1),
+          exitPastilleNum: '—',
+          dir: ent.dir,
+          type: isBuy ? 'ACHAT' : 'VENTE',
+          entryI: ent.i,
+          entryT: ent.t,
+          entryPx: ent.price,
+          exitT: null,
+          exitPx: curPx,
+          pnl: Math.round(floatPnl * 10) / 10,
+          exitReason: '⏳ En attente (en cours)',
+          isPending: true
+        });
+        continue;
+      }
+      const isBuy = ent.dir === 1;
+      const pnlVal = (ex.pnl != null) ? ex.pnl : (isBuy ? (ex.price - ent.price) : (ent.price - ex.price));
+      const reasonStr = ex.badge ? ex.badge.replace(/^.*?SORTIE\s*/, '') : (ex.exitType === 'kk_zero' ? 'Ligne 0' : (ex.exitType === 'kk_extreme' ? 'Extrême' : 'Inversion'));
+
+      liveChartTrades.push({
+        num: ent.tradeNum || (ei + 1),
+        entryPastilleNum: ent.tradeNum || (ei + 1),
+        exitPastilleNum: ex.tradeNum || ent.tradeNum || (ei + 1),
+        dir: ent.dir,
+        type: isBuy ? 'ACHAT' : 'VENTE',
+        entryI: ent.i,
+        entryT: ent.t,
+        entryPx: ent.price,
+        exitT: ex.t,
+        exitPx: ex.price,
+        pnl: Math.round(pnlVal * 10) / 10,
+        exitReason: reasonStr
+      });
+    }
+  }
+
+  const rStats = (window.__strat11Ranking || []).find(function(r) { return r.key === varKey; });
+  let allTrades = [];
+  if (liveChartTrades.length > 0 && period !== 'all') {
+    allTrades = liveChartTrades.slice();
+  } else if (rStats && rStats[exitKey] && Array.isArray(rStats[exitKey].trades) && rStats[exitKey].trades.length > 0) {
+    allTrades = rStats[exitKey].trades.slice();
+    if (liveChartTrades.length > 0) {
+      const firstLiveT = liveChartTrades[0].entryT || 0;
+      allTrades = allTrades.filter(function(t) { return (t.entryT || 0) < firstLiveT; }).concat(liveChartTrades);
+    }
+  } else if (liveChartTrades.length > 0) {
+    allTrades = liveChartTrades.slice();
+  }
+
+  // Calculate timing boundaries for filtering
+  const now = Date.now();
+  const dNow = new Date(now);
+  const startOfUtcDay = Date.UTC(dNow.getUTCFullYear(), dNow.getUTCMonth(), dNow.getUTCDate(), 0, 0, 0);
+  const startOfLocalDay = new Date(dNow.getFullYear(), dNow.getMonth(), dNow.getDate(), 0, 0, 0).getTime();
+  const tToday = Math.min(startOfUtcDay, startOfLocalDay);
+  const t3Days = now - (3 * 24 * 3600 * 1000);
+
+  let filteredTrades = allTrades;
+  if (period === 'day') {
+    filteredTrades = allTrades.filter(function(t) { return (t.entryT || 0) >= tToday; });
+  } else if (period === '3d') {
+    filteredTrades = allTrades.filter(function(t) { return (t.entryT || 0) >= t3Days; });
+  }
+
+  // Position size in BTC for dollar PnL calculation
+  const customQty = parseFloat(window.__stCoachCustomQty || '0.032') || 0.032;
+
+  // Synthesis KPIs
+  let totalPnl = 0, wins = 0, losses = 0, gW = 0, gL = 0;
+  filteredTrades.forEach(function(t) {
+    totalPnl += t.pnl;
+    if (t.pnl >= 0) { wins++; gW += t.pnl; }
+    else { losses++; gL += Math.abs(t.pnl); }
+  });
+  const n = filteredTrades.length;
+  const wr = n > 0 ? (wins / n) * 100 : 0;
+  const pf = gL > 0 ? (gW / gL) : (gW > 0 ? 99 : 0);
+  const totalUsdt = totalPnl * customQty;
+
+  // Update KPI cards in modal
+  const kpiPnl = document.getElementById('modal-rt-kpi-pnl');
+  if (kpiPnl) {
+    kpiPnl.innerHTML = (totalPnl >= 0 ? '+' : '') + Math.round(totalPnl) + ' pts <span style="font-size:12px;color:' + (totalUsdt >= 0 ? '#34D399' : '#F87171') + '">(' + (totalUsdt >= 0 ? '+' : '') + totalUsdt.toFixed(2) + ' $)</span>';
+    kpiPnl.style.color = totalPnl >= 0 ? '#10B981' : '#F87171';
+  }
+  const kpiWr = document.getElementById('modal-rt-kpi-wr');
+  if (kpiWr) kpiWr.textContent = wr.toFixed(0) + '%';
+  const kpiWl = document.getElementById('modal-rt-kpi-wl');
+  if (kpiWl) kpiWl.textContent = wins + ' Gagnants / ' + losses + ' Perdants';
+  const kpiPf = document.getElementById('modal-rt-kpi-pf');
+  if (kpiPf) kpiPf.textContent = pf > 99 ? '>99' : pf.toFixed(2);
+  const kpiCount = document.getElementById('modal-rt-kpi-count');
+  if (kpiCount) kpiCount.textContent = n + ' trades';
+
+  function fmtDT(t) {
+    if (!t) return '—';
+    const dt = new Date(t);
+    const j = String(dt.getDate()).padStart(2, '0');
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const h = String(dt.getHours()).padStart(2, '0');
+    const min = String(dt.getMinutes()).padStart(2, '0');
+    return j + '/' + m + ' ' + h + ':' + min;
+  }
+
+  if (n === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:40px 20px;text-align:center;color:#94A3B8;font-size:13px">'
+      + '<div style="font-size:28px;margin-bottom:10px">⏳</div>'
+      + '<div style="font-weight:800;color:#F8FAFC;font-size:14px;margin-bottom:6px">Aucun trade clôturé pour ' + (period === 'day' ? "Aujourd'hui" : "cette sélection") + '</div>'
+      + '<div style="font-size:12px;color:#94A3B8;margin-bottom:14px">Le robot est actif et surveille en direct la prochaine pastille Élite [5m × 10m].</div>'
+      + '<button onclick="window.setStrat11JournalPeriod(\'3d\'); window.renderRealTradesModal();" style="background:rgba(56,189,248,0.2);border:1px solid #38BDF8;color:#38BDF8;padding:7px 16px;border-radius:6px;font-size:11.5px;font-weight:800;cursor:pointer">📊 Voir les 3 Derniers Jours</button>'
+      + '</td></tr>';
+    return;
+  }
+
+  // Chronological reverse (newest first)
+  const displayTrades = filteredTrades.slice().reverse();
+  let trHTML = '';
+  displayTrades.forEach(function(t) {
+    const isBuy = t.dir === 1;
+    const pnlCol = t.pnl >= 0 ? '#10B981' : '#F87171';
+    const pnlStr = (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + ' pts';
+    const usdtVal = t.pnl * customQty;
+    const usdtStr = (usdtVal >= 0 ? '+' : '') + usdtVal.toFixed(2) + ' $';
+
+    const entNum = t.entryPastilleNum || t.num;
+    const exNum  = t.exitPastilleNum || entNum;
+
+    const badgeType = isBuy
+      ? '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,0.22);color:#10B981;font-weight:900;padding:3px 8px;border-radius:4px;font-size:10.5px;border:1px solid rgba(16,185,129,0.4)">🟢 ACHAT</span>'
+      : '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(244,63,94,0.22);color:#F43F5E;font-weight:900;padding:3px 8px;border-radius:4px;font-size:10.5px;border:1px solid rgba(244,63,94,0.4)">🔴 VENTE</span>';
+
+    const statusBadge = t.isPending
+      ? '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,180,0,0.25);color:#FFB400;border:1px solid #FFB400;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:900">⏳ EN COURS</span>'
+      : (t.pnl >= 0
+        ? '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(16,185,129,0.2);color:#34D399;border:1px solid #10B981;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:900">✅ GAGNANT</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(239,68,68,0.2);color:#F87171;border:1px solid #EF4444;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:900">❌ PERDANT</span>');
+
+    const exitCell = t.isPending
+      ? '<div style="font-weight:900;color:#FFB400;font-size:11.5px">⏳ En attente de sortie</div><div style="font-size:10px;color:#94A3B8">Prix actuel : $' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div>'
+      : '<div style="font-weight:900;color:#F8FAFC;font-size:11.5px">$' + (t.exitPx ? t.exitPx.toFixed(1) : '—') + '</div><div style="font-size:10px;color:#94A3B8">' + fmtDT(t.exitT) + '</div><div style="font-size:9.5px;color:#FFB400;font-weight:800">Pastille #' + exNum + (t.exitReason ? (' · ' + t.exitReason) : '') + '</div>';
+
+    trHTML += '<tr style="border-bottom:1px solid rgba(255,255,255,0.08);' + (t.isPending ? 'background:rgba(255,180,0,0.06);' : '') + 'transition:background 0.15s" onmouseover="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseout="this.style.background=\'' + (t.isPending ? 'rgba(255,180,0,0.06)' : 'transparent') + '\'">'
+      + '<td style="padding:10px 12px">'
+      + '<div style="font-weight:900;color:#F8FAFC;font-size:12px;margin-bottom:3px">Pastille #' + entNum + '</div>'
+      + badgeType
+      + '</td>'
+      + '<td style="padding:10px 12px">'
+      + '<div style="font-weight:900;color:#F8FAFC;font-size:11.5px">$' + (t.entryPx ? t.entryPx.toFixed(1) : '—') + '</div>'
+      + '<div style="font-size:10px;color:#94A3B8">' + fmtDT(t.entryT) + '</div>'
+      + '</td>'
+      + '<td style="padding:10px 12px">' + exitCell + '</td>'
+      + '<td style="padding:10px 12px;font-family:\'IBM Plex Mono\',monospace;font-weight:900;color:' + pnlCol + ';font-size:12px">' + pnlStr + '</td>'
+      + '<td style="padding:10px 12px;font-family:\'IBM Plex Mono\',monospace;font-weight:900;color:' + pnlCol + ';font-size:12px">' + usdtStr + '</td>'
+      + '<td style="padding:10px 12px">' + statusBadge + '</td>'
+      + '<td style="padding:10px 12px;text-align:center">'
+      + '<button onclick="event.stopPropagation();if(typeof window.focusChartOnCandle===\'function\')window.focusChartOnCandle(' + t.entryI + ');window.closeRealTradesModal();" style="background:rgba(56,189,248,0.2);border:1.2px solid #38BDF8;color:#38BDF8;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer" title="Voir ce trade sur le graphique">🔍 Voir</button>'
+      + '</td>'
+      + '</tr>';
+  });
+
+  tbody.innerHTML = trHTML;
 };
 
 window.getCoachCapital = function() {
@@ -43734,7 +44087,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0916-0510';
+  window.__LUMEN_BUILD = 'B-0916-0520';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
@@ -46710,10 +47063,11 @@ window.balayerMM_MTF = async function(){
     </div>
     <!-- Actions d'Exécution Automatique Directe : SEULEMENT 2 BOUTONS CLAIRS -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-      <!-- Bouton 1 : Compte Démo -->
-      <button id="btn-st-apply-demo" type="button" onclick="window.activerStrat11SurCompteDemo()" style="background:linear-gradient(135deg,#00E676,#00B0FF);color:#06101E;border:none;border-radius:8px;padding:9px 8px;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(0,230,118,0.35);transition:all 0.15s" title="Lancer cette stratégie sur votre Compte Démo">
-        🤖 Lancer en DÉMO
+      <!-- Bouton 1 : Tableau / Liste des Trades Réels (Remplace Lancer en Démo) -->
+      <button id="btn-st-real-trades" type="button" onclick="window.openRealTradesModal()" style="background:linear-gradient(135deg,#0284C7,#00E5FF);color:#04121F;border:none;border-radius:8px;padding:9px 8px;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(0,229,255,0.35);transition:all 0.15s" title="Ouvrir le tableau complet des trades réels avec filtres Aujourd'hui / 3 Jours / Tous">
+        📋 Trades Réels
       </button>
+      <span id="btn-st-apply-demo" style="display:none"></span>
 
       <!-- Bouton 2 : Robot MEXC Web Trader 0.00% Maker -->
       <button id="btn-st-apply-mexc" type="button" onclick="window.activerStrat11SurMexcWeb()" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#06101E;border:none;border-radius:8px;padding:9px 8px;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(255,215,0,0.35);transition:all 0.15s" title="Lancer le Robot Réel MEXC (0% de frais Maker, sans API)">
