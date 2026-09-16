@@ -4,6 +4,8 @@
 // @version      2.1.8
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
+// @downloadURL  https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
+// @updateURL    https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
 // @match        *://*.mexc.com/*
 // @match        *://futures.mexc.com/*
 // @match        *://mexc.com/*
