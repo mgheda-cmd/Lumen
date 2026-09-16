@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0940</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-1005</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -37505,37 +37505,35 @@ function computeFMCSignals(cleFmc, cleStrat) {
         }
       }
 
-      // --- ANCRAGE HEBDOMADAIRE : LUNDI 00H00 UTC ➔ DIMANCHE 23H59 UTC ---
-      // Règle absolue : Chaque semaine crypto débute le Lundi à 00:00:00 UTC.
-      // Le premier trade survenu à partir du Lundi 00:00 est strictement le #1 de la semaine.
-      // Chaque trade suivant est incrémenté consécutivement (1, 2, 3, ... N).
-      // Zéro localStorage, zéro conflit de cache, zéro dérive ou doublon possible !
-      function getMondayWeekUTC(t) {
+      // --- ANCRAGE JOURNALIER SESSION (00H00 ➔ 23H59) ---
+      // Règle d'or absolue et définitive : Chaque journée compte ses propres trades (#1, #2, #3, ... N).
+      // Le premier trade de chaque journée (depuis 00:00:00 du jour) est strictement le #1 du jour.
+      // Chaque trade suivant du même jour est incrémenté consécutivement (#1, #2, #3, #4, #5...).
+      // Résultat : Zéro saut de numéro, zéro dérive d'historique, numéro FIXE et immuable dans le temps !
+      function getDaySessionKey(t) {
         const dt = new Date(t);
-        const day = dt.getUTCDay(); // 0: Dimanche, 1: Lundi, ..., 6: Samedi
-        const diff = (day === 0 ? 6 : day - 1);
-        return Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() - diff, 0, 0, 0, 0);
+        return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
       }
 
       rawCandidates.sort(function(a, b) { return a.i - b.i; });
 
-      // Partitionner les trades par semaine (Lundi 00:00:00 UTC)
-      const weekBuckets = new Map();
+      // Partitionner les trades par journée calendaire
+      const dayBuckets = new Map();
       for (let ci = 0; ci < rawCandidates.length; ci++) {
         const cand = rawCandidates[ci];
-        const wKey = getMondayWeekUTC(cand.t);
-        if (!weekBuckets.has(wKey)) weekBuckets.set(wKey, []);
-        weekBuckets.get(wKey).push(cand);
+        const dKey = getDaySessionKey(cand.t);
+        if (!dayBuckets.has(dKey)) dayBuckets.set(dKey, []);
+        dayBuckets.get(dKey).push(cand);
       }
 
       const rawEntries = [];
-      for (const [wKey, cands] of weekBuckets.entries()) {
-        for (let wi = 0; wi < cands.length; wi++) {
-          const cand = cands[wi];
-          const tNum = wi + 1; // 1, 2, 3...
+      for (const [dKey, cands] of dayBuckets.entries()) {
+        for (let di = 0; di < cands.length; di++) {
+          const cand = cands[di];
+          const tNum = di + 1; // 1, 2, 3, 4, 5... du jour
           cand.tradeNum = tNum;
           cand.num = tNum;
-          cand.weekMonday = wKey;
+          cand.daySession = dKey;
           rawEntries.push(cand);
 
           const isBuy = cand.dir === 1;
@@ -37547,7 +37545,7 @@ function computeFMCSignals(cleFmc, cleStrat) {
               isStrat1111: true,
               tradeNum: tNum,
               num: tNum,
-              weekMonday: wKey,
+              daySession: dKey,
               price: cand.price, low: cand.low, high: cand.high,
               score: netKK[cand.i] ?? 0,
               reason: 'FMC ' + tfFMC + 'm ' + (isBuy ? 'Vert' : 'Rouge') + ' + KK ' + tfKK + 'm ' + (isBuy ? 'Vert' : 'Rouge'),
@@ -44145,7 +44143,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0916-0940';
+  window.__LUMEN_BUILD = 'B-0916-1005';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
