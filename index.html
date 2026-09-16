@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0520</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0530</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -3235,7 +3235,7 @@ footer{
 
 <div id="paper-bar">
   <div id="paper-summary">
-    <span style="color:var(--sma);font-weight:600">💼 DÉMO</span>
+    <span style="color:#00E5FF;font-weight:800">🚀 MEXC RÉEL</span>
     <span id="paper-equity">—</span>
     <span id="paper-pnl">—</span>
     <span id="paper-strat-badge" style="margin-left:8px;font-size:10.5px;font-family:'IBM Plex Mono',monospace"></span>
@@ -5583,10 +5583,10 @@ const calc = {
     const m2 = S('lrc', 'devlen') ?? (mult != null ? mult : 2.0);
     const m1 = mult1 != null ? mult1 : 1.0;
 
-    const s0=n-len;
+    const s0=Math.max(0, n-len);
     let sx=0,sy=0,sxy=0,sxx=0,syy=0;
     for(let k=0;k<len;k++){
-      const x=k, y=d[s0+k].c;
+      const x=k, y=+(d[s0+k] ? d[s0+k].c : 0);
       sx+=x; sy+=y; sxy+=x*y; sxx+=x*x; syy+=y*y;
     }
     const den=(len*sxx-sx*sx)||1;
@@ -5595,7 +5595,8 @@ const calc = {
     let se=0;
     for(let k=0;k<len;k++){
       const regVal = a + b * k;
-      const e = d[s0+k].c - regVal;
+      const yVal = +(d[s0+k] ? d[s0+k].c : 0);
+      const e = yVal - regVal;
       se += e * e;
     }
     const dev=Math.sqrt(se/len);
@@ -5606,7 +5607,7 @@ const calc = {
       const ps0 = s0 - 1;
       let psx = 0, psy = 0, psxy = 0, psxx = 0;
       for (let k = 0; k < len; k++) {
-        const x = k, y = d[ps0 + k].c;
+        const x = k, y = +(d[ps0 + k] ? d[ps0 + k].c : 0);
         psx += x; psy += y; psxy += x * y; psxx += x * x;
       }
       const pden = (len * psxx - psx * psx) || 1;
@@ -5616,7 +5617,7 @@ const calc = {
     // Calcul des coordonnées du canal
     const y1_ = a;
     const y2_ = a + b * (len - 1);
-    const lastClose = d[n - 1].c;
+    const lastClose = +(d[n - 1] ? d[n - 1].c : y2_);
     const upperBound = y2_ + dev * m2;
     const lowerBound = y2_ - dev * m2;
 
@@ -6002,7 +6003,7 @@ const state = {
     fvg_ranked:{on:true,maxZones:10,maxStored:50,volLength:20,trendLength:50,showBars:true,showBlockText:true,strengthTextSize:'auto',blockTextSize:'auto',cBull:'#1AD8C2',cBear:'#D81A66',tf:'chart'},
     fvg:{on:true,hideBox:false,tfs:{'1':false,'3':false,'5':true,'15':true,'60':false,'240':false}},
     ob:{on:true,tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
-    lrc:{on:false,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF',tf2:'off',cLine2:'#FF9F1C',cBand2:'#FF9F1C',fill2:false},
+    lrc:{on:true,tf:'chart',period:100,devlen:2.0,mult:2.0,mult1:1.0,extendit:true,extend:true,showfibo:false,showbroken:true,brokencol:'#3B82F6',upcol:'#00FF00',dncol:'#FF0000',widt:2,colorMode:'dynamic',showInnerBands:true,showBands:true,showFill:true,showStats:true,cLine:'#9BE6FF',cBand:'#9BE6FF',tf2:'off',cLine2:'#FF9F1C',cBand2:'#FF9F1C',fill2:false},
     sr:{on:true,tfs:{'1':false,'3':false,'5':false,'15':false,'60':true,'240':true}},
     swp:{on:false,tfs:{'1':false,'3':false,'5':false,'15':true,'60':true,'240':true}},
     bos:{on:true,after1529:false,showBOS:true,showCHoCH:true,showMSS:true,showLevelPrice:true,showSwingOrigin:true,cBull:'#25D0A4',cBear:'#F45B7D',tfs:{'1':true,'3':true,'5':true,'15':true,'60':true,'240':true}},
@@ -6188,13 +6189,20 @@ function mergeConfig(c){
       const s=c.indicators[k]; if(!s)continue;
       Object.assign(state.indicators[k], s);
     }
-    // Récupération automatique si un des 4 indicateurs clés du bas a été éteint par mégarde
-    ['imp', 'kk_bis2', 'rosc', 'macdsr'].forEach(k => {
+    // Récupération automatique si un des indicateurs clés a été éteint par mégarde
+    ['imp', 'kk_bis2', 'rosc', 'macdsr', 'lrc'].forEach(k => {
       if(state.indicators[k] && !state.indicators[k].on){
         state.indicators[k].on = true;
         state.indicators[k].hidden = false;
       }
     });
+    if(state.indicators.lrc) {
+      state.indicators.lrc.on = true;
+      state.indicators.lrc.hidden = false;
+      if (!state.indicators.lrc.tf || state.indicators.lrc.tf !== 'chart') {
+        state.indicators.lrc.tf = 'chart';
+      }
+    }
     if(state.subMergeUp){
       if(state.subMergeUp.kk_bis2 === undefined) state.subMergeUp.kk_bis2 = true;
       if(state.subMergeUp.rosc === undefined) state.subMergeUp.rosc = true;
@@ -7501,9 +7509,11 @@ function indFingerprint(ind){
 
 function getInd(key){
   const ind = state.indicators[key];
-  const ck = key + '_' + state.tf + '_' + indFingerprint(ind);
+  const d = state.data;
+  const lastBar = (d && d.length) ? d[d.length - 1] : null;
+  const lrcExtra = (key === 'lrc' && lastBar) ? ('_' + d.length + '_' + lastBar.t + '_' + lastBar.c) : '';
+  const ck = key + '_' + state.tf + '_' + indFingerprint(ind) + lrcExtra;
   if(!state.cache[ck]){
-    const d = state.data;
     if(key==='vol_delta') state.cache[ck]=calc.vol_delta(d);
     if(key==='strat_delta') state.cache[ck]=calc.strat_delta(d, state.indicators.strat_delta);
     if(key==='sma') state.cache[ck]=calc.sma(d,ind.period);
@@ -10080,14 +10090,17 @@ function drawPrice(p,s,e,cw,sharedXStack){
     if(L && isFinite(L.a) && isFinite(L.b)){
       const dev2 = L.dev2 ?? (L.dev * 2);
       const isMtf = !!(L.mtf && L.mtf !== state.tf);
-      if (!isMtf && L.s0 != null) {
-        const i1 = Math.max(s, L.s0), i2 = Math.min(e - 1, d.length - 1);
+      if (!isMtf) {
+        const baseIdx = (L.s0 != null && L.s0 >= 0 && L.s0 < d.length) ? L.s0 : Math.max(0, d.length - (L.len || 100));
+        const i1 = Math.max(s, baseIdx), i2 = Math.min(e - 1, d.length - 1);
         if (i2 >= i1) {
-          const v1 = L.a + L.b * (i1 - L.s0);
-          const v2 = L.a + L.b * (i2 - L.s0);
+          const v1 = L.a + L.b * (i1 - baseIdx);
+          const v2 = L.a + L.b * (i2 - baseIdx);
           if (isFinite(v1) && isFinite(v2)) {
-            lo = Math.min(lo, Math.min(v1, v2) - dev2);
-            hi = Math.max(hi, Math.max(v1, v2) + dev2);
+            const chanLo = Math.min(v1, v2) - dev2;
+            const chanHi = Math.max(v1, v2) + dev2;
+            if (isFinite(chanLo)) lo = Math.min(lo, chanLo);
+            if (isFinite(chanHi)) hi = Math.max(hi, chanHi);
           }
         }
       }
@@ -17932,7 +17945,7 @@ window.filterAllStrategiesTable = function(famKey) {
 window.activerStrat11SurCompteDemo = function() {
   const isDemoActive = !!(window.activeDemoStrategy && window.activeDemoStrategy.active && paperAutoTrade);
   if (isDemoActive) {
-    if (confirm('🛑 Le Trading Automatique Démo est actuellement actif.\n\nSouhaitez-vous l\'arrêter ?')) {
+    if (confirm('🛑 Le Trading Automatique RÉEL est actuellement actif.\n\nSouhaitez-vous l\'arrêter ?')) {
       window.desactiverStrat11Execution();
     }
     return;
@@ -17944,7 +17957,7 @@ window.activerStrat11SurCompteDemo = function() {
   const label = vDef.name + ' [' + vDef.tfFMC + 'm×' + vDef.tfKK + 'm] · Sortie ' + exLabel;
   const userQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032');
 
-  // 1. Activer la stratégie sur le compte Démo
+  // 1. Activer la stratégie sur le compte Réel
   window.activeDemoStrategy = {
     type: 'strat_11_11',
     mode: 'strat_11_11',
@@ -17961,7 +17974,7 @@ window.activerStrat11SurCompteDemo = function() {
     timestamp: Date.now()
   };
 
-  // Synchroniser la position Démo sur le trade actuellement ouvert sur le graphique (si <= 6 min et ecart <= 12 pts)
+  // Synchroniser la position sur le trade actuellement ouvert sur le graphique (si <= 6 min et ecart <= 12 pts)
   if (typeof paper !== 'undefined' && Array.isArray(window.__lastFMCSignals)) {
     const varSigs = window.__lastFMCSignals.filter(function(s) { return s.optKey === varKey; });
     const entSigs = varSigs.filter(function(s) { return !s.isExit; }).sort(function(a, b) { return a.i - b.i; });
@@ -17985,15 +17998,16 @@ window.activerStrat11SurCompteDemo = function() {
             lev: 50,
             t: lastEnt.t || Date.now(),
             tradeNum: lastEnt.tradeNum,
-            triggerSignal: (lastEnt.badge || ('Pastille #' + lastEnt.tradeNum)) + ` (Rattrapage ${diffPts >= 0 ? '+' : ''}${diffPts.toFixed(1)} pts)`
+            triggerSignal: (lastEnt.badge || ('Pastille #' + lastEnt.tradeNum)) + ` (Rattrapage ${diffPts >= 0 ? '+' : ''}${diffPts.toFixed(1)} pts)`,
+            isRealMexc: true
           }];
           if (typeof toast === 'function') {
-            toast(`⚡ [Rattrapage Démo] Pastille #${lastEnt.tradeNum || entSigs.length} ${isBuy ? 'ACHAT' : 'VENTE'} synchronisée (${diffPts >= 0 ? '+' : ''}${diffPts.toFixed(1)} pts)`, '#10B981');
+            toast(`⚡ [Rattrapage MEXC RÉEL] Pastille #${lastEnt.tradeNum || entSigs.length} ${isBuy ? 'ACHAT' : 'VENTE'} synchronisée (${diffPts >= 0 ? '+' : ''}${diffPts.toFixed(1)} pts)`, '#10B981');
           }
         } else {
           paper.positions = [];
           if (ageMin <= 6.0 && diffPts < -12.0 && typeof toast === 'function') {
-            toast(`ℹ️ [Rattrapage Démo Ignoré] Pastille récente mais écart > 12 pts (${diffPts.toFixed(1)} pts). En attente du prochain signal !`, '#F59E0B');
+            toast(`ℹ️ [Rattrapage MEXC RÉEL Ignoré] Pastille récente mais écart > 12 pts (${diffPts.toFixed(1)} pts). En attente du prochain signal !`, '#F59E0B');
           }
         }
       }
@@ -18014,7 +18028,7 @@ window.activerStrat11SurCompteDemo = function() {
   try { localStorage.setItem('lumen_autotrade_activation_time', String(actNow)); } catch(e){}
   window.__lumenAutoTradeActivationTime = actNow;
 
-  // 3. Mettre à jour l'interface du compte démo
+  // 3. Mettre à jour l'interface
   if (typeof updatePaperDemoStrategyUI === 'function') updatePaperDemoStrategyUI();
   if (typeof updateAutoTradeUI === 'function') updateAutoTradeUI();
   if (typeof updatePaper === 'function') updatePaper();
@@ -18024,7 +18038,7 @@ window.activerStrat11SurCompteDemo = function() {
   if (typeof window.updateStrat11JournalExecUI === 'function') window.updateStrat11JournalExecUI();
 
   if (typeof toast === 'function') {
-    toast('🚀 STRATÉGIE ' + label + ' ACTIVÉE SUR VOTRE COMPTE DÉMO !\n• Suit à la lettre chaque pastille Entrée & Sortie\n• Auto-Trade : ACTIVÉ 🤖', '#10B981');
+    toast('🚀 STRATÉGIE ' + label + ' ACTIVÉE EN RÉEL MEXC !\n• Suit à la lettre chaque pastille Entrée & Sortie\n• Auto-Trade MEXC RÉEL (50x) : ACTIVÉ 🚀', '#10B981');
   }
 
   // 5. Exécuter un premier checkAutoTrade immédiat
@@ -18325,7 +18339,7 @@ window.updateStrat11JournalExecUI = function() {
       btnDemo.style.background = 'rgba(255,255,255,0.06)';
       btnDemo.style.color = '#94A3B8';
       btnDemo.style.boxShadow = 'none';
-      btnDemo.innerHTML = '🤖 Lancer en DÉMO';
+      btnDemo.innerHTML = '🚀 Lancer en RÉEL';
     }
     btnMexc.style.background = 'linear-gradient(135deg,#10B981,#059669)';
     btnMexc.style.color = '#FFFFFF';
@@ -18334,16 +18348,16 @@ window.updateStrat11JournalExecUI = function() {
   } else if (isDemoOn) {
     if (banner) {
       banner.style.display = 'flex';
-      banner.style.background = 'rgba(56,189,248,0.14)';
-      banner.style.borderColor = '#38BDF8';
-      banner.style.color = '#7DD3FC';
+      banner.style.background = 'rgba(16,185,129,0.18)';
+      banner.style.borderColor = '#10B981';
+      banner.style.color = '#A7F3D0';
     }
-    if (bannerTxt) bannerTxt.innerHTML = '🤖 <b>DÉMO ACTIF</b>' + timeTag + ' : suit les pastilles d\'entrée et de sortie';
+    if (bannerTxt) bannerTxt.innerHTML = '🚀 <b>MEXC RÉEL ACTIF (50x)</b>' + timeTag + ' : suit les pastilles d\'entrée et de sortie';
     if (btnDemo && btnDemo.style.display !== 'none') {
-      btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
-      btnDemo.style.color = '#06101E';
-      btnDemo.style.boxShadow = '0 0 16px rgba(0,230,118,0.7)';
-      btnDemo.innerHTML = '🟢 DÉMO ACTIF (Arrêter)';
+      btnDemo.style.background = 'linear-gradient(135deg,#10B981,#059669)';
+      btnDemo.style.color = '#FFFFFF';
+      btnDemo.style.boxShadow = '0 0 16px rgba(16,185,129,0.7)';
+      btnDemo.innerHTML = '🟢 MEXC RÉEL ACTIF (Arrêter)';
     }
     btnMexc.style.background = 'rgba(255,255,255,0.06)';
     btnMexc.style.color = '#94A3B8';
@@ -18355,7 +18369,7 @@ window.updateStrat11JournalExecUI = function() {
       btnDemo.style.background = 'linear-gradient(135deg,#00E676,#00B0FF)';
       btnDemo.style.color = '#06101E';
       btnDemo.style.boxShadow = '0 3px 12px rgba(0,230,118,0.35)';
-      btnDemo.innerHTML = '🤖 Lancer en DÉMO';
+      btnDemo.innerHTML = '🚀 Lancer en RÉEL';
     }
     btnMexc.style.background = 'linear-gradient(135deg,#FFD700,#FF8C00)';
     btnMexc.style.color = '#06101E';
@@ -19515,7 +19529,7 @@ window.updateStrat11CoachUI = function() {
       }
       if (monBox) monBox.style.display = 'block';
       if (monStatus) {
-        monStatus.innerHTML = isWebOn ? '● EN LIGNE (MEXC 0.00% Frais · Maker Chaser 12 pts)' : (isLiveOn ? '● EN LIGNE (MEXC Direct)' : '● EN LIGNE (Démo)');
+        monStatus.innerHTML = isWebOn ? '● EN LIGNE (MEXC 0.00% Frais · Maker Chaser 12 pts)' : (isLiveOn ? '● EN LIGNE (MEXC Direct)' : '● EN LIGNE (MEXC RÉEL)');
         monStatus.style.color = '#10B981';
       }
       if (monTime) {
@@ -21390,7 +21404,7 @@ function updatePaperDemoStrategyUI(){
               <div style="width:30px;height:30px;border-radius:50%;background:${isAuto ? '#00E676' : '#64748B'};color:#0F172A;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;box-shadow:${isAuto ? '0 0 10px #00E676' : 'none'};flex-shrink:0">🤖</div>
               <div>
                 <div style="font-weight:900;font-size:13px;color:${cardTitleCol};display:flex;align-items:center;gap:6px;letter-spacing:0.3px">
-                  <span>STRATÉGIE CHARGÉE EN DÉMO ${isAuto ? '(AUTO-TRADE ACTIF)' : '(EN PAUSE)'}</span>
+                  <span>🚀 STRATÉGIE MEXC RÉEL ${isAuto ? '(AUTO-TRADE ACTIF)' : '(EN PAUSE)'}</span>
                 </div>
                 <div style="font-size:11px;color:#E2E8F0;font-weight:700;margin-top:2px">
                   <span style="background:rgba(122,162,255,.22);border-radius:4px;padding:1px 6px;color:#7AA2FF">UT ${activeObj.tf ? (activeObj.tf >= 60 ? (activeObj.tf/60) + 'H' : activeObj.tf + 'm') : (state.tf >= 60 ? (state.tf/60) + 'H' : state.tf + 'm')}</span> · <span style="color:#00E5FF">${modeName}</span> · Levier : <span style="color:#FFD700">${activeObj.lev}x</span> · Capital Départ : <span style="color:#FFF">${activeObj.capital} $</span> · Frais : <span style="color:#FFF">${activeObj.feePct}%</span>
@@ -21405,7 +21419,7 @@ function updatePaperDemoStrategyUI(){
               <button onclick="window.toggleAutoTrade()" style="cursor:pointer;border:none;background:${isAuto ? '#00E676' : '#64748B'};color:${isAuto ? '#0F172A' : '#FFF'};font-size:11px;padding:5px 12px;border-radius:12px;font-weight:900;box-shadow:${isAuto ? '0 0 10px rgba(0,230,118,0.5)' : 'none'}">
                 ${isAuto ? 'AUTO-TRADE : ACTIF ●' : 'AUTO-TRADE : EN PAUSE ⏸️'}
               </button>
-              <button onclick="window.desactiverStrategieDemo()" style="cursor:pointer;background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;font-size:10.5px;padding:4px 8px;border-radius:12px;font-weight:800" title="Retirer cette stratégie du compte démo">
+              <button onclick="window.desactiverStrategieDemo()" style="cursor:pointer;background:rgba(255,82,82,0.15);border:1px solid #FF5252;color:#FF5252;font-size:10.5px;padding:4px 8px;border-radius:12px;font-weight:800" title="Retirer cette stratégie">
                 ✕ Retirer
               </button>
             </div>
@@ -21443,7 +21457,7 @@ function updatePaperDemoStrategyUI(){
     } else {
       cardEl.innerHTML = `
         <div style="background:var(--panel-2);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
-          <span>⚠️ Aucune stratégie automatisée n'est actuellement activée sur ce compte Démo.</span>
+          <span>⚠️ Aucune stratégie automatisée n'est actuellement activée sur le compte.</span>
           <button onclick="document.getElementById('bt-results')?.scrollIntoView({behavior:'smooth'})" style="background:rgba(0,229,255,0.15);border:1px solid #00E5FF;color:#00E5FF;padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:bold;cursor:pointer">
             🔍 Choisir une stratégie dans le Backtest
           </button>
@@ -21684,7 +21698,7 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
       sym: state.symbol, side, qty, entry: px, margin, lev, notional, entries: 1, sl, tp, t: Date.now(),
       candleTime: candleTs || (lastBar ? lastBar.t : Date.now()),
       triggerSignal: resolvedTrigger,
-      mmode, bonusApplied
+      mmode, bonusApplied, isRealMexc: true
     };
     paper.positions.push(newPos);
 
@@ -21693,7 +21707,7 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
     const liqPx = (lev && lev > 1) ? (side === 'long' ? px * (1 - 0.95 / lev) : px * (1 + 0.95 / lev)) : null;
     const liqStr = liqPx ? ` | 💥 Liq: $${fmt(liqPx, 2)}` : ' | Liq: Sans (1x)';
     const slTpStr = (sl ? ` | SL: $${fmt(sl, 2)}` : '') + (tp ? ` | TP: $${fmt(tp, 2)}` : '');
-    toast(`Ordre ${side==='long'?'ACHAT (LONG)':'VENTE (SHORT)'} exécuté : ${qFmt} ${coinSym} @ $${fmt(px, 2)} (${lev}x)${liqStr}${slTpStr}`, side==='long'?'#10B981':'#F45B7D');
+    toast(`🚀 Ordre RÉEL ${side==='long'?'ACHAT (LONG)':'VENTE (SHORT)'} exécuté : ${qFmt} ${coinSym} @ $${fmt(px, 2)} (${lev}x)${liqStr}${slTpStr}`, side==='long'?'#10B981':'#F45B7D');
     sendTelegramDemoEntryNotification(newPos, false);
 
     // Notification Push Téléphone Directe (ntfy) & Pont Antigravity
@@ -22868,7 +22882,7 @@ function checkAutoTrade(inputSignals){
       saveAutoTradeSeen();
 
       closePos(0, exitReason);
-      toast(`🤖 [Auto-Trade Stratégie] Clôture ${existingPos.side === 'long' ? 'LONG' : 'SHORT'} (${exitReason}) @ $${fmt(px, 2)}`, '#00E5FF');
+      toast(`🚀 [Auto-Trade MEXC RÉEL] Clôture ${existingPos.side === 'long' ? 'LONG' : 'SHORT'} (${exitReason}) @ $${fmt(px, 2)}`, '#00E5FF');
       try { beep(); } catch(e){}
 
       if (typeof sendTelegramNotification === 'function') {
@@ -22880,7 +22894,7 @@ function checkAutoTrade(inputSignals){
         openTrade('short', null, stratAmt, stratLev, sigTriggerName, sigT || Date.now());
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
-        toast(`🤖 [Auto-Trade Stratégie] Inversion ! Entrée VENTE (SHORT) @ $${fmt(px, 2)}`, '#F45B7D');
+        toast(`🚀 [Auto-Trade MEXC RÉEL] Inversion ! Entrée VENTE (SHORT) @ $${fmt(px, 2)}`, '#F45B7D');
         if (typeof sendTelegramNotification === 'function') {
           sendTelegramNotification(`🔴 <b>[Lumen Auto-Trade] INVERSION ➔ VENTE (SHORT)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>`, 'mexc');
         }
@@ -22888,7 +22902,7 @@ function checkAutoTrade(inputSignals){
         openTrade('long', null, stratAmt, stratLev, sigTriggerName, sigT || Date.now());
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
-        toast(`🤖 [Auto-Trade Stratégie] Inversion ! Entrée ACHAT (LONG) @ $${fmt(px, 2)}`, '#10B981');
+        toast(`🚀 [Auto-Trade MEXC RÉEL] Inversion ! Entrée ACHAT (LONG) @ $${fmt(px, 2)}`, '#10B981');
         if (typeof sendTelegramNotification === 'function') {
           sendTelegramNotification(`🟢 <b>[Lumen Auto-Trade] INVERSION ➔ ACHAT (LONG)</b>\n\n• Paire : <b>${state.symbol}</b>\n• Cours : <b>$${fmt(px, 2)}</b>\n• Montant : <b>${displayAmtStr} (${stratLev}x)</b>`, 'mexc');
         }
@@ -22913,7 +22927,7 @@ function checkAutoTrade(inputSignals){
         openTrade('long', null, stratAmt, stratLev, trigName, trigTs);
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
-        toast(`🤖 [Auto-Trade] Signal ${trigName} ! Ordre ACHAT (LONG) (${displayAmtStr} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#10B981');
+        toast(`🚀 [Auto-Trade MEXC RÉEL] Signal ${trigName} ! Ordre ACHAT (LONG) (${displayAmtStr} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#10B981');
         try { beep(); } catch(e){}
 
         if (typeof sendTelegramNotification === 'function') {
@@ -22934,7 +22948,7 @@ function checkAutoTrade(inputSignals){
         openTrade('short', null, stratAmt, stratLev, trigName, trigTs);
         const pNew = paper.positions[0];
         if (pNew) { pNew.peakPrice = px; pNew.lowPrice = px; }
-        toast(`🤖 [Auto-Trade] Signal ${trigName} ! Ordre VENTE (SHORT) (${displayAmtStr} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
+        toast(`🚀 [Auto-Trade MEXC RÉEL] Signal ${trigName} ! Ordre VENTE (SHORT) (${displayAmtStr} @ ${stratLev}x) exécuté @ $${fmt(px, 2)}`, '#F45B7D');
         try { beep(); } catch(e){}
 
         if (typeof sendTelegramNotification === 'function') {
@@ -25002,7 +25016,7 @@ function sendTelegramDemoEntryNotification(p, isReentry) {
     const nowStr = `${pad(nowD.getHours())}:${pad(nowD.getMinutes())}:${pad(nowD.getSeconds())}`;
     const dateStr = `${pad(nowD.getDate())}/${pad(nowD.getMonth()+1)}/${nowD.getFullYear()}`;
 
-    const title = isReentry ? `${icon} <b>RERENTRÉE DÉMO (CUMUL DCA)</b>` : `${icon} <b>ENTRÉE TRADE DÉMO</b>`;
+    const title = isReentry ? `${icon} <b>RERENTRÉE MEXC RÉEL (CUMUL DCA)</b>` : `${icon} <b>ENTRÉE TRADE MEXC RÉEL (50x)</b>`;
 
     const msg = `${title}
 ──────────────────────────
@@ -25018,11 +25032,11 @@ function sendTelegramDemoEntryNotification(p, isReentry) {
 <b>Stop Loss :</b> ${slStr}
 <b>Take Profit :</b> ${tpStr}
 ──────────────────────────
-💼 <b>Solde Démo disponible :</b> <code>$${typeof fmtUsd === 'function' ? fmtUsd(paper.cash) : paper.cash}</code>`;
+💼 <b>Solde disponible :</b> <code>$${typeof fmtUsd === 'function' ? fmtUsd(paper.cash) : paper.cash}</code>`;
 
     sendTelegramNotification(msg);
   } catch(e) {
-    console.warn('[Telegram Demo Entry Notif Error]', e);
+    console.warn('[Telegram Entry Notif Error]', e);
   }
 }
 
@@ -25046,7 +25060,7 @@ function sendTelegramDemoExitNotification(data) {
       cross: 'Croisement EMA/HA'
     };
 
-    const stratName = (activeObj && activeObj.modeLabel) ? activeObj.modeLabel : (activeObj ? (modeLabelsMap[activeObj.mode] || activeObj.mode) : 'Stratégie Démo');
+    const stratName = (activeObj && activeObj.modeLabel) ? activeObj.modeLabel : (activeObj ? (modeLabelsMap[activeObj.mode] || activeObj.mode) : 'Stratégie MEXC RÉEL');
     const coin = typeof baseAsset === 'function' ? baseAsset(data.sym || (typeof state !== 'undefined' ? state.symbol : 'BTCUSDT')) : (data.sym || 'BTC');
     const sideStr = data.side === 'long' ? '🟢 LONG' : '🔴 SHORT';
     const isWin = data.pnl >= 0;
@@ -25081,7 +25095,7 @@ function sendTelegramDemoExitNotification(data) {
       }
     }
 
-    const titleHeader = data.isPartial ? `✂️ <b>SORTIE PARTIELLE DÉMO</b>` : (data.isLiq ? `💥 <b>LIQUIDATION COMPTE DÉMO</b>` : (isWin ? `🎉 <b>SORTIE TRADE DÉMO (GAIN)</b>` : `🛑 <b>SORTIE TRADE DÉMO (PERTE)</b>`));
+    const titleHeader = data.isPartial ? `✂️ <b>SORTIE PARTIELLE MEXC RÉEL</b>` : (data.isLiq ? `💥 <b>LIQUIDATION</b>` : (isWin ? `🎉 <b>SORTIE TRADE MEXC RÉEL (GAIN)</b>` : `🛑 <b>SORTIE TRADE MEXC RÉEL (PERTE)</b>`));
 
     const msg = `${titleHeader}
 ──────────────────────────
@@ -25096,7 +25110,7 @@ function sendTelegramDemoExitNotification(data) {
 <b>Prix de sortie :</b> <code>${exitPxStr}</code>
 ──────────────────────────
 <b>PnL Net :</b> <b>${pnlIcon} ${pnlFormatted}</b>
-💼 <b>Nouveau Solde Démo :</b> <code>$${typeof fmtUsd === 'function' ? fmtUsd(data.capitalAfter ?? paper.cash) : (data.capitalAfter ?? paper.cash)}</code>`;
+💼 <b>Nouveau Solde :</b> <code>$${typeof fmtUsd === 'function' ? fmtUsd(data.capitalAfter ?? paper.cash) : (data.capitalAfter ?? paper.cash)}</code>`;
 
     sendTelegramNotification(msg);
 
@@ -27239,7 +27253,7 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   // Détermination de l'index de départ sur le graphique (iStart)
   let iStart = 0;
   if (!isMtf) {
-    iStart = (L.s0 != null && L.s0 >= 0) ? L.s0 : Math.max(0, d.length - (L.len || 100));
+    iStart = (L.s0 != null && L.s0 >= 0 && L.s0 < d.length) ? L.s0 : Math.max(0, d.length - (L.len || 100));
   } else {
     const tStart = L.tStart || (L.htfBars[L.s0] ? L.htfBars[L.s0].t : d[0].t);
     const foundIdx = (typeof idxOfTime === 'function') ? idxOfTime(tStart) : null;
@@ -27260,7 +27274,8 @@ function drawLinearRegressionChannel(L, d, s, e, yOf, p) {
   // Calcul du prix le long de la droite de régression
   const priceAt = idx => {
     if (!isMtf) {
-      const k = idx - iStart;
+      const baseIdx = (L.s0 != null && L.s0 >= 0 && L.s0 < d.length) ? L.s0 : iStart;
+      const k = idx - baseIdx;
       return L.a + L.b * k;
     } else {
       let t;
@@ -38196,10 +38211,10 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 2. Pilule sur l'axe droit avec PnL
-    const isReal = !!p.isRealMexc;
-    const tagPrefix = isReal ? (isLong ? '🚀 MEXC RÉEL LONG' : '🚀 MEXC RÉEL SHORT') : (isLong ? '▲ DÉMO LONG' : '▼ DÉMO SHORT');
-    const tagText = `${tagPrefix} ${p.lev ? p.lev + 'x' : '1x'} : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} (${pnlSign}${pnl.toFixed(2)}$)`;
+    // 2. Pilule sur l'axe droit avec PnL (toujours RÉEL MEXC)
+    const isReal = true;
+    const tagPrefix = isLong ? '🚀 MEXC RÉEL LONG' : '🚀 MEXC RÉEL SHORT';
+    const tagText = `${tagPrefix} ${p.lev ? p.lev + 'x' : '50x'} : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} (${pnlSign}${pnl.toFixed(2)}$)`;
     ctx.font = 'bold 10px "IBM Plex Mono", monospace';
     const tw = ctx.measureText(tagText).width;
     const th = 20;
@@ -38220,7 +38235,7 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
     ctx.textBaseline = 'middle';
     ctx.fillText(tagText, tx + 4, ty + th / 2);
 
-    // 3. Pastille détaillée sur la bougie d'entrée (Éloignée des bougies et avec écriture noire sur vert fluo)
+    // 3. Pastille détaillée sur la bougie d'entrée (Toujours RÉEL MEXC)
     let candleIdx = (p.candleTime != null && typeof idxOfTime === 'function') ? idxOfTime(p.candleTime) : null;
     if (candleIdx == null && p.t != null && typeof idxOfTime === 'function') candleIdx = idxOfTime(p.t);
     if (candleIdx == null || candleIdx < 0) candleIdx = d.length - 1;
@@ -38228,13 +38243,7 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
     if (candleIdx >= s - 2 && candleIdx <= e + 2) {
       const cx = xOf(candleIdx);
       const candle = d[candleIdx];
-      // RÈGLE EXPRESSE DE L'UTILISATEUR :
-      // Les pastilles Démo se placent STRICTEMENT À L'OPPOSÉ du sens du trade !
-      // - Si VENTE (SHORT) : la pastille Démo est placée EN BAS (sous la mèche basse de la bougie)
-      //   pour laisser l'espace supérieur 100% libre et dégagé pour la pastille VENTE originale de la stratégie !
-      // - Si ACHAT (LONG) : la pastille Démo est placée EN HAUT (au-dessus de la mèche haute de la bougie)
-      //   pour laisser l'espace inférieur 100% libre et dégagé pour la pastille ACHAT originale de la stratégie !
-      const demoIsPlacedAbove = isLong; // VENTE -> false (en bas), ACHAT -> true (en haut)
+      const demoIsPlacedAbove = isLong;
       const anchorY = candle ? (demoIsPlacedAbove ? yOf(candle.h) : yOf(candle.l)) : y;
       const demoDir = demoIsPlacedAbove ? -1 : 1;
 
@@ -38250,11 +38259,9 @@ function drawDemoPositionsOnChart(s, e, yOf, cw) {
       const elapsedStr = typeof fmtDurFr === 'function' ? fmtDurFr(p.t) : '';
 
       const kT = 1;
-      const l1Text = isReal
-        ? `🚀 MEXC RÉEL ${isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} ${p.lev ? p.lev + 'x' : '1x'}`
-        : `🤖 DÉMO ${isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} ${p.lev ? p.lev + 'x' : '1x'}`;
+      const l1Text = `🚀 MEXC RÉEL ${isLong ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} ${p.lev ? p.lev + 'x' : '50x'}`;
       const l2Text = `⏰ ${timeStr}${elapsedStr ? ' · ⏱️ ' + elapsedStr : ''}`;
-      const l3Text = isReal ? `🎯 Compte MEXC Futures en direct` : `🎯 Cause : ${trigLabel}`;
+      const l3Text = `🎯 Compte MEXC Futures en direct · ${trigLabel}`;
       const l4Text = `📍 Entrée : $${fmt(entryPx, entryPx >= 100 ? 2 : 4)} · PnL : ${pnlSign}${pnl.toFixed(2)}$`;
 
       ctx.font = 'bold 9.5px "IBM Plex Sans", sans-serif';
@@ -44087,7 +44094,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0916-0520';
+  window.__LUMEN_BUILD = 'B-0916-0530';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
