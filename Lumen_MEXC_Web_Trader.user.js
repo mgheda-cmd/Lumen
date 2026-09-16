@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.8
+// @version      2.1.9
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @downloadURL  https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
@@ -26,7 +26,7 @@
     // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
-        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.1.8)');
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.1.9)');
         const pageWin = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 
         const sendSignal = function(sig) {
@@ -42,9 +42,9 @@
         };
 
         pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.8';
+        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
-        window.__LUMEN_USERSCRIPT_VERSION = '2.1.8';
+        window.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
         pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
         window.__LUMEN_SEND_SIGNAL = sendSignal;
 
@@ -59,12 +59,12 @@
         const keepBridgeAlive = () => {
             try {
                 pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.8';
+                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
                 window.__LUMEN_USERSCRIPT_ACTIVE = true;
-                window.__LUMEN_USERSCRIPT_VERSION = '2.1.8';
+                window.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
                 pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
                 window.__LUMEN_SEND_SIGNAL = sendSignal;
-                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.1.8' } }));
+                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.1.9' } }));
             } catch(e){}
         };
         keepBridgeAlive();
@@ -101,14 +101,14 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.8 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
+    console.log('>>> [Lumen Web Trader] Script v2.1.9 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
     let isBusy = false;
 
     // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
-    const SCRIPT_VERSION = '2.1.8';
+    const SCRIPT_VERSION = '2.1.9';
 
     function renderDefaultHud(hud) {
         if (!hud) return;
@@ -190,6 +190,51 @@
         element.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
+
+    // --- ASSISTANCE MOBILE / IPAD & CONFIRMATION AUTOMATIQUE (v2.1.9) ---
+    async function ensureOrderPanelVisible() {
+        // En mode iPad / Responsive : Si l'utilisateur est sur l'onglet Chart ou Info, basculer sur Order
+        const navElements = Array.from(document.querySelectorAll('button, div[role="tab"], span, a, p, div'));
+        const orderTab = navElements.find(el => {
+            const txt = (el.textContent || '').trim().toLowerCase();
+            return (txt === 'order' || txt === 'ordre' || txt === 'ordres' || txt === 'trade' || txt === 'trader') && el.offsetParent !== null;
+        });
+        if (orderTab && !orderTab.classList.contains('active')) {
+            console.log('[Lumen Web Trader] Bascule automatique sur l\'onglet Order/Ordre MEXC...');
+            orderTab.click();
+            await new Promise(r => setTimeout(r, 200));
+        }
+    }
+
+    async function autoConfirmModal() {
+        await new Promise(r => setTimeout(r, 180));
+        const modalBtns = Array.from(document.querySelectorAll('button, div[role="dialog"] button, div.modal button, div[class*="dialog"] button, div[class*="modal"] button'));
+        const confirmBtn = modalBtns.find(b => {
+            const txt = (b.textContent || '').trim().toLowerCase();
+            return (txt === 'confirm' || txt === 'confirmer' || txt === 'ok' || txt === 'submit' || txt === 'valider') && !b.disabled;
+        });
+        if (confirmBtn) {
+            confirmBtn.click();
+            console.log('[Lumen Web Trader] Popup de confirmation MEXC validée automatiquement.');
+            await new Promise(r => setTimeout(r, 150));
+        }
+    }
+
+    async function cancelPendingOrders() {
+        const cancelBtns = Array.from(document.querySelectorAll('button, a, span, div')).filter(el => {
+            const txt = (el.textContent || '').trim().toLowerCase();
+            return (txt === 'cancel' || txt === 'annuler' || txt === 'cancel all' || txt === 'tout annuler') && el.offsetParent !== null;
+        });
+        for (const cBtn of cancelBtns) {
+            try { cBtn.click(); } catch(e){}
+        }
+        if (cancelBtns.length > 0) {
+            console.log('[Lumen Web Trader] Ordre(s) limit en attente annulé(s) pour libérer la marge.');
+            await new Promise(r => setTimeout(r, 250));
+            await autoConfirmModal();
+        }
+    }
+
     // --- FERMETURE COMPATIBLE HEDGE MODE & MAKER CHASER 0% FRAIS ---
     async function executeCloseOrder(signal) {
         try {
@@ -200,6 +245,7 @@
             const maxDev = signal?.maxDeviationPts || 12;
             const refPx = signal?.price || 0;
 
+            await ensureOrderPanelVisible();
             console.log(`[Lumen Web Trader] Clôture : Close ${targetSide} (Mode: ${useMaker ? 'Maker Chaser 0%' : 'Market'})...`);
             notifyHud(`Clôture : Close ${targetSide} (${useMaker ? 'Maker 0%' : 'Marché'})`, '#EC4899');
 
@@ -275,7 +321,8 @@
                                     // (Fallback automatique vers Market pour sécuriser)
                                 }
                                 console.log('[Lumen Web Trader] Timeout Sortie Limit ou divergence > 12 pts ➔ Bascule Sécurité Marché');
-                                notifyHud(`⚡ Bascule Sécurité Sortie Marché (Sécurisation des profits)`, '#F59E0B');
+                                notifyHud(`⚡ Annulation Limit & Bascule Sortie Marché...`, '#F59E0B');
+                                await cancelPendingOrders();
                             }
                         }
                     }
@@ -305,6 +352,7 @@
                 if (closeActionBtn && !closeActionBtn.disabled) {
                     closeActionBtn.click();
                     notifyHud(`✅ Position ${targetSide} fermée avec succès !`, '#EC4899');
+                    await autoConfirmModal();
                     await new Promise(r => setTimeout(r, 300));
                     return true;
                 }
@@ -346,6 +394,7 @@
         }
 
         try {
+            await ensureOrderPanelVisible();
             console.log('[Lumen Web Trader] Signal d\'action reçu:', signal);
             const isBuy = signal.side === 'BUY' || signal.side === 'LONG';
             const tradeDir = (signal.tradeDir || 'both').toLowerCase();
@@ -462,6 +511,7 @@
                             targetBtn.click();
                             limitPlaced = true;
                             notifyHud(`⚡ Entrée Limit Maker à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 90s / 15 pts)...`, '#10B981');
+                            await autoConfirmModal();
 
                             // Boucle de surveillance Maker (30s max avec sécurité 12 points)
                             const startTime = Date.now();
@@ -476,7 +526,8 @@
                                 }
                             }
                             console.log('[Lumen Web Trader] Timeout Entrée Limit ou écart > 12 pts ➔ Bascule Sécurité Marché');
-                            notifyHud(`⚡ Bascule Sécurité Entrée Marché (Trade sécurisé à 100%)`, '#F59E0B');
+                            notifyHud(`⚡ Annulation Limit & Bascule Entrée Marché...`, '#F59E0B');
+                            await cancelPendingOrders();
                         }
                     }
                 }
@@ -536,6 +587,10 @@
             if (targetBtn && !targetBtn.disabled) {
                 targetBtn.click();
                 notifyHud(`✅ Ordre ${signal.side} (${budgetStr}) validé !`, isBuy ? '#10B981' : '#EF4444');
+                await autoConfirmModal();
+            } else {
+                console.warn('[Lumen Web Trader] Bouton d\'action non trouvé ou désactivé:', targetBtn);
+                notifyHud('⚠️ Bouton d\'action introuvable (Activez l\'onglet Order)', '#F59E0B');
             }
         } catch (e) {
             console.error('[Lumen Web Trader] Erreur:', e);
