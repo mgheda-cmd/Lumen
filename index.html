@@ -533,7 +533,7 @@ footer{
     <span>🏛️</span> <span class="btn-full-txt">Toutes les Stratégies</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0420</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0916-0500</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -17711,8 +17711,8 @@ function loadSavedStrat11Ranking() {
 // ═══════════════════════════════════════════════════════════════════════════
 // JOURNAL DÉTAILLÉ DES TRADES STRATÉGIES 11 11
 // ═══════════════════════════════════════════════════════════════════════════
-window.__stJournalVarKey = 'strat_11_11_ultra';
-window.__stJournalExitMode = 's1';
+window.__stJournalVarKey = 'strat_11_11_elite';
+window.__stJournalExitMode = 's2';
 window.__stJournalPeriod = '3d'; // '3d' par défaut (du dernier en cours aux 3 jours)
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -17842,9 +17842,9 @@ window.activerStrat11SurCompteDemo = function() {
     }
     return;
   }
-  const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
-  const exitKey = window.__stJournalExitMode || 's1';
-  const vDef = (typeof STRAT11_VARIANTS_DEF !== 'undefined' ? STRAT11_VARIANTS_DEF.find(v => v.key === varKey) : null) || { name: 'Ultra Scalp', tfFMC: 1, tfKK: 6 };
+  const varKey = window.__stJournalVarKey || 'strat_11_11_elite';
+  const exitKey = window.__stJournalExitMode || 's2';
+  const vDef = (typeof STRAT11_VARIANTS_DEF !== 'undefined' ? STRAT11_VARIANTS_DEF.find(v => v.key === varKey) : null) || { name: 'Élite', tfFMC: 5, tfKK: 10 };
   const exLabel = (exitKey === 's1') ? 'Ligne 0' : ((exitKey === 's2') ? 'Extrême' : 'Inversion');
   const label = vDef.name + ' [' + vDef.tfFMC + 'm×' + vDef.tfKK + 'm] · Sortie ' + exLabel;
   const userQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032');
@@ -18559,7 +18559,7 @@ window.setStrat11JournalPeriod = function(p, doRender) {
 
 window.setStrat11JournalExit = function(exitKey, doRender) {
   window.__stJournalExitMode = exitKey;
-  const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
+  const varKey = window.__stJournalVarKey || 'strat_11_11_elite';
   if (state.indicators && state.indicators[varKey]) {
     state.indicators[varKey].showExitZero = (exitKey === 's1');
     state.indicators[varKey].showExitExtreme = (exitKey === 's2');
@@ -18595,8 +18595,8 @@ window.renderStrat11TradesJournal = function() {
   const tbody = document.getElementById('strat11-trades-tbody');
   if (!tbody) return;
 
-  const varKey = window.__stJournalVarKey || 'strat_11_11_ultra';
-  const exitKey = window.__stJournalExitMode || 's1';
+  const varKey = window.__stJournalVarKey || 'strat_11_11_elite';
+  const exitKey = window.__stJournalExitMode || 's2';
   const period = window.__stJournalPeriod || '3d';
 
   const vDef = STRAT11_VARIANTS_DEF.find(function(v) { return v.key === varKey; }) || STRAT11_VARIANTS_DEF[0];
@@ -18977,8 +18977,8 @@ window.updateStrat11CoachUI = function() {
   const alertTxt   = document.getElementById('st-coach-alert-txt');
   const btnApply   = document.getElementById('btn-st-coach-apply');
 
-  const curVarKey = window.__stJournalVarKey || 'strat_11_11_ultra';
-  const curExit   = window.__stJournalExitMode || 's1';
+  const curVarKey = window.__stJournalVarKey || 'strat_11_11_elite';
+  const curExit   = window.__stJournalExitMode || 's2';
 
   const targetQty = isPhase2 ? 0.065 : 0.032;
   window.__stCoachTargetQty = targetQty;
@@ -22239,18 +22239,18 @@ function checkAutoTrade(inputSignals){
     strat_zz2: '⚡ Pastille Z.Z. 2'
   };
 
-  // Evaluation selon la stratégie active
-  const stratMode = strat?.mode || (state.indicators?.strat_zz?.on ? 'strat_zz' : (state.indicators?.strat_mm?.on ? 'strat_mm' : 'all'));
+  // Evaluation selon la stratégie active (Par défaut STRICTEMENT la stratégie 11 11 Élite affichée)
+  const stratMode = strat?.mode || (state.indicators?.strat_zz?.on ? 'strat_zz' : (state.indicators?.strat_mm?.on ? 'strat_mm' : 'strat_11_11'));
 
   try {
     if (strat?.type === 'strat_11_11' || stratMode === 'strat_11_11') {
-      // --- STRATÉGIE PASTILLES 11 11 (SUIVI RIGOUREUX DES PASTILLES GRAPHIQUE) ---
-      const varKey = strat?.varKey || window.__stJournalVarKey || 'strat_11_11_ultra';
-      const exitKey = strat?.exitKey || window.__stJournalExitMode || 's1';
+      // --- STRATÉGIE PASTILLES 11 11 (SUIVI STRICT DES PASTILLES VISIBLES SUR LE GRAPHIQUE) ---
+      const varKey = strat?.varKey || window.__stJournalVarKey || 'strat_11_11_elite';
+      const exitKey = strat?.exitKey || window.__stJournalExitMode || 's2';
       const allChartSigs = window.__lastFMCSignals || [];
       const varSigs = allChartSigs.filter(function(s) { return s.optKey === varKey; });
 
-      candidateSignals = varSigs.filter(function(s) { return !s.isExit; });
+      candidateSignals = varSigs.filter(function(s) { return !s.isExit && s.tradeNum != null; });
       const exitSigs = varSigs.filter(function(s) { return s.isExit; });
 
       // 1. Si une position est ouverte sur le compte Démo : chercher la pastille de sortie correspondante
@@ -22459,8 +22459,8 @@ function checkAutoTrade(inputSignals){
           }
         }
       }
-    } else {
-      // --- MODE UNIVERSEL / TOUS SIGNAUX ACTIFS ---
+    } else if (stratMode === 'all_indicators') {
+      // --- MODE UNIVERSEL / TOUS SIGNAUX ACTIFS (Uniquement si explicitement activé) ---
       const allSigs = typeof collectAllActiveSignals === 'function' ? collectAllActiveSignals() : [];
       candidateSignals = allSigs;
       if (existingPos) {
@@ -43737,7 +43737,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0916-0420';
+  window.__LUMEN_BUILD = 'B-0916-0500';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
