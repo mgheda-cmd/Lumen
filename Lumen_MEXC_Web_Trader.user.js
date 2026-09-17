@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.9
+// @version      2.2.0
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @downloadURL  https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
@@ -26,7 +26,7 @@
     // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
-        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.1.9)');
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.2.0)');
         const pageWin = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 
         const sendSignal = function(sig) {
@@ -42,9 +42,9 @@
         };
 
         pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
+        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.0';
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
-        window.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
+        window.__LUMEN_USERSCRIPT_VERSION = '2.2.0';
         pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
         window.__LUMEN_SEND_SIGNAL = sendSignal;
 
@@ -59,12 +59,12 @@
         const keepBridgeAlive = () => {
             try {
                 pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
+                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.0';
                 window.__LUMEN_USERSCRIPT_ACTIVE = true;
-                window.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
+                window.__LUMEN_USERSCRIPT_VERSION = '2.2.0';
                 pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
                 window.__LUMEN_SEND_SIGNAL = sendSignal;
-                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.1.9' } }));
+                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.2.0' } }));
             } catch(e){}
         };
         keepBridgeAlive();
@@ -101,14 +101,14 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.9 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
+    console.log('>>> [Lumen Web Trader] Script v2.2.0 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
     let isBusy = false;
 
     // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
-    const SCRIPT_VERSION = '2.1.9';
+    const SCRIPT_VERSION = '2.2.0';
 
     function renderDefaultHud(hud) {
         if (!hud) return;
@@ -174,6 +174,151 @@
             osc.stop(ctx.currentTime + 0.35);
         } catch(e){}
     }
+
+    // =========================================================================
+    // BOUCLIER ANTI-POPUPS & DESTRUCTEUR UNIVERSEL D'OBSTACLES (v2.2.0)
+    // =========================================================================
+    function forceClick(el) {
+        if (!el) return;
+        try { el.scrollIntoView({ block: 'nearest' }); } catch(e){}
+        try { el.focus(); } catch(e){}
+        const evtOpts = { bubbles: true, cancelable: true, view: window, buttons: 1 };
+        try { el.dispatchEvent(new MouseEvent('mousedown', evtOpts)); } catch(e){}
+        try { el.dispatchEvent(new MouseEvent('mouseup', evtOpts)); } catch(e){}
+        try { el.dispatchEvent(new MouseEvent('click', evtOpts)); } catch(e){}
+        try { el.click(); } catch(e){}
+    }
+
+    function injectAntiPopupStyles() {
+        if (document.getElementById('lumen-anti-popup-shield-css')) return;
+        const style = document.createElement('style');
+        style.id = 'lumen-anti-popup-shield-css';
+        style.textContent = `
+            /* 1. Neutraliser d'office les bannières d'app mobile & téléchargement */
+            [class*="download-bar"], [class*="app-download"], [class*="downloadBar"],
+            [class*="smartbanner"], [class*="openApp"], [class*="open-app"],
+            [class*="mobile-guide"], [class*="app-banner"], [class*="appGuide"],
+            [class*="download-entry"], [class*="app-download-wrap"], [class*="mexc-app-banner"],
+            div[class*="open-in-app"], div[class*="openInApp"], a[href*="mexc.onelink.me"] {
+                display: none !important;
+                pointer-events: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                height: 0 !important;
+                max-height: 0 !important;
+                z-index: -99999 !important;
+            }
+            /* 2. Neutraliser les popups intrusives hors dialogue de confirmation d'ordre */
+            div[class*="promotion-modal"], div[class*="activity-modal"]:not([class*="order"]),
+            div[class*="notice-modal"]:not([class*="order"]), div[class*="survey-modal"],
+            div[class*="newbie-modal"], div[class*="gift-modal"], div[class*="bonus-modal"] {
+                display: none !important;
+                pointer-events: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                z-index: -99999 !important;
+            }
+            /* 3. Garantir que le corps de page et les boutons d'ordres restent toujours cliquables */
+            body, html {
+                pointer-events: auto !important;
+                overflow: auto !important;
+            }
+        `;
+        (document.head || document.documentElement).appendChild(style);
+    }
+    injectAntiPopupStyles();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectAntiPopupStyles);
+    }
+
+    function dismissAllIntrusivePopups() {
+        try {
+            // A. Détecter et cliquer sur les boutons/croix de fermeture de popups
+            const allCandidates = Array.from(document.querySelectorAll(
+                'button, a, span, i, svg, div[role="button"], [aria-label*="close" i], [aria-label*="Close" i], [class*="close" i], .ant-modal-close'
+            ));
+
+            for (const el of allCandidates) {
+                if (el.closest('#lumen-trader-hud')) continue;
+                const txt = (el.textContent || '').trim().toLowerCase();
+                const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+                const cls = (el.className || '').toString().toLowerCase();
+
+                const isDismissText = (
+                    txt === '✕' || txt === '×' || txt === 'x' ||
+                    txt === 'close' || txt === 'fermer' ||
+                    txt === 'cancel' || txt === 'annuler' ||
+                    txt === 'stay on web' || txt === 'rester sur le web' ||
+                    txt === 'continuer sur le navigateur' || txt === 'continue on browser' ||
+                    txt === 'plus tard' || txt === 'later' ||
+                    txt === 'not now' || txt === 'pas maintenant' ||
+                    txt === "j'ai compris" || txt === 'i understand' || txt === 'got it' ||
+                    txt === 'ignorer' || txt === 'skip' || txt === 'non merci' || txt === 'no thanks'
+                );
+
+                const isCloseIcon = (
+                    aria.includes('close') || cls.includes('close') || cls.includes('ant-modal-close') ||
+                    (el.tagName && el.tagName.toLowerCase() === 'svg' && (cls.includes('close') || aria.includes('close')))
+                );
+
+                if (isDismissText || isCloseIcon) {
+                    const parentDialog = el.closest('div[role="dialog"], div.modal, div[class*="modal"], div[class*="dialog"]');
+                    if (parentDialog) {
+                        const dialogText = (parentDialog.textContent || '').toLowerCase();
+                        const isOrderConfirm = (
+                            dialogText.includes('confirm order') || dialogText.includes("confirmer l'ordre") ||
+                            dialogText.includes('close position') || dialogText.includes('fermer la position') ||
+                            dialogText.includes('flash close') || dialogText.includes('clôture éclair') ||
+                            dialogText.includes('order confirm')
+                        );
+                        if (isOrderConfirm) continue; // Laisser autoConfirmModal s'en charger
+                    }
+
+                    try {
+                        forceClick(el);
+                        console.log('[Lumen Anti-Popup Shield] Popup intrusive fermée via bouton/croix :', txt || aria || cls);
+                    } catch(e){}
+                }
+            }
+
+            // B. Neutraliser les masques/backdrops bloquants sans confirmation d'ordre
+            const masks = Array.from(document.querySelectorAll(
+                'div[class*="backdrop"], div[class*="modal-mask"], div[class*="dialog-mask"], div[class*="mask-layer"], .ant-modal-mask'
+            ));
+            for (const m of masks) {
+                if (m.closest('#lumen-trader-hud')) continue;
+                const parentModal = m.nextElementSibling || m.parentElement;
+                const modalTxt = parentModal ? (parentModal.textContent || '').toLowerCase() : '';
+                const isOrderModal = modalTxt.includes('confirm') || modalTxt.includes('ordre') || modalTxt.includes('order');
+                if (!isOrderModal) {
+                    try {
+                        m.style.display = 'none';
+                        m.style.pointerEvents = 'none';
+                    } catch(e){}
+                }
+            }
+
+            // C. Rétablir systématiquement le défilement et les interactions
+            if (document.body && document.body.style.pointerEvents === 'none') {
+                document.body.style.pointerEvents = 'auto';
+            }
+        } catch(err) {
+            console.warn('[Lumen Anti-Popup Error]', err);
+        }
+    }
+
+    // Lancer la surveillance permanente en tâche de fond (MutationObserver + 400ms)
+    function startAntiPopupProtection() {
+        try {
+            const observer = new MutationObserver(() => {
+                dismissAllIntrusivePopups();
+            });
+            observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+        } catch(e){}
+        setInterval(dismissAllIntrusivePopups, 400);
+    }
+    if (document.body) startAntiPopupProtection();
+    else document.addEventListener('DOMContentLoaded', startAntiPopupProtection);
 
     function setNativeValue(element, value) {
         const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
@@ -245,6 +390,7 @@
             const maxDev = signal?.maxDeviationPts || 12;
             const refPx = signal?.price || 0;
 
+            dismissAllIntrusivePopups();
             await ensureOrderPanelVisible();
             console.log(`[Lumen Web Trader] Clôture : Close ${targetSide} (Mode: ${useMaker ? 'Maker Chaser 0%' : 'Market'})...`);
             notifyHud(`Clôture : Close ${targetSide} (${useMaker ? 'Maker 0%' : 'Marché'})`, '#EC4899');
@@ -257,7 +403,7 @@
             });
 
             if (closeTab) {
-                closeTab.click();
+                forceClick(closeTab);
                 await new Promise(r => setTimeout(r, 120));
 
                 let limitPlaced = false;
@@ -268,7 +414,7 @@
                         return txt === 'Limit' || txt === 'Limite' || txt === '限价';
                     });
                     if (limitBtn) {
-                        limitBtn.click();
+                        forceClick(limitBtn);
                         await new Promise(r => setTimeout(r, 120));
 
                         // Saisie du prix de sortie Limit avec micro-offset favorable (+6$ pour Close Long, -6$ pour Close Short)
@@ -291,7 +437,7 @@
                                 const txt = (el.textContent || '').trim();
                                 return txt === '100%' || txt === '100';
                             });
-                            if (pct100.length > 0) pct100[pct100.length - 1].click();
+                            if (pct100.length > 0) forceClick(pct100[pct100.length - 1]);
                             await new Promise(r => setTimeout(r, 100));
 
                             // Valider Close
@@ -302,7 +448,7 @@
                             });
 
                             if (closeBtn && !closeBtn.disabled) {
-                                closeBtn.click();
+                                forceClick(closeBtn);
                                 limitPlaced = true;
                                 notifyHud(`⚡ Sortie Limit Maker posée à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 25s / 12 pts)...`, '#38BDF8');
 
@@ -333,14 +479,14 @@
                     const txt = (el.textContent || '').trim();
                     return txt === 'Market' || txt === 'Marché' || txt === '市价';
                 });
-                if (marketBtn) marketBtn.click();
+                if (marketBtn) forceClick(marketBtn);
                 await new Promise(r => setTimeout(r, 120));
 
                 const pct100Elements = Array.from(document.querySelectorAll('div, span, p, button, label')).filter(el => {
                     const txt = (el.textContent || '').trim();
                     return txt === '100%' || txt === '100';
                 });
-                if (pct100Elements.length > 0) pct100Elements[pct100Elements.length - 1].click();
+                if (pct100Elements.length > 0) forceClick(pct100Elements[pct100Elements.length - 1]);
                 await new Promise(r => setTimeout(r, 120));
 
                 const actionButtons = Array.from(document.querySelectorAll('button'));
@@ -350,7 +496,7 @@
                 });
 
                 if (closeActionBtn && !closeActionBtn.disabled) {
-                    closeActionBtn.click();
+                    forceClick(closeActionBtn);
                     notifyHud(`✅ Position ${targetSide} fermée avec succès !`, '#EC4899');
                     await autoConfirmModal();
                     await new Promise(r => setTimeout(r, 300));
@@ -365,13 +511,13 @@
                 return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair' || txt === 'fermer au marché';
             });
             if (flashCloseBtn) {
-                flashCloseBtn.click();
+                forceClick(flashCloseBtn);
                 await new Promise(r => setTimeout(r, 150));
                 const confirmBtn = Array.from(document.querySelectorAll('button')).find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
                     return txt === 'confirm' || txt === 'confirmer' || txt === 'ok';
                 });
-                if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
+                if (confirmBtn && !confirmBtn.disabled) forceClick(confirmBtn);
                 notifyHud(`✅ Position ${targetSide} clôturée (Flash Close) !`, '#EC4899');
                 return true;
             }
