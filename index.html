@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-0155</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-0210</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6493,43 +6493,24 @@ function applyConfigToUI(){
   if(typeof renderPastillesManager==='function') renderPastillesManager();
 }
 
-/* ---------- Flux Binance & MEXC (Temps Réel Haute Disponibilité) ---------- */
-const SPOT_REST=['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com'];
+/* ---------- Flux Binance (Temps Réel Haute Disponibilité, Zéro CORS) ---------- */
+const SPOT_REST=['https://api.binance.com','https://data-api.binance.vision','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com'];
 const SPOT_WS=['wss://data-stream.binance.vision','wss://stream.binance.com:9443'];
-const PERP_REST=['https://fapi.binance.com','https://fapi1.binance.com','https://fapi2.binance.com'];
 const PERP_WS=['wss://fstream.binance.com'];
 let wsHost=SPOT_WS[0];
 function isPerp(){return state.market==='perp';}
-function apiPath(p){return isPerp()?p.replace('/api/v3','/fapi/v1'):p;}
+function apiPath(p){return p.startsWith('/api/v3') ? p : p.replace('/fapi/v1','/api/v3');}
 async function fetchJSON(path){
   let lastErr;
-  // 1. Si marché Perp, tenter les endpoints FAPI de Binance
-  if(isPerp()){
-    const pPerp = path.replace('/api/v3','/fapi/v1');
-    for(let i=0;i<PERP_REST.length;i++){
-      try{
-        const ctl=new AbortController();
-        const to=setTimeout(()=>ctl.abort(),3500);
-        const r=await fetch(PERP_REST[i]+pPerp,{signal:ctl.signal});
-        clearTimeout(to);
-        if(r.ok){
-          wsHost=PERP_WS[0];
-          return await r.json();
-        }
-      }catch(e){lastErr=e;}
-    }
-  }
-  // 2. Repli immédiat & Spot : Endpoints Spot Binance (Vision, api, api1, api2, api3)
-  // Fonctionnent partout sans blocage CloudFront ni 404
-  const pSpot = path.startsWith('/api/v3') ? path : path.replace('/fapi/v1','/api/v3');
+  const p = apiPath(path);
   for(let i=0;i<SPOT_REST.length;i++){
     try{
       const ctl=new AbortController();
-      const to=setTimeout(()=>ctl.abort(),3500);
-      const r=await fetch(SPOT_REST[i]+pSpot,{signal:ctl.signal});
+      const to=setTimeout(()=>ctl.abort(),2500);
+      const r=await fetch(SPOT_REST[i]+p,{signal:ctl.signal});
       clearTimeout(to);
       if(r.ok){
-        wsHost=SPOT_WS[0];
+        wsHost=SPOT_WS[Math.min(i, SPOT_WS.length - 1)];
         return await r.json();
       }
     }catch(e){lastErr=e;}
@@ -7155,23 +7136,8 @@ async function loadData(){
       console.warn('[Lumen] Pagination Lundi UTC:', errHist);
     }
 
-    if(state.symbol === 'BTCUSDT' && state.tf === 1){
-      try{
-        if(typeof get8000Candles === 'function'){
-          const deepBars = await get8000Candles(false);
-          if(deepBars && deepBars.length >= 1000){
-            state.data = deepBars;
-          }
-        }
-      }catch(err){
-        console.warn('[Lumen] Intégration 8000 bougies:', err);
-      }
-    }
     state.view={start:state.data.length-150,count:150};
     restoreView();
-    /* Le cache peut contenir des indicateurs calculés sur d'autres données —
-       après un balayage, un changement de paire ou un rechargement. Le vider
-       ici garantit que ce qu'on dessine correspond aux bougies affichées. */
     state.cache = {};
     updateHeader(); render();
     startStream(g);
@@ -7180,70 +7146,35 @@ async function loadData(){
     if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   }catch(e){
     if(g!==gen)return;
-    // nouvelle tentative avant de basculer en démo (rate limit temporaire ?)
-    for(let attempt=1;attempt<=3;attempt++){
+    // Si on a déjà des bougies réelles en mémoire, NE JAMAIS LES ÉCRASER PAR UN SIMULATEUR !
+    if(state.data && state.data.length > 50){
+      state.view={start:Math.max(0, state.data.length-150),count:150};
+      setStatus('live');
+      updateHeader(); render(); startStream(g); ensureSR();
+      return;
+    }
+    // Tentative de secours rapide
+    for(let attempt=1;attempt<=2;attempt++){
       setStatus('loading');
-      await new Promise(r=>setTimeout(r,attempt*2500));
+      await new Promise(r=>setTimeout(r,attempt*1000));
       if(g!==gen)return;
       try{
-        const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${N_BARS}`);
+        const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000`);
         if(g!==gen)return;
-        if(Array.isArray(rows)){
+        if(Array.isArray(rows) && rows.length > 0){
           state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
-          try {
-            const nowD = new Date();
-            const day = nowD.getUTCDay();
-            const diffDays = (day === 0 ? 6 : day - 1);
-            const mondayUTC = Date.UTC(nowD.getUTCFullYear(), nowD.getUTCMonth(), nowD.getUTCDate() - diffDays, 0, 0, 0, 0);
-
-            let loopGuard = 0;
-            while (state.data.length > 0 && state.data[0].t > mondayUTC && loopGuard < 10) {
-              loopGuard++;
-              const oldestT = state.data[0].t;
-              const olderRows = await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000&endTime=${oldestT - 1}`);
-              if (g !== gen) return;
-              if (Array.isArray(olderRows) && olderRows.length > 0) {
-                const olderBars = olderRows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}))
-                                          .filter(b => b.t < oldestT);
-                if (olderBars.length === 0) break;
-                state.data = olderBars.concat(state.data);
-              } else {
-                break;
-              }
-            }
-          } catch(e){}
-
-          if(state.symbol === 'BTCUSDT' && state.tf === 1){
-            try{
-              if(typeof get8000Candles === 'function'){
-                const deepBars = await get8000Candles(false);
-                if(deepBars && deepBars.length >= 1000){
-                  state.data = deepBars;
-                }
-              }
-            }catch(err){}
-          }
-          state.view={start:state.data.length-150,count:150};
+          state.view={start:Math.max(0, state.data.length-150),count:150};
           restoreView(); updateHeader(); render(); startStream(g); ensureSR();
           return;
         }
       }catch(err){}
     }
     if(g!==gen)return;
-    // Secours réel pour BTCUSDT : tenter les bougies réelles de base avant tout simulateur aléatoire
+    // RÈGLE ABSOLUE : Sur BTCUSDT, interdiction TOTALE d'appeler genData ou de lancer demoTimer
     if(state.symbol === 'BTCUSDT'){
-      try{
-        if(typeof get8000Candles === 'function'){
-          const deepBars = await get8000Candles(false);
-          if(deepBars && deepBars.length >= 500){
-            state.data = deepBars;
-            state.view = { start: Math.max(0, state.data.length - 150), count: 150 };
-            setStatus('live');
-            updateHeader(); render(); startStream(g); ensureSR();
-            return;
-          }
-        }
-      }catch(eSec){}
+      setStatus('loading');
+      setTimeout(function(){ if(g===gen) loadData(); }, 2500);
+      return;
     }
     state.data=genData(state.symbol,state.tf);
     state.view={start:N_BARS-150,count:150};
@@ -44226,7 +44157,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-0155';
+  window.__LUMEN_BUILD = 'B-0918-0210';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
