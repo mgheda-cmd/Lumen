@@ -21661,8 +21661,8 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
       qty = px > 0 ? notional / px : 0;
     }
 
-    // Plafond maximal de sécurité fixé à 0.05 BTC
-    const MAX_BTC_CAP = 0.05;
+    // Plafond maximal de sécurité fixé à 0.032 BTC (~48$ de marge 50x)
+    const MAX_BTC_CAP = 0.032;
     if (qty > MAX_BTC_CAP) {
       qty = MAX_BTC_CAP;
       notional = qty * px;
@@ -21779,9 +21779,9 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
     if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
       try {
         const mexcPair = ((state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
-        // Taille synchronisée avec plafond strict de 0.05 BTC
+        // Taille synchronisée avec plafond strict de 0.032 BTC
         const coachQty = window.__stCoachCustomQty || parseFloat(localStorage.getItem('lumen_coach_qty') || '0.032') || 0.032;
-        let sendQty = Math.min(qty || coachQty, 0.05);
+        let sendQty = Math.min(qty || coachQty, 0.032);
         const targetNotional = Math.round(sendQty * px);
         const webSignal = {
           type: 'LUMEN_TRADE_SIGNAL',
@@ -21804,7 +21804,7 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
           timestamp: Date.now()
         };
         window.emettreSignalMexcWeb(webSignal);
-        toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${sendQty} BTC [Plafond 0.05]) transmis à MEXC (0.00% Maker visé · attente 90s)`, '#10B981');
+        toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${sendQty} BTC [Bridage 0.032]) transmis à MEXC (0.00% Maker visé · attente 90s)`, '#10B981');
       } catch(err){}
     }
   }

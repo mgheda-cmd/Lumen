@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.2.2
-// @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
+// @version      2.2.3
+// @description  Mode Maker Chaser 0.00% Frais avec sécurité Post-Only automatique et bridage strict 0.032 BTC (~48$ de marge 50x)
 // @author       Lumen Algo
 // @downloadURL  https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
 // @updateURL    https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
@@ -26,7 +26,7 @@
     // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
-        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.2.2)');
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.2.3)');
         const pageWin = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 
         const sendSignal = function(sig) {
@@ -42,9 +42,9 @@
         };
 
         pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
+        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.3';
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
-        window.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
+        window.__LUMEN_USERSCRIPT_VERSION = '2.2.3';
         pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
         window.__LUMEN_SEND_SIGNAL = sendSignal;
 
@@ -101,20 +101,20 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.2.2 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
+    console.log('>>> [Lumen Web Trader] Script v2.2.3 actif sur MEXC (0.00% Maker Post-Only · Bridage 0.032 BTC · Veille 90s)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
     let isBusy = false;
 
     // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
-    const SCRIPT_VERSION = '2.2.2';
+    const SCRIPT_VERSION = '2.2.3';
 
     function renderDefaultHud(hud) {
         if (!hud) return;
         hud.style.borderColor = '#10B981';
         hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-        hud.innerHTML = `🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v${SCRIPT_VERSION}</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>`;
+        hud.innerHTML = `🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v${SCRIPT_VERSION}</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% POST-ONLY</span> <span style="background:#38BDF8;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.032 BTC</span>`;
     }
 
     function getOrCreateHud() {
@@ -379,19 +379,23 @@
 
     function setMexcInputValue(input, val) {
         if (!input) return false;
-        try { input.focus(); } catch(e){}
+        try { 
+            input.focus(); 
+            input.click();
+        } catch(e){}
         const proto = window.HTMLInputElement.prototype;
         const descriptor = Object.getOwnPropertyDescriptor(proto, "value");
         if (descriptor && descriptor.set) {
-            descriptor.set.call(input, val);
+            descriptor.set.call(input, String(val));
         } else {
-            input.value = val;
+            input.value = String(val);
         }
         input.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
         input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
         try {
             input.dispatchEvent(new InputEvent("input", { bubbles: true, data: String(val) }));
         } catch(e){}
+        try { input.blur(); } catch(e){}
         return true;
     }
 
@@ -408,6 +412,69 @@
         }
         element.dispatchEvent(new Event('input', { bubbles: true }));
         element.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // =========================================================================
+    // SÉCURITÉ POST-ONLY AUTOMATIQUE (0.00% MAKER GARANTI SUR MEXC)
+    // =========================================================================
+    function ensurePostOnlyChecked() {
+        try {
+            // 1. Recherche par sélecteur direct ou attribut sur les inputs checkbox
+            const directInputs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+            for (const input of directInputs) {
+                const id = (input.id || '').toLowerCase();
+                const name = (input.name || '').toLowerCase();
+                const val = (input.value || '').toLowerCase();
+                const label = input.closest('label') ? (input.closest('label').textContent || '').toLowerCase() : '';
+                const parentTxt = input.parentElement ? (input.parentElement.textContent || '').toLowerCase() : '';
+                
+                if (id.includes('post') || name.includes('post') || val.includes('post') ||
+                    label.includes('post-only') || label.includes('post only') || label.includes('maker-only') ||
+                    parentTxt.includes('post-only') || parentTxt.includes('post only')) {
+                    if (!input.checked) {
+                        input.click();
+                        console.log('[Lumen Web Trader] 🛡️ Case Post-Only activée avec succès (input direct) !');
+                    } else {
+                        console.log('[Lumen Web Trader] 🛡️ Case Post-Only déjà cochée.');
+                    }
+                    return true;
+                }
+            }
+
+            // 2. Recherche par libellé textuel dans les composants UI
+            const allElements = Array.from(document.querySelectorAll('label, span, div, p, button'));
+            for (const el of allElements) {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                if (txt === 'post-only' || txt === 'post only' || txt === 'maker-only' || txt === 'maker only' || txt === '只做maker') {
+                    const chk = el.querySelector('input[type="checkbox"]') || el.parentElement?.querySelector('input[type="checkbox"]');
+                    if (chk) {
+                        if (!chk.checked) {
+                            chk.click();
+                            console.log('[Lumen Web Trader] 🛡️ Case Post-Only activée (via libellé) !');
+                        }
+                        return true;
+                    }
+
+                    const container = el.closest('.ant-checkbox-wrapper, .el-checkbox, label, div') || el;
+                    const isChecked = container.classList.contains('ant-checkbox-checked') ||
+                                      container.classList.contains('is-checked') ||
+                                      container.classList.contains('active') ||
+                                      container.getAttribute('aria-checked') === 'true' ||
+                                      Boolean(container.querySelector('.ant-checkbox-checked, .is-checked, [aria-checked="true"]'));
+                    
+                    if (!isChecked) {
+                        el.click();
+                        console.log('[Lumen Web Trader] 🛡️ Case Post-Only activée (via clic conteneur personnalisé) !');
+                    } else {
+                        console.log('[Lumen Web Trader] 🛡️ Post-Only est déjà actif sur l\'interface.');
+                    }
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.warn('[Lumen Web Trader] Exception vérification Post-Only:', e);
+        }
+        return false;
     }
 
 
@@ -492,6 +559,10 @@
                         forceClick(limitBtn);
                         await new Promise(r => setTimeout(r, 120));
 
+                        // Activation Post-Only pour sortie Limit à 0.00% Maker
+                        ensurePostOnlyChecked();
+                        await new Promise(r => setTimeout(r, 80));
+
                         // Saisie du prix de sortie Limit avec micro-offset favorable (+6$ pour Close Long, -6$ pour Close Short)
                         const offset = signal?.offsetPts || 6;
                         const targetLimitPx = isLongClose ? (refPx + offset) : (refPx - offset);
@@ -509,6 +580,9 @@
                             });
                             if (pct100.length > 0) forceClick(pct100[pct100.length - 1]);
                             await new Promise(r => setTimeout(r, 100));
+
+                            ensurePostOnlyChecked();
+                            await new Promise(r => setTimeout(r, 60));
 
                             // Valider Close
                             const actionButtons = Array.from(document.querySelectorAll('button'));
@@ -665,6 +739,10 @@
                     limitBtn.click();
                     await new Promise(r => setTimeout(r, 120));
 
+                    // Activation impérative Post-Only pour garantir 0.00% Maker
+                    ensurePostOnlyChecked();
+                    await new Promise(r => setTimeout(r, 80));
+
                     const offset = signal?.offsetPts || 6;
                     const targetLimitPx = isBuy ? (refPx - offset) : (refPx + offset);
                     // Saisie ciblée du Prix Limit (0% Maker)
@@ -675,17 +753,21 @@
                         await new Promise(r => setTimeout(r, 100));
                     }
 
-                    // Saisie ciblée de la Quantité exacte (0.032 BTC par défaut, plafond 0.05)
+                    // Saisie ciblée de la Quantité exacte (Bridage strict 0.032 BTC max, ~48$ de marge 50x)
                     const qtyInput = findMexcQuantityInput();
                     const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
-                    const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal strict 0.05 BTC
-                    const valToEnter = btcQty.toFixed(3); // Toujours 0.032 en mode BTC
+                    const btcQty = Math.min(rawBtcQty > 0 ? rawBtcQty : 0.032, 0.032); // Bridage strict 0.032 BTC
+                    const valToEnter = btcQty.toFixed(3); // Toujours 0.032
 
                     if (qtyInput) {
                         setMexcInputValue(qtyInput, valToEnter);
                         console.log(`[Lumen Web Trader] ✅ Quantité Limit saisie: ${valToEnter} BTC (~48$ de marge)`);
                         await new Promise(r => setTimeout(r, 100));
                     }
+
+                    // Re-vérification Post-Only après saisie
+                    ensurePostOnlyChecked();
+                    await new Promise(r => setTimeout(r, 60));
 
                     if (priceInput || qtyInput) {
 
@@ -700,7 +782,7 @@
                         if (targetBtn && !targetBtn.disabled) {
                             targetBtn.click();
                             limitPlaced = true;
-                            notifyHud(`⚡ Entrée Limit Maker à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 90s / 15 pts)...`, '#10B981');
+                            notifyHud(`⚡ Entrée Limit Post-Only à ${targetLimitPx.toFixed(1)} $ (0.00% Maker garanti · 0.032 BTC)...`, '#10B981');
                             await autoConfirmModal();
 
                             // Boucle de surveillance Maker (30s max avec sécurité 12 points)
@@ -711,7 +793,7 @@
                                 const openPosTexts = Array.from(document.querySelectorAll('td, span, div')).map(e => (e.textContent || '').toLowerCase());
                                 const hasPosNow = openPosTexts.some(t => t.includes('close long') || t.includes('close short') || t.includes('flash close'));
                                 if (hasPosNow) {
-                                    notifyHud(`🎉 Entrée MAKER EXÉCUTÉE À 0,00 % DE FRAIS !`, '#10B981');
+                                    notifyHud(`🎉 Entrée MAKER EXÉCUTÉE À 0,00 % DE FRAIS (0.032 BTC) !`, '#10B981');
                                     return true;
                                 }
                             }
@@ -731,10 +813,10 @@
             if (marketBtn) marketBtn.click();
             await new Promise(r => setTimeout(r, 120));
 
-            // Saisie ciblée de la Quantité exacte en mode Market (0.032 BTC garanti)
+            // Saisie ciblée de la Quantité exacte en mode Market (Bridage strict 0.032 BTC garanti)
             const qtyInput = findMexcQuantityInput();
             const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
-            const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal strict 0.05 BTC
+            const btcQty = Math.min(rawBtcQty > 0 ? rawBtcQty : 0.032, 0.032); // Bridage strict 0.032 BTC
             const valToEnter = btcQty.toFixed(3); // Toujours 0.032 en mode BTC
 
             if (qtyInput) {
