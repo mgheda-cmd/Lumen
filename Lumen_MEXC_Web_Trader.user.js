@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.2.1
+// @version      2.2.2
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @downloadURL  https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
@@ -26,7 +26,7 @@
     // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
-        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.2.1)');
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.2.2)');
         const pageWin = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 
         const sendSignal = function(sig) {
@@ -42,9 +42,9 @@
         };
 
         pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.1';
+        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
-        window.__LUMEN_USERSCRIPT_VERSION = '2.2.1';
+        window.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
         pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
         window.__LUMEN_SEND_SIGNAL = sendSignal;
 
@@ -59,12 +59,12 @@
         const keepBridgeAlive = () => {
             try {
                 pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.1';
+                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
                 window.__LUMEN_USERSCRIPT_ACTIVE = true;
-                window.__LUMEN_USERSCRIPT_VERSION = '2.2.1';
+                window.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
                 pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
                 window.__LUMEN_SEND_SIGNAL = sendSignal;
-                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.2.1' } }));
+                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.2.2' } }));
             } catch(e){}
         };
         keepBridgeAlive();
@@ -101,14 +101,14 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.2.1 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
+    console.log('>>> [Lumen Web Trader] Script v2.2.2 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
     let isBusy = false;
 
     // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
-    const SCRIPT_VERSION = '2.2.1';
+    const SCRIPT_VERSION = '2.2.2';
 
     function renderDefaultHud(hud) {
         if (!hud) return;
@@ -176,7 +176,7 @@
     }
 
     // =========================================================================
-    // BOUCLIER ANTI-POPUPS & DESTRUCTEUR UNIVERSEL D'OBSTACLES (v2.2.1)
+    // BOUCLIER ANTI-POPUPS & DESTRUCTEUR UNIVERSEL D'OBSTACLES (v2.2.2)
     // =========================================================================
     function forceClick(el) {
         if (!el) return;
@@ -233,20 +233,43 @@
 
     function dismissAllIntrusivePopups() {
         try {
-            // A. Détecter et cliquer sur les boutons/croix de fermeture de popups
+            // A. Détecter et fermer EXCLUSIVEMENT les modales/popups superposées
+            // RÈGLE DE SÉCURITÉ ABSOLUE : INTERDICTION FORMELLE DE TOUCHER AU PANNEAU D ORDRE TRADING (Open, Close, Close Long, Close Short, etc.)
             const allCandidates = Array.from(document.querySelectorAll(
-                'button, a, span, i, svg, div[role="button"], [aria-label*="close" i], [aria-label*="Close" i], [class*="close" i], .ant-modal-close'
+                'div[role="dialog"] button, div[role="dialog"] a, div[role="dialog"] [class*="close"], ' +
+                'div.modal button, div[class*="modal"] button, div[class*="dialog"] button, .ant-modal-close, ' +
+                '[class*="download-bar"] button, [class*="app-download"] button, [class*="smartbanner"] [class*="close"]'
             ));
 
             for (const el of allCandidates) {
                 if (el.closest('#lumen-trader-hud')) continue;
-                const txt = (el.textContent || '').trim().toLowerCase();
+
+                // 1. Sanctuarisation totale du trading : rejeter d office tout ce qui ressemble aux boutons de trade
+                const rawTxt = (el.textContent || '').trim();
+                const txt = rawTxt.toLowerCase();
                 const aria = (el.getAttribute('aria-label') || '').toLowerCase();
                 const cls = (el.className || '').toString().toLowerCase();
 
+                if (txt === 'open' || txt === 'close' || txt === 'close long' || txt === 'close short' ||
+                    txt === 'open long' || txt === 'open short' || txt === 'flash close' || txt === 'market' || txt === 'limit') {
+                    continue; // Touche pas au panneau de trading !
+                }
+
+                // 2. Vérifier si c est une modale de confirmation d ordre (laisser autoConfirmModal gérer)
+                const parentDialog = el.closest('div[role="dialog"], div.modal, div[class*="modal"], div[class*="dialog"]');
+                if (parentDialog) {
+                    const dialogText = (parentDialog.textContent || '').toLowerCase();
+                    const isOrderConfirm = (
+                        dialogText.includes('confirm order') || dialogText.includes("confirmer l'ordre") ||
+                        dialogText.includes('close position') || dialogText.includes('fermer la position') ||
+                        dialogText.includes('flash close') || dialogText.includes('clôture éclair') ||
+                        dialogText.includes('order confirm')
+                    );
+                    if (isOrderConfirm) continue;
+                }
+
                 const isDismissText = (
                     txt === '✕' || txt === '×' || txt === 'x' ||
-                    txt === 'close' || txt === 'fermer' ||
                     txt === 'cancel' || txt === 'annuler' ||
                     txt === 'stay on web' || txt === 'rester sur le web' ||
                     txt === 'continuer sur le navigateur' || txt === 'continue on browser' ||
@@ -262,21 +285,9 @@
                 );
 
                 if (isDismissText || isCloseIcon) {
-                    const parentDialog = el.closest('div[role="dialog"], div.modal, div[class*="modal"], div[class*="dialog"]');
-                    if (parentDialog) {
-                        const dialogText = (parentDialog.textContent || '').toLowerCase();
-                        const isOrderConfirm = (
-                            dialogText.includes('confirm order') || dialogText.includes("confirmer l'ordre") ||
-                            dialogText.includes('close position') || dialogText.includes('fermer la position') ||
-                            dialogText.includes('flash close') || dialogText.includes('clôture éclair') ||
-                            dialogText.includes('order confirm')
-                        );
-                        if (isOrderConfirm) continue; // Laisser autoConfirmModal s'en charger
-                    }
-
                     try {
                         forceClick(el);
-                        console.log('[Lumen Anti-Popup Shield] Popup intrusive fermée via bouton/croix :', txt || aria || cls);
+                        console.log('[Lumen Anti-Popup Shield] Popup intrusive fermée :', txt || aria || cls);
                     } catch(e){}
                 }
             }
@@ -322,7 +333,7 @@
 
 
     // =========================================================================
-    // DÉTECTION EXACTE DES CHAMPS PRIX & QUANTITÉ (Calibré sur Photos iPad v2.2.1)
+    // DÉTECTION EXACTE DES CHAMPS PRIX & QUANTITÉ (Calibré sur Photos iPad v2.2.2)
     // =========================================================================
     function findMexcPriceInput() {
         const allLabels = Array.from(document.querySelectorAll("span, div, p, label"));
