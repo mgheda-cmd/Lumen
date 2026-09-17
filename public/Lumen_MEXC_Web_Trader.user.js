@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.2.0
+// @version      2.2.1
 // @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
 // @author       Lumen Algo
 // @downloadURL  https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
@@ -26,7 +26,7 @@
     // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
-        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.2.0)');
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.2.1)');
         const pageWin = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 
         const sendSignal = function(sig) {
@@ -42,9 +42,9 @@
         };
 
         pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.0';
+        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.1';
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
-        window.__LUMEN_USERSCRIPT_VERSION = '2.2.0';
+        window.__LUMEN_USERSCRIPT_VERSION = '2.2.1';
         pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
         window.__LUMEN_SEND_SIGNAL = sendSignal;
 
@@ -59,12 +59,12 @@
         const keepBridgeAlive = () => {
             try {
                 pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.0';
+                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.1';
                 window.__LUMEN_USERSCRIPT_ACTIVE = true;
-                window.__LUMEN_USERSCRIPT_VERSION = '2.2.0';
+                window.__LUMEN_USERSCRIPT_VERSION = '2.2.1';
                 pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
                 window.__LUMEN_SEND_SIGNAL = sendSignal;
-                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.2.0' } }));
+                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.2.1' } }));
             } catch(e){}
         };
         keepBridgeAlive();
@@ -101,14 +101,14 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.2.0 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
+    console.log('>>> [Lumen Web Trader] Script v2.2.1 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
     let isBusy = false;
 
     // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
-    const SCRIPT_VERSION = '2.2.0';
+    const SCRIPT_VERSION = '2.2.1';
 
     function renderDefaultHud(hud) {
         if (!hud) return;
@@ -176,7 +176,7 @@
     }
 
     // =========================================================================
-    // BOUCLIER ANTI-POPUPS & DESTRUCTEUR UNIVERSEL D'OBSTACLES (v2.2.0)
+    // BOUCLIER ANTI-POPUPS & DESTRUCTEUR UNIVERSEL D'OBSTACLES (v2.2.1)
     // =========================================================================
     function forceClick(el) {
         if (!el) return;
@@ -320,6 +320,70 @@
     if (document.body) startAntiPopupProtection();
     else document.addEventListener('DOMContentLoaded', startAntiPopupProtection);
 
+
+    // =========================================================================
+    // DÉTECTION EXACTE DES CHAMPS PRIX & QUANTITÉ (Calibré sur Photos iPad v2.2.1)
+    // =========================================================================
+    function findMexcPriceInput() {
+        const allLabels = Array.from(document.querySelectorAll("span, div, p, label"));
+        const pLabel = allLabels.find(el => {
+            const t = (el.textContent || "").trim();
+            return t.includes("Price (USDT)") || t === "Price" || t === "Prix" || t.startsWith("Price (");
+        });
+        if (pLabel) {
+            let parent = pLabel.parentElement;
+            for (let i = 0; i < 4 && parent; i++) {
+                const inp = parent.querySelector("input");
+                if (inp) return inp;
+                parent = parent.parentElement;
+            }
+        }
+        const formInputs = Array.from(document.querySelectorAll("input")).filter(inp => {
+            const isSearch = (inp.placeholder || "").toLowerCase().includes("search") || inp.type === "search";
+            return !isSearch && inp.offsetParent !== null;
+        });
+        return formInputs.length >= 2 ? formInputs[0] : null;
+    }
+
+    function findMexcQuantityInput() {
+        const allLabels = Array.from(document.querySelectorAll("span, div, p, label"));
+        const qLabel = allLabels.find(el => {
+            const t = (el.textContent || "").trim();
+            return t.includes("Quantity (BTC)") || t.includes("Quantité (BTC)") || t.startsWith("Quantity") || t.startsWith("Quantité");
+        });
+        if (qLabel) {
+            let parent = qLabel.parentElement;
+            for (let i = 0; i < 4 && parent; i++) {
+                const inp = parent.querySelector("input");
+                if (inp) return inp;
+                parent = parent.parentElement;
+            }
+        }
+        const formInputs = Array.from(document.querySelectorAll("input")).filter(inp => {
+            const isSearch = (inp.placeholder || "").toLowerCase().includes("search") || inp.type === "search";
+            return !isSearch && inp.offsetParent !== null;
+        });
+        return formInputs.length > 0 ? formInputs[formInputs.length - 1] : null;
+    }
+
+    function setMexcInputValue(input, val) {
+        if (!input) return false;
+        try { input.focus(); } catch(e){}
+        const proto = window.HTMLInputElement.prototype;
+        const descriptor = Object.getOwnPropertyDescriptor(proto, "value");
+        if (descriptor && descriptor.set) {
+            descriptor.set.call(input, val);
+        } else {
+            input.value = val;
+        }
+        input.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
+        try {
+            input.dispatchEvent(new InputEvent("input", { bubbles: true, data: String(val) }));
+        } catch(e){}
+        return true;
+    }
+
     function setNativeValue(element, value) {
         const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
         const prototype = Object.getPrototypeOf(element);
@@ -420,16 +484,11 @@
                         // Saisie du prix de sortie Limit avec micro-offset favorable (+6$ pour Close Long, -6$ pour Close Short)
                         const offset = signal?.offsetPts || 6;
                         const targetLimitPx = isLongClose ? (refPx + offset) : (refPx - offset);
-                        const inputs = Array.from(document.querySelectorAll('input'));
-                        const priceInput = inputs.find(inp => {
-                            const ph = (inp.placeholder || '').toLowerCase();
-                            const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                            return ph.includes('price') || ph.includes('prix') || aria.includes('price') || aria.includes('prix');
-                        });
-
+                        // Saisie précise du Prix Limit Close (0% Maker)
+                        const priceInput = findMexcPriceInput();
                         if (priceInput) {
-                            priceInput.focus();
-                            setNativeValue(priceInput, targetLimitPx.toFixed(1));
+                            setMexcInputValue(priceInput, targetLimitPx.toFixed(1));
+                            console.log(`[Lumen Web Trader] ✅ Prix Sortie Limit Maker saisi: ${targetLimitPx.toFixed(1)} $`);
                             await new Promise(r => setTimeout(r, 100));
 
                             // 100% sur le slider
@@ -597,53 +656,27 @@
 
                     const offset = signal?.offsetPts || 6;
                     const targetLimitPx = isBuy ? (refPx - offset) : (refPx + offset);
-                    const inputs = Array.from(document.querySelectorAll('input'));
-                    const priceInput = inputs.find(inp => {
-                        const ph = (inp.placeholder || '').toLowerCase();
-                        const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                        return ph.includes('price') || ph.includes('prix') || aria.includes('price') || aria.includes('prix');
-                    });
-
+                    // Saisie ciblée du Prix Limit (0% Maker)
+                    const priceInput = findMexcPriceInput();
                     if (priceInput) {
-                        priceInput.focus();
-                        setNativeValue(priceInput, targetLimitPx.toFixed(1));
+                        setMexcInputValue(priceInput, targetLimitPx.toFixed(1));
+                        console.log(`[Lumen Web Trader] ✅ Prix Limit Maker saisi: ${targetLimitPx.toFixed(1)} $`);
                         await new Promise(r => setTimeout(r, 100));
+                    }
 
-                        // Quantité
-                        const qtyInput = inputs.find(inp => {
-                            const ph = (inp.placeholder || '').toLowerCase();
-                            const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                            const name = (inp.name || '').toLowerCase();
-                            return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || ph.includes('btc') || aria.includes('amount') || name.includes('amount');
-                        }) || inputs[0];
+                    // Saisie ciblée de la Quantité exacte (0.032 BTC par défaut, plafond 0.05)
+                    const qtyInput = findMexcQuantityInput();
+                    const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+                    const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal strict 0.05 BTC
+                    const valToEnter = btcQty.toFixed(3); // Toujours 0.032 en mode BTC
 
-                        if (qtyInput) {
-                            const bodyText = document.body.innerText || '';
-                            const isBtcMode = bodyText.includes('Quantity (BTC)') || bodyText.includes('Quantité (BTC)') || (qtyInput.placeholder || '').toLowerCase().includes('btc');
-                            let refPx = signal?.price || 0;
-                            if (!refPx || refPx < 1000) {
-                                const pxMatch = document.title.match(/([\d,.]+)/);
-                                if (pxMatch) {
-                                    const parsed = parseFloat(pxMatch[1].replace(/,/g, ''));
-                                    if (parsed > 1000) refPx = parsed;
-                                }
-                                if (!refPx || refPx < 1000) refPx = 77150;
-                            }
-                            const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
-                            const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal de sécurité 0.05 BTC
-                            let valToEnter = '';
-                            if (isBtcMode) {
-                                valToEnter = btcQty.toFixed(3);
-                                console.log(`[Lumen Web Trader] Mode BTC détecté sur MEXC ➔ Saisie: ${valToEnter} BTC`);
-                            } else {
-                                const targetNotional = Math.round(signal?.notional || (btcQty * refPx));
-                                valToEnter = String(targetNotional);
-                                console.log(`[Lumen Web Trader] Mode USDT détecté sur MEXC ➔ Saisie: ${valToEnter} USDT (~${(targetNotional/50).toFixed(1)}$ marge à 50x pour ${btcQty} BTC)`);
-                            }
-                            qtyInput.focus();
-                            setNativeValue(qtyInput, valToEnter);
-                            await new Promise(r => setTimeout(r, 100));
-                        }
+                    if (qtyInput) {
+                        setMexcInputValue(qtyInput, valToEnter);
+                        console.log(`[Lumen Web Trader] ✅ Quantité Limit saisie: ${valToEnter} BTC (~48$ de marge)`);
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+
+                    if (priceInput || qtyInput) {
 
                         // Clic Open Long / Short
                         const actionButtons = Array.from(document.querySelectorAll('button'));
@@ -687,39 +720,16 @@
             if (marketBtn) marketBtn.click();
             await new Promise(r => setTimeout(r, 120));
 
-            const inputs = Array.from(document.querySelectorAll('input'));
-            const qtyInput = inputs.find(inp => {
-                const ph = (inp.placeholder || '').toLowerCase();
-                const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                const name = (inp.name || '').toLowerCase();
-                return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || ph.includes('btc') || aria.includes('amount') || name.includes('amount');
-            }) || inputs[0];
+            // Saisie ciblée de la Quantité exacte en mode Market (0.032 BTC garanti)
+            const qtyInput = findMexcQuantityInput();
+            const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+            const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal strict 0.05 BTC
+            const valToEnter = btcQty.toFixed(3); // Toujours 0.032 en mode BTC
 
             if (qtyInput) {
-                const bodyText = document.body.innerText || '';
-                const isBtcMode = bodyText.includes('Quantity (BTC)') || bodyText.includes('Quantité (BTC)') || (qtyInput.placeholder || '').toLowerCase().includes('btc');
-                let refPx = signal?.price || 0;
-                if (!refPx || refPx < 1000) {
-                    const pxMatch = document.title.match(/([\d,.]+)/);
-                    if (pxMatch) {
-                        const parsed = parseFloat(pxMatch[1].replace(/,/g, ''));
-                        if (parsed > 1000) refPx = parsed;
-                    }
-                    if (!refPx || refPx < 1000) refPx = 77150;
-                }
-                const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
-                const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal de sécurité 0.05 BTC
-                let valToEnter = '';
-                if (isBtcMode) {
-                    valToEnter = btcQty.toFixed(3);
-                    console.log(`[Lumen Web Trader] Mode BTC détecté sur MEXC ➔ Saisie: ${valToEnter} BTC`);
-                } else {
-                    const targetNotional = Math.round(signal?.notional || (btcQty * refPx));
-                    valToEnter = String(targetNotional);
-                    console.log(`[Lumen Web Trader] Mode USDT détecté sur MEXC ➔ Saisie: ${valToEnter} USDT (~${(targetNotional/50).toFixed(1)}$ marge à 50x pour ${btcQty} BTC)`);
-                }
-                qtyInput.focus();
-                setNativeValue(qtyInput, valToEnter);
+                setMexcInputValue(qtyInput, valToEnter);
+                console.log(`[Lumen Web Trader] ✅ Quantité Market saisie: ${valToEnter} BTC (~48$ de marge)`);
+                await new Promise(r => setTimeout(r, 100));
             }
             await new Promise(r => setTimeout(r, 120));
 
