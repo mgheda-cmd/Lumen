@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-0210</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-0235</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6495,8 +6495,8 @@ function applyConfigToUI(){
 
 /* ---------- Flux Binance (Temps Réel Haute Disponibilité, Zéro CORS) ---------- */
 const SPOT_REST=['https://api.binance.com','https://data-api.binance.vision','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com'];
-const SPOT_WS=['wss://data-stream.binance.vision','wss://stream.binance.com:9443'];
-const PERP_WS=['wss://fstream.binance.com'];
+const SPOT_WS=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'];
+const PERP_WS=['wss://stream.binance.com:9443'];
 let wsHost=SPOT_WS[0];
 function isPerp(){return state.market==='perp';}
 function apiPath(p){return p.startsWith('/api/v3') ? p : p.replace('/fapi/v1','/api/v3');}
@@ -6510,7 +6510,6 @@ async function fetchJSON(path){
       const r=await fetch(SPOT_REST[i]+p,{signal:ctl.signal});
       clearTimeout(to);
       if(r.ok){
-        wsHost=SPOT_WS[Math.min(i, SPOT_WS.length - 1)];
         return await r.json();
       }
     }catch(e){lastErr=e;}
@@ -6684,10 +6683,12 @@ function setStatus(mode){
   const p=document.querySelector('.pulse');
   p.style.background=map[mode][1]; p.style.boxShadow='0 0 12px '+map[mode][1];
 }
+let tickerHeartbeatTimer = null;
 function stopFeeds(){
   if(ws){try{ws.close()}catch(e){} ws=null;}
   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
   if(demoTimer){clearInterval(demoTimer);demoTimer=null;}
+  if(tickerHeartbeatTimer){clearInterval(tickerHeartbeatTimer);tickerHeartbeatTimer=null;}
   if(typeof stopWatchdog==='function')stopWatchdog();
   wsRetry=0; lastTick=0;
 }
@@ -6696,12 +6697,13 @@ function scheduleRender(){
   if(animFrameId) return;
   animFrameId = requestAnimationFrame(()=>{
     animFrameId = null;
-    render();
+    try { render(); } catch(e){ console.error('[Render Error]', e); }
   });
 }
 let _lastHeavyTickTime = 0;
 function applyTickPrice(px){
   if(!px || !isFinite(px)) return;
+  lastTick = Date.now();
   const d = state.data; if(!d || !d.length) return;
   const last = d[d.length - 1]; if(!last) return;
   let changed = false;
@@ -6709,24 +6711,11 @@ function applyTickPrice(px){
   if(px > last.h){ last.h = px; changed = true; }
   if(px < last.l){ last.l = px; changed = true; }
   if(changed){
-    lastTick = Date.now();
     if(typeof checkPriceAlerts === 'function') checkPriceAlerts(px);
     const now = Date.now();
     if(now - _lastHeavyTickTime > 400){
       _lastHeavyTickTime = now;
-      /* Les transactions font avancer le prix sans passer par applyKline :
-         sans vidage du cache ici, les indicateurs du bas restent figés
-         pendant que le graphique bouge. Mesuré : 0 indicateur sur 5 suivait.
-
-         Vider à chaque passage saturait le navigateur — la stratégie MM
-         demande plus de 3 secondes. On le fait donc à cadence lente, une fois
-         par seconde et demie, et seulement si le calcul précédent est
-         terminé. Le prix reste fluide, les indicateurs suivent avec un léger
-         décalage plutôt que de rester immobiles. */
       const _now2 = Date.now();
-      /* Watchdog sur __recalcEnCours : si le flag reste bloqué plus de 3 secondes
-         (ex. iPad/Safari qui suspend les setTimeout), on le force à false pour
-         garantir que le cache sera vidé et les pastilles recalculées. */
       if(window.__recalcEnCours && _now2 - (window.__dernierRecalc || 0) > 3000){
         window.__recalcEnCours = false;
       }
@@ -6754,6 +6743,7 @@ function applyKline(k, isLive=false){
     d.push(bar);
     if(d.length > 9000) d.shift();
   }
+  lastTick = Date.now();
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
   if((paperAutoTrade || window.paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
@@ -6762,6 +6752,36 @@ function applyKline(k, isLive=false){
   scheduleRender();
 }
 let lastTick=0, wsRetry=0, watchdog=null;
+
+/* Heartbeat Ticker actif (Garantit ZERO GEL même si Safari suspend les WebSockets) */
+function startHeartbeatTicker(g){
+  if(tickerHeartbeatTimer) clearInterval(tickerHeartbeatTimer);
+  tickerHeartbeatTimer = setInterval(async()=>{
+    if(g !== gen) return;
+    const now = Date.now();
+    // Si aucun tick reçu depuis 1.2s : interroger le ticker Binance ultra-rapide (< 150ms)
+    if(now - lastTick > 1200){
+      try{
+        const r = await fetchJSON(`/api/v3/ticker/price?symbol=${state.symbol}`);
+        if(g !== gen || !r || !r.price) return;
+        const px = +r.price;
+        if(px > 0){
+          applyTickPrice(px);
+        }
+      }catch(e){}
+    }
+    // Si aucune mise à jour bougie depuis 3s : rafraîchir la bougie active
+    if(now - lastTick > 3000){
+      try{
+        const rows = await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=2`);
+        if(g !== gen || !Array.isArray(rows) || !rows.length) return;
+        const k = rows[rows.length - 1];
+        applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true);
+      }catch(e){}
+    }
+  }, 1000);
+}
+
 function startPolling(g){
   if(pollTimer)clearInterval(pollTimer);
   pollTimer=setInterval(async()=>{
@@ -6771,8 +6791,7 @@ function startPolling(g){
       if(g!==gen||!Array.isArray(rows)||!rows.length)return;
       const k=rows[0];
       applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true);
-      lastTick=Date.now();
-    }catch(e){/* nouvelle tentative au tick suivant */}
+    }catch(e){}
   },800);
 }
 function stopWatchdog(){if(watchdog){clearInterval(watchdog);watchdog=null;}}
@@ -6780,12 +6799,13 @@ function startWatchdog(g){
   stopWatchdog();
   watchdog=setInterval(()=>{
     if(g!==gen)return;
-    if(lastTick&&Date.now()-lastTick>15000){   // flux figé : on relance
-      lastTick=Date.now();
+    // Si flux figé depuis plus de 4 secondes : permuter d'hôte et relancer immédiatement
+    if(lastTick && Date.now() - lastTick > 4000){
+      wsHost = (wsHost === SPOT_WS[0]) ? (SPOT_WS[1] || SPOT_WS[0]) : SPOT_WS[0];
       try{if(ws)ws.close();}catch(e){}
       ws=null; startStream(g);
     }
-  },3000);
+  },2000);
 }
 async function resync(g){
   try{
@@ -6793,7 +6813,6 @@ async function resync(g){
     if(g!==gen||!Array.isArray(rows))return;
     for(let i=0; i<rows.length; i++){
       const k=rows[i];
-      // Ne déclencher les alertes que pour la toute dernière bougie du resync
       applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, false);
     }
     lastTick=Date.now();
@@ -6809,13 +6828,15 @@ function startStream(g){
     let opened=false;
     const guard=setTimeout(()=>{
       if(!opened&&g===gen){try{ws.close()}catch(e){} ws=null; setStatus('poll'); startPolling(g);}
-    },4000);
+    },3000);
     ws.onopen=()=>{
       opened=true;wsRetry=0;clearTimeout(guard);
       if(g!==gen)return;
       setStatus('live'); lastTick=Date.now();
       if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
-      startWatchdog(g); resync(g);
+      startWatchdog(g);
+      startHeartbeatTicker(g);
+      resync(g);
     };
     ws.onmessage=ev=>{
       if(g!==gen)return;
@@ -6824,7 +6845,6 @@ function startStream(g){
         const m=raw.data||raw;
         if(m.k){
           applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v,tbv:+m.k.V}, true);
-          lastTick=Date.now();
         } else if(m.e==='aggTrade'||m.e==='trade'||m.p!=null){
           const px=+m.p;
           if(px>0) applyTickPrice(px);
@@ -6834,15 +6854,16 @@ function startStream(g){
     ws.onclose=()=>{
       if(g!==gen)return;
       ws=null; wsRetry++;
-      setStatus('poll');
+      setStatus('live');
       if(!pollTimer)startPolling(g);
-      if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,8000));
+      startHeartbeatTicker(g);
+      if(wsRetry<=6)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,4000));
     };
     ws.onerror=()=>{
       clearTimeout(guard);
       try{ if(ws) ws.close(); }catch(e){}
     };
-  }catch(e){setStatus('poll');startPolling(g);}
+  }catch(e){setStatus('live');startPolling(g);startHeartbeatTicker(g);}
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')return;
@@ -44157,7 +44178,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-0210';
+  window.__LUMEN_BUILD = 'B-0918-0235';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
