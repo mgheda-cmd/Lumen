@@ -59,12 +59,12 @@
         const keepBridgeAlive = () => {
             try {
                 pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
+                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.3';
                 window.__LUMEN_USERSCRIPT_ACTIVE = true;
-                window.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
+                window.__LUMEN_USERSCRIPT_VERSION = '2.2.3';
                 pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
                 window.__LUMEN_SEND_SIGNAL = sendSignal;
-                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.2.2' } }));
+                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.2.3' } }));
             } catch(e){}
         };
         keepBridgeAlive();
