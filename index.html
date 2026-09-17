@@ -6739,7 +6739,7 @@ function applyTickPrice(px){
       }
       updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
-      if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+      if((paperAutoTrade || window.paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
       if(typeof checkAllAlerts === 'function') checkAllAlerts();
       if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
     }
@@ -6757,7 +6757,7 @@ function applyKline(k, isLive=false){
   }
   state.cache={}; updateHeader();
   if(typeof updatePaper === 'function') updatePaper();
-  if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+  if((paperAutoTrade || window.paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
   if(isLive && typeof checkAllAlerts === 'function') checkAllAlerts();
   if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   scheduleRender();
@@ -7158,7 +7158,7 @@ async function loadData(){
     updateHeader(); render();
     startStream(g);
     ensureSR();
-    if(paperAutoTrade && typeof checkAutoTrade === 'function') checkAutoTrade();
+    if((paperAutoTrade || window.paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
     if(window.__veille && window.__veille.active && typeof window.verifierVeille === 'function') window.verifierVeille();
   }catch(e){
     if(g!==gen)return;
@@ -18121,6 +18121,7 @@ window.activerStrat11SurMexcWeb = function() {
   const mexcPair = `${base}_USDT`;
 
   // 1. Activer la stratégie sur le moteur Démo local (qui suit chaque pastille et relaie les ordres)
+  paperAutoTrade = true;
   window.paperAutoTrade = true;
   try { localStorage.setItem('lumen_paper_autotrade', '1'); } catch(e){}
   const actNowWeb = Date.now();
@@ -22531,7 +22532,10 @@ function collectAllActiveSignals() {
 }
 
 function checkAutoTrade(inputSignals){
-  if(!paperAutoTrade) return;
+  const isAutoEnabled = !!(paperAutoTrade || window.paperAutoTrade || (typeof localStorage !== 'undefined' && localStorage.getItem('lumen_paper_autotrade') === '1'));
+  if(!isAutoEnabled) return;
+  paperAutoTrade = true;
+  window.paperAutoTrade = true;
   const d = state.data;
   if(!d || !d.length || d.length < 5) return;
 
@@ -22727,7 +22731,7 @@ function checkAutoTrade(inputSignals){
         if (confirmedEntries.length > 0) {
           const lastSig = confirmedEntries[confirmedEntries.length - 1];
           const sigIdx = (lastSig.t != null && typeof idxOfTime === 'function' ? idxOfTime(lastSig.t) : null) ?? lastSig.i;
-          if (sigIdx != null && sigIdx >= lastIdx - 2) {
+          if (sigIdx != null && sigIdx >= lastIdx - 3) {
             sigT = lastSig.t;
             if (lastSig.dir === 1) buySignal = true;
             else if (lastSig.dir === -1) sellSignal = true;
@@ -34068,6 +34072,7 @@ window.startLiveExchangeTrading = function() {
   updateLiveExchangeUI(botConfig);
 
   // Synchroniser et démarrer le moteur d'exécution automatique
+  paperAutoTrade = true;
   window.paperAutoTrade = true;
   try { localStorage.setItem('lumen_paper_autotrade', '1'); } catch(e){}
 
@@ -37917,7 +37922,10 @@ function drawFMCSignals(fmcRes, s, e, yOf, cw, cleStrat) {
     }
   } catch(e){}
   try {
-    if (paperAutoTrade && typeof checkAutoTrade === 'function') {
+    const isAutoOn = !!(paperAutoTrade || window.paperAutoTrade || (typeof localStorage !== 'undefined' && localStorage.getItem('lumen_paper_autotrade') === '1'));
+    if (isAutoOn && typeof checkAutoTrade === 'function') {
+      paperAutoTrade = true;
+      window.paperAutoTrade = true;
       checkAutoTrade();
     }
   } catch(e){}
