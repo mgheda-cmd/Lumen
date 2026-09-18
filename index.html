@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-0505</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-1715</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6495,8 +6495,8 @@ function applyConfigToUI(){
 
 /* ---------- Flux Binance (Temps Réel Haute Disponibilité, Zéro CORS) ---------- */
 const SPOT_REST=['https://api.binance.com','https://data-api.binance.vision','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com'];
-const SPOT_WS=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'];
-const PERP_WS=['wss://stream.binance.com:9443'];
+const SPOT_WS=['wss://stream.binance.com:443','wss://data-stream.binance.vision:443','wss://stream.binance.com:9443'];
+const PERP_WS=['wss://stream.binance.com:443','wss://stream.binance.com:9443'];
 let wsHost=SPOT_WS[0];
 function isPerp(){return state.market==='perp';}
 function apiPath(p){return p.startsWith('/api/v3') ? p : p.replace('/fapi/v1','/api/v3');}
@@ -6517,7 +6517,64 @@ async function fetchJSON(path){
   throw lastErr||new Error('réseau');
 }
 let ws=null, pollTimer=null, demoTimer=null, gen=0;
-/* Historique via l'API WebSocket (non soumise aux restrictions CORS) */
+/* API WebSocket Binance (port 443 universel, ZÉRO restriction CORS, immunité totale) */
+let _wsApiSocket = null, _wsApiReqId = 0, _wsApiPending = {};
+function getWsApiSocket(){
+  if(_wsApiSocket && (_wsApiSocket.readyState === 0 || _wsApiSocket.readyState === 1)){
+    return _wsApiSocket;
+  }
+  try {
+    _wsApiSocket = new WebSocket('wss://ws-api.binance.com:443/ws-api/v3');
+    _wsApiSocket.onmessage = (ev) => {
+      try {
+        const m = JSON.parse(ev.data);
+        if(m.id && _wsApiPending[m.id]){
+          const cb = _wsApiPending[m.id];
+          delete _wsApiPending[m.id];
+          if(m.status === 200 && m.result != null){
+            cb(null, m.result);
+          } else if(m.error){
+            cb(new Error(m.error.msg || 'ws-api error'));
+          } else {
+            cb(null, m.result != null ? m.result : m);
+          }
+        }
+      } catch(e){}
+    };
+    _wsApiSocket.onclose = () => { _wsApiSocket = null; };
+    _wsApiSocket.onerror = () => { try{ if(_wsApiSocket) _wsApiSocket.close(); }catch(e){} _wsApiSocket = null; };
+  } catch(e){ _wsApiSocket = null; }
+  return _wsApiSocket;
+}
+
+function requestWsApi(method, params, timeoutMs = 2500){
+  return new Promise((resolve, reject) => {
+    try {
+      const s = getWsApiSocket();
+      if(!s) return reject(new Error('no ws-api socket'));
+      const id = 'w_' + (++_wsApiReqId);
+      const to = setTimeout(() => {
+        delete _wsApiPending[id];
+        reject(new Error('timeout'));
+      }, timeoutMs);
+      _wsApiPending[id] = (err, res) => {
+        clearTimeout(to);
+        if(err) reject(err);
+        else resolve(res);
+      };
+      if(s.readyState === 1){
+        s.send(JSON.stringify({ id, method, params }));
+      } else {
+        const prevOpen = s.onopen;
+        s.onopen = (ev) => {
+          if(typeof prevOpen === 'function') prevOpen(ev);
+          try { s.send(JSON.stringify({ id, method, params })); } catch(e){ reject(e); }
+        };
+      }
+    } catch(err){ reject(err); }
+  });
+}
+
 function loadViaWS(){
   return new Promise((resolve,reject)=>{
     let done=false;
@@ -6705,19 +6762,23 @@ function scheduleRender(){
   });
 }
 let _lastHeavyTickTime = 0;
+let lastLiveSource = 'binance';
 function applyTickPrice(px, source = 'binance'){
   if(!px || !isFinite(px)) return;
   const now = Date.now();
-  if(source === 'mexc'){
-    lastMexcTick = now;
-  } else {
-    lastBinanceTick = now;
-    // Si MEXC a envoyé un tick dans les 2.5 dernières secondes, on privilégie MEXC
-    if(now - lastMexcTick < 2500){
-      return;
-    }
-  }
   lastTick = now;
+  lastLiveSource = source;
+  if(source === 'mexc') lastMexcTick = now;
+  else lastBinanceTick = now;
+
+  // Mise à jour de l'indicateur visuel de flux en bas de page
+  const srcEl = document.getElementById('footer-source-tag');
+  if(srcEl){
+    const srcTxt = source === 'mexc' ? '● MEXC Futures Live' : (source === 'ws-api' ? '● Binance 443 WS-API' : '● Binance 443 Stream');
+    srcEl.textContent = `Source : ${srcTxt} · ${px.toFixed(1)} $`;
+    srcEl.style.color = '#25D0A4';
+  }
+
   const d = state.data; if(!d || !d.length) return;
   const last = d[d.length - 1]; if(!last) return;
   let changed = false;
@@ -6774,6 +6835,19 @@ function startHeartbeatTicker(g){
     const now = Date.now();
     // Interroger le ticker ultra-rapide (< 100ms) dès que pas de tick depuis 1s
     if(now - lastTick > 1000){
+      // 1. Tenter en priorité via l'API WebSocket 443 (sans restriction CORS)
+      try {
+        const r = await requestWsApi('ticker.price', { symbol: state.symbol }, 1500);
+        if(g === gen && r && (r.price != null || r.p != null)){
+          const px = +(r.price != null ? r.price : r.p);
+          if(px > 0){
+            applyTickPrice(px, 'ws-api');
+            return;
+          }
+        }
+      } catch(e){}
+
+      // 2. Repli REST si disponible
       try{
         const r = await fetchJSON(`/api/v3/ticker/price?symbol=${state.symbol}`);
         if(g !== gen || !r || !r.price) return;
@@ -6785,6 +6859,17 @@ function startHeartbeatTicker(g){
     }
     // Si aucune mise à jour bougie depuis 2.5s : rafraîchir la bougie active
     if(now - lastTick > 2500){
+      // 1. Tenter via WebSocket API 443
+      try {
+        const rows = await requestWsApi('klines', { symbol: state.symbol, interval: TF_MAP[state.tf], limit: 2 }, 1800);
+        if(g === gen && Array.isArray(rows) && rows.length > 0){
+          const k = rows[rows.length - 1];
+          applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true);
+          return;
+        }
+      } catch(e){}
+
+      // 2. Repli REST
       try{
         const rows = await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=2`);
         if(g !== gen || !Array.isArray(rows) || !rows.length) return;
@@ -6799,6 +6884,17 @@ function startPolling(g){
   if(pollTimer)clearInterval(pollTimer);
   pollTimer=setInterval(async()=>{
     if(g!==gen)return;
+    // 1. WebSocket API 443 d'abord
+    try {
+      const rows = await requestWsApi('klines', { symbol: state.symbol, interval: TF_MAP[state.tf], limit: 1 }, 1500);
+      if(g === gen && Array.isArray(rows) && rows.length > 0){
+        const k = rows[0];
+        applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true);
+        return;
+      }
+    } catch(e){}
+
+    // 2. Repli REST
     try{
       const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1`);
       if(g!==gen||!Array.isArray(rows)||!rows.length)return;
@@ -6810,17 +6906,33 @@ function startPolling(g){
 function stopWatchdog(){if(watchdog){clearInterval(watchdog);watchdog=null;}}
 function startWatchdog(g){
   stopWatchdog();
+  let failCount = 0;
   watchdog=setInterval(()=>{
     if(g!==gen)return;
-    // Si flux figé depuis plus de 4 secondes : permuter d'hôte et relancer immédiatement
-    if(lastTick && Date.now() - lastTick > 4000){
-      wsHost = (wsHost === SPOT_WS[0]) ? (SPOT_WS[1] || SPOT_WS[0]) : SPOT_WS[0];
+    const now = Date.now();
+    // Si flux inactif ou figé depuis plus de 3.5s : basculer d'hôte et relancer immédiatement
+    if(!lastTick || (now - lastTick > 3500)){
+      failCount++;
+      wsHost = SPOT_WS[failCount % SPOT_WS.length] || SPOT_WS[0];
       try{if(ws)ws.close();}catch(e){}
       ws=null; startStream(g);
+    } else {
+      failCount = 0;
     }
   },2000);
 }
 async function resync(g){
+  try {
+    const rows = await requestWsApi('klines', { symbol: state.symbol, interval: TF_MAP[state.tf], limit: 3 }, 2000);
+    if(g === gen && Array.isArray(rows) && rows.length > 0){
+      for(let i=0; i<rows.length; i++){
+        const k=rows[i];
+        applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, false);
+      }
+      lastTick=Date.now();
+      return;
+    }
+  } catch(e){}
   try{
     const rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=3`);
     if(g!==gen||!Array.isArray(rows))return;
