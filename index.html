@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-1815</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-1825</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -3499,6 +3499,10 @@ const MAX_BARS = 30000;       /* profondeur maximale conservée en mémoire.
    semaine avec la marge d'échauffement des indicateurs 15m. */
 
 function genData(symbol, tfMin){
+  if((symbol || '').toUpperCase().includes('BTC')){
+    if(typeof state !== 'undefined' && state.data && state.data.length > 0) return state.data;
+    return [];
+  }
   const cfg = SYMBOLS[symbol] || {seed:(symbol.length*97)%1000, base:100, vol:0.02};
   const rnd = mulberry32(cfg.seed * 1000 + tfMin);
   const volScale = Math.sqrt(tfMin/60);
@@ -6660,9 +6664,10 @@ try{
     try{ sessionStorage.clear(); }catch(e){}
     try{
       if(window.localStorage){
+        localStorage.removeItem('lumen-view-v1');
         for(let i = localStorage.length - 1; i >= 0; i--){
           const k = localStorage.key(i);
-          if(k && k.indexOf('lumen_strat11_reg_') === 0) localStorage.removeItem(k);
+          if(k && (k.indexOf('lumen_strat11_reg_') === 0 || k === 'lumen-view-v1')) localStorage.removeItem(k);
         }
       }
     }catch(e){}
@@ -7125,7 +7130,8 @@ function restoreView(){
   try{v=JSON.parse(localStorage.getItem(VIEW_KEY)||'null');}catch(e){}
   const d=state.data;
   if(!d || !d.length) return false;
-  const count = (v && isFinite(v.count)) ? Math.max(20, Math.min(d.length, v.count)) : 150;
+  // Plafonner la vue pour garder des bougies nettes et confortables (140 bougies par défaut)
+  const count = (v && isFinite(v.count)) ? Math.max(30, Math.min(220, v.count)) : 140;
   
   // TOUJOURS afficher la dernière bougie en direct et le prix actuel avec marge TradingView
   state.view = {
@@ -36437,15 +36443,8 @@ function drawMMSignals(res, s, e, yOf, cw) {
       else if (g.affichables === 0)
         cause = 'toutes les options sont masquées dans les réglages';
       else
-        cause = g.affichables + ' pastille(s) hors de la vue \u2014 faites défiler';
-      try{
-        ctx.save();
-        ctx.font = 'bold 10px "IBM Plex Mono", monospace';
-        ctx.fillStyle = '#FF9F1C';
-        ctx.textAlign = 'left';
-        ctx.fillText('\u26A0 MM : ' + g.produites + ' signaux calculés, aucun affiché \u00b7 ' + cause, 8, 30);
-        ctx.restore();
-      }catch(e){}
+        // Diagnostic discret console uniquement (ne pollue pas le graphique)
+      try{ console.debug('[MM] signaux hors vue'); }catch(e){}
     }
   }
 }
@@ -44224,7 +44223,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-1815';
+  window.__LUMEN_BUILD = 'B-0918-1825';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
