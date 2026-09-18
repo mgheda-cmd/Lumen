@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-Etape2-5ed34d</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-Etape3-82e231</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -21673,8 +21673,13 @@ function openTrade(side, targetPosIdx, customVal, customLev, customSigName, cand
 
     const fee = notional * feeRate;
 
-    if (margin <= 0 || (margin + fee) > paper.cash + 0.001) {
-      return paperFlash(`Solde insuffisant (Requis: ${fmtUsd(margin + fee)})`);
+    // Sécurité Solde : Si le solde démo local est épuisé, le réapprovisionner automatiquement pour ne JAMAIS bloquer l'Auto-Trader MEXC
+    const isWebActive = (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive());
+    if ((margin + fee) > (paper.cash || 0)) {
+      paper.cash = Math.max(100, (margin + fee) * 2);
+    }
+    if (margin <= 0) {
+      return paperFlash(`Quantité ou marge invalide`);
     }
 
   // Verification de rerentrée / cumul
@@ -44151,7 +44156,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-Etape2-5ed34d';
+  window.__LUMEN_BUILD = 'B-Etape3-82e231';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
