@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-FINAL</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-STABLE</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -3465,7 +3465,7 @@ footer{
 <footer>
   <span>Molette : zoom</span>
   <span>Glisser : déplacer</span>
-  <span>Source : Binance — flux public temps réel</span>
+  <span id="footer-source-tag">Source : MEXC Futures Direct (Temps Réel)</span>
 </footer>
 
 <script>
@@ -6722,8 +6722,27 @@ function applyTickPrice(px, source = 'binance'){
     lastMexcTick = now;
   } else {
     lastBinanceTick = now;
+    // Si MEXC envoie des données en temps réel (< 3500ms), on IGNORE le prix Binance pour éliminer l'oscillation
+    if(lastMexcTick && (now - lastMexcTick < 3500)) {
+      return;
+    }
   }
   lastTick = now;
+
+  // Mise à jour visuelle de la source dans le footer
+  const sourceTag = document.getElementById('footer-source-tag');
+  if(sourceTag){
+    if(source === 'mexc' || (lastMexcTick && (now - lastMexcTick < 3500))){
+      if(sourceTag.textContent !== 'Source : MEXC Futures Direct (Temps Réel)'){
+        sourceTag.textContent = 'Source : MEXC Futures Direct (Temps Réel)';
+      }
+    } else {
+      if(sourceTag.textContent !== 'Source : Binance Secours (Flux Direct)'){
+        sourceTag.textContent = 'Source : Binance Secours (Flux Direct)';
+      }
+    }
+  }
+
   const d = state.data; if(!d || !d.length) return;
   const last = d[d.length - 1]; if(!last) return;
   let changed = false;
@@ -6758,10 +6777,19 @@ function applyTickPrice(px, source = 'binance'){
     }
   }
 }
-function applyKline(k, isLive=false){
+function applyKline(k, isLive=false, source='binance'){
   const d=state.data; if(!d.length)return;
-  const bar={t:k.t,o:k.o,h:k.h,l:k.l,c:k.c,v:k.v,tbv:k.tbv};
+  const now = Date.now();
+  const mexcIsActive = (lastMexcTick && (now - lastMexcTick < 3500));
+
+  let closePx = k.c;
   const last=d[d.length-1];
+  // Si la bougie provient d'une source tierce mais que MEXC est actif, préserver le dernier cours direct MEXC
+  if(source !== 'mexc' && mexcIsActive && last && last.c > 0){
+    closePx = last.c;
+  }
+
+  const bar={t:k.t,o:k.o,h:Math.max(k.h, closePx),l:Math.min(k.l, closePx),c:closePx,v:k.v,tbv:k.tbv};
   if(bar.t===last.t) d[d.length-1]=bar;
   else if(bar.t>last.t){
     d.push(bar);
@@ -6784,7 +6812,7 @@ function startPolling(g){
       const rows=await loadViaWS(1);
       if(g!==gen||!Array.isArray(rows)||!rows.length)return;
       const k=rows[0];
-      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true);
+      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true, 'binance');
     }catch(e){/* nouvelle tentative au tick suivant */}
   },1000);
 }
@@ -6794,6 +6822,9 @@ function startWatchdog(g){
   watchdog=setInterval(async()=>{
     if(g!==gen)return;
     const now = Date.now();
+    // Si MEXC envoie des ticks en continu, ne pas interférer avec le watchdog Binance
+    if(lastMexcTick && (now - lastMexcTick < 3500)) return;
+
     // Filet de sécurité cardiaque 1 seconde : si aucun tick n'arrive depuis 1.2s, forcer un mini-sondage
     if(lastTick && now - lastTick > 1200){
       try {
@@ -6802,7 +6833,7 @@ function startWatchdog(g){
           const k = rows[0];
           const px = +k[4];
           if(px > 0) applyTickPrice(px, 'binance');
-          applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:px,v:+k[5],tbv:+k[9]}, true);
+          applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:px,v:+k[5],tbv:+k[9]}, true, 'binance');
         }
       } catch(e){}
     }
@@ -6821,7 +6852,7 @@ async function resync(g){
     if(g!==gen||!Array.isArray(rows))return;
     for(let i=0; i<rows.length; i++){
       const k=rows[i];
-      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, false);
+      applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, false, 'binance');
     }
     lastTick=Date.now();
   }catch(e){}
@@ -6875,7 +6906,7 @@ function startMexcStream(g){
           if(klinePx > 0) applyTickPrice(klinePx, 'mexc');
           if(kd.t != null && kd.o != null && kd.h != null && kd.l != null && kd.c != null){
             const tMs = (kd.t < 1e11) ? kd.t * 1000 : kd.t;
-            applyKline({ t: tMs, o: +kd.o, h: +kd.h, l: +kd.l, c: +kd.c, v: +(kd.q || kd.v || kd.a || 0), tbv: 0 }, true);
+            applyKline({ t: tMs, o: +kd.o, h: +kd.h, l: +kd.l, c: +kd.c, v: +(kd.q || kd.v || kd.a || 0), tbv: 0 }, true, 'mexc');
           }
         }
         // 3. Ticker / Taux en direct MEXC
@@ -6934,7 +6965,7 @@ function startStream(g){
         const raw=JSON.parse(ev.data);
         const m=raw.data||raw;
         if(m.k){
-          applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v,tbv:+m.k.V}, true);
+          applyKline({t:m.k.t,o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v,tbv:+m.k.V}, true, 'binance');
           lastTick=Date.now();
         } else if(m.e==='aggTrade'||m.e==='trade'||m.p!=null){
           const px=+m.p;
@@ -44264,7 +44295,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-FINAL';
+  window.__LUMEN_BUILD = 'B-0918-STABLE';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
