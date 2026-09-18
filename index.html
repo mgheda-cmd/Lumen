@@ -6714,16 +6714,12 @@ function scheduleRender(){
 }
 let _lastHeavyTickTime = 0;
 function applyTickPrice(px, source = 'binance'){
-  if(!px || !isFinite(px)) return;
+  if(!px || !isFinite(px) || px <= 0) return;
   const now = Date.now();
   if(source === 'mexc'){
     lastMexcTick = now;
   } else {
     lastBinanceTick = now;
-    // Si MEXC a envoyé un tick dans les 2.5 dernières secondes, on conserve le prix exact MEXC
-    if(now - lastMexcTick < 2500){
-      return;
-    }
   }
   lastTick = now;
   const d = state.data; if(!d || !d.length) return;
@@ -6793,16 +6789,27 @@ function startPolling(g){
 function stopWatchdog(){if(watchdog){clearInterval(watchdog);watchdog=null;}}
 function startWatchdog(g){
   stopWatchdog();
-  watchdog=setInterval(()=>{
+  watchdog=setInterval(async()=>{
     if(g!==gen)return;
-    // Si flux inactif depuis plus de 10s : basculer d'hôte Binance et relancer
-    if(lastTick && Date.now()-lastTick>10000){
+    const now = Date.now();
+    // Filet de sécurité cardiaque 1 seconde : si aucun tick n'arrive depuis 1.5s, forcer un mini-sondage
+    if(lastTick && now - lastTick > 1500){
+      try {
+        const rows = await loadViaWS(1);
+        if(g === gen && Array.isArray(rows) && rows.length){
+          const k = rows[0];
+          applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true);
+        }
+      } catch(e){}
+    }
+    // Si flux inactif depuis plus de 8s : basculer d'hôte Binance et reconnecter
+    if(lastTick && now - lastTick > 8000){
       lastTick=Date.now();
       wsHost = (wsHost === SPOT_WS[0]) ? (SPOT_WS[1] || SPOT_WS[0]) : SPOT_WS[0];
       try{if(ws)ws.close();}catch(e){}
       ws=null; startStream(g);
     }
-  },3000);
+  },1000);
 }
 async function resync(g){
   try{
@@ -6816,7 +6823,7 @@ async function resync(g){
   }catch(e){}
 }
 
-/* Flux WebSocket MEXC Futures Direct (Port 443, Zéro CORS, Ticks instantanés du contrat réel) */
+/* Flux WebSocket MEXC Futures Direct (Port 443, Zéro CORS, Ticks trades instantanés + Klines + Tickers) */
 function startMexcStream(g){
   if(g !== gen) return;
   try {
@@ -6827,23 +6834,40 @@ function startMexcStream(g){
     mexcWs.onopen = () => {
       if(g !== gen){ try{ mexcWs.close(); }catch(e){} return; }
       try {
+        // 1. Souscription à chaque trade individuel (sub.deal)
+        mexcWs.send(JSON.stringify({ method: 'sub.deal', param: { symbol: mSym } }));
+        // 2. Souscription aux bougies en direct (sub.kline)
+        mexcWs.send(JSON.stringify({ method: 'sub.kline', param: { symbol: mSym, interval: 'Min1' } }));
+        // 3. Souscription au ticker temps réel (sub.ticker)
         mexcWs.send(JSON.stringify({ method: 'sub.ticker', param: { symbol: mSym } }));
       } catch(e){}
       mexcPingTimer = setInterval(() => {
         try {
           if(mexcWs && mexcWs.readyState === 1) mexcWs.send(JSON.stringify({ method: 'ping' }));
         } catch(e){}
-      }, 15000);
+      }, 10000);
     };
     mexcWs.onmessage = (ev) => {
       if(g !== gen) return;
       try {
         const raw = JSON.parse(ev.data);
-        if(raw.channel === 'push.ticker' && raw.data && raw.data.lastPrice != null){
-          const px = +raw.data.lastPrice;
-          if(px > 0){
-            applyTickPrice(px, 'mexc');
+        if(!raw) return;
+        // Ticks de trades réels instantanés MEXC Futures
+        if(raw.channel === 'push.deal' && Array.isArray(raw.data) && raw.data.length > 0){
+          const deal = raw.data[raw.data.length - 1];
+          const px = deal && (deal.p != null ? +deal.p : (deal.price != null ? +deal.price : null));
+          if(px && px > 0) applyTickPrice(px, 'mexc');
+        } else if(raw.channel === 'push.kline' && raw.data){
+          const kd = raw.data;
+          const klinePx = +(kd.c || kd.close || kd.lastPrice);
+          if(klinePx > 0) applyTickPrice(klinePx, 'mexc');
+          if(kd.t != null && kd.o != null && kd.h != null && kd.l != null && kd.c != null){
+            const tMs = (kd.t < 1e11) ? kd.t * 1000 : kd.t;
+            applyKline({ t: tMs, o: +kd.o, h: +kd.h, l: +kd.l, c: +kd.c, v: +(kd.q || kd.v || 0), tbv: 0 }, true);
           }
+        } else if(raw.channel === 'push.ticker' && raw.data && raw.data.lastPrice != null){
+          const px = +raw.data.lastPrice;
+          if(px > 0) applyTickPrice(px, 'mexc');
         }
       } catch(e){}
     };
@@ -6851,7 +6875,7 @@ function startMexcStream(g){
       if(mexcPingTimer){ clearInterval(mexcPingTimer); mexcPingTimer = null; }
       mexcWs = null;
       if(g === gen){
-        setTimeout(()=>{ if(g === gen && !mexcWs) startMexcStream(g); }, 3000);
+        setTimeout(()=>{ if(g === gen && !mexcWs) startMexcStream(g); }, 2500);
       }
     };
     mexcWs.onerror = () => {
@@ -6880,7 +6904,7 @@ function startStream(g){
         ws=null;
         startStream(g);
       }
-    }, 8000);
+    }, 6000);
     ws.onopen=()=>{
       opened=true; wsRetry=0; clearTimeout(guard);
       if(g!==gen)return;
@@ -6906,7 +6930,7 @@ function startStream(g){
       clearTimeout(guard);
       if(g!==gen)return;
       ws=null; wsRetry++;
-      if(wsRetry<=10)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,6000));
+      if(wsRetry<=10)setTimeout(()=>{if(g===gen&&!ws)startStream(g);},Math.min(1000*wsRetry,5000));
     };
     ws.onerror=()=>{
       clearTimeout(guard);
@@ -44223,7 +44247,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-1825';
+  window.__LUMEN_BUILD = 'B-0918-1855';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
