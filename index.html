@@ -6624,8 +6624,10 @@ try{
     const base = window.location.href.split('?')[0].split('#')[0];
     let serverDate = null;
     try{
-      // cache:'no-store' force une requête vers l'origine, sans intermédiaire.
-      const r = await fetch(base + '?probe=' + Date.now(), { method:'HEAD', cache:'no-store' });
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 2000);
+      const r = await fetch(base + '?probe=' + Date.now(), { method:'HEAD', cache:'no-store', signal: ctl.signal });
+      clearTimeout(to);
       const lm = r.headers.get('last-modified');
       if(lm){ const d = new Date(lm); if(!isNaN(d.getTime())) serverDate = d; }
     }catch(e){}
