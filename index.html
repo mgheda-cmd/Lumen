@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-1855</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-1920</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6792,24 +6792,26 @@ function startWatchdog(g){
   watchdog=setInterval(async()=>{
     if(g!==gen)return;
     const now = Date.now();
-    // Filet de sécurité cardiaque 1 seconde : si aucun tick n'arrive depuis 1.5s, forcer un mini-sondage
-    if(lastTick && now - lastTick > 1500){
+    // Filet de sécurité cardiaque 1 seconde : si aucun tick n'arrive depuis 1.2s, forcer un mini-sondage
+    if(lastTick && now - lastTick > 1200){
       try {
         const rows = await loadViaWS(1);
         if(g === gen && Array.isArray(rows) && rows.length){
           const k = rows[0];
-          applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true);
+          const px = +k[4];
+          if(px > 0) applyTickPrice(px, 'binance');
+          applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:px,v:+k[5],tbv:+k[9]}, true);
         }
       } catch(e){}
     }
-    // Si flux inactif depuis plus de 8s : basculer d'hôte Binance et reconnecter
-    if(lastTick && now - lastTick > 8000){
+    // Si flux inactif depuis plus de 6s : basculer d'hôte Binance et reconnecter
+    if(lastTick && now - lastTick > 6000){
       lastTick=Date.now();
       wsHost = (wsHost === SPOT_WS[0]) ? (SPOT_WS[1] || SPOT_WS[0]) : SPOT_WS[0];
       try{if(ws)ws.close();}catch(e){}
       ws=null; startStream(g);
     }
-  },1000);
+  },800);
 }
 async function resync(g){
   try{
@@ -6852,21 +6854,31 @@ function startMexcStream(g){
       try {
         const raw = JSON.parse(ev.data);
         if(!raw) return;
-        // Ticks de trades réels instantanés MEXC Futures
-        if(raw.channel === 'push.deal' && Array.isArray(raw.data) && raw.data.length > 0){
-          const deal = raw.data[raw.data.length - 1];
-          const px = deal && (deal.p != null ? +deal.p : (deal.price != null ? +deal.price : null));
-          if(px && px > 0) applyTickPrice(px, 'mexc');
-        } else if(raw.channel === 'push.kline' && raw.data){
-          const kd = raw.data;
-          const klinePx = +(kd.c || kd.close || kd.lastPrice);
+        const ch = raw.channel || raw.c || raw.topic || '';
+        const d = raw.data || raw.d || raw;
+
+        // 1. Ticks de transactions réelles directes MEXC (deals / trades)
+        if(ch.includes('deal') || ch.includes('trade') || raw.deals){
+          const list = Array.isArray(d) ? d : (d.deals || [d]);
+          if(list && list.length > 0){
+            const deal = list[list.length - 1];
+            const px = deal && +(deal.p ?? deal.price ?? deal.lastPrice);
+            if(px > 0) applyTickPrice(px, 'mexc');
+          }
+        }
+        // 2. Bougies 1m en direct MEXC (kline)
+        else if(ch.includes('kline') || raw.kline){
+          const kd = d.kline || d;
+          const klinePx = +(kd.c ?? kd.close ?? kd.lastPrice ?? kd.p);
           if(klinePx > 0) applyTickPrice(klinePx, 'mexc');
           if(kd.t != null && kd.o != null && kd.h != null && kd.l != null && kd.c != null){
             const tMs = (kd.t < 1e11) ? kd.t * 1000 : kd.t;
-            applyKline({ t: tMs, o: +kd.o, h: +kd.h, l: +kd.l, c: +kd.c, v: +(kd.q || kd.v || 0), tbv: 0 }, true);
+            applyKline({ t: tMs, o: +kd.o, h: +kd.h, l: +kd.l, c: +kd.c, v: +(kd.q || kd.v || kd.a || 0), tbv: 0 }, true);
           }
-        } else if(raw.channel === 'push.ticker' && raw.data && raw.data.lastPrice != null){
-          const px = +raw.data.lastPrice;
+        }
+        // 3. Ticker / Taux en direct MEXC
+        else if(ch.includes('ticker') || d.lastPrice != null || d.p != null){
+          const px = +(d.lastPrice ?? d.p ?? d.c);
           if(px > 0) applyTickPrice(px, 'mexc');
         }
       } catch(e){}
@@ -6894,7 +6906,9 @@ function startStream(g){
     if(ws){ try{ ws.close(); }catch(e){} ws=null; }
     const sym = state.symbol.toLowerCase();
     const tf = TF_MAP[state.tf] || '1m';
-    const streamUrl = `${wsHost}/stream?streams=${sym}@kline_${tf}/${sym}@aggTrade`;
+    const streamUrl = (wsHost && wsHost.includes('binance.vision'))
+      ? `${wsHost}/stream?streams=${sym}@kline_${tf}/${sym}@aggTrade`
+      : `wss://stream.binance.com:443/ws/${sym}@aggTrade`;
     ws=new WebSocket(streamUrl);
     let opened=false;
     const guard=setTimeout(()=>{
@@ -44247,7 +44261,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-1855';
+  window.__LUMEN_BUILD = 'B-0918-1920';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
