@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-STABLE</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-FUTURES-SYNC</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
 
@@ -6500,8 +6500,8 @@ function applyConfigToUI(){
 /* ---------- Flux Binance & MEXC (Temps Réel Haute Disponibilité) ---------- */
 const SPOT_REST=['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com'];
 const SPOT_WS=['wss://data-stream.binance.vision','wss://stream.binance.com:443','wss://stream.binance.com'];
-const PERP_REST=['https://data-api.binance.vision','https://fapi.binance.com','https://fapi1.binance.com','https://fapi2.binance.com'];
-const PERP_WS=['wss://stream.binance.com:443','wss://data-stream.binance.vision'];
+const PERP_REST=['https://fapi.binance.com','https://fapi1.binance.com','https://fapi2.binance.com','https://fapi3.binance.com'];
+const PERP_WS=['wss://fstream.binance.com'];
 let wsHost=SPOT_WS[0];
 function isPerp(){return state.market==='perp';}
 function apiPath(p){return isPerp()?p.replace('/api/v3','/fapi/v1'):p;}
@@ -6737,8 +6737,9 @@ function applyTickPrice(px, source = 'binance'){
         sourceTag.textContent = 'Source : MEXC Futures Direct (Temps Réel)';
       }
     } else {
-      if(sourceTag.textContent !== 'Source : Binance Secours (Flux Direct)'){
-        sourceTag.textContent = 'Source : Binance Secours (Flux Direct)';
+      const secText = isPerp() ? 'Source : Binance Futures (Flux Secours)' : 'Source : Binance Spot (Flux Secours)';
+      if(sourceTag.textContent !== secText){
+        sourceTag.textContent = secText;
       }
     }
   }
@@ -6809,7 +6810,7 @@ function startPolling(g){
   pollTimer=setInterval(async()=>{
     if(g!==gen)return;
     try{
-      const rows=await loadViaWS(1);
+      const rows = await (isPerp() ? fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1`) : loadViaWS(1));
       if(g!==gen||!Array.isArray(rows)||!rows.length)return;
       const k=rows[0];
       applyKline({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}, true, 'binance');
@@ -6828,7 +6829,7 @@ function startWatchdog(g){
     // Filet de sécurité cardiaque 1 seconde : si aucun tick n'arrive depuis 1.2s, forcer un mini-sondage
     if(lastTick && now - lastTick > 1200){
       try {
-        const rows = await loadViaWS(1);
+        const rows = await (isPerp() ? fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1`) : loadViaWS(1));
         if(g === gen && Array.isArray(rows) && rows.length){
           const k = rows[0];
           const px = +k[4];
@@ -6837,10 +6838,12 @@ function startWatchdog(g){
         }
       } catch(e){}
     }
-    // Si flux inactif depuis plus de 6s : basculer d'hôte Binance et reconnecter
+    // Si flux inactif depuis plus de 6s : reconnecter
     if(lastTick && now - lastTick > 6000){
       lastTick=Date.now();
-      wsHost = (wsHost === SPOT_WS[0]) ? (SPOT_WS[1] || SPOT_WS[0]) : SPOT_WS[0];
+      if(!isPerp()){
+        wsHost = (wsHost === SPOT_WS[0]) ? (SPOT_WS[1] || SPOT_WS[0]) : SPOT_WS[0];
+      }
       try{if(ws)ws.close();}catch(e){}
       ws=null; startStream(g);
     }
@@ -6848,7 +6851,7 @@ function startWatchdog(g){
 }
 async function resync(g){
   try{
-    const rows=await loadViaWS(3);
+    const rows = await (isPerp() ? fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=3`) : loadViaWS(3));
     if(g!==gen||!Array.isArray(rows))return;
     for(let i=0; i<rows.length; i++){
       const k=rows[i];
@@ -6935,18 +6938,22 @@ function startStream(g){
     // 1. Démarrer le flux direct MEXC Futures en temps réel
     startMexcStream(g);
 
-    // 2. Démarrer le flux Binance Port 443
+    // 2. Démarrer le flux Binance (Futures si marché perpétuel, Spot sinon)
     if(ws){ try{ ws.close(); }catch(e){} ws=null; }
     const sym = state.symbol.toLowerCase();
     const tf = TF_MAP[state.tf] || '1m';
-    const streamUrl = (wsHost && wsHost.includes('binance.vision'))
-      ? `${wsHost}/stream?streams=${sym}@kline_${tf}/${sym}@aggTrade`
-      : `wss://stream.binance.com:443/ws/${sym}@aggTrade`;
+    const streamUrl = isPerp()
+      ? `wss://fstream.binance.com/stream?streams=${sym}@kline_${tf}/${sym}@aggTrade`
+      : ((wsHost && wsHost.includes('binance.vision'))
+          ? `${wsHost}/stream?streams=${sym}@kline_${tf}/${sym}@aggTrade`
+          : `wss://stream.binance.com:443/ws/${sym}@aggTrade`);
     ws=new WebSocket(streamUrl);
     let opened=false;
     const guard=setTimeout(()=>{
       if(!opened && g===gen){
-        wsHost = (wsHost === SPOT_WS[0]) ? (SPOT_WS[1] || SPOT_WS[0]) : SPOT_WS[0];
+        if(!isPerp()){
+          wsHost = (wsHost === SPOT_WS[0]) ? (SPOT_WS[1] || SPOT_WS[0]) : SPOT_WS[0];
+        }
         try{ ws.close(); }catch(e){}
         ws=null;
         startStream(g);
@@ -7241,13 +7248,19 @@ async function loadData(){
     try{
       rows=await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${N_BARS}`);
     }catch(e){
-      rows=await loadViaWS(1000); // secours immédiat sans restriction CORS via WebSocket Port 443
+      if(isPerp()){
+        try {
+          const r = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=${N_BARS}`);
+          if(r.ok) rows = await r.json();
+        } catch(eF){}
+      }
+      if(!rows && !isPerp()) rows=await loadViaWS(1000); // secours Spot uniquement sans restriction CORS via WebSocket Port 443
     }
     if(g!==gen)return;
     if(!Array.isArray(rows)||!rows.length)throw new Error('format');
     state.data=rows.map(k=>({t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tbv:+k[9]}));
 
-    // Ancre hebdomadaire Lundi UTC (pagination sans CORS via WebSocket API)
+    // Ancre hebdomadaire Lundi UTC
     try {
       const nowD = new Date();
       const day = nowD.getUTCDay();
@@ -7260,11 +7273,16 @@ async function loadData(){
         const oldestT = state.data[0].t;
         let olderRows = null;
         try {
-          olderRows = await loadViaWS(1000, oldestT - 1);
-        } catch(eWS){
-          try {
-            olderRows = await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000&endTime=${oldestT - 1}`);
-          } catch(eF){}
+          olderRows = await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000&endTime=${oldestT - 1}`);
+        } catch(eF){
+          if(isPerp()){
+            try {
+              const r = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=1000&endTime=${oldestT - 1}`);
+              if(r.ok) olderRows = await r.json();
+            } catch(eF2){}
+          } else {
+            try { olderRows = await loadViaWS(1000, oldestT - 1); } catch(eWS){}
+          }
         }
         if (g !== gen) return;
         if (Array.isArray(olderRows) && olderRows.length > 0) {
@@ -44295,7 +44313,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-STABLE';
+  window.__LUMEN_BUILD = 'B-0918-FUTURES-SYNC';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
