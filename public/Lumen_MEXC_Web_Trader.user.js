@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Lumen Auto-Trader Web MEXC (0.00% Maker & 0.02% Taker)
 // @namespace    https://mgheda-cmd.github.io/Lumen/
-// @version      2.1.9
-// @description  Mode Maker Chaser 0.00% Frais avec sécurité 15 pts (Entrée Limit 90s / Sortie S2 Limit 25s) et Fast-Catchup (0% de frais garantis via UI Web)
+// @version      2.2.3
+// @description  Mode Maker Chaser 0.00% Frais avec sécurité Post-Only automatique et bridage strict 0.032 BTC (~48$ de marge 50x)
 // @author       Lumen Algo
 // @downloadURL  https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
 // @updateURL    https://raw.githubusercontent.com/mgheda-cmd/Lumen/main/Lumen_MEXC_Web_Trader.user.js
@@ -26,7 +26,7 @@
     // --- PONT AUTOMATIQUE CÔTÉ LUMEN ---
     const isLumenOrigin = location.hostname.includes('vercel.app') || location.hostname.includes('github.io') || location.hostname.includes('localhost');
     if (isLumenOrigin) {
-        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.1.9)');
+        console.log('>>> [Lumen Web Trader Bridge] Pont inter-onglets actif sur Lumen (v2.2.3)');
         const pageWin = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 
         const sendSignal = function(sig) {
@@ -42,9 +42,9 @@
         };
 
         pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
+        pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.3';
         window.__LUMEN_USERSCRIPT_ACTIVE = true;
-        window.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
+        window.__LUMEN_USERSCRIPT_VERSION = '2.2.3';
         pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
         window.__LUMEN_SEND_SIGNAL = sendSignal;
 
@@ -59,12 +59,12 @@
         const keepBridgeAlive = () => {
             try {
                 pageWin.__LUMEN_USERSCRIPT_ACTIVE = true;
-                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
+                pageWin.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
                 window.__LUMEN_USERSCRIPT_ACTIVE = true;
-                window.__LUMEN_USERSCRIPT_VERSION = '2.1.9';
+                window.__LUMEN_USERSCRIPT_VERSION = '2.2.2';
                 pageWin.__LUMEN_SEND_SIGNAL = sendSignal;
                 window.__LUMEN_SEND_SIGNAL = sendSignal;
-                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.1.9' } }));
+                document.dispatchEvent(new CustomEvent('LumenUserscriptBridgeReady', { detail: { version: '2.2.2' } }));
             } catch(e){}
         };
         keepBridgeAlive();
@@ -101,20 +101,20 @@
         return; // Ne pas injecter le HUD MEXC sur Lumen
     }
 
-    console.log('>>> [Lumen Web Trader] Script v2.1.9 actif sur MEXC (0.00% Maker · Veille 90s · Sécurité 15 pts)');
+    console.log('>>> [Lumen Web Trader] Script v2.2.3 actif sur MEXC (0.00% Maker Post-Only · Bridage 0.032 BTC · Veille 90s)');
 
     let lastHandledSignalId = '';
     let lastHandledSignalTs = 0;
     let isBusy = false;
 
     // --- HUD UNIFIÉ FLOTTANT SUR MEXC ---
-    const SCRIPT_VERSION = '2.1.9';
+    const SCRIPT_VERSION = '2.2.3';
 
     function renderDefaultHud(hud) {
         if (!hud) return;
         hud.style.borderColor = '#10B981';
         hud.style.boxShadow = '0 4px 20px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.4)';
-        hud.innerHTML = `🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v${SCRIPT_VERSION}</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% MAKER</span>`;
+        hud.innerHTML = `🟢 <span style="color:#10B981;font-weight:900;font-size:13px">Lumen v${SCRIPT_VERSION}</span> <span style="background:#10B981;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.00% POST-ONLY</span> <span style="background:#38BDF8;color:#0F172A;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:900">0.032 BTC</span>`;
     }
 
     function getOrCreateHud() {
@@ -175,6 +175,230 @@
         } catch(e){}
     }
 
+    // =========================================================================
+    // BOUCLIER ANTI-POPUPS & DESTRUCTEUR UNIVERSEL D'OBSTACLES (v2.2.2)
+    // =========================================================================
+    function forceClick(el) {
+        if (!el) return;
+        try { el.scrollIntoView({ block: 'nearest' }); } catch(e){}
+        try { el.focus(); } catch(e){}
+        const evtOpts = { bubbles: true, cancelable: true, view: window, buttons: 1 };
+        try { el.dispatchEvent(new MouseEvent('mousedown', evtOpts)); } catch(e){}
+        try { el.dispatchEvent(new MouseEvent('mouseup', evtOpts)); } catch(e){}
+        try { el.dispatchEvent(new MouseEvent('click', evtOpts)); } catch(e){}
+        try { el.click(); } catch(e){}
+    }
+
+    function injectAntiPopupStyles() {
+        if (document.getElementById('lumen-anti-popup-shield-css')) return;
+        const style = document.createElement('style');
+        style.id = 'lumen-anti-popup-shield-css';
+        style.textContent = `
+            /* 1. Neutraliser d'office les bannières d'app mobile & téléchargement */
+            [class*="download-bar"], [class*="app-download"], [class*="downloadBar"],
+            [class*="smartbanner"], [class*="openApp"], [class*="open-app"],
+            [class*="mobile-guide"], [class*="app-banner"], [class*="appGuide"],
+            [class*="download-entry"], [class*="app-download-wrap"], [class*="mexc-app-banner"],
+            div[class*="open-in-app"], div[class*="openInApp"], a[href*="mexc.onelink.me"] {
+                display: none !important;
+                pointer-events: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                height: 0 !important;
+                max-height: 0 !important;
+                z-index: -99999 !important;
+            }
+            /* 2. Neutraliser les popups intrusives hors dialogue de confirmation d'ordre */
+            div[class*="promotion-modal"], div[class*="activity-modal"]:not([class*="order"]),
+            div[class*="notice-modal"]:not([class*="order"]), div[class*="survey-modal"],
+            div[class*="newbie-modal"], div[class*="gift-modal"], div[class*="bonus-modal"] {
+                display: none !important;
+                pointer-events: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                z-index: -99999 !important;
+            }
+            /* 3. Garantir que le corps de page et les boutons d'ordres restent toujours cliquables */
+            body, html {
+                pointer-events: auto !important;
+                overflow: auto !important;
+            }
+        `;
+        (document.head || document.documentElement).appendChild(style);
+    }
+    injectAntiPopupStyles();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectAntiPopupStyles);
+    }
+
+    function dismissAllIntrusivePopups() {
+        try {
+            // A. Détecter et fermer EXCLUSIVEMENT les modales/popups superposées
+            // RÈGLE DE SÉCURITÉ ABSOLUE : INTERDICTION FORMELLE DE TOUCHER AU PANNEAU D ORDRE TRADING (Open, Close, Close Long, Close Short, etc.)
+            const allCandidates = Array.from(document.querySelectorAll(
+                'div[role="dialog"] button, div[role="dialog"] a, div[role="dialog"] [class*="close"], ' +
+                'div.modal button, div[class*="modal"] button, div[class*="dialog"] button, .ant-modal-close, ' +
+                '[class*="download-bar"] button, [class*="app-download"] button, [class*="smartbanner"] [class*="close"]'
+            ));
+
+            for (const el of allCandidates) {
+                if (el.closest('#lumen-trader-hud')) continue;
+
+                // 1. Sanctuarisation totale du trading : rejeter d office tout ce qui ressemble aux boutons de trade
+                const rawTxt = (el.textContent || '').trim();
+                const txt = rawTxt.toLowerCase();
+                const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+                const cls = (el.className || '').toString().toLowerCase();
+
+                if (txt === 'open' || txt === 'close' || txt === 'close long' || txt === 'close short' ||
+                    txt === 'open long' || txt === 'open short' || txt === 'flash close' || txt === 'market' || txt === 'limit') {
+                    continue; // Touche pas au panneau de trading !
+                }
+
+                // 2. Vérifier si c est une modale de confirmation d ordre (laisser autoConfirmModal gérer)
+                const parentDialog = el.closest('div[role="dialog"], div.modal, div[class*="modal"], div[class*="dialog"]');
+                if (parentDialog) {
+                    const dialogText = (parentDialog.textContent || '').toLowerCase();
+                    const isOrderConfirm = (
+                        dialogText.includes('confirm order') || dialogText.includes("confirmer l'ordre") ||
+                        dialogText.includes('close position') || dialogText.includes('fermer la position') ||
+                        dialogText.includes('flash close') || dialogText.includes('clôture éclair') ||
+                        dialogText.includes('order confirm')
+                    );
+                    if (isOrderConfirm) continue;
+                }
+
+                const isDismissText = (
+                    txt === '✕' || txt === '×' || txt === 'x' ||
+                    txt === 'cancel' || txt === 'annuler' ||
+                    txt === 'stay on web' || txt === 'rester sur le web' ||
+                    txt === 'continuer sur le navigateur' || txt === 'continue on browser' ||
+                    txt === 'plus tard' || txt === 'later' ||
+                    txt === 'not now' || txt === 'pas maintenant' ||
+                    txt === "j'ai compris" || txt === 'i understand' || txt === 'got it' ||
+                    txt === 'ignorer' || txt === 'skip' || txt === 'non merci' || txt === 'no thanks'
+                );
+
+                const isCloseIcon = (
+                    aria.includes('close') || cls.includes('close') || cls.includes('ant-modal-close') ||
+                    (el.tagName && el.tagName.toLowerCase() === 'svg' && (cls.includes('close') || aria.includes('close')))
+                );
+
+                if (isDismissText || isCloseIcon) {
+                    try {
+                        forceClick(el);
+                        console.log('[Lumen Anti-Popup Shield] Popup intrusive fermée :', txt || aria || cls);
+                    } catch(e){}
+                }
+            }
+
+            // B. Neutraliser les masques/backdrops bloquants sans confirmation d'ordre
+            const masks = Array.from(document.querySelectorAll(
+                'div[class*="backdrop"], div[class*="modal-mask"], div[class*="dialog-mask"], div[class*="mask-layer"], .ant-modal-mask'
+            ));
+            for (const m of masks) {
+                if (m.closest('#lumen-trader-hud')) continue;
+                const parentModal = m.nextElementSibling || m.parentElement;
+                const modalTxt = parentModal ? (parentModal.textContent || '').toLowerCase() : '';
+                const isOrderModal = modalTxt.includes('confirm') || modalTxt.includes('ordre') || modalTxt.includes('order');
+                if (!isOrderModal) {
+                    try {
+                        m.style.display = 'none';
+                        m.style.pointerEvents = 'none';
+                    } catch(e){}
+                }
+            }
+
+            // C. Rétablir systématiquement le défilement et les interactions
+            if (document.body && document.body.style.pointerEvents === 'none') {
+                document.body.style.pointerEvents = 'auto';
+            }
+        } catch(err) {
+            console.warn('[Lumen Anti-Popup Error]', err);
+        }
+    }
+
+    // Lancer la surveillance permanente en tâche de fond (MutationObserver + 400ms)
+    function startAntiPopupProtection() {
+        try {
+            const observer = new MutationObserver(() => {
+                dismissAllIntrusivePopups();
+            });
+            observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+        } catch(e){}
+        setInterval(dismissAllIntrusivePopups, 400);
+    }
+    if (document.body) startAntiPopupProtection();
+    else document.addEventListener('DOMContentLoaded', startAntiPopupProtection);
+
+
+    // =========================================================================
+    // DÉTECTION EXACTE DES CHAMPS PRIX & QUANTITÉ (Calibré sur Photos iPad v2.2.2)
+    // =========================================================================
+    function findMexcPriceInput() {
+        const allLabels = Array.from(document.querySelectorAll("span, div, p, label"));
+        const pLabel = allLabels.find(el => {
+            const t = (el.textContent || "").trim();
+            return t.includes("Price (USDT)") || t === "Price" || t === "Prix" || t.startsWith("Price (");
+        });
+        if (pLabel) {
+            let parent = pLabel.parentElement;
+            for (let i = 0; i < 4 && parent; i++) {
+                const inp = parent.querySelector("input");
+                if (inp) return inp;
+                parent = parent.parentElement;
+            }
+        }
+        const formInputs = Array.from(document.querySelectorAll("input")).filter(inp => {
+            const isSearch = (inp.placeholder || "").toLowerCase().includes("search") || inp.type === "search";
+            return !isSearch && inp.offsetParent !== null;
+        });
+        return formInputs.length >= 2 ? formInputs[0] : null;
+    }
+
+    function findMexcQuantityInput() {
+        const allLabels = Array.from(document.querySelectorAll("span, div, p, label"));
+        const qLabel = allLabels.find(el => {
+            const t = (el.textContent || "").trim();
+            return t.includes("Quantity (BTC)") || t.includes("Quantité (BTC)") || t.startsWith("Quantity") || t.startsWith("Quantité");
+        });
+        if (qLabel) {
+            let parent = qLabel.parentElement;
+            for (let i = 0; i < 4 && parent; i++) {
+                const inp = parent.querySelector("input");
+                if (inp) return inp;
+                parent = parent.parentElement;
+            }
+        }
+        const formInputs = Array.from(document.querySelectorAll("input")).filter(inp => {
+            const isSearch = (inp.placeholder || "").toLowerCase().includes("search") || inp.type === "search";
+            return !isSearch && inp.offsetParent !== null;
+        });
+        return formInputs.length > 0 ? formInputs[formInputs.length - 1] : null;
+    }
+
+    function setMexcInputValue(input, val) {
+        if (!input) return false;
+        try { 
+            input.focus(); 
+            input.click();
+        } catch(e){}
+        const proto = window.HTMLInputElement.prototype;
+        const descriptor = Object.getOwnPropertyDescriptor(proto, "value");
+        if (descriptor && descriptor.set) {
+            descriptor.set.call(input, String(val));
+        } else {
+            input.value = String(val);
+        }
+        input.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
+        try {
+            input.dispatchEvent(new InputEvent("input", { bubbles: true, data: String(val) }));
+        } catch(e){}
+        try { input.blur(); } catch(e){}
+        return true;
+    }
+
     function setNativeValue(element, value) {
         const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set;
         const prototype = Object.getPrototypeOf(element);
@@ -188,6 +412,69 @@
         }
         element.dispatchEvent(new Event('input', { bubbles: true }));
         element.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // =========================================================================
+    // SÉCURITÉ POST-ONLY AUTOMATIQUE (0.00% MAKER GARANTI SUR MEXC)
+    // =========================================================================
+    function ensurePostOnlyChecked() {
+        try {
+            // 1. Recherche par sélecteur direct ou attribut sur les inputs checkbox
+            const directInputs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+            for (const input of directInputs) {
+                const id = (input.id || '').toLowerCase();
+                const name = (input.name || '').toLowerCase();
+                const val = (input.value || '').toLowerCase();
+                const label = input.closest('label') ? (input.closest('label').textContent || '').toLowerCase() : '';
+                const parentTxt = input.parentElement ? (input.parentElement.textContent || '').toLowerCase() : '';
+                
+                if (id.includes('post') || name.includes('post') || val.includes('post') ||
+                    label.includes('post-only') || label.includes('post only') || label.includes('maker-only') ||
+                    parentTxt.includes('post-only') || parentTxt.includes('post only')) {
+                    if (!input.checked) {
+                        input.click();
+                        console.log('[Lumen Web Trader] 🛡️ Case Post-Only activée avec succès (input direct) !');
+                    } else {
+                        console.log('[Lumen Web Trader] 🛡️ Case Post-Only déjà cochée.');
+                    }
+                    return true;
+                }
+            }
+
+            // 2. Recherche par libellé textuel dans les composants UI
+            const allElements = Array.from(document.querySelectorAll('label, span, div, p, button'));
+            for (const el of allElements) {
+                const txt = (el.textContent || '').trim().toLowerCase();
+                if (txt === 'post-only' || txt === 'post only' || txt === 'maker-only' || txt === 'maker only' || txt === '只做maker') {
+                    const chk = el.querySelector('input[type="checkbox"]') || el.parentElement?.querySelector('input[type="checkbox"]');
+                    if (chk) {
+                        if (!chk.checked) {
+                            chk.click();
+                            console.log('[Lumen Web Trader] 🛡️ Case Post-Only activée (via libellé) !');
+                        }
+                        return true;
+                    }
+
+                    const container = el.closest('.ant-checkbox-wrapper, .el-checkbox, label, div') || el;
+                    const isChecked = container.classList.contains('ant-checkbox-checked') ||
+                                      container.classList.contains('is-checked') ||
+                                      container.classList.contains('active') ||
+                                      container.getAttribute('aria-checked') === 'true' ||
+                                      Boolean(container.querySelector('.ant-checkbox-checked, .is-checked, [aria-checked="true"]'));
+                    
+                    if (!isChecked) {
+                        el.click();
+                        console.log('[Lumen Web Trader] 🛡️ Case Post-Only activée (via clic conteneur personnalisé) !');
+                    } else {
+                        console.log('[Lumen Web Trader] 🛡️ Post-Only est déjà actif sur l\'interface.');
+                    }
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.warn('[Lumen Web Trader] Exception vérification Post-Only:', e);
+        }
+        return false;
     }
 
 
@@ -245,6 +532,7 @@
             const maxDev = signal?.maxDeviationPts || 12;
             const refPx = signal?.price || 0;
 
+            dismissAllIntrusivePopups();
             await ensureOrderPanelVisible();
             console.log(`[Lumen Web Trader] Clôture : Close ${targetSide} (Mode: ${useMaker ? 'Maker Chaser 0%' : 'Market'})...`);
             notifyHud(`Clôture : Close ${targetSide} (${useMaker ? 'Maker 0%' : 'Marché'})`, '#EC4899');
@@ -257,7 +545,7 @@
             });
 
             if (closeTab) {
-                closeTab.click();
+                forceClick(closeTab);
                 await new Promise(r => setTimeout(r, 120));
 
                 let limitPlaced = false;
@@ -268,22 +556,21 @@
                         return txt === 'Limit' || txt === 'Limite' || txt === '限价';
                     });
                     if (limitBtn) {
-                        limitBtn.click();
+                        forceClick(limitBtn);
                         await new Promise(r => setTimeout(r, 120));
+
+                        // Activation Post-Only pour sortie Limit à 0.00% Maker
+                        ensurePostOnlyChecked();
+                        await new Promise(r => setTimeout(r, 80));
 
                         // Saisie du prix de sortie Limit avec micro-offset favorable (+6$ pour Close Long, -6$ pour Close Short)
                         const offset = signal?.offsetPts || 6;
                         const targetLimitPx = isLongClose ? (refPx + offset) : (refPx - offset);
-                        const inputs = Array.from(document.querySelectorAll('input'));
-                        const priceInput = inputs.find(inp => {
-                            const ph = (inp.placeholder || '').toLowerCase();
-                            const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                            return ph.includes('price') || ph.includes('prix') || aria.includes('price') || aria.includes('prix');
-                        });
-
+                        // Saisie précise du Prix Limit Close (0% Maker)
+                        const priceInput = findMexcPriceInput();
                         if (priceInput) {
-                            priceInput.focus();
-                            setNativeValue(priceInput, targetLimitPx.toFixed(1));
+                            setMexcInputValue(priceInput, targetLimitPx.toFixed(1));
+                            console.log(`[Lumen Web Trader] ✅ Prix Sortie Limit Maker saisi: ${targetLimitPx.toFixed(1)} $`);
                             await new Promise(r => setTimeout(r, 100));
 
                             // 100% sur le slider
@@ -291,8 +578,11 @@
                                 const txt = (el.textContent || '').trim();
                                 return txt === '100%' || txt === '100';
                             });
-                            if (pct100.length > 0) pct100[pct100.length - 1].click();
+                            if (pct100.length > 0) forceClick(pct100[pct100.length - 1]);
                             await new Promise(r => setTimeout(r, 100));
+
+                            ensurePostOnlyChecked();
+                            await new Promise(r => setTimeout(r, 60));
 
                             // Valider Close
                             const actionButtons = Array.from(document.querySelectorAll('button'));
@@ -302,7 +592,7 @@
                             });
 
                             if (closeBtn && !closeBtn.disabled) {
-                                closeBtn.click();
+                                forceClick(closeBtn);
                                 limitPlaced = true;
                                 notifyHud(`⚡ Sortie Limit Maker posée à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 25s / 12 pts)...`, '#38BDF8');
 
@@ -333,14 +623,14 @@
                     const txt = (el.textContent || '').trim();
                     return txt === 'Market' || txt === 'Marché' || txt === '市价';
                 });
-                if (marketBtn) marketBtn.click();
+                if (marketBtn) forceClick(marketBtn);
                 await new Promise(r => setTimeout(r, 120));
 
                 const pct100Elements = Array.from(document.querySelectorAll('div, span, p, button, label')).filter(el => {
                     const txt = (el.textContent || '').trim();
                     return txt === '100%' || txt === '100';
                 });
-                if (pct100Elements.length > 0) pct100Elements[pct100Elements.length - 1].click();
+                if (pct100Elements.length > 0) forceClick(pct100Elements[pct100Elements.length - 1]);
                 await new Promise(r => setTimeout(r, 120));
 
                 const actionButtons = Array.from(document.querySelectorAll('button'));
@@ -350,7 +640,7 @@
                 });
 
                 if (closeActionBtn && !closeActionBtn.disabled) {
-                    closeActionBtn.click();
+                    forceClick(closeActionBtn);
                     notifyHud(`✅ Position ${targetSide} fermée avec succès !`, '#EC4899');
                     await autoConfirmModal();
                     await new Promise(r => setTimeout(r, 300));
@@ -365,13 +655,13 @@
                 return txt === 'flash close' || txt === 'market close' || txt === 'clôture éclair' || txt === 'fermer au marché';
             });
             if (flashCloseBtn) {
-                flashCloseBtn.click();
+                forceClick(flashCloseBtn);
                 await new Promise(r => setTimeout(r, 150));
                 const confirmBtn = Array.from(document.querySelectorAll('button')).find(b => {
                     const txt = (b.textContent || '').trim().toLowerCase();
                     return txt === 'confirm' || txt === 'confirmer' || txt === 'ok';
                 });
-                if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
+                if (confirmBtn && !confirmBtn.disabled) forceClick(confirmBtn);
                 notifyHud(`✅ Position ${targetSide} clôturée (Flash Close) !`, '#EC4899');
                 return true;
             }
@@ -449,55 +739,37 @@
                     limitBtn.click();
                     await new Promise(r => setTimeout(r, 120));
 
+                    // Activation impérative Post-Only pour garantir 0.00% Maker
+                    ensurePostOnlyChecked();
+                    await new Promise(r => setTimeout(r, 80));
+
                     const offset = signal?.offsetPts || 6;
                     const targetLimitPx = isBuy ? (refPx - offset) : (refPx + offset);
-                    const inputs = Array.from(document.querySelectorAll('input'));
-                    const priceInput = inputs.find(inp => {
-                        const ph = (inp.placeholder || '').toLowerCase();
-                        const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                        return ph.includes('price') || ph.includes('prix') || aria.includes('price') || aria.includes('prix');
-                    });
-
+                    // Saisie ciblée du Prix Limit (0% Maker)
+                    const priceInput = findMexcPriceInput();
                     if (priceInput) {
-                        priceInput.focus();
-                        setNativeValue(priceInput, targetLimitPx.toFixed(1));
+                        setMexcInputValue(priceInput, targetLimitPx.toFixed(1));
+                        console.log(`[Lumen Web Trader] ✅ Prix Limit Maker saisi: ${targetLimitPx.toFixed(1)} $`);
                         await new Promise(r => setTimeout(r, 100));
+                    }
 
-                        // Quantité
-                        const qtyInput = inputs.find(inp => {
-                            const ph = (inp.placeholder || '').toLowerCase();
-                            const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                            const name = (inp.name || '').toLowerCase();
-                            return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || ph.includes('btc') || aria.includes('amount') || name.includes('amount');
-                        }) || inputs[0];
+                    // Saisie ciblée de la Quantité exacte (Bridage strict 0.032 BTC max, ~48$ de marge 50x)
+                    const qtyInput = findMexcQuantityInput();
+                    const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+                    const btcQty = Math.min(rawBtcQty > 0 ? rawBtcQty : 0.032, 0.032); // Bridage strict 0.032 BTC
+                    const valToEnter = btcQty.toFixed(3); // Toujours 0.032
 
-                        if (qtyInput) {
-                            const bodyText = document.body.innerText || '';
-                            const isBtcMode = bodyText.includes('Quantity (BTC)') || bodyText.includes('Quantité (BTC)') || (qtyInput.placeholder || '').toLowerCase().includes('btc');
-                            let refPx = signal?.price || 0;
-                            if (!refPx || refPx < 1000) {
-                                const pxMatch = document.title.match(/([\d,.]+)/);
-                                if (pxMatch) {
-                                    const parsed = parseFloat(pxMatch[1].replace(/,/g, ''));
-                                    if (parsed > 1000) refPx = parsed;
-                                }
-                                if (!refPx || refPx < 1000) refPx = 77150;
-                            }
-                            const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
-                            const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal de sécurité 0.05 BTC
-                            let valToEnter = '';
-                            if (isBtcMode) {
-                                valToEnter = btcQty.toFixed(3);
-                                console.log(`[Lumen Web Trader] Mode BTC détecté sur MEXC ➔ Saisie: ${valToEnter} BTC`);
-                            } else {
-                                const targetNotional = Math.round(signal?.notional || (btcQty * refPx));
-                                valToEnter = String(targetNotional);
-                                console.log(`[Lumen Web Trader] Mode USDT détecté sur MEXC ➔ Saisie: ${valToEnter} USDT (~${(targetNotional/50).toFixed(1)}$ marge à 50x pour ${btcQty} BTC)`);
-                            }
-                            qtyInput.focus();
-                            setNativeValue(qtyInput, valToEnter);
-                            await new Promise(r => setTimeout(r, 100));
-                        }
+                    if (qtyInput) {
+                        setMexcInputValue(qtyInput, valToEnter);
+                        console.log(`[Lumen Web Trader] ✅ Quantité Limit saisie: ${valToEnter} BTC (~48$ de marge)`);
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+
+                    // Re-vérification Post-Only après saisie
+                    ensurePostOnlyChecked();
+                    await new Promise(r => setTimeout(r, 60));
+
+                    if (priceInput || qtyInput) {
 
                         // Clic Open Long / Short
                         const actionButtons = Array.from(document.querySelectorAll('button'));
@@ -510,7 +782,7 @@
                         if (targetBtn && !targetBtn.disabled) {
                             targetBtn.click();
                             limitPlaced = true;
-                            notifyHud(`⚡ Entrée Limit Maker à ${targetLimitPx.toFixed(1)} $ (0% frais visé, veille 90s / 15 pts)...`, '#10B981');
+                            notifyHud(`⚡ Entrée Limit Post-Only à ${targetLimitPx.toFixed(1)} $ (0.00% Maker garanti · 0.032 BTC)...`, '#10B981');
                             await autoConfirmModal();
 
                             // Boucle de surveillance Maker (30s max avec sécurité 12 points)
@@ -521,7 +793,7 @@
                                 const openPosTexts = Array.from(document.querySelectorAll('td, span, div')).map(e => (e.textContent || '').toLowerCase());
                                 const hasPosNow = openPosTexts.some(t => t.includes('close long') || t.includes('close short') || t.includes('flash close'));
                                 if (hasPosNow) {
-                                    notifyHud(`🎉 Entrée MAKER EXÉCUTÉE À 0,00 % DE FRAIS !`, '#10B981');
+                                    notifyHud(`🎉 Entrée MAKER EXÉCUTÉE À 0,00 % DE FRAIS (0.032 BTC) !`, '#10B981');
                                     return true;
                                 }
                             }
@@ -541,39 +813,16 @@
             if (marketBtn) marketBtn.click();
             await new Promise(r => setTimeout(r, 120));
 
-            const inputs = Array.from(document.querySelectorAll('input'));
-            const qtyInput = inputs.find(inp => {
-                const ph = (inp.placeholder || '').toLowerCase();
-                const aria = (inp.getAttribute('aria-label') || '').toLowerCase();
-                const name = (inp.name || '').toLowerCase();
-                return ph.includes('quantity') || ph.includes('amount') || ph.includes('montant') || ph.includes('usdt') || ph.includes('vol') || ph.includes('btc') || aria.includes('amount') || name.includes('amount');
-            }) || inputs[0];
+            // Saisie ciblée de la Quantité exacte en mode Market (Bridage strict 0.032 BTC garanti)
+            const qtyInput = findMexcQuantityInput();
+            const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
+            const btcQty = Math.min(rawBtcQty > 0 ? rawBtcQty : 0.032, 0.032); // Bridage strict 0.032 BTC
+            const valToEnter = btcQty.toFixed(3); // Toujours 0.032 en mode BTC
 
             if (qtyInput) {
-                const bodyText = document.body.innerText || '';
-                const isBtcMode = bodyText.includes('Quantity (BTC)') || bodyText.includes('Quantité (BTC)') || (qtyInput.placeholder || '').toLowerCase().includes('btc');
-                let refPx = signal?.price || 0;
-                if (!refPx || refPx < 1000) {
-                    const pxMatch = document.title.match(/([\d,.]+)/);
-                    if (pxMatch) {
-                        const parsed = parseFloat(pxMatch[1].replace(/,/g, ''));
-                        if (parsed > 1000) refPx = parsed;
-                    }
-                    if (!refPx || refPx < 1000) refPx = 77150;
-                }
-                const rawBtcQty = Number(signal?.qty || signal?.btcQty || 0.032);
-                const btcQty = Math.min(rawBtcQty, 0.05); // Plafond maximal de sécurité 0.05 BTC
-                let valToEnter = '';
-                if (isBtcMode) {
-                    valToEnter = btcQty.toFixed(3);
-                    console.log(`[Lumen Web Trader] Mode BTC détecté sur MEXC ➔ Saisie: ${valToEnter} BTC`);
-                } else {
-                    const targetNotional = Math.round(signal?.notional || (btcQty * refPx));
-                    valToEnter = String(targetNotional);
-                    console.log(`[Lumen Web Trader] Mode USDT détecté sur MEXC ➔ Saisie: ${valToEnter} USDT (~${(targetNotional/50).toFixed(1)}$ marge à 50x pour ${btcQty} BTC)`);
-                }
-                qtyInput.focus();
-                setNativeValue(qtyInput, valToEnter);
+                setMexcInputValue(qtyInput, valToEnter);
+                console.log(`[Lumen Web Trader] ✅ Quantité Market saisie: ${valToEnter} BTC (~48$ de marge)`);
+                await new Promise(r => setTimeout(r, 100));
             }
             await new Promise(r => setTimeout(r, 120));
 
