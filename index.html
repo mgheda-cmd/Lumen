@@ -6683,7 +6683,7 @@ function setStatus(mode){
   const p=document.querySelector('.pulse');
   p.style.background=map[mode][1]; p.style.boxShadow='0 0 12px '+map[mode][1];
 }
-let tickerHeartbeatTimer = null;
+let tickerHeartbeatTimer = null, mexcPingTimer = null;
 let mexcWs = null, lastMexcTick = 0, lastBinanceTick = 0;
 
 function stopFeeds(){
@@ -6692,6 +6692,7 @@ function stopFeeds(){
   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
   if(demoTimer){clearInterval(demoTimer);demoTimer=null;}
   if(tickerHeartbeatTimer){clearInterval(tickerHeartbeatTimer);tickerHeartbeatTimer=null;}
+  if(mexcPingTimer){clearInterval(mexcPingTimer);mexcPingTimer=null;}
   if(typeof stopWatchdog==='function')stopWatchdog();
   wsRetry=0; lastTick=0; lastMexcTick=0; lastBinanceTick=0;
 }
@@ -6711,7 +6712,7 @@ function applyTickPrice(px, source = 'binance'){
     lastMexcTick = now;
   } else {
     lastBinanceTick = now;
-    // Priorité absolue à MEXC : si MEXC a envoyé un tick dans les 2.5 dernières secondes, on conserve le prix exact MEXC
+    // Si MEXC a envoyé un tick dans les 2.5 dernières secondes, on privilégie MEXC
     if(now - lastMexcTick < 2500){
       return;
     }
@@ -6725,6 +6726,7 @@ function applyTickPrice(px, source = 'binance'){
   if(px < last.l){ last.l = px; changed = true; }
   if(changed){
     if(typeof checkPriceAlerts === 'function') checkPriceAlerts(px);
+    updateHeader();
     if(now - _lastHeavyTickTime > 400){
       _lastHeavyTickTime = now;
       const _now2 = Date.now();
@@ -6737,7 +6739,6 @@ function applyTickPrice(px, source = 'binance'){
         state.cache = {};
         setTimeout(function(){ window.__recalcEnCours = false; }, 0);
       }
-      updateHeader();
       if(typeof updatePaper === 'function') updatePaper();
       if((paperAutoTrade || window.paperAutoTrade) && typeof checkAutoTrade === 'function') checkAutoTrade();
       if(typeof checkAllAlerts === 'function') checkAllAlerts();
@@ -6771,8 +6772,8 @@ function startHeartbeatTicker(g){
   tickerHeartbeatTimer = setInterval(async()=>{
     if(g !== gen) return;
     const now = Date.now();
-    // Si aucun tick reçu depuis 1.2s : interroger le ticker Binance ultra-rapide (< 150ms)
-    if(now - lastTick > 1200){
+    // Interroger le ticker ultra-rapide (< 100ms) dès que pas de tick depuis 1s
+    if(now - lastTick > 1000){
       try{
         const r = await fetchJSON(`/api/v3/ticker/price?symbol=${state.symbol}`);
         if(g !== gen || !r || !r.price) return;
@@ -6782,8 +6783,8 @@ function startHeartbeatTicker(g){
         }
       }catch(e){}
     }
-    // Si aucune mise à jour bougie depuis 3s : rafraîchir la bougie active
-    if(now - lastTick > 3000){
+    // Si aucune mise à jour bougie depuis 2.5s : rafraîchir la bougie active
+    if(now - lastTick > 2500){
       try{
         const rows = await fetchJSON(`/api/v3/klines?symbol=${state.symbol}&interval=${TF_MAP[state.tf]}&limit=2`);
         if(g !== gen || !Array.isArray(rows) || !rows.length) return;
@@ -6836,6 +6837,7 @@ function startMexcStream(g){
   if(g !== gen) return;
   try {
     if(mexcWs) { try{ mexcWs.close(); }catch(e){} mexcWs = null; }
+    if(mexcPingTimer){ clearInterval(mexcPingTimer); mexcPingTimer = null; }
     const mSym = (state.symbol || 'BTCUSDT').toUpperCase().replace('USDT', '_USDT');
     mexcWs = new WebSocket('wss://contract.mexc.com/edge');
     mexcWs.onopen = () => {
@@ -6843,13 +6845,21 @@ function startMexcStream(g){
       try {
         mexcWs.send(JSON.stringify({ method: 'sub.ticker', param: { symbol: mSym } }));
       } catch(e){}
+      if(mexcPingTimer) clearInterval(mexcPingTimer);
+      mexcPingTimer = setInterval(()=>{
+        try {
+          if(mexcWs && mexcWs.readyState === 1){
+            mexcWs.send(JSON.stringify({ method: 'ping' }));
+          }
+        } catch(e){}
+      }, 10000);
     };
     mexcWs.onmessage = (ev) => {
       if(g !== gen) return;
       try {
         const raw = JSON.parse(ev.data);
-        if(raw.channel === 'push.ticker' && raw.data && raw.data.lastPrice != null){
-          const px = +raw.data.lastPrice;
+        if(raw.channel === 'push.ticker' && raw.data && (raw.data.lastPrice != null || raw.data.p != null)){
+          const px = +(raw.data.lastPrice != null ? raw.data.lastPrice : raw.data.p);
           if(px > 0){
             applyTickPrice(px, 'mexc');
           }
@@ -6858,6 +6868,7 @@ function startMexcStream(g){
     };
     mexcWs.onclose = () => {
       mexcWs = null;
+      if(mexcPingTimer){ clearInterval(mexcPingTimer); mexcPingTimer = null; }
       if(g === gen){
         setTimeout(()=>{ if(g === gen && !mexcWs) startMexcStream(g); }, 3000);
       }
@@ -6871,10 +6882,14 @@ function startMexcStream(g){
 function startStream(g){
   if(g!==gen)return;
   try{
-    // 1. Démarrer le flux MEXC Futures Direct (Priorité absolue pour le trading réel)
+    // A. Lancer IMMÉDIATEMENT le heartbeat REST et le watchdog (indépendant de ws.onopen)
+    startHeartbeatTicker(g);
+    startWatchdog(g);
+
+    // B. Démarrer le flux MEXC Futures Direct (Priorité absolue pour le trading réel)
     startMexcStream(g);
 
-    // 2. Démarrer le flux Binance (Haute Liquidité / Sécurisation miroir)
+    // C. Démarrer le flux Binance (Haute Liquidité / Sécurisation miroir)
     const sym = state.symbol.toLowerCase();
     const tf = TF_MAP[state.tf];
     const streamUrl = `${wsHost}/stream?streams=${sym}@kline_${tf}/${sym}@aggTrade`;
@@ -44232,7 +44247,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-0245';
+  window.__LUMEN_BUILD = 'B-0918-0505';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
