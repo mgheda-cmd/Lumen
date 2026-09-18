@@ -538,8 +538,8 @@ footer{
   </button>
 
   <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-FUTURES-SYNC</span>
-  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;padding:3px 8px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px">⟳ MAJ</button>
-  <button id="force-btn" class="btn" title="Vérifie auprès du serveur s'il existe une version plus récente, purge le cache puis recharge." style="font-size:11px;padding:3px 8px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px">⇩ FORCER</button>
+  <button id="maj-btn" class="btn" onclick="window.lumenQuickReload && window.lumenQuickReload(this)" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;min-height:28px;padding:4px 9px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">⟳ MAJ</button>
+  <button id="force-btn" class="btn" onclick="window.lumenForceReload && window.lumenForceReload(this)" title="Purge le cache, désinscrit les service workers et recharge immédiatement." style="font-size:11px;min-height:28px;padding:4px 9px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">⇩ FORCER</button>
 
   <div class="ind-wrap" id="alerts-wrap" style="position:relative">
     <button class="btn" id="btn-alerts-panel" onclick="toggleAlertsPanel()" title="Gestionnaire d'Alertes" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;color:var(--text)">
@@ -6562,14 +6562,7 @@ function loadViaWS(limit = 1000, endTime = null){
    visitée. C'est l'équivalent d'un rechargement forcé, en un appui. */
 try{
   const mb = document.getElementById('maj-btn');
-  if(mb) mb.addEventListener('click', function(){
-    try{
-      if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
-    }catch(e){}
-    const u = new URL(window.location.href);
-    u.searchParams.set('maj', Date.now());
-    window.location.replace(u.toString());
-  });
+  if(mb) mb.addEventListener('click', function(){ window.lumenQuickReload && window.lumenQuickReload(this); });
 }catch(e){}
 
 /* ============================================================
@@ -6607,84 +6600,92 @@ try{
 }catch(e){}
 
 /* ============================================================
-   BOUTON ⇩ FORCER — purge totale puis rechargement
-   Étapes : interroger le serveur pour connaître la date de la
-   version publiée, la comparer à celle chargée, puis vider tout
-   ce qui peut retenir une ancienne copie (service workers,
-   Cache API, sessionStorage) avant de recharger sans cache.
+   RECHARGEMENT RAPIDE & FORCÉ (HAUTE FIABILITÉ IPAD / SAFARI)
+   window.lumenQuickReload : contourne le cache navigateur avec un horodatage
+   window.lumenForceReload : purge SW, Cache API, sessionStorage,
+   et force une actualisation immédiate garantie sans blocage (< 250ms).
    ============================================================ */
-try{
-  const fb = document.getElementById('force-btn');
-  if(fb) fb.addEventListener('click', async function(){
-    const btn = this;
-    const original = btn.textContent;
-    btn.textContent = '⏳ Vérification…';
-    btn.disabled = true;
-
-    const base = window.location.href.split('?')[0].split('#')[0];
-    let serverDate = null;
-    try{
-      const ctl = new AbortController();
-      const to = setTimeout(() => ctl.abort(), 2000);
-      const r = await fetch(base + '?probe=' + Date.now(), { method:'HEAD', cache:'no-store', signal: ctl.signal });
-      clearTimeout(to);
-      const lm = r.headers.get('last-modified');
-      if(lm){ const d = new Date(lm); if(!isNaN(d.getTime())) serverDate = d; }
-    }catch(e){}
-
-    const localDate = lumenBuildDate();
-    let verdict;
-    if(serverDate && localDate){
-      const diffMin = Math.round((serverDate.getTime() - localDate.getTime()) / 60000);
-      verdict = diffMin > 1
-        ? 'Une version plus récente est disponible sur le serveur (' + lumenFormatLocal(serverDate) + ' contre ' + lumenFormatLocal(localDate) + ' ici).\n\nElle va être chargée.'
-        : 'Vous avez déjà la dernière version publiée (' + lumenFormatLocal(localDate) + ').\n\nLa page va tout de même être rechargée proprement.';
-    } else {
-      verdict = 'Le serveur ne communique pas de date de publication.\n\nPurge complète puis rechargement.';
+window.lumenQuickReload = function(btn){
+  try{
+    if(btn){
+      btn.textContent = '⏳ MAJ…';
+      btn.style.pointerEvents = 'none';
+      btn.style.opacity = '0.75';
     }
+    if(window.caches && caches.keys){
+      caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(()=>{});
+    }
+  }catch(e){}
+  const u = new URL(window.location.href);
+  u.searchParams.set('maj', Date.now());
+  window.location.replace(u.toString());
+};
 
-    btn.textContent = '⏳ Purge…';
+window.lumenForceReload = function(btn){
+  try{
+    if(btn){
+      btn.textContent = '⏳ Purge…';
+      btn.style.pointerEvents = 'none';
+      btn.style.opacity = '0.75';
+    }
+    if(typeof toast === 'function') toast('🔄 Purge totale du cache · Rechargement...', '#FFB400');
+  }catch(e){}
 
-    // 1. Désinscrire les service workers (ils peuvent servir une copie hors ligne)
-    try{
-      if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
-        const regs = await navigator.serviceWorker.getRegistrations();
-        for(const reg of regs){ await reg.unregister(); }
-      }
-    }catch(e){}
+  const cleanUrl = window.location.origin + window.location.pathname + '?force=' + Date.now();
 
-    // 2. Vider la Cache API
-    try{
-      if(window.caches && caches.keys){
-        const ks = await caches.keys();
-        for(const k of ks){ await caches.delete(k); }
-      }
-    }catch(e){}
+  // Filet de sécurité absolu : rechargement garanti après 250ms max quoi qu'il arrive
+  const forceTimer = setTimeout(function(){
+    window.location.replace(cleanUrl);
+  }, 250);
 
-    // 3. Vider le sessionStorage — le localStorage est PRÉSERVÉ
-    //    (sauf l'ancien registre corrompu des pastilles strat11 qui est purgé).
-    try{ sessionStorage.clear(); }catch(e){}
-    try{
-      if(window.localStorage){
-        localStorage.removeItem('lumen-view-v1');
-        for(let i = localStorage.length - 1; i >= 0; i--){
-          const k = localStorage.key(i);
-          if(k && (k.indexOf('lumen_strat11_reg_') === 0 || k === 'lumen-view-v1')) localStorage.removeItem(k);
+  // Purge asynchrone non-bloquante en parallèle
+  Promise.allSettled([
+    // 1. Désinscrire les Service Workers
+    (async function(){
+      try{
+        if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+          const regs = await navigator.serviceWorker.getRegistrations();
+          if(Array.isArray(regs)){
+            await Promise.allSettled(regs.map(r => r.unregister()));
+          }
         }
-      }
-    }catch(e){}
-
-    // 4. Redemander le fichier à l'origine pour invalider le cache HTTP
-    try{ await fetch(base + '?bust=' + Date.now(), { cache:'reload' }); }catch(e){}
-
-    if(typeof toast === 'function') toast('🔄 Purge terminée · Rechargement immédiat...', '#00E5FF');
-
-    setTimeout(() => {
-      const u = new URL(base);
-      u.searchParams.set('force', Date.now());
-      window.location.replace(u.toString());
-    }, 300);
+      }catch(e){}
+    })(),
+    // 2. Vider les caches navigateurs
+    (async function(){
+      try{
+        if(window.caches && caches.keys){
+          const ks = await caches.keys();
+          if(Array.isArray(ks)){
+            await Promise.allSettled(ks.map(k => caches.delete(k)));
+          }
+        }
+      }catch(e){}
+    })(),
+    // 3. Purger sessionStorage et registre corrompu
+    (async function(){
+      try{ sessionStorage.clear(); }catch(e){}
+      try{
+        if(window.localStorage){
+          localStorage.removeItem('lumen-view-v1');
+          for(let i = localStorage.length - 1; i >= 0; i--){
+            const k = localStorage.key(i);
+            if(k && (k.indexOf('lumen_strat11_reg_') === 0 || k === 'lumen-view-v1')) localStorage.removeItem(k);
+          }
+        }
+      }catch(e){}
+    })()
+  ]).finally(function(){
+    clearTimeout(forceTimer);
+    window.location.replace(cleanUrl);
   });
+};
+
+try{
+  const mb = document.getElementById('maj-btn');
+  if(mb) mb.addEventListener('click', function(){ window.lumenQuickReload(this); });
+  const fb = document.getElementById('force-btn');
+  if(fb) fb.addEventListener('click', function(){ window.lumenForceReload(this); });
 }catch(e){}
 
 function reconnectNow(){ if(typeof loadData==='function')loadData(); }
