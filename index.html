@@ -537,7 +537,7 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0919-HYBRID-RUNNER</span>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0919-CLEAN-HYBRID</span>
   <button id="maj-btn" class="btn" title="Recharger la dernière version publiée" style="font-size:11px;min-height:30px;padding:5px 10px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">⟳ MAJ</button>
   <button id="force-btn" class="btn" title="Purge le cache, désinscrit les service workers et recharge immédiatement sans blocage" style="font-size:11px;min-height:30px;padding:5px 10px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">⇩ FORCER</button>
 
@@ -25540,42 +25540,6 @@ ${escapeHtml(body)}
   sendTelegramNotification(tgMsg, 'strat_mm', { buttons: tgButtons });
   if(typeof sendWhatsAppNotification === 'function') sendWhatsAppNotification(tgMsg);
 
-  // Émission vers le Web Auto-Trader (UNIQUEMENT SI LE BOUTON EST ACTIONNÉ)
-  if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
-    try {
-      let liveBotConfig = {};
-      try {
-        const raw = localStorage.getItem('lumen_live_exchange_bot');
-        if (raw) liveBotConfig = JSON.parse(raw);
-      } catch(e){}
-
-      const budgetVal = Number(liveBotConfig.tradeBudget || document.getElementById('live-ex-trade-budget')?.value || 10);
-      const unitVal = liveBotConfig.tradeUnit || document.getElementById('live-ex-trade-unit')?.value || 'USDT';
-      const levVal = Number(liveBotConfig.lev || document.getElementById('live-ex-lev')?.value || 200);
-      const dirVal = liveBotConfig.tradeDir || document.getElementById('live-ex-dir')?.value || 'both';
-
-      const webSignal = {
-        type: 'LUMEN_TRADE_SIGNAL',
-        symbol: mexcPair,
-        side: isBuy ? 'BUY' : 'SELL',
-        tradeDir: dirVal,
-        price: sig?.price,
-        budget: budgetVal,
-        unit: unitVal,
-        leverage: levVal,
-        sl: liveBotConfig.sl || 0,
-        timeframe: state.tf,
-        timestamp: Date.now()
-      };
-      if (typeof BroadcastChannel !== 'undefined') {
-        const bc = new BroadcastChannel('lumen_mexc_channel');
-        bc.postMessage(webSignal);
-      }
-      localStorage.setItem('lumen_mexc_web_signal', JSON.stringify(webSignal));
-      toast(`⚡ Web Auto-Trader : Ordre ${webSignal.side} (${budgetVal} ${unitVal} @ ${levVal}x) transmis à MEXC (0.02%)`, '#10B981');
-    } catch(e){}
-  }
-
   sendWebhookNotification({
     title,
     body,
@@ -25856,114 +25820,7 @@ function checkAllAlerts(){
   const allSignals = [];
   const d = state.data;
 
-  // Signaux Stratégie MM (Base, Opt 1, Opt 2, Opt 3, Opt 4, Opt 5, Opt 6, Confluences, Sommets, Creux)
-  try {
-    const baseMM = (state.indicators && state.indicators.strat_mm) || {};
-    const mmData = computeMMSignals(d, baseMM);
-    if(mmData){
-      (mmData.signals || []).forEach(s => {
-        const isOpt2 = (s.optKey === 'opt2');
-        const isOpt6 = (s.optKey === 'opt6');
-        const isOpt1 = (s.optKey === 'opt1');
-        const isBase = (s.optKey === 'base');
-
-        if(isOpt2 && phoneCfg.mmOpt2Alerts === false) return;
-        if(isOpt6 && phoneCfg.mmOpt6Alerts === false) return;
-        if(isOpt1 && phoneCfg.mmOpt1Alerts === false) return;
-        if(isBase && phoneCfg.mmBaseAlerts === false) return;
-
-        const optTitles = {
-          base: '🟢 MM Base',
-          opt1: '🔷 Opt 1 (KK 2ᵉ UT)',
-          opt2: '⚡ Opt 2 (iMACD)',
-          opt3: '🛡️ Opt 3 (Cassure)',
-          opt4: '🎯 Opt 4 (Lissage)',
-          opt5: '🚀 Opt 5 (Rebond V)',
-          opt6: '💎 Opt 6 (BOS/DIV)',
-          confluence: (s.badge || '🏆 Confluence Élite')
-        };
-        const optTag = optTitles[s.optKey] || 'MM Base';
-
-        allSignals.push({
-          i: (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i,
-          t: s.t,
-          price: s.price,
-          dir: s.dir,
-          type: s.dir === 1 ? 'ACHAT' : 'VENTE',
-          tag: optTag,
-          source: 'strat_mm',
-          sourceName: `Stratégie MM · ${optTag}`
-        });
-      });
-
-      /* PRÉAVIS : le score vient d'entrer en zone extrême. */
-      /* Même règle pour les notifications : un renfort ne réveille personne. */
-      for(let q = allSignals.length - 1; q >= 0; q--){
-        if(allSignals[q] && allSignals[q].renfort > 0) allSignals.splice(q, 1);
-      }
-
-      if(phoneCfg.mmPreavisAlerts !== false){
-        const netP = mmData.net || [];
-        const sBas = (state.indicators.kk_bis2 && state.indicators.kk_bis2.lower != null)
-                     ? +state.indicators.kk_bis2.lower : -75;
-        const sHaut = (state.indicators.kk_bis2 && state.indicators.kk_bis2.upper != null)
-                      ? +state.indicators.kk_bis2.upper : 75;
-        const pStart = Math.max(1, netP.length - 4);
-        for(let q = pStart; q < netP.length; q++){
-          const av = netP[q-1], ap = netP[q];
-          if(av == null || ap == null || !d[q]) continue;
-
-          if(av > sBas && ap <= sBas){
-            allSignals.push({
-              i: q, t: d[q].t, price: d[q].c, dir: 1,
-              type: 'PREAVIS', tag: 'ZONE BASSE',
-              niveau: Math.round(ap),
-              source: 'strat_mm_preavis',
-              sourceName: 'Stratégie MM · Zone basse atteinte'
-            });
-          }
-          if(av < sHaut && ap >= sHaut){
-            allSignals.push({
-              i: q, t: d[q].t, price: d[q].c, dir: -1,
-              type: 'PREAVIS', tag: 'ZONE HAUTE',
-              niveau: Math.round(ap),
-              source: 'strat_mm_preavis',
-              sourceName: 'Stratégie MM · Zone haute atteinte'
-            });
-          }
-        }
-      }
-
-      if(phoneCfg.mmPivotsAlerts !== false){
-        (mmData.sommetsList || []).forEach(s => {
-          allSignals.push({
-            i: (s.t != null && typeof idxOfTime === 'function' ? idxOfTime(s.t) : null) ?? s.i,
-            t: s.t,
-            price: s.price,
-            dir: -1,
-            type: 'SORTIE',
-            tag: 'SOMMET MM',
-            originDir: 1,
-            source: 'strat_mm_sommet',
-            sourceName: 'Stratégie MM · Sommet Extrême (Sortie Achat)'
-          });
-        });
-        (mmData.creuxList || []).forEach(c => {
-          allSignals.push({
-            i: (c.t != null && typeof idxOfTime === 'function' ? idxOfTime(c.t) : null) ?? c.i,
-            t: c.t,
-            price: c.price,
-            dir: 1,
-            type: 'SORTIE',
-            tag: 'CREUX MM',
-            originDir: -1,
-            source: 'strat_mm_creux',
-            sourceName: 'Stratégie MM · Creux Extrême (Sortie Vente)'
-          });
-        });
-      }
-    }
-  } catch(e){}
+  // [Désactivé] Ancienne Stratégie MM (remplacée par la Stratégie Élite Hybride)
 
   // Signaux Stratégie FMC (Confluence KK + Autonomes)
   try {
@@ -44371,7 +44228,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0919-HYBRID-RUNNER';
+  window.__LUMEN_BUILD = 'B-0919-CLEAN-HYBRID';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
