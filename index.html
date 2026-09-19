@@ -537,9 +537,9 @@ footer{
     <span>📋</span> <span class="btn-full-txt">Trades Réels</span>
   </button>
 
-  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0918-FUTURES-SYNC</span>
-  <button id="maj-btn" class="btn" onclick="window.lumenQuickReload && window.lumenQuickReload(this)" title="Recharger la dernière version publiée en contournant le cache du navigateur" style="font-size:11px;min-height:28px;padding:4px 9px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">⟳ MAJ</button>
-  <button id="force-btn" class="btn" onclick="window.lumenForceReload && window.lumenForceReload(this)" title="Purge le cache, désinscrit les service workers et recharge immédiatement." style="font-size:11px;min-height:28px;padding:4px 9px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">⇩ FORCER</button>
+  <span id="header-build-tag" class="mono" title="Version active du build" style="font-size:11px;letter-spacing:.04em;color:#7AA2FF;background:rgba(122,162,255,.18);border:1.5px solid #7AA2FF;border-radius:6px;padding:3px 8px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">Build B-0919-HYBRID-RUNNER</span>
+  <button id="maj-btn" class="btn" title="Recharger la dernière version publiée" style="font-size:11px;min-height:30px;padding:5px 10px;background:rgba(37,208,164,.22);border:1.5px solid #25D0A4;color:#25D0A4;font-weight:800;display:inline-flex;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">⟳ MAJ</button>
+  <button id="force-btn" class="btn" title="Purge le cache, désinscrit les service workers et recharge immédiatement sans blocage" style="font-size:11px;min-height:30px;padding:5px 10px;background:rgba(255,180,0,.22);border:1.5px solid #FFB400;color:#FFB400;font-weight:800;display:inline-flex;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">⇩ FORCER</button>
 
   <div class="ind-wrap" id="alerts-wrap" style="position:relative">
     <button class="btn" id="btn-alerts-panel" onclick="toggleAlertsPanel()" title="Gestionnaire d'Alertes" style="font-weight:700;display:inline-flex;align-items:center;gap:5px;color:var(--text)">
@@ -6607,38 +6607,29 @@ try{
    ============================================================ */
 window.lumenQuickReload = function(btn){
   try{
-    if(btn){
-      btn.textContent = '⏳ MAJ…';
-      btn.style.pointerEvents = 'none';
-      btn.style.opacity = '0.75';
-    }
+    if(btn) btn.textContent = '⏳ MAJ…';
     if(window.caches && caches.keys){
       caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(()=>{});
     }
   }catch(e){}
-  const u = new URL(window.location.href);
-  u.searchParams.set('maj', Date.now());
-  window.location.replace(u.toString());
+  setTimeout(function(){
+    window.location.reload();
+  }, 100);
 };
 
 window.lumenForceReload = function(btn){
   try{
-    if(btn){
-      btn.textContent = '⏳ Purge…';
-      btn.style.pointerEvents = 'none';
-      btn.style.opacity = '0.75';
-    }
-    if(typeof toast === 'function') toast('🔄 Purge totale du cache · Rechargement...', '#FFB400');
+    if(btn) btn.textContent = '⏳ Purge…';
+    if(typeof toast === 'function') toast('🔄 Purge du cache · Rechargement direct...', '#FFB400');
   }catch(e){}
 
-  const cleanUrl = window.location.origin + window.location.pathname + '?force=' + Date.now();
+  const targetUrl = window.location.origin + window.location.pathname;
 
-  // Filet de sécurité absolu : rechargement garanti après 250ms max quoi qu'il arrive
+  // Filet de sécurité garanti sous 200ms
   const forceTimer = setTimeout(function(){
-    window.location.replace(cleanUrl);
-  }, 250);
+    window.location.href = targetUrl;
+  }, 200);
 
-  // Purge asynchrone non-bloquante en parallèle
   Promise.allSettled([
     // 1. Désinscrire les Service Workers
     (async function(){
@@ -6651,7 +6642,7 @@ window.lumenForceReload = function(btn){
         }
       }catch(e){}
     })(),
-    // 2. Vider les caches navigateurs
+    // 2. Vider tous les caches navigateurs
     (async function(){
       try{
         if(window.caches && caches.keys){
@@ -6677,15 +6668,23 @@ window.lumenForceReload = function(btn){
     })()
   ]).finally(function(){
     clearTimeout(forceTimer);
-    window.location.replace(cleanUrl);
+    window.location.href = targetUrl;
   });
 };
 
 try{
   const mb = document.getElementById('maj-btn');
-  if(mb) mb.addEventListener('click', function(){ window.lumenQuickReload(this); });
+  if(mb){
+    const handleMaj = (e) => { e.preventDefault(); window.lumenQuickReload(mb); };
+    mb.addEventListener('click', handleMaj);
+    mb.addEventListener('touchend', handleMaj, {passive:false});
+  }
   const fb = document.getElementById('force-btn');
-  if(fb) fb.addEventListener('click', function(){ window.lumenForceReload(this); });
+  if(fb){
+    const handleForce = (e) => { e.preventDefault(); window.lumenForceReload(fb); };
+    fb.addEventListener('click', handleForce);
+    fb.addEventListener('touchend', handleForce, {passive:false});
+  }
 }catch(e){}
 
 function reconnectNow(){ if(typeof loadData==='function')loadData(); }
@@ -21485,8 +21484,13 @@ function updatePaperDemoStrategyUI(){
       const statBorder = isAuto ? '#00E676' : '#64748B';
       const statTxt = isAuto ? '● ACTIF' : '⏸️ PAUSE';
       const posObj = paper.positions && paper.positions[0];
-      const beTag = (posObj && posObj.beArmed) ? ' · <span style="color:#34D399;font-weight:900">BE ACTIF 🛡️</span>' : '';
-      const shieldTag = `<span style="background:rgba(250,204,21,0.18);color:#FACC15;border:1px solid #FACC15;padding:2px 8px;border-radius:12px;font-weight:800;font-size:10px" title="Bouclier Récupération Capital : TP +8$ | Break-Even +3.5$ | Stop -6$">🛡️ TP +8$ · BE +3.5$ · SL -6$${beTag}</span>`;
+      let statusTag = '';
+      if (posObj && posObj.tp1Done) {
+        statusTag = ` · <span style="color:#38BDF8;font-weight:900">🏃 RUNNER S2 ACTIF (+${(posObj.tp1Realized || 4).toFixed(2)}$ Encaissé)</span>`;
+      } else if (posObj && posObj.beArmed) {
+        statusTag = ' · <span style="color:#34D399;font-weight:900">BE ACTIF 🛡️</span>';
+      }
+      const shieldTag = `<span style="background:rgba(250,204,21,0.18);color:#FACC15;border:1px solid #FACC15;padding:2px 8px;border-radius:12px;font-weight:800;font-size:10px" title="Option 3 Hybride : TP1 50% (+8$) · Runner S2 Extrême · Stop -6$">⚡ Hybride : TP1 50% (+8$) · Runner S2 · SL -6$${statusTag}</span>`;
       badgeEl.innerHTML = `<span style="background:${statBg};color:${statCol};border:1px solid ${statBorder};padding:2px 8px;border-radius:12px;font-weight:800;cursor:pointer" onclick="window.toggleAutoTrade()" title="Cliquez pour Activer/Désactiver l'Auto-Trade">🤖 ${activeObj.modeLabel || activeObj.mode} (${activeObj.lev}x)${wrStr} [${statTxt}]</span> ${shieldTag}`;
     } else {
       badgeEl.innerHTML = ``;
@@ -22109,6 +22113,39 @@ function closePartial(i, pctOrVal, unitMode){
   p.partials = (p.partials || 0) + 1;
 
   saveConfig(); updatePaper();
+
+  // Si position réelle sur MEXC Futures : fermer la fraction réelle
+  if (p.isRealMexc) {
+    try {
+      const mexcPair = ((p.sym || state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
+      const currentRealVol = (window.__mexcRawPositions && window.__mexcRawPositions[0] && (window.__mexcRawPositions[0].holdVol || window.__mexcRawPositions[0].vol)) || Math.round((p.qty + closeQty) / ((window.__csz && window.__csz[mexcPair]) || 0.0001));
+      const volToClose = Math.round(currentRealVol * fraction);
+      if (typeof window.closeMexcPosition === 'function' && volToClose > 0) {
+        window.closeMexcPosition(mexcPair, p.side, volToClose);
+      }
+    } catch(eMexcClose){
+      console.warn('Erreur fermeture partielle MEXC:', eMexcClose);
+    }
+  }
+
+  // Relais Web Auto-Trader vers MEXC
+  if (typeof isWebAutoTraderActive === 'function' && isWebAutoTraderActive()) {
+    try {
+      const mexcPair = ((p.sym || state.symbol || 'BTCUSDT').replace('USDT','') + '_USDT').toUpperCase();
+      const webSignal = {
+        type: 'LUMEN_TRADE_SIGNAL',
+        action: 'CLOSE_PARTIAL',
+        fraction: fraction,
+        symbol: mexcPair,
+        side: p.side === 'long' ? 'CLOSE_LONG' : 'CLOSE_SHORT',
+        reason: `TP1 Partiel ${Math.round(fraction * 100)}%`,
+        price: px,
+        executionMode: 'MAKER_CHASER',
+        timestamp: Date.now()
+      };
+      window.emettreSignalMexcWeb(webSignal);
+    } catch(err){}
+  }
 
   const qFmt = closeQty >= 1 ? closeQty.toFixed(3) : closeQty.toFixed(4);
   const pnlStr = netPnl >= 0 ? '+' + fmtUsd(netPnl) : fmtUsd(netPnl);
@@ -22810,7 +22847,7 @@ function checkAutoTrade(inputSignals){
 
       // 1. Si une position est ouverte sur le compte Démo / MEXC : chercher la pastille de sortie ou déclencher le Bouclier
       if (existingPos) {
-        // --- PROTOCOLE BOUCLIER RÉCUPÉRATION CAPITAL (+8.00$ TP / +3.50$ BE / -6.00$ SL) ---
+        // --- OPTION 3 : PROTOCOLE HYBRIDE (TP1 50% à +8.00$ / RUNNER 50% sur Sortie S2 Extrême / BE +3.50$ / SL -6.00$) ---
         const livePx = (typeof livePrice === 'function' ? livePrice(state.symbol) : null) || px || (d[lastIdx] && d[lastIdx].c) || 0;
         if (livePx > 0 && existingPos.entry > 0) {
           const isLong = existingPos.side === 'long';
@@ -22820,28 +22857,44 @@ function checkAutoTrade(inputSignals){
           // Suivi du gain maximal atteint (Peak PnL)
           existingPos.peakPnl = Math.max(existingPos.peakPnl || 0, livePnl);
 
-          // Palier 1 : Armement automatique du Break-Even dès +3.50 $ de gain
-          if (existingPos.peakPnl >= 3.50) {
-            existingPos.beArmed = true;
-          }
+          // CAS A : Le TP1 partiel n'a pas encore été déclenché
+          if (!existingPos.tp1Done) {
+            // Palier 1 : Armement automatique du Break-Even dès +3.50 $ de gain
+            if (existingPos.peakPnl >= 3.50) {
+              existingPos.beArmed = true;
+            }
 
-          // Palier 2 : Take Profit Garanti dès +8.00 $
-          if (livePnl >= 8.00) {
-            exitTriggered = true;
-            exitReason = `🎯 Take Profit Garanti (+${livePnl.toFixed(2)}$)`;
-            sigT = Date.now();
-          }
-          // Palier 1 bis : Clôture Sécurité Break-Even si le cours redescend après +3.50$ (zéro perte)
-          else if (existingPos.beArmed && livePnl <= 0.20) {
-            exitTriggered = true;
-            exitReason = `🛡️ Sécurisation Break-Even (0.00$ de perte)`;
-            sigT = Date.now();
-          }
-          // Palier 3 : Stop-Loss d'Urgence Plafonné à -6.00 $
-          else if (livePnl <= -6.00) {
-            exitTriggered = true;
-            exitReason = `🛑 Stop Loss d'Urgence (-${Math.abs(livePnl).toFixed(2)}$)`;
-            sigT = Date.now();
+            // Palier 2 (OPTION 3) : Take Profit Partiel 50% dès +8.00 $
+            if (livePnl >= 8.00) {
+              const tp1Val = livePnl * 0.5;
+              existingPos.tp1Done = true;
+              existingPos.beArmed = true; // Stop-loss du runner immédiatement verrouillé à Break-Even garanti
+              existingPos.tp1Realized = (existingPos.tp1Realized || 0) + tp1Val;
+              closePartial(0, 50, 'pct');
+              toast(`🎯 [Option 3 Hybride] TP1 50% Encaissé (+${tp1Val.toFixed(2)}$) · 🏃 Runner S2 Extrême Actif (Zéro Risque / Stop BE)`, '#10B981');
+              window.__lastAutoTradeActionTime = Date.now();
+            }
+            // Palier 1 bis : Clôture Sécurité Break-Even si le cours redescend après +3.50$ (zéro perte)
+            else if (existingPos.beArmed && livePnl <= 0.20) {
+              exitTriggered = true;
+              exitReason = `🛡️ Sécurisation Break-Even (0.00$ de perte)`;
+              sigT = Date.now();
+            }
+            // Palier 3 : Stop-Loss d'Urgence Plafonné à -6.00 $
+            else if (livePnl <= -6.00) {
+              exitTriggered = true;
+              exitReason = `🛑 Stop Loss d'Urgence (-${Math.abs(livePnl).toFixed(2)}$)`;
+              sigT = Date.now();
+            }
+          } else {
+            // CAS B : LE RUNNER (les 50% restants) EST ACTIF :
+            // Filet de sécurité Break-Even sur le Runner : si le marché redescend au prix d'entrée, clôturer sans perdre le TP1
+            if (livePnl <= 0.15) {
+              exitTriggered = true;
+              exitReason = `🛡️ Clôture Runner au Break-Even (Gain TP1 +${(existingPos.tp1Realized || 4).toFixed(2)}$ sécurisé)`;
+              sigT = Date.now();
+            }
+            // Le Runner continue sa course jusqu'à la sortie S2 Extrême (ou Inversion opposée) !
           }
         }
 
@@ -22864,7 +22917,11 @@ function checkAutoTrade(inputSignals){
           const exIdx = (lastEx.t != null && typeof idxOfTime === 'function' ? idxOfTime(lastEx.t) : null) ?? lastEx.i;
           if (exIdx != null && exIdx >= lastIdx - 2) {
             exitTriggered = true;
-            exitReason = lastEx.badge ? lastEx.badge.replace(/^.*?SORTIE\s*/, '') : (exitKey === 's1' ? 'Pastille Sortie Ligne 0' : (exitKey === 's2' ? 'Pastille Sortie Extrême' : 'Pastille Sortie Inversion'));
+            const exBase = lastEx.badge ? lastEx.badge.replace(/^.*?SORTIE\s*/, '') : (exitKey === 's1' ? 'Pastille Sortie Ligne 0' : (exitKey === 's2' ? 'Pastille Sortie Extrême' : 'Pastille Sortie Inversion'));
+            const curPnl = ((existingPos.side === 'long' ? (livePx - existingPos.entry) : (existingPos.entry - livePx)) * (existingPos.qty || 0.016));
+            exitReason = existingPos.tp1Done
+              ? `🏆 Clôture Runner sur ${exBase} (Gain Total +${((existingPos.tp1Realized || 0) + curPnl).toFixed(2)}$)`
+              : exBase;
             sigT = lastEx.t;
           } else if (exIdx != null && exIdx < lastIdx - 2 && !existingPos.isRealMexc) {
             closePos(0, 'Sortie passée (' + (lastEx.badge ? lastEx.badge.replace(/^.*?SORTIE\s*/, '') : exitKey) + ')');
@@ -44314,7 +44371,7 @@ function updateActiveBacktestSignals(tradesList, stratName) {
     } catch(e){}
   }
 
-  window.__LUMEN_BUILD = 'B-0918-FUTURES-SYNC';
+  window.__LUMEN_BUILD = 'B-0919-HYBRID-RUNNER';
   setTimeout(function(){
     const el = document.getElementById('mexc-build-tag');
     if (el) el.textContent = 'version ' + window.__LUMEN_BUILD;
